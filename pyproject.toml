@@ -1,14 +1,19 @@
 [project]
-name = "app-name"
+name = "rbc"
 version = "0.1.0"
-description = "A beautiful description."
+description = "Standalone implantations of the RBC protocol for anatomical, functional, derivatives, and longitudinal pre-processing"
 authors = [
   {name = "CMI DAIR", email = "dair@childmind.org"}
 ]
-license = "LGPL-2.1-only"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "nibabel>=5.3.3",
+    "niwrap>=0.8.2",
+    "numpy>=2.4.1",
+    "scipy>=1.17.0",
+]
 
 [dependency-groups]
 dev = [
