@@ -1,18 +1,16 @@
 [project]
 name = "rbc"
 version = "0.1.0"
-description = "Standalone implantations of the RBC protocol for anatomical, functional, derivatives, and longitudinal pre-processing"
-authors = [
-  {name = "CMI DAIR", email = "dair@childmind.org"}
-]
+description = "Standalone implementations of the RBC protocol for anatomical and functional pre-processing."
+authors = [{name = "CMI DAIR", email = "dair@childmind.org"}]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "nibabel>=5.3.3",
-    "niwrap>=0.8.2",
-    "numpy>=2.4.1",
-    "scipy>=1.17.0",
+  "nibabel>=5.3.3",
+  "niwrap>=0.8.2",
+  "numpy>=2.4.1",
+  "scipy>=1.17.0"
 ]
 
 [dependency-groups]
