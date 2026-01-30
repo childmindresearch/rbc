@@ -124,11 +124,12 @@ def ants_registration(
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-T1w_to-template_mode-image_xfm.nii.gz"
+            composite_displacement_field=f"{output_prefix}_from-T1w_to-template_mode-image_xfm.nii.gz",
+            print_out_composite_warp_file=True,
         ),
     )
     rev = ants.ants_apply_transforms(
-        reference_image=str(in_file),
+        reference_image=in_file,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
                 registration.root / f"{output_prefix}_1InverseWarp.nii.gz"
@@ -138,7 +139,8 @@ def ants_registration(
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-template_to-T1w_mode-image_xfm.nii.gz"
+            composite_displacement_field=f"{output_prefix}_from-template_to-T1w_mode-image_xfm.nii.gz",
+            print_out_composite_warp_file=True,
         ),
     )
     return SimpleNamespace(forward=fwd.output, inverse=rev.output)
