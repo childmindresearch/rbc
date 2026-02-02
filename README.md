@@ -11,7 +11,7 @@ Reference implementation of the Reproducible Brain Charts (RBC) preprocessing pr
 
 ## Overview
 
-This package provides a standalone implementation of the RBC preprocessing pipeline, originally developed in [C-PAC](https://fcp-indi.github.io/). With C-PAC now deprecated, this repository serves as the maintained reference implementation using [NiWrap](https://github.com/styx-api/niwrap) for neuroimaging tool integration.
+This package provides a standalone implementation of the RBC preprocessing pipeline, originally developed in [C-PAC](https://fcp-indi.github.io/). This repository serves as the maintained reference implementation using [NiWrap](https://github.com/styx-api/niwrap) for neuroimaging tool integration.
 
 **Reference:** Shafiei et al. (2024). "Reproducible Brain Charts: An open data resource for mapping brain development and its associations with mental health." *Neuron*, 113(22):3758-3779.
 
