@@ -5,11 +5,12 @@ from types import SimpleNamespace
 
 from niwrap import ants
 
+from rbc.core import CPAC_ANTS_SEED
 from rbc.core.resources import MNI_TEMPLATES
 
 
 def ants_registration(
-    in_file: Path, output_prefix: str, seed: int = 77742777
+    in_file: Path, output_prefix: str, seed: int = CPAC_ANTS_SEED
 ) -> SimpleNamespace:
     """ANTs registration to MNI152 template.
 
