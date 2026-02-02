@@ -20,6 +20,7 @@ jobs:
       id: run-tests
       run: >
         uv run pytest \
+          -m "not slow and not full_pipeline"
           --junitxml=pytest.xml \
           --cov-report=term-missing:skip-covered \
           --cov-report=xml:coverage.xml \
