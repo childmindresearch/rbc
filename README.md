@@ -20,7 +20,7 @@ This package provides a standalone implementation of the RBC preprocessing pipel
 - **Anatomical preprocessing**: Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152
 - **Functional preprocessing**: Motion correction, slice timing, coregistration, single-step resampling to template space
 - **Nuisance regression**: 36-parameter and aCompCor methods with bandpass filtering
-- **Derivatives**: ALFF/fALFF, ReHo, network centrality, atlas-based timeseries extraction
+- **Quantitative metrics**: ALFF/fALFF, ReHo, network centrality, atlas-based timeseries extraction
 - **Quality control**: XCP-style QC metrics with RBC-recommended thresholds
 - **BIDS-compatible**: Follows BIDS conventions for inputs and outputs
 
