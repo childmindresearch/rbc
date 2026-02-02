@@ -10,27 +10,27 @@ from bids2table import parse_bids_entities
 
 
 @contextmanager
-def create_copy(in_file: Path) -> Iterator[Path]:
-    """Create a temporary copy a file.
+def create_copy(in_file: str | Path) -> Iterator[Path]:
+    """Create a temporary copy of a file.
 
     Args:
-        in_file: Path to file for creating a copy of.
+        in_file: Path to file to copy.
 
-    Returns:
-        Yields a file path to the copy of the temporary file.
+    Yields:
+        Path to the temporary copy.
     """
+    in_file = Path(in_file)
     tmp_dir = Path(tempfile.mkdtemp())
-    tmp_path = tmp_dir / in_file.name
-    shutil.copy2(in_file, tmp_path)
-
     try:
+        tmp_path = tmp_dir / in_file.name
+        shutil.copy2(in_file, tmp_path)
         yield tmp_path
     finally:
         shutil.rmtree(tmp_dir)
 
 
 def get_base_entities(in_file: Path) -> dict[str, str]:
-    """Parse base entities to be used for file naming.
+    """Parse base BIDS entities to be used for file naming.
 
     Args:
         in_file: Path to parse bids entities for.
@@ -42,16 +42,7 @@ def get_base_entities(in_file: Path) -> dict[str, str]:
     return {k: v for k, v in file_entities.items() if k in ["sub", "ses", "run"]}
 
 
-def rename(in_file: Path, new_name: str) -> Path:
-    """Rename a file in place.
-
-    Args:
-        in_file: Path of file to be renamed.
-        new_name: New name of file.
-
-    Returns:
-        Path to renamed file
-    """
-    new_path = in_file.with_name(new_name)
-    in_file.rename(new_path)
-    return new_path
+def rename(in_file: str | Path, new_name: str | Path) -> Path:
+    """Rename a file, keeping it in the same directory."""
+    in_file = Path(in_file)
+    return in_file.rename(in_file.with_name(Path(new_name).name))
