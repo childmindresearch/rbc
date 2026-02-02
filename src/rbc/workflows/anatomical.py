@@ -43,7 +43,7 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
         (extracted_t1w.gm_segmentation, "gm", "dseg"),
     ]
     renamed_files = [
-        rename(Path(out_file), str(bids(desc=desc, suffix=suffix, ext=".nii.gz")))
+        rename(out_file, bids(desc=desc, suffix=suffix, ext=".nii.gz"))
         for out_file, desc, suffix in extracted_t1w_outputs
     ]
     niwrap_helper.save(
