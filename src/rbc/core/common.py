@@ -8,7 +8,10 @@ from rbc.core.utils import create_copy
 
 
 def reorient(in_file: Path, output_fname: str) -> afni.V3dresampleOutputs:
-    """AFNI deobliquing and resampling.
+    """AFNI deobliquing and reorientation to RPI.
+
+    Sets image into a cardinal orientation if it was acquired obliquely from scanner
+    and standardize orientation of images ('RPI' is internal assumption from AFNI).
 
     Args:
         in_file: Input T1w to reorient
