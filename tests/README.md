@@ -20,12 +20,12 @@ pytest
 
 ## Test Categories
 
-| Marker          | Speed        | When to Run                        |
-| --------------- | ------------ | ---------------------------------- |
-| `unit`          | <1s per test | Always - during active development |
-| `integration`   | 1-5 min      | Before committing                  |
-| `slow`          | >5 min       | Before merging to main             |
-| `full_pipeline` | 30+ min      | Before releases only               |
+| Marker          | Speed        |
+| --------------- | ------------ |
+| `unit`          | <1s per test |
+| `integration`   | 1-5 min      |
+| `slow`          | >5 min       |
+| `full_pipeline` | 30+ min      |
 
 ## Common Commands
 
