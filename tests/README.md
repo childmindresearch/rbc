@@ -42,17 +42,8 @@ pytest tests/unit/test_bids_parsing.py
 pytest tests/unit/test_bids_parsing.py::test_parse_subject_id
 ```
 
-### Before Committing
-
-```bash
-# Run unit + integration (skip slow tests)
-pytest -m "not slow and not full_pipeline"
-
-# With coverage report
-pytest -m "not slow and not full_pipeline" --cov=src --cov-report=term-missing
-```
-
-## Useful Options
+<details>
+<summary><h2>Useful Options</h2></summary>
 
 ```bash
 # Stop on first failure
@@ -65,63 +56,11 @@ pytest --durations=10
 pytest -k "motion_correction"
 ```
 
+</details>
+
 ## Test Data
 
 Test data is stored in `tests/data/`.
-
-## Writing Tests
-
-### Unit Test (Fast)
-
-```python
-import pytest
-
-@pytest.mark.unit
-def test_parse_bids_filename():
-    """Test BIDS filename parsing."""
-    filename = "sub-01_task-rest_bold.nii.gz"
-    result = parse_bids_filename(filename)
-
-    assert result["sub"] == "01"
-    assert result["task"] == "rest"
-```
-
-### Integration Test (Uses Real Data)
-
-```python
-import pytest
-
-@pytest.mark.integration
-def test_motion_correction(sample_bold, temp_dir):
-    """Test motion correction with real data."""
-    output = temp_dir / "corrected.nii.gz"
-
-    motion_correct(sample_bold, output)
-
-    assert output.exists()
-    img = nib.load(output)
-    assert img.shape[3] == 50  # Same number of volumes
-```
-
-## Available Fixtures
-
-```python
-# Mock data (fast, for unit tests)
-def test_with_mock_data(mock_bold_image):
-    # Uses synthetic 10x10x10x5 volume
-    pass
-
-# Real data (for integration tests)
-def test_with_real_data(sample_bold):
-    # Uses actual 50-volume BOLD scan
-    pass
-
-# Temporary directory
-def test_with_temp_dir(temp_dir):
-    # Cleaned up automatically after test
-    output = temp_dir / "result.nii.gz"
-    pass
-```
 
 ## Coverage Requirements
 
