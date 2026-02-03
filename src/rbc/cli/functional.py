@@ -1,4 +1,5 @@
-"""Functional preprocessing.
+"""Functional preprocessing CLI.
 
-This module handles CLI for functional preprocessing workflows.
+Command-line interface for functional preprocessing workflows.
+Requires anatomical preprocessing to have been run first.
 """

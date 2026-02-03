@@ -1,4 +1,5 @@
 """Longitudinal CLI.
 
-This module handles the longitudinal CLI.
+Command-line interface for longitudinal workflows. Creates within-subject
+templates and processes multiple sessions.
 """

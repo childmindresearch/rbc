@@ -1,4 +1,5 @@
-"""Anatomical preprocessing.
+"""Anatomical preprocessing CLI.
 
-This module handles CLI for anatomical preprocessing workflows.
+Command-line interface for anatomical preprocessing workflows.
+Calls into rbc.workflows.anatomical.
 """

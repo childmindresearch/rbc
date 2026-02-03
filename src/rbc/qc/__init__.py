@@ -1,11 +1,8 @@
 """Quality control.
 
-This module defines quality control metrics for RBC datasets,
-including:
+This module defines quality control metrics for RBC datasets.
 
-- XCP-style quality control outputs
-- Motion-related QC metrics
-- DVARS and motion–DVARS correlation measures
-
-All metrics are evaluated using RBC-recommended thresholds.
+Computes framewise displacement (FD), DVARS, motion-DVARS correlation, and
+tSNR. Metrics are evaluated against RBC-recommended thresholds from Shafiei
+et al. (2024). Outputs follow XCP-style formatting.
 """

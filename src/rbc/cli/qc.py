@@ -1,4 +1,5 @@
 """Quality control CLI.
 
-This module handles CLI for QC metrics.
+Command-line interface for computing QC metrics. Outputs reports with
+pass/fail flags based on RBC thresholds.
 """
