@@ -35,7 +35,7 @@ anat_reorient = afni.Resample(orientation='RPI', outputtype='NIFTI_GZ')
 3dresample -orient RPI -prefix output.nii.gz -input input.nii.gz
 ```
 
-**Outputs**: 
+**Outputs**:
 - `desc-reorient_T1w` (reoriented T1w)
 
 ---
@@ -549,7 +549,7 @@ Same as above but replace GlobalSignal with:
 **Mask Erosion** (before regressor extraction):
 ```yaml
 CSF: erode to 90% of original volume (proportion-based)
-WM: erode to 60% of original volume  
+WM: erode to 60% of original volume
 Brain: erode by 30mm
 ```
 
@@ -648,12 +648,12 @@ def compute_reho(in_file, mask_file, cluster_size=27):
     # Load data
     data = nib.load(in_file).get_fdata()  # (x, y, z, t)
     mask = nib.load(mask_file).get_fdata()
-    
+
     # For each voxel in mask:
     #   1. Get neighbors
     #   2. Rank each voxel's timeseries
     #   3. Compute KCC across neighbors
-    
+
     # KCC formula:
     # W = 12 * S / (K^2 * (N^3 - N))
     # where S = sum of squared deviations of rank sums
@@ -719,15 +719,15 @@ import numpy as np
 def extract_timeseries(func_file, atlas_file):
     func = nib.load(func_file).get_fdata()  # (x, y, z, t)
     atlas = nib.load(atlas_file).get_fdata()  # (x, y, z)
-    
+
     labels = np.unique(atlas[atlas > 0])
     timeseries = []
-    
+
     for label in labels:
         mask = atlas == label
         ts = func[mask].mean(axis=0)  # mean across voxels
         timeseries.append(ts)
-    
+
     return np.array(timeseries)  # (n_rois, n_timepoints)
 ```
 
