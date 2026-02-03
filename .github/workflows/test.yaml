@@ -29,9 +29,10 @@ jobs:
       uses: ./.github/actions/setup-venv
     - name: Run quick tests
       id: run-quick-tests
+      shell: bash
       run: >
         uv run pytest \
-          -m "not slow and not full_pipeline"
+          -m "not slow and not full_pipeline" \
           --junitxml=pytest-quick.xml \
           --cov=src tests \
           --log-level=DEBUG \
@@ -39,6 +40,7 @@ jobs:
 
     - name: Run slow tests (manual trigger)
       if: github.event_name == 'workflow_dispatch'
+      shell: bash
       run: >
         uv run pytest \
           -m "slow and not full_pipeline" \
@@ -49,6 +51,7 @@ jobs:
 
     - name: Run full pipeline tests (manual trigger)
       if: github.event_name == 'workflow_dispatch' && inputs.e2e == true
+      shell: bash
       run: >
         uv run pytest \
           -m "full_pipeline" \
@@ -58,12 +61,12 @@ jobs:
           --verbose
 
     - name: Generate coverage report
+      shell: bash
       run: >
         uv run pytest \
           --cov-report=term-missing:skip-covered \
           --cov-report=xml:coverage.xml \
-          --cov=src \
-          --cov-report-only
+          --cov=src
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
