@@ -58,7 +58,6 @@ jobs:
           --verbose
 
     - name: Generate coverage report
-      if: always()
       run: >
         uv run pytest \
           --cov-report=term-missing:skip-covered \
@@ -67,7 +66,6 @@ jobs:
           --cov-report-only
 
     - name: Upload coverage to Codecov
-      if: always()
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
