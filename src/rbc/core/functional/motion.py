@@ -18,10 +18,9 @@ def generate_motion_reference(
         output_fname: Name of output file.
     """
 
-    #index of the middle volume
     total_vols = afni.v_3dinfo(
-    dataset=[in_file], 
-    nv=True
+        dataset=[in_file], 
+        nv=True
     )
     
     mid_vol = (int(total_vols.info[0])) // 2
@@ -34,32 +33,6 @@ def generate_motion_reference(
         expression="a",
         prefix=output_fname,
     )
-
-
-# def motion_correction(
-#         in_file: Path, ref_file: Path, outputfname: str
-# ) -> SimpleNamespace:
-#     """Estimate and correct head motion using FSL mcflirt.
-
-#     Args:
-#         in_file: Path to input BOLD timeseries to correct.
-#         ref_file: Path to reference image.
-#         outputfname: Name of output file.
-#     """
-#     res = fsl.mcflirt(
-#         in_file=in_file,
-#         ref_file=ref_file,
-#         save_mats=True,
-#         save_plots=True, 
-#         outfile = outputfname   
-#     )
-
-#     return SimpleNamespace(
-#         out_file = res.outfile,
-#         mat_files = res.par_file,
-#         mat_file = res.mat_file,
-#     )
-
 
 
 
