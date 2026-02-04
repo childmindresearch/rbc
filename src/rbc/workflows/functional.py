@@ -9,6 +9,7 @@ from rbc.core.common import reorient
 from rbc.core.functional import truncate_trs
 from rbc.core.utils import get_base_entities, rename
 
+
 def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
     """Workflow for preprocessing functional data.
     
@@ -20,6 +21,7 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
 
     bids_entities = get_base_entities(in_bold)
     bids = partial(niwrap_helper.bids_path, **bids_entities)
+    
 
     #reorient bold to rpi
     reoriented_bold = reorient(
