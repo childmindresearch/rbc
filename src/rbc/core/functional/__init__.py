@@ -8,5 +8,6 @@ must be corrected before analysis.
 """
 
 from .initialization import truncate_trs, scale
+from .motion import generate_motion_reference
 
-__all__ = ["truncate_trs", "scale"]
+__all__ = ["truncate_trs", "scale", "generate_motion_reference"]

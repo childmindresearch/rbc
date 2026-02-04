@@ -22,25 +22,23 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
     bids_entities = get_base_entities(in_bold)
     bids = partial(niwrap_helper.bids_path, **bids_entities)
     
-
-    #reorient bold to rpi
     reoriented_bold = reorient(
-        in_file=in_bold,
-        output_fname=str(bids(desc="reorient", suffix="bold", ext=".nii.gz")),
+            in_file=in_bold,
+            output_fname="reorient_bold.nii.gz" 
     )
 
-    #truncate initial TRs
     truncated_bold = truncate_trs(
-        in_file=reoriented_bold.out_file,
-        output_prefix=str(bids(suffix="bold")),
-        start_tr=start_tr,
-    )
+            in_file=reoriented_bold.out_file,
+            output_fname="bold.nii.gz",
+            start_tr=start_tr
+        )  
 
     # Prep files to save
     outputs = [
-        (reoriented_bold.out_file, "reorient", "bold"),
-        (truncated_bold.out_file, None, "bold"),
-    ]
+        (reoriented_bold.root / "reorient_bold.nii.gz", "reorient", "bold"),
+        (truncated_bold.root / "bold.nii.gz", None, "bold"),
+    ]   
+
 
     renamed_files = [
         rename(out_file, bids(desc=desc, suffix=suffix, ext=".nii.gz"))
