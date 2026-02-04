@@ -6,8 +6,9 @@ from pathlib import Path
 import niwrap_helper
 
 from rbc.core.common import reorient
-from rbc.core.functional import truncate_trs
+from rbc.core.functional import truncate_trs, generate_motion_reference
 from rbc.core.utils import get_base_entities, rename
+
 
 
 def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
@@ -32,11 +33,17 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
             output_fname="bold.nii.gz",
             start_tr=start_tr
         )  
+    
+    motion_reference = generate_motion_reference(
+        in_file=truncated_bold.output_file,
+        output_fname="sbref.nii.gz"
+    )
 
     # Prep files to save
     outputs = [
         (reoriented_bold.root / "reorient_bold.nii.gz", "reorient", "bold"),
         (truncated_bold.root / "bold.nii.gz", None, "bold"),
+        (motion_reference.root / "sbref.nii.gz", None, "sbref"),
     ]   
 
 
