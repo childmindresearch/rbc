@@ -34,5 +34,22 @@ def generate_motion_reference(
         prefix=output_fname,
     )
 
+def motion_correction(
+        in_file: Path, ref_file: Path, output_prefix: str
+) -> fsl.McflirtOutputs:
+    """Estimate and correct head motion using FSL mcflirt.
 
-
+    Args:
+        in_file: Path to input BOLD timeseries to correct.
+        ref_file: Path to reference volume for motion correction.
+        output_prefix: Prefix of output file.
+    """
+    return fsl.mcflirt(
+        in_file=in_file,
+        ref_file=ref_file,
+        save_mats=True,
+        save_plots=True,
+        save_rmsrel=True,
+        save_rmsabs=True,
+        out_file=output_prefix,
+    )
