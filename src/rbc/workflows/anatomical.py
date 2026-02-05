@@ -5,7 +5,11 @@ from pathlib import Path
 
 import niwrap_helper
 
-from rbc.core.anatomical import ants_brain_extraction, ants_registration
+from rbc.core.anatomical import (
+    ants_brain_extraction,
+    ants_registration,
+    fsl_tissue_segmentation,
+)
 from rbc.core.common import reorient
 from rbc.core.utils import get_base_entities, rename
 
@@ -30,21 +34,24 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
     extracted_t1w = ants_brain_extraction(
         in_file=reoriented_t1w.out_file, output_prefix=str(bids())
     )
+    tissue_masks = fsl_tissue_segmentation(
+        in_file=extracted_t1w.brain_extracted_image, output_prefix=str(bids())
+    )
     transforms = ants_registration(
-        extracted_t1w.brain_extracted_image, output_prefix=str(bids())
+        in_file=extracted_t1w.brain_extracted_image, output_prefix=str(bids())
     )
 
     # Prep files to save
-    extracted_t1w_outputs = [
+    t1w_outputs = [
         (extracted_t1w.brain_extracted_image, "brain", "T1w"),
         (extracted_t1w.brain_mask, "T1w", "mask"),
-        (extracted_t1w.csf_segmentation, "csf", "dseg"),
-        (extracted_t1w.wm_segmentation, "wm", "dseg"),
-        (extracted_t1w.gm_segmentation, "gm", "dseg"),
+        (tissue_masks.csf, "csf", "mask"),
+        (tissue_masks.gm, "gm", "mask"),
+        (tissue_masks.wm, "wm", "mask"),
     ]
     renamed_files = [
         rename(out_file, bids(desc=desc, suffix=suffix, ext=".nii.gz"))
-        for out_file, desc, suffix in extracted_t1w_outputs
+        for out_file, desc, suffix in t1w_outputs
     ]
     niwrap_helper.save(
         [*renamed_files, transforms.forward, transforms.inverse],

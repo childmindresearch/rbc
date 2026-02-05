@@ -9,6 +9,6 @@ other modalities (e.g. functional) and identify different tissue types
 """
 
 from .registration import ants_registration
-from .skull_stripping import ants_brain_extraction
+from .segmentation import ants_brain_extraction, fsl_tissue_segmentation
 
-__all__ = ["ants_brain_extraction", "ants_registration"]
+__all__ = ["ants_brain_extraction", "ants_registration", "fsl_tissue_segmentation"]
