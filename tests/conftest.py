@@ -1,19 +1,54 @@
 """Shared fixtures for tests data."""
 
+import logging
 from collections.abc import Sequence
 from pathlib import Path
 from types import SimpleNamespace
 
+import niwrap
 import pytest
 
 
 def pytest_collection_modifyitems(items: Sequence[pytest.Item]) -> None:
     """Apply appropriate markers based on test location."""
+    markers = {"unit", "integration", "full_pipeline"}
+
     for item in items:
         test_path = Path(item.fspath)
+        for marker in markers & set(test_path.parts):
+            item.add_marker(getattr(pytest.mark, marker))
 
-        if "unit" in test_path.parts:
-            item.add_marker(pytest.mark.unit)
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add option(s) to pytest parser."""
+    parser.addoption(
+        "--runner",
+        action="store",
+        default="docker",
+        help="Styx runner type to use: ['local', 'docker', 'singularity']",
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def niwrap_runner(
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> niwrap.Runner:
+    """Globally set test niwrap runner."""
+    # Set up niwrap runner
+    match request.config.getoption("--runner").lower():
+        case "docker":
+            niwrap.use_docker()
+        case "singularity":
+            niwrap.use_singularity()
+        case _:
+            niwrap.use_local()
+    runner = niwrap.get_global_runner()
+    runner.data_dir = tmp_path_factory.mktemp("styx_tmp")
+    # Set up logging for debugging
+    logger = logging.getLogger(runner.logger_name)
+    logger.setLevel(logging.DEBUG)
+    return runner
 
 
 @pytest.fixture
