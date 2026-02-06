@@ -14,6 +14,9 @@ def generate_motion_reference(
     Args:
         in_file: Path to input BOLD timeseries.
         output_fname: Name of output file.
+
+    Returns:
+        AFNI 3dcalc output object.
     """
 
     total_vols = afni.v_3dinfo(
@@ -33,14 +36,17 @@ def generate_motion_reference(
     )
 
 def motion_correction(
-        in_file: Path, ref_file: Path, output_prefix: str
+    in_file: Path, ref_file: Path, output_prefix: str
 ) -> SimpleNamespace:
     """Estimate and correct head motion using FSL mcflirt.
 
     Args:
         in_file: Path to input BOLD timeseries to correct.
         ref_file: Path to reference volume for motion correction.
-        output_fname: Name of output file.
+        output_prefix: Prefix for output files.
+
+    Returns:
+        Namespace with paths to motion corrected BOLD, motion parameters, displacement files, and directory to transformation matrices.
     """
 
     mc_result = fsl.mcflirt(
@@ -50,7 +56,7 @@ def motion_correction(
         save_plots=True,
         save_rmsrel=True,
         save_rmsabs=True,
-        out_file=f"{output_prefix}_mc_bold",
+        out_file=output_prefix,
     )
 
     motion_mat_dir = [d for d in Path(mc_result.root).iterdir() if d.is_dir() and d.suffix == ".mat"]
