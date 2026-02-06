@@ -22,13 +22,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
     - uses: actions/checkout@v6
     - name: Setup venv
       uses: ./.github/actions/setup-venv
-    - name: Run quick tests
-      id: run-quick-tests
+
+    - name: Run non-ubuntu quick tests
+      id: run-unit-tests
+      if: matrix.os != 'ubuntu-latest'
       shell: bash
       run: >
         uv run pytest \
@@ -37,15 +39,9 @@ jobs:
           --cov=src tests \
           --log-level=DEBUG \
           --verbose
-
-  unit-ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-    - name: Setup venv
-      uses: ./.github/actions/setup-venv
-    - name: Run quick tests
-      id: run-quick-tests
+    - name: Run ubuntu quick tests
+      id: run-quick-ubuntu-tests
+      if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: >
         uv run pytest \
@@ -57,7 +53,7 @@ jobs:
           --verbose
 
     - name: Run slow tests
-      if: github.event_name == 'workflow_dispatch'
+      if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch'
       shell: bash
       run: >
         uv run pytest \
@@ -69,7 +65,7 @@ jobs:
           --verbose
 
     - name: Run full pipeline tests
-      if: github.event_name == 'workflow_dispatch' && inputs.e2e == true
+      if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch' && inputs.e2e == true
       shell: bash
       run: >
         uv run pytest \
