@@ -17,6 +17,8 @@ docker run --rm -it \
 
 This mounts the BIDS dataset as read-only input and saves outputs and intermediates locally.
 
+**Note:** For proper comparison testing, use the same container version when setting up NiWrap.
+
 Clean up outputs:
 
 ```sh
