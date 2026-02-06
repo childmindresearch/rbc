@@ -38,7 +38,7 @@ def motion_correction(
         output_prefix: Prefix for output files.
 
     Returns:
-        Namespace with paths to BOLD motion correction outputs and transformation matrices.
+        Namespace with paths to BOLD motion corrected outputs and matrices.
     """
     mc_result = fsl.mcflirt(
         in_file=in_file,
