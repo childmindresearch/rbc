@@ -1,7 +1,7 @@
 """Shared fixtures for tests data."""
 
 import logging
-from collections.abc import Generator, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -33,7 +33,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def niwrap_runner(
     request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[niwrap.Runner, None, None]:
+) -> niwrap.Runner:
     """Globally set test niwrap runner."""
     # Set up niwrap runner
     match request.config.getoption("--runner").lower():
@@ -48,7 +48,7 @@ def niwrap_runner(
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)
-    yield runner
+    return runner
 
 
 @pytest.fixture
