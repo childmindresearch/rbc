@@ -33,6 +33,7 @@ jobs:
       run: >
         uv run pytest \
           -m "not slow and not full_pipeline" \
+          --runner=docker \
           --junitxml=pytest-quick.xml \
           --cov=src tests \
           --log-level=DEBUG \
@@ -44,6 +45,7 @@ jobs:
       run: >
         uv run pytest \
           -m "slow and not full_pipeline" \
+          --runner=docker \
           --junitxml=pytest-slow.xml \
           --cov=src tests \
           --cov-append \
@@ -55,6 +57,7 @@ jobs:
       run: >
         uv run pytest \
           -m "full_pipeline" \
+          --runner=docker \
           --junitxml=pytest-full.xml \
           --cov=src tests \
           --cov-append \
