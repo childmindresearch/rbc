@@ -2,6 +2,11 @@
 
 Quick guide for running tests in this project.
 
+> [!NOTE]
+> Integration and full pipeline tests likely requires specific
+> neuroimaging tools that can be called with `niwrap`. To perform
+> these tests, also pass the `--runner` flag to `pytest`.
+
 ## Quick Start
 
 ```bash
@@ -12,10 +17,10 @@ pip install -e ".[dev]"
 pytest -m unit
 
 # Run all tests (except slow ones)
-pytest -m "not slow and not full_pipeline"
+pytest -m "not slow and not full_pipeline" --runner <local|docker|singularity>
 
 # Run everything
-pytest
+pytest --runner <local|docker|singularity>
 ```
 
 ## Test Categories
