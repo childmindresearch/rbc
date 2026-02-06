@@ -20,9 +20,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.68389831"
-     inkscape:cx="371.40025"
-     inkscape:cy="394.06444"
+     inkscape:zoom="0.96717827"
+     inkscape:cx="500.42481"
+     inkscape:cy="111.14807"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
      inkscape:window-x="1912"
@@ -110,10 +110,10 @@
     <!-- Shadows -->
     <filter
        id="card"
-       x="-0.78060349"
-       y="-2.0508484"
-       width="2.561207"
-       height="5.5289569">
+       x="-inf"
+       y="-inf"
+       width="inf"
+       height="inf">
       <feGaussianBlur
          in="SourceAlpha"
          stdDeviation="3"
@@ -179,7 +179,7 @@
        y1="116.54369"
        x2="49.337719"
        y2="491.51036"
-       gradientTransform="matrix(1.0134234,0,0,0.98675438,0,8)"
+       gradientTransform="matrix(1.0134234,0,0,0.98675438,-1.3196904,8)"
        gradientUnits="userSpaceOnUse">
       <stop
          offset="0%"
@@ -196,7 +196,7 @@
        y1="116.54369"
        x2="522.97982"
        y2="491.51036"
-       gradientTransform="matrix(1.0134234,0,0,0.98675438,0,8)"
+       gradientTransform="matrix(1.0134234,0,0,0.98675438,-1.3196904,8)"
        gradientUnits="userSpaceOnUse">
       <stop
          offset="0%"
@@ -213,7 +213,7 @@
        y1="789.4915"
        x2="116.83677"
        y2="1155.4582"
-       gradientTransform="matrix(1.5406109,0,0,0.64909316,0,8)"
+       gradientTransform="matrix(1.5406109,0,0,0.64909316,-1.3196904,8)"
        gradientUnits="userSpaceOnUse">
       <stop
          offset="0%"
@@ -688,48 +688,354 @@
          fill="#7c3aed"
          id="rect54" />
     </g>
+    <filter
+       id="card-0"
+       x="-0.18189698"
+       y="-0.18189698"
+       width="1.363794"
+       height="1.4054606">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="2.561788"
+         id="feGaussianBlur1-9" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset1-4" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood1-8" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite1-8" />
+      <feMerge
+         id="feMerge2-2">
+        <feMergeNode
+           id="feMergeNode1-4" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode2-5" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter4">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur2-5" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset2-1" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood2-7" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite2-1" />
+      <feMerge
+         id="feMerge4-1">
+        <feMergeNode
+           id="feMergeNode3-5" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode4-2" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter6">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur4" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset4" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood4" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite4" />
+      <feMerge
+         id="feMerge6">
+        <feMergeNode
+           id="feMergeNode5" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode6" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter8">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur6" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset6" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood6" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite6" />
+      <feMerge
+         id="feMerge8">
+        <feMergeNode
+           id="feMergeNode7" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode8" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter10">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur8" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset8" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood8" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite8" />
+      <feMerge
+         id="feMerge10">
+        <feMergeNode
+           id="feMergeNode9" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode10" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter14"
+       x="-inf"
+       y="-0.0099060575"
+       width="inf"
+       height="1.0614788">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="0.14859087"
+         id="feGaussianBlur13" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset13" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood13" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite13" />
+      <feMerge
+         id="feMerge14">
+        <feMergeNode
+           id="feMergeNode13" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode14" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter14-2"
+       y="-0.0099060575"
+       height="1.0614788"
+       x="-inf"
+       width="inf">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="0.14859087"
+         id="feGaussianBlur13-2" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset13-1" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood13-6" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite13-8" />
+      <feMerge
+         id="feMerge14-5">
+        <feMergeNode
+           id="feMergeNode13-7" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode14-6" />
+      </feMerge>
+    </filter>
+    <filter
+       id="card-0-2"
+       y="-0.17078587"
+       height="1.3832384"
+       x="-inf"
+       width="inf">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="2.561788"
+         id="feGaussianBlur1-9-7" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset1-4-9" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood1-8-5" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite1-8-4" />
+      <feMerge
+         id="feMerge2-2-3">
+        <feMergeNode
+           id="feMergeNode1-4-1" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode2-5-2" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter14-3"
+       y="-0.0099060575"
+       height="1.0614788"
+       x="-inf"
+       width="inf">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="0.14859087"
+         id="feGaussianBlur13-3" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset13-4" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood13-1" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite13-1" />
+      <feMerge
+         id="feMerge14-3">
+        <feMergeNode
+           id="feMergeNode13-8" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode14-7" />
+      </feMerge>
+    </filter>
+    <filter
+       id="filter14-2-4"
+       y="-0.0099060575"
+       height="1.0614788"
+       x="-inf"
+       width="inf">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="0.14859087"
+         id="feGaussianBlur13-2-2" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset13-1-7" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood13-6-7" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite13-8-9" />
+      <feMerge
+         id="feMerge14-5-3">
+        <feMergeNode
+           id="feMergeNode13-7-1" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode14-6-9" />
+      </feMerge>
+    </filter>
   </defs>
   <!-- Background phase regions -->
   <path
-     d="m 66,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 H 66 Q 50,493 50,477 V 139 q 0,-16 16,-16 z"
+     d="m 64.68031,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 h -348 q -16,0 -16,-16 V 139 q 0,-16 16,-16 z"
      fill="url(#bg-anat)"
      id="path54"
      style="fill:url(#bg-anat)" />
   <path
-     d="m 546,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 H 546 q -16,0 -16,-16 V 139 q 0,-16 16,-16 z"
+     d="m 544.68031,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 h -348 q -16,0 -16,-16 V 139 q 0,-16 16,-16 z"
      fill="url(#bg-func)"
      id="path55"
      style="fill:url(#bg-func)" />
   <path
-     d="m 196,520.45353 h 531.81226 c 10.66666,0 16,5.33333 16,16 V 742 c 0,10.66667 -5.33334,16 -16,16 H 196 c -10.66667,0 -16,-5.33333 -16,-16 V 536.45353 c 0,-10.66667 5.33333,-16 16,-16 z"
+     d="m 194.68031,520.45353 h 531.81226 c 10.66666,0 16,5.33333 16,16 V 742 c 0,10.66667 -5.33334,16 -16,16 H 194.68031 c -10.66667,0 -16,-5.33333 -16,-16 V 536.45353 c 0,-10.66667 5.33333,-16 16,-16 z"
      fill="url(#bg-converge)"
      id="path56"
      sodipodi:nodetypes="sssssssss"
      style="fill:url(#bg-converge)" />
   <!-- Title -->
-  <text
-     x="480"
-     y="46"
-     text-anchor="middle"
-     font-family="Arial, sans-serif"
-     font-size="20"
-     font-weight="bold"
-     fill="#0f172a"
-     id="text56">
-    RBC Processing Pipeline
-  </text>
-  <text
-     x="480"
-     y="68"
-     text-anchor="middle"
-     font-family="Arial, sans-serif"
-     font-size="12px"
-     fill="#64748b"
-     id="text57">Anatomical &amp; functional preprocessing · Single-step resampling · Nuisance regression · Metrics</text>
+  <g
+     id="g20"
+     transform="translate(0.24023438)">
+    <text
+       x="480"
+       y="46"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="20px"
+       font-weight="bold"
+       fill="#0f172a"
+       id="text56">RBC Processing Pipeline</text>
+    <text
+       x="480"
+       y="68"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="12px"
+       fill="#64748b"
+       id="text57">Anatomical &amp; functional preprocessing · Single-step resampling · Nuisance regression · Metrics</text>
+  </g>
   <!-- INPUTS -->
   <g
      id="g142"
-     transform="translate(-9.1387853,8)">
+     transform="translate(-10.458476,8)">
     <path
        d="m 180.73111,85 h 136.81536 c 6.66667,0 10,3.333333 10,10 v 20 c 0,6.66667 -3.33333,10 -10,10 H 180.73111 c -6.66667,0 -10,-3.33333 -10,-10 V 95 c 0,-6.666667 3.33333,-10 10,-10 z"
        fill="#ffffff"
@@ -755,7 +1061,7 @@
   </g>
   <g
      id="g143"
-     transform="translate(-12.063197,7.2688971)">
+     transform="translate(-13.382887,7.2688971)">
     <path
        d="m 660,85 h 143.39529 c 6.66667,0 10,3.333333 10,10 v 20 c 0,6.66667 -3.33333,10 -10,10 H 660 c -6.66667,0 -10,-3.33333 -10,-10 V 95 c 0,-6.666667 3.33333,-10 10,-10 z"
        fill="#ffffff"
@@ -785,8 +1091,8 @@
   </g>
   <!-- ANATOMICAL STREAM -->
   <text
-     x="240"
-     y="153"
+     x="92.459747"
+     y="142.03346"
      text-anchor="middle"
      font-family="Arial, sans-serif"
      font-size="10.5px"
@@ -797,7 +1103,7 @@
   <g
      id="anat-extract"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 100,160 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -834,7 +1140,7 @@
   <g
      id="anat-segment"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 100,240 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -868,48 +1174,48 @@
        fill="#64748b"
        id="text66">Probability maps thresholded at 0.95</text>
   </g>
-  <g
-     id="anat-mni"
-     filter="url(#card)"
-     transform="translate(0,8)">
-    <path
-       d="m 100,320 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
-       fill="#ffffff"
-       stroke="#bfdbfe"
-       stroke-width="1"
-       id="path66" />
-    <use
-       href="#brain-mni"
-       transform="matrix(0.85,0,0,0.85,100,326)"
-       id="use66" />
-    <text
-       x="146"
-       y="344"
-       font-family="Arial, sans-serif"
-       font-size="13.5px"
-       font-weight="600"
-       fill="#1e293b"
-       id="text67">Register to MNI-152</text>
-    <text
-       x="146"
-       y="358"
-       font-family="Arial, sans-serif"
-       font-size="10px"
-       fill="#64748b"
-       id="text68">ANTs · Rigid → Affine → SyN</text>
-    <text
-       x="146"
-       y="370"
-       font-family="Arial, sans-serif"
-       font-size="10px"
-       fill="#64748b"
-       id="text69">LanczosWindowedSinc interpolation</text>
-  </g>
+  <path
+     d="m 98.68031,328 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 h -280 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#bfdbfe"
+     stroke-width="1"
+     id="path66"
+     style="filter:url(#card)" />
+  <use
+     href="#brain-mni"
+     transform="matrix(0.85,0,0,0.85,98.68031,334)"
+     id="use66"
+     style="filter:url(#card)" />
+  <text
+     x="144.68031"
+     y="352"
+     font-family="Arial, sans-serif"
+     font-size="13.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text67"
+     style="filter:url(#card)">Register to MNI-152-NLin6Asym</text>
+  <text
+     x="144.68031"
+     y="366"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text68"
+     style="filter:url(#card)">ANTs · Rigid → Affine → SyN</text>
+  <text
+     x="144.68031"
+     y="378"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text69"
+     style="filter:url(#card)">LanczosWindowedSinc interpolation</text>
   <!-- Anatomical arrows -->
   <line
-     x1="240"
+     x1="238.68031"
      y1="133"
-     x2="240"
+     x2="238.68031"
      y2="168"
      fill="none"
      stroke="#93c5fd"
@@ -918,9 +1224,9 @@
      marker-end="url(#arr-blue)"
      id="line69" />
   <line
-     x1="240"
+     x1="238.68031"
      y1="230"
-     x2="240"
+     x2="238.68031"
      y2="248"
      fill="none"
      stroke="#93c5fd"
@@ -929,9 +1235,9 @@
      marker-end="url(#arr-blue)"
      id="line70" />
   <line
-     x1="240"
+     x1="238.68031"
      y1="310"
-     x2="240"
+     x2="238.68031"
      y2="328"
      fill="none"
      stroke="#93c5fd"
@@ -941,8 +1247,8 @@
      id="line71" />
   <!-- FUNCTIONAL STREAM -->
   <text
-     x="720"
-     y="153"
+     x="573.19086"
+     y="142.03346"
      text-anchor="middle"
      font-family="Arial, sans-serif"
      font-size="10.5px"
@@ -953,7 +1259,7 @@
   <g
      id="func-motion"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 580,160 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -991,65 +1297,72 @@
        fill="#64748b"
        id="text74">Reference: middle volume</text>
   </g>
+  <path
+     d="m 578.68031,248 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 h -280 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#a7f3d0"
+     stroke-width="1"
+     id="path74"
+     style="filter:url(#card)" />
   <g
-     id="func-despike"
-     filter="url(#card)"
-     transform="translate(0,8)">
-    <path
-       d="m 580,240 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
-       fill="#ffffff"
-       stroke="#a7f3d0"
-       stroke-width="1"
-       id="path74" />
+     id="g18"
+     transform="translate(1.2651485,2.5848389)">
     <g
-       transform="translate(580,251)"
-       id="g74">
+       transform="translate(580,259)"
+       id="g74"
+       style="filter:url(#card)">
       <use
          href="#wave-noisy"
          transform="scale(0.5)"
          id="use74" />
     </g>
     <text
-       x="604"
-       y="260"
+       x="586.08795"
+       y="280.61151"
        fill="#94a3b8"
        font-size="9px"
-       id="text75">→</text>
+       id="text75"
+       style="filter:url(#card)"
+       transform="rotate(90,590.12881,278.6159)">→</text>
     <g
-       transform="translate(580,265)"
-       id="g75">
+       transform="translate(580,283.60099)"
+       id="g75"
+       style="filter:url(#card)">
       <use
          href="#wave-clean"
          transform="scale(0.5)"
          id="use75" />
     </g>
-    <text
-       x="620"
-       y="264"
-       font-family="Arial, sans-serif"
-       font-size="13.5px"
-       font-weight="600"
-       fill="#1e293b"
-       id="text76">Despike + Slice Timing</text>
-    <text
-       x="620"
-       y="278"
-       font-family="Arial, sans-serif"
-       font-size="10px"
-       fill="#64748b"
-       id="text77">AFNI 3dDespike · 3dTshift</text>
-    <text
-       x="620"
-       y="290"
-       font-family="Arial, sans-serif"
-       font-size="10px"
-       fill="#64748b"
-       id="text78">Timing from BIDS SliceTiming metadata</text>
   </g>
+  <text
+     x="618.6803"
+     y="272"
+     font-family="Arial, sans-serif"
+     font-size="13.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text76"
+     style="filter:url(#card)">Despike + Slice Timing</text>
+  <text
+     x="618.6803"
+     y="286"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text77"
+     style="filter:url(#card)">AFNI 3dDespike · 3dTshift</text>
+  <text
+     x="618.6803"
+     y="298"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text78"
+     style="filter:url(#card)">Timing from BIDS SliceTiming metadata</text>
   <g
      id="func-mask"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 580,320 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -1102,9 +1415,9 @@
   </g>
   <!-- Functional arrows -->
   <line
-     x1="720"
+     x1="718.6803"
      y1="133"
-     x2="720"
+     x2="718.6803"
      y2="168"
      fill="none"
      stroke="#6ee7b7"
@@ -1113,9 +1426,9 @@
      marker-end="url(#arr-green)"
      id="line81" />
   <line
-     x1="720"
+     x1="718.6803"
      y1="230"
-     x2="720"
+     x2="718.6803"
      y2="248"
      fill="none"
      stroke="#6ee7b7"
@@ -1124,9 +1437,9 @@
      marker-end="url(#arr-green)"
      id="line82" />
   <line
-     x1="720"
+     x1="718.6803"
      y1="310"
-     x2="720"
+     x2="718.6803"
      y2="328"
      fill="none"
      stroke="#6ee7b7"
@@ -1136,7 +1449,7 @@
      id="line83" />
   <!-- Cross-stream dependencies -->
   <path
-     d="m 88.785626,290.69765 c -3.958129,-0.25849 -11.19671,13.45606 -10.848313,28.17368 0.670782,28.33636 -0.662127,84.9133 0.52483,147.90212 2.067872,109.73674 136.942547,111.93624 190.599367,112.05994"
+     d="m 87.465936,290.69765 c -3.958129,-0.25849 -11.19671,13.45606 -10.848313,28.17368 0.670782,28.33636 -0.662127,84.9133 0.52483,147.90212 C 79.210325,576.51019 214.085,578.70969 267.74182,578.83339"
      fill="none"
      stroke="#a78bfa"
      stroke-width="1.6"
@@ -1153,16 +1466,16 @@
      font-size="8px"
      fill="#a78bfa"
      opacity="0.8"
-     transform="rotate(-90,-1.4832714,-2.2143742)"
+     transform="rotate(-90,-2.1431166,-1.554529)"
      id="text83"
-     style="white-space:pre;inline-size:54.5639"
+     style="white-space:pre;inline-size:54.5639;display:inline"
      xml:space="preserve"><tspan
        x="-458.61084"
        y="73.3601"
-       id="tspan1">WM boundary</tspan></text>
+       id="tspan2">WM boundary</tspan></text>
   <text
      x="-605.14087"
-     y="34.458263"
+     y="33.138573"
      font-family="Arial, sans-serif"
      font-size="8px"
      fill="#a78bfa"
@@ -1171,7 +1484,7 @@
      id="text84">tissue masks</text>
   <text
      x="-428"
-     y="898"
+     y="896.6803"
      font-family="Arial, sans-serif"
      font-size="8px"
      fill="#a78bfa"
@@ -1180,7 +1493,7 @@
      id="text85">motion params</text>
   <!-- CONVERGENCE -->
   <text
-     x="276.75342"
+     x="275.43372"
      y="537.50433"
      text-anchor="middle"
      font-family="Arial, sans-serif"
@@ -1190,7 +1503,7 @@
      style="letter-spacing:0.1em;text-transform:uppercase"
      id="text86">Coregistration · Resampling</text>
   <path
-     d="m 240,390 v 78 c 0,20 13.33333,30 40,30 h 198.01735"
+     d="m 238.68031,390 v 78 c 0,20 13.33333,30 40,30 h 198.01735"
      fill="none"
      stroke="#93c5fd"
      stroke-width="1.6"
@@ -1198,7 +1511,7 @@
      id="path86"
      sodipodi:nodetypes="cssc" />
   <path
-     d="m 720,390 v 78 c 0,20 -13.33333,30 -40,30 H 480.26022"
+     d="m 718.68031,390 v 78 c 0,20 -13.33333,30 -40,30 H 478.94053"
      fill="none"
      stroke="#6ee7b7"
      stroke-width="1.6"
@@ -1208,7 +1521,7 @@
   <g
      id="coreg"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 290,542 h 401.9008 c 6.66667,0 10,3.33333 10,10 v 36 c 0,6.66667 -3.33333,10 -10,10 H 290 c -6.66667,0 -10,-3.33333 -10,-10 v -36 c 0,-6.66667 3.33333,-10 10,-10 z"
        fill="#ffffff"
@@ -1252,85 +1565,50 @@
        fill="#64748b"
        id="text90">FSL FLIRT · 6 DOF · boundary-based registration with WM segment</text>
   </g>
-  <g
-     id="resample"
-     filter="url(#card)"
-     transform="translate(0,8)">
-    <path
-       d="m 290,614 h 401.71265 c 6.66666,0 10,3.33333 10,10 v 36 c 0,6.66667 -3.33334,10 -10,10 H 290 c -6.66667,0 -10,-3.33333 -10,-10 v -36 c 0,-6.66667 3.33333,-10 10,-10 z"
-       fill="#ffffff"
-       stroke="#c4b5fd"
-       stroke-width="1"
-       id="path90"
-       sodipodi:nodetypes="sssssssss" />
-    <g
-       transform="translate(292,622)"
-       id="g94">
-      <rect
-         x="2"
-         y="2"
-         width="36"
-         height="36"
-         fill="none"
-         stroke="#a78bfa"
-         stroke-width="0.8"
-         id="rect90" />
-      <line
-         x1="14"
-         y1="2"
-         x2="14"
-         y2="38"
-         stroke="#a78bfa"
-         stroke-width="0.5"
-         opacity="0.5"
-         id="line91" />
-      <line
-         x1="26"
-         y1="2"
-         x2="26"
-         y2="38"
-         stroke="#a78bfa"
-         stroke-width="0.5"
-         opacity="0.5"
-         id="line92" />
-      <line
-         x1="2"
-         y1="14"
-         x2="38"
-         y2="14"
-         stroke="#a78bfa"
-         stroke-width="0.5"
-         opacity="0.5"
-         id="line93" />
-      <line
-         x1="2"
-         y1="26"
-         x2="38"
-         y2="26"
-         stroke="#a78bfa"
-         stroke-width="0.5"
-         opacity="0.5"
-         id="line94" />
-    </g>
-    <text
-       x="342"
-       y="638"
-       font-family="Arial, sans-serif"
-       font-size="13.5px"
-       font-weight="600"
-       fill="#1e293b"
-       id="text94">Single-Step Resample → MNI 2 mm</text>
-    <text
-       x="342"
-       y="652"
-       font-family="Arial, sans-serif"
-       font-size="10px"
-       fill="#64748b"
-       id="text95">All transforms composed (motion + distortion + coreg + warp) · one interpolation</text>
-  </g>
+  <path
+     d="m 288.68031,622 h 401.71265 c 6.66666,0 10,3.33333 10,10 v 36 c 0,6.66667 -3.33334,10 -10,10 H 288.68031 c -6.66667,0 -10,-3.33333 -10,-10 v -36 c 0,-6.66667 3.33333,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#c4b5fd"
+     stroke-width="1"
+     id="path90"
+     sodipodi:nodetypes="sssssssss"
+     style="filter:url(#card)" />
+  <text
+     x="340.6803"
+     y="646"
+     font-family="Arial, sans-serif"
+     font-size="13.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text94"
+     style="filter:url(#card)">Single-Step Resample → 2 mm</text>
+  <text
+     x="340.6803"
+     y="660"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text95"
+     style="filter:url(#card)">All transforms composed (motion + distortion + coreg + warp) · one interpolation</text>
+  <path
+     id="line91"
+     style="opacity:0.5;stroke:#a78bfa;stroke-width:4.7;filter:url(#card)"
+     d="m 304.68031,632 v 36" />
+  <path
+     id="line92"
+     style="opacity:0.5;stroke:#a78bfa;stroke-width:4.7;filter:url(#card)"
+     d="m 316.68031,632 v 36" />
+  <path
+     id="line93"
+     style="opacity:0.5;stroke:#a78bfa;stroke-width:4.7;filter:url(#card)"
+     d="m 292.68031,644 h 36" />
+  <path
+     id="line94"
+     style="opacity:0.5;stroke:#a78bfa;stroke-width:4.7;filter:url(#card)"
+     d="m 292.68031,656 h 36" />
   <!-- DENOISING -->
   <text
-     x="259.93805"
+     x="258.61835"
      y="718"
      text-anchor="middle"
      font-family="Arial, sans-serif"
@@ -1340,7 +1618,7 @@
      style="letter-spacing:0.1em;text-transform:uppercase"
      id="text96">Nuisance Regression</text>
   <path
-     d="m 250,734 h 460 q 10,0 10,10 v 48 q 0,10 -10,10 H 250 q -10,0 -10,-10 v -48 q 0,-10 10,-10 z"
+     d="m 248.68031,734 h 460 q 10,0 10,10 v 48 q 0,10 -10,10 h -460 q -10,0 -10,-10 v -48 q 0,-10 10,-10 z"
      fill="#ffffff"
      stroke="#fca5a5"
      stroke-width="1"
@@ -1348,18 +1626,18 @@
      style="filter:url(#card)" />
   <use
      href="#wave-noisy"
-     transform="matrix(0.7,0,0,0.7,252.83032,758.60099)"
+     transform="matrix(0.7,0,0,0.7,251.51063,758.60099)"
      id="use96"
      style="filter:url(#card)" />
   <text
-     x="284.83032"
+     x="283.51062"
      y="770"
      fill="#94a3b8"
      font-size="10px"
      id="text97"
      style="filter:url(#card)">→</text>
   <g
-     transform="translate(298.83032,758.60099)"
+     transform="translate(297.51063,758.60099)"
      id="g97"
      style="filter:url(#card)">
     <use
@@ -1368,7 +1646,7 @@
        id="use97" />
   </g>
   <text
-     x="344"
+     x="342.6803"
      y="757"
      font-family="Arial, sans-serif"
      font-size="13.5px"
@@ -1377,7 +1655,7 @@
      id="text98"
      style="filter:url(#card)">Confound Removal + Bandpass Filtering</text>
   <text
-     x="344"
+     x="342.6803"
      y="772"
      font-family="Arial, sans-serif"
      font-size="10px"
@@ -1385,7 +1663,7 @@
      id="text99"
      style="filter:url(#card)">36-parameter or aCompCor regression · AFNI 3dTproject</text>
   <text
-     x="344"
+     x="342.6803"
      y="786"
      font-family="Arial, sans-serif"
      font-size="10px"
@@ -1393,7 +1671,7 @@
      id="text100"
      style="filter:url(#card)">Bandpass 0.01 – 0.1 Hz · template-space despiking (2nd pass)</text>
   <path
-     d="m 87.565376,270.1495 c -31.57308,0 -49.594283,20.18006 -49.427491,87.42004 0.265689,107.10905 -0.19773,240.14568 -0.39868,329.91391 -0.174468,77.93806 109.079745,85.34584 196.167725,85.93754"
+     d="m 86.245686,270.1495 c -31.57308,0 -49.594283,20.18006 -49.427491,87.42004 0.265689,107.10905 -0.19773,240.14568 -0.39868,329.91391 -0.174468,77.93806 109.079745,85.34584 196.167725,85.93754"
      fill="none"
      stroke="#a78bfa"
      stroke-width="1.6"
@@ -1405,7 +1683,7 @@
      sodipodi:nodetypes="cssc" />
   <!-- DERIVATIVES -->
   <text
-     x="452.94919"
+     x="451.62949"
      y="831.14368"
      text-anchor="middle"
      font-family="Arial, sans-serif"
@@ -1417,7 +1695,7 @@
   <g
      id="deriv-alff"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 70,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 70 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -1455,7 +1733,7 @@
   <g
      id="deriv-reho"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 275,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 275 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -1493,7 +1771,7 @@
   <g
      id="deriv-central"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 480,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 480 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -1587,7 +1865,7 @@
   <g
      id="deriv-ts"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 685,854 h 180 q 10,0 10,10 v 36 q 0,10 -10,10 H 685 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
        fill="#ffffff"
@@ -1616,7 +1894,7 @@
   </g>
   <!-- Fan-out to derivatives -->
   <path
-     d="M 480,834.55884 152,862"
+     d="M 478.68031,834.55884 150.68031,862"
      fill="none"
      stroke="#fcd34d"
      stroke-width="1.6"
@@ -1624,7 +1902,7 @@
      id="path115"
      sodipodi:nodetypes="cc" />
   <path
-     d="M 480,836.62671 357,862"
+     d="M 478.68031,836.62671 355.68031,862"
      fill="none"
      stroke="#fcd34d"
      stroke-width="1.6"
@@ -1632,7 +1910,7 @@
      id="path116"
      sodipodi:nodetypes="cc" />
   <path
-     d="M 480,835.59277 562,862"
+     d="m 478.68031,835.59277 82,26.40723"
      fill="none"
      stroke="#fcd34d"
      stroke-width="1.6"
@@ -1640,7 +1918,7 @@
      id="path117"
      sodipodi:nodetypes="cc" />
   <path
-     d="M 480,835.07581 775,862"
+     d="m 478.68031,835.07581 295,26.92419"
      fill="none"
      stroke="#fcd34d"
      stroke-width="1.6"
@@ -1650,45 +1928,45 @@
   <path
      id="line87"
      style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
-     d="m 480,498 v 43.987"
+     d="m 478.68031,498 v 43.987"
      sodipodi:nodetypes="cc" />
   <path
      id="line90"
      style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
-     d="m 480,606 v 9.5379"
+     d="m 478.68031,606 v 9.5379"
      sodipodi:nodetypes="cc" />
   <path
      id="line95"
      style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
-     d="m 480,678 v 48.96606"
+     d="m 478.68031,678 v 48.96606"
      sodipodi:nodetypes="cc" />
   <path
      id="line100"
      style="fill:none;stroke:#94a3b8;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
-     d="m 480,802 v 25.32129"
+     d="m 478.68031,802 v 25.32129"
      sodipodi:nodetypes="cc" />
   <!-- Converge to smoothing -->
   <path
-     d="m 152,918 v 25 q 0,10 10,10 h 293"
+     d="m 150.68031,918 v 25 q 0,10 10,10 h 293"
      fill="none"
      stroke="#cbd5e1"
      stroke-width="1.2"
      id="path119" />
   <path
-     d="m 357,918 v 25 c 0,6.66667 3.33333,10 10,10 h 112.8575"
+     d="m 355.68031,918 v 25 c 0,6.66667 3.33333,10 10,10 h 112.8575"
      fill="none"
      stroke="#cbd5e1"
      stroke-width="1.2"
      id="path120"
      sodipodi:nodetypes="cssc" />
   <path
-     d="m 562,918 v 25 q 0,10 -10,10 h -47"
+     d="m 560.68031,918 v 25 q 0,10 -10,10 h -47"
      fill="none"
      stroke="#cbd5e1"
      stroke-width="1.2"
      id="path121" />
   <path
-     d="m 775,918 v 25 c 0,6.66667 -3.33333,10 -10,10 H 480.1425"
+     d="m 773.68031,918 v 25 c 0,6.66667 -3.33333,10 -10,10 h -284.8575"
      fill="none"
      stroke="#cbd5e1"
      stroke-width="1.2"
@@ -1697,7 +1975,7 @@
   <g
      id="smooth"
      filter="url(#card)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 330,958 h 300 c 6.66667,0 10,3.33333 10,10 v 24 c 0,6.66667 -3.33333,10 -10,10 H 330 c -6.66667,0 -10,-3.33333 -10,-10 v -24 c 0,-6.66667 3.33333,-10 10,-10 z"
        fill="#ffffff"
@@ -1726,11 +2004,11 @@
   <path
      id="line122"
      style="fill:none;stroke:#cbd5e1;stroke-width:1.2;marker-end:url(#marker145)"
-     d="m 480,953 v 7.88228"
+     d="m 478.68031,953 v 7.88228"
      sodipodi:nodetypes="cc" />
   <!-- QC PANEL -->
   <path
-     d="m 782,563 h 139.40768 c 8,0 12,4 12,12 v 171 c 0,8 -4,12 -12,12 H 782 c -8,0 -12,-4 -12,-12 V 575 c 0,-8 4,-12 12,-12 z"
+     d="m 780.68031,563 h 139.40768 c 8,0 12,4 12,12 v 172.5509 c 0,8 -4,12 -12,12 H 780.68031 c -8,0 -12,-4 -12,-12 V 575 c 0,-8 4,-12 12,-12 z"
      fill="#ecfeff"
      opacity="0.5"
      stroke="#a5f3fc"
@@ -1738,8 +2016,8 @@
      id="path124"
      sodipodi:nodetypes="sssssssss" />
   <text
-     x="848"
-     y="583"
+     x="820.3606"
+     y="579.71002"
      text-anchor="middle"
      font-family="Arial, sans-serif"
      font-size="10.5px"
@@ -1748,7 +2026,7 @@
      style="letter-spacing:0.1em;text-transform:uppercase"
      id="text125">Quality Control</text>
   <path
-     d="m 795,593 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 795 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
+     d="m 793.68031,593 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 793.68031 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
      fill="#ffffff"
      stroke="#67e8f9"
      stroke-width="1"
@@ -1756,7 +2034,7 @@
      style="filter:url(#card)"
      sodipodi:nodetypes="sssssssss" />
   <g
-     transform="translate(793,611.69765)"
+     transform="translate(791.68031,611.69765)"
      id="g125"
      style="filter:url(#card)">
     <use
@@ -1765,7 +2043,7 @@
        id="use125" />
   </g>
   <text
-     x="817"
+     x="815.6803"
      y="615"
      font-family="Arial, sans-serif"
      font-size="11.5px"
@@ -1774,7 +2052,7 @@
      id="text126"
      style="filter:url(#card)">Motion Metrics</text>
   <text
-     x="817"
+     x="815.6803"
      y="628"
      font-family="Arial, sans-serif"
      font-size="10px"
@@ -1782,7 +2060,7 @@
      id="text127"
      style="filter:url(#card)">FD · DVARS · RMS</text>
   <path
-     d="m 870,199 c 26.66667,0 31.98699,113.84524 31.98699,386.5119"
+     d="m 868.68031,199 c 26.66667,0 31.98699,113.84524 31.98699,386.5119"
      fill="none"
      stroke="#a78bfa"
      stroke-width="1.6"
@@ -1793,7 +2071,7 @@
      sodipodi:nodetypes="cc"
      style="marker-end:url(#marker143)" />
   <path
-     d="m 795,653 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 795 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
+     d="m 793.68031,653 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 793.68031 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
      fill="#ffffff"
      stroke="#67e8f9"
      stroke-width="1"
@@ -1801,7 +2079,7 @@
      style="filter:url(#card)"
      sodipodi:nodetypes="sssssssss" />
   <g
-     transform="translate(788.97893,660)"
+     transform="translate(787.65924,660)"
      id="g128"
      style="filter:url(#card)">
     <circle
@@ -1820,7 +2098,7 @@
        id="circle128" />
   </g>
   <text
-     x="824"
+     x="822.6803"
      y="675"
      font-family="Arial, sans-serif"
      font-size="11.5px"
@@ -1829,7 +2107,7 @@
      id="text128"
      style="filter:url(#card)">Registration</text>
   <text
-     x="824"
+     x="822.6803"
      y="688"
      font-family="Arial, sans-serif"
      font-size="10px"
@@ -1844,17 +2122,17 @@
      ry="15"
      rx="53.428162"
      cy="733"
-     cx="848"
+     cx="846.6803"
      style="filter:url(#card)" />
   <circle
-     cx="817.93213"
+     cx="816.61243"
      cy="733"
      r="5"
      fill="#22c55e"
      id="circle129"
      style="filter:url(#card)" />
   <text
-     x="852.65271"
+     x="851.33301"
      y="737"
      text-anchor="middle"
      font-family="Arial, sans-serif"
@@ -1866,29 +2144,17 @@
   <path
      id="line130"
      style="fill:none;stroke:#67e8f9;stroke-width:1.2;marker-end:url(#ConcaveTriangle)"
-     d="m 848,643 v 4.83032"
+     d="m 846.68031,643 v 4.83032"
      sodipodi:nodetypes="cc" />
   <path
      id="line131"
      style="fill:none;stroke:#67e8f9;stroke-width:1.2;marker-end:url(#ConcaveTriangle)"
-     d="m 848,703 v 9.05487"
+     d="m 846.68031,703 v 9.05487"
      sodipodi:nodetypes="cc" />
   <!-- OUTPUT -->
-  <line
-     x1="480"
-     y1="1010"
-     x2="480"
-     y2="1054"
-     fill="none"
-     stroke="#94a3b8"
-     stroke-width="1.6"
-     stroke-linecap="round"
-     marker-end="url(#arr)"
-     id="line132"
-     style="marker-end:url(#marker145)" />
   <!-- QC to output -->
   <path
-     d="M 901.24768,757.72293 V 1090.4751 H 753.6029"
+     d="m 899.92799,759.7908 0,330.6843 H 752.28321"
      fill="none"
      stroke="#67e8f9"
      stroke-width="1.2"
@@ -1900,7 +2166,7 @@
   <g
      id="output"
      filter="url(#card-lg)"
-     transform="translate(0,8)">
+     transform="translate(-1.3196904,8)">
     <path
        d="m 223.11768,1046 h 512.73071 c 6.66667,0 10,3.3333 10,10 v 44 c 0,6.6667 -3.33333,10 -10,10 H 223.11768 c -6.66667,0 -10,-3.3333 -10,-10 v -44 c 0,-6.6667 3.33333,-10 10,-10 z"
        fill="#ffffff"
@@ -1926,100 +2192,142 @@
        fill="#166534"
        id="text134">Cleaned BOLD · Derivative maps (ALFF · ReHo · Centrality) · Timeseries · Correlation matrices · QC TSV</text>
   </g>
+  <path
+     id="line132"
+     style="fill:none;stroke:#94a3b8;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker145)"
+     d="m 478.6803,1010 0,35.9579"
+     sodipodi:nodetypes="cc" />
   <!-- LEGEND -->
-  <text
-     x="200"
-     y="1151.6555"
-     font-family="Arial, sans-serif"
-     font-size="9px"
-     font-weight="600"
-     fill="#64748b"
-     style="letter-spacing:0.08em;opacity:0.55"
-     id="text135">TOOLS</text>
-  <rect
-     x="250"
-     y="1144.6555"
-     width="8"
-     height="8"
-     fill="#93c5fd"
-     id="rect135"
-     style="opacity:0.55" />
-  <text
-     x="262"
-     y="1151.6555"
-     font-family="Arial, sans-serif"
-     font-size="9px"
-     fill="#64748b"
-     id="text136"
-     style="opacity:0.55">ANTs</text>
-  <rect
-     x="300"
-     y="1144.6555"
-     width="8"
-     height="8"
-     fill="#6ee7b7"
-     id="rect136"
-     style="opacity:0.55" />
-  <text
-     x="312"
-     y="1151.6555"
-     font-family="Arial, sans-serif"
-     font-size="9px"
-     fill="#64748b"
-     id="text137"
-     style="opacity:0.55">FSL</text>
-  <rect
-     x="340"
-     y="1144.6555"
-     width="8"
-     height="8"
-     fill="#fca5a5"
-     id="rect137"
-     style="opacity:0.55" />
-  <text
-     x="352"
-     y="1151.6555"
-     font-family="Arial, sans-serif"
-     font-size="9px"
-     fill="#64748b"
-     id="text138"
-     style="opacity:0.55">AFNI</text>
-  <rect
-     x="390"
-     y="1144.6555"
-     width="8"
-     height="8"
-     fill="#c4b5fd"
-     id="rect138"
-     style="opacity:0.55" />
-  <text
-     x="402"
-     y="1151.6555"
-     font-family="Arial, sans-serif"
-     font-size="9px"
-     fill="#64748b"
-     id="text139"
-     style="opacity:0.55">Python (nibabel · numpy)</text>
   <g
-     transform="translate(560,1151.6555)"
-     id="g140"
-     style="opacity:0.55">
-    <line
-       x1="0"
-       y1="-3"
-       x2="20"
-       y2="-3"
-       stroke="#a78bfa"
-       stroke-width="1.2"
-       stroke-dasharray="4, 2"
-       opacity="0.8"
-       id="line139" />
+     id="g19">
     <text
-       x="26"
-       y="0"
+       x="235.1687"
+       y="1151.6555"
+       font-family="Arial, sans-serif"
+       font-size="9px"
+       font-weight="600"
+       fill="#64748b"
+       style="letter-spacing:0.08em;opacity:0.55"
+       id="text135">TOOLS</text>
+    <rect
+       x="285.1687"
+       y="1144.6555"
+       width="8"
+       height="8"
+       fill="#93c5fd"
+       id="rect135"
+       style="opacity:0.55" />
+    <text
+       x="297.1687"
+       y="1151.6555"
        font-family="Arial, sans-serif"
        font-size="9px"
        fill="#64748b"
-       id="text140">cross-stream dependency</text>
+       id="text136"
+       style="opacity:0.55">ANTs</text>
+    <rect
+       x="335.1687"
+       y="1144.6555"
+       width="8"
+       height="8"
+       fill="#6ee7b7"
+       id="rect136"
+       style="opacity:0.55" />
+    <text
+       x="347.1687"
+       y="1151.6555"
+       font-family="Arial, sans-serif"
+       font-size="9px"
+       fill="#64748b"
+       id="text137"
+       style="opacity:0.55">FSL</text>
+    <rect
+       x="375.1687"
+       y="1144.6555"
+       width="8"
+       height="8"
+       fill="#fca5a5"
+       id="rect137"
+       style="opacity:0.55" />
+    <text
+       x="387.1687"
+       y="1151.6555"
+       font-family="Arial, sans-serif"
+       font-size="9px"
+       fill="#64748b"
+       id="text138"
+       style="opacity:0.55">AFNI</text>
+    <rect
+       x="425.1687"
+       y="1144.6555"
+       width="8"
+       height="8"
+       fill="#c4b5fd"
+       id="rect138"
+       style="opacity:0.55" />
+    <text
+       x="437.1687"
+       y="1151.6555"
+       font-family="Arial, sans-serif"
+       font-size="9px"
+       fill="#64748b"
+       id="text139"
+       style="opacity:0.55">Python (nibabel · numpy)</text>
+    <g
+       transform="translate(595.1687,1151.6555)"
+       id="g140"
+       style="opacity:0.55">
+      <line
+         x1="0"
+         y1="-3"
+         x2="20"
+         y2="-3"
+         stroke="#a78bfa"
+         stroke-width="1.2"
+         stroke-dasharray="4, 2"
+         opacity="0.8"
+         id="line139" />
+      <text
+         x="26"
+         y="0"
+         font-family="Arial, sans-serif"
+         font-size="9px"
+         fill="#64748b"
+         id="text140">cross-stream dependency</text>
+    </g>
+  </g>
+  <g
+     id="g17"
+     transform="translate(189.95839,-460.10132)">
+    <rect
+       x="98.167755"
+       y="1091.5717"
+       width="36"
+       height="36"
+       fill="none"
+       stroke="#a78bfa"
+       stroke-width="0.8"
+       id="rect90-6"
+       style="filter:url(#card-0)"
+       ry="3.6555142" />
+    <g
+       id="g16">
+      <path
+         style="opacity:0.6;fill:#a68af9;fill-opacity:1;stroke:#a68af9;stroke-width:0.5;stroke-dasharray:2, 0.5;stroke-dashoffset:0;stroke-opacity:1"
+         d="m 122.27696,1091.383 v 36.3724"
+         id="path16" />
+      <path
+         style="opacity:0.6;fill:#a68af9;fill-opacity:1;stroke:#a68af9;stroke-width:0.5;stroke-dasharray:2, 0.5;stroke-dashoffset:0;stroke-opacity:1"
+         d="m 110.05855,1091.383 v 36.3724"
+         id="path16-9" />
+      <path
+         style="opacity:0.6;fill:#a68af9;fill-opacity:1;stroke:#a68af9;stroke-width:0.5;stroke-dasharray:2, 0.5;stroke-dashoffset:0;stroke-opacity:1"
+         d="M 98.014935,1104.2124 H 134.38734"
+         id="path16-2" />
+      <path
+         style="opacity:0.6;fill:#a68af9;fill-opacity:1;stroke:#a68af9;stroke-width:0.5;stroke-dasharray:2, 0.5;stroke-dashoffset:0;stroke-opacity:1"
+         d="M 98.014936,1116.4308 H 134.38734"
+         id="path16-9-6" />
+    </g>
   </g>
 </svg>
