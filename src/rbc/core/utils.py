@@ -42,7 +42,7 @@ def get_base_entities(
         A string-mapping of BIDS entities to values.
     """
     file_entities = parse_bids_entities(in_file)
-    return {k: v for k, v in file_entities.items() if k in base_entities}
+    return {k: v for k, v in file_entities.items() if k in ["sub", "ses", "task", "run"]}
 
 
 def rename(in_file: str | Path, new_name: str | Path) -> Path:
