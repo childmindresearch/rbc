@@ -22,7 +22,6 @@ def reorient(in_file: Path, output_fname: str) -> afni.V3dresampleOutputs:
     """
     with create_copy(in_file) as tmp_file:
         afni.v_3drefit(in_file=tmp_file, deoblique=True)
-        reorient = afni.v_3dresample(
+        return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"
         )
-    return reorient

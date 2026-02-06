@@ -22,7 +22,8 @@ class TestCreateCopy:
         """Test copy created successfully."""
         with utils.create_copy(test_file) as tmp_file:
             assert isinstance(tmp_file, pl.Path)
-            assert tmp_file.exists() and tmp_file.is_file()
+            assert tmp_file.exists()
+            assert tmp_file.is_file()
             assert tmp_file.read_text() == "Sample content"
 
     def test_copy_correct_name(self, test_file: pl.Path) -> None:
@@ -40,4 +41,5 @@ class TestCreateCopy:
         with utils.create_copy(test_file) as tmp_file:
             tmp_dir = tmp_file.parent
             assert tmp_dir.exists()
-        assert not tmp_file.exists() and not tmp_dir.exists()
+        assert not tmp_file.exists()
+        assert not tmp_dir.exists()
