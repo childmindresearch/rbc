@@ -2,7 +2,7 @@
 
 import shutil
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -30,7 +30,7 @@ def create_copy(in_file: str | Path) -> Iterator[Path]:
 
 
 def get_base_entities(
-    in_file: Path, base_entities: list[str] = ["sub", "ses", "run"]
+    in_file: Path, base_entities: Iterable[str] = ("sub", "ses", "run")
 ) -> dict[str, str]:
     """Parse base BIDS entities to be used for file naming.
 

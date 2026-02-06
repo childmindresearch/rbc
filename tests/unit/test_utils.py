@@ -2,9 +2,6 @@
 
 import pathlib as pl
 import tempfile
-from types import SimpleNamespace
-
-import pytest
 
 from rbc.core import utils
 
