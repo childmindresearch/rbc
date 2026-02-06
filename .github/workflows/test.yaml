@@ -56,19 +56,19 @@ jobs:
           --log-level=DEBUG \
           --verbose
 
-    - name: Run slow tests (manual trigger)
+    - name: Run slow tests
       if: github.event_name == 'workflow_dispatch'
       shell: bash
       run: >
         uv run pytest \
-          -m "slow and not full_pipeline" \
+          -m "slow" \
           --runner=docker \
           --junitxml=pytest-slow.xml \
           --cov=src tests \
           --cov-append \
           --verbose
 
-    - name: Run full pipeline tests (manual trigger)
+    - name: Run full pipeline tests
       if: github.event_name == 'workflow_dispatch' && inputs.e2e == true
       shell: bash
       run: >
