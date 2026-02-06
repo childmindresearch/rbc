@@ -1,0 +1,2025 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 960 1180"
+   width="960"
+   height="1180"
+   version="1.1"
+   id="svg141"
+   sodipodi:docname="pipeline_flow.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview141"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.68389831"
+     inkscape:cx="371.40025"
+     inkscape:cy="394.06444"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg141" />
+  <defs
+     id="defs54">
+    <marker
+       style="overflow:visible"
+       id="marker145"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path145" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker144"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path144" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker143"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path143" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7" />
+    </marker>
+    <!-- Shadows -->
+    <filter
+       id="card"
+       x="-0.78060349"
+       y="-2.0508484"
+       width="2.561207"
+       height="5.5289569">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur1" />
+      <feOffset
+         dx="0"
+         dy="1.5"
+         result="offsetblur"
+         id="feOffset1" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.08"
+         id="feFlood1" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite1" />
+      <feMerge
+         id="feMerge2">
+        <feMergeNode
+           id="feMergeNode1" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode2" />
+      </feMerge>
+    </filter>
+    <filter
+       id="card-lg"
+       x="-0.028438383"
+       y="-0.23671875"
+       width="1.0568768"
+       height="1.5203125">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="6"
+         id="feGaussianBlur2" />
+      <feOffset
+         dx="0"
+         dy="3"
+         result="offsetblur"
+         id="feOffset2" />
+      <feFlood
+         flood-color="#1e293b"
+         flood-opacity="0.10"
+         id="feFlood2" />
+      <feComposite
+         in2="offsetblur"
+         operator="in"
+         id="feComposite2" />
+      <feMerge
+         id="feMerge4">
+        <feMergeNode
+           id="feMergeNode3" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode4" />
+      </feMerge>
+    </filter>
+    <!-- Gradients -->
+    <linearGradient
+       id="bg-anat"
+       x1="49.337719"
+       y1="116.54369"
+       x2="49.337719"
+       y2="491.51036"
+       gradientTransform="matrix(1.0134234,0,0,0.98675438,0,8)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0%"
+         style="stop-color:#dbeafe;stop-opacity:0.5"
+         id="stop4" />
+      <stop
+         offset="100%"
+         style="stop-color:#dbeafe;stop-opacity:0.08"
+         id="stop5" />
+    </linearGradient>
+    <linearGradient
+       id="bg-func"
+       x1="522.97982"
+       y1="116.54369"
+       x2="522.97982"
+       y2="491.51036"
+       gradientTransform="matrix(1.0134234,0,0,0.98675438,0,8)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0%"
+         style="stop-color:#d1fae5;stop-opacity:0.5"
+         id="stop6" />
+      <stop
+         offset="100%"
+         style="stop-color:#d1fae5;stop-opacity:0.08"
+         id="stop7" />
+    </linearGradient>
+    <linearGradient
+       id="bg-converge"
+       x1="116.83677"
+       y1="789.4915"
+       x2="116.83677"
+       y2="1155.4582"
+       gradientTransform="matrix(1.5406109,0,0,0.64909316,0,8)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0%"
+         style="stop-color:#ede9fe;stop-opacity:0.4"
+         id="stop8" />
+      <stop
+         offset="100%"
+         style="stop-color:#ede9fe;stop-opacity:0.05"
+         id="stop9" />
+    </linearGradient>
+    <!-- Arrow markers -->
+    <marker
+       id="arr"
+       viewBox="0 0 8 6"
+       refX="8"
+       refY="3"
+       markerWidth="8"
+       markerHeight="6"
+       orient="auto">
+      <path
+         d="M 0,0.5 L 7,3 L 0,5.5"
+         fill="none"
+         stroke="#94a3b8"
+         stroke-width="1"
+         stroke-linejoin="round"
+         id="path9" />
+    </marker>
+    <marker
+       id="arr-blue"
+       viewBox="0 0 8 6"
+       refX="8"
+       refY="3"
+       markerWidth="8"
+       markerHeight="6"
+       orient="auto">
+      <path
+         d="M 0,0.5 L 7,3 L 0,5.5"
+         fill="none"
+         stroke="#93c5fd"
+         stroke-width="1"
+         stroke-linejoin="round"
+         id="path10" />
+    </marker>
+    <marker
+       id="arr-green"
+       viewBox="0 0 8 6"
+       refX="8"
+       refY="3"
+       markerWidth="8"
+       markerHeight="6"
+       orient="auto">
+      <path
+         d="M 0,0.5 L 7,3 L 0,5.5"
+         fill="none"
+         stroke="#6ee7b7"
+         stroke-width="1"
+         stroke-linejoin="round"
+         id="path11" />
+    </marker>
+    <marker
+       id="arr-purple"
+       viewBox="0 0 8 6"
+       refX="8"
+       refY="3"
+       markerWidth="8"
+       markerHeight="6"
+       orient="auto">
+      <path
+         d="M 0,0.5 L 7,3 L 0,5.5"
+         fill="none"
+         stroke="#a78bfa"
+         stroke-width="1"
+         stroke-linejoin="round"
+         id="path12" />
+    </marker>
+    <!-- Brain illustrations -->
+    <g
+       id="brain-raw">
+      <circle
+         cx="22"
+         cy="22"
+         r="20"
+         fill="#cbd5e1"
+         id="circle12" />
+      <ellipse
+         cx="22"
+         cy="21"
+         rx="15"
+         ry="17"
+         fill="#94a3b8"
+         id="ellipse12" />
+      <ellipse
+         cx="22"
+         cy="19"
+         rx="12"
+         ry="14"
+         fill="#64748b"
+         id="ellipse13" />
+    </g>
+    <g
+       id="brain-stripped">
+      <circle
+         cx="22"
+         cy="22"
+         r="20"
+         fill="#1e293b"
+         opacity="0.05"
+         id="circle13" />
+      <ellipse
+         cx="22"
+         cy="21"
+         rx="15"
+         ry="17"
+         fill="#60a5fa"
+         id="ellipse14" />
+      <ellipse
+         cx="22"
+         cy="19"
+         rx="12"
+         ry="14"
+         fill="#3b82f6"
+         id="ellipse15" />
+    </g>
+    <g
+       id="brain-seg">
+      <circle
+         cx="22"
+         cy="22"
+         r="20"
+         fill="#1e293b"
+         opacity="0.05"
+         id="circle15" />
+      <ellipse
+         cx="22"
+         cy="21"
+         rx="15"
+         ry="17"
+         fill="#86efac"
+         id="ellipse16" />
+      <ellipse
+         cx="22"
+         cy="19"
+         rx="12"
+         ry="14"
+         fill="#60a5fa"
+         id="ellipse17" />
+      <ellipse
+         cx="22"
+         cy="24"
+         rx="8"
+         ry="5"
+         fill="#fbbf24"
+         opacity="0.7"
+         id="ellipse18" />
+    </g>
+    <g
+       id="brain-mni">
+      <rect
+         x="2"
+         y="2"
+         width="40"
+         height="40"
+         fill="#1e293b"
+         opacity="0.05"
+         id="rect18" />
+      <rect
+         x="5"
+         y="5"
+         width="34"
+         height="34"
+         fill="none"
+         stroke="#a78bfa"
+         stroke-width="0.8"
+         stroke-dasharray="2,2"
+         id="rect19" />
+      <ellipse
+         cx="22"
+         cy="21"
+         rx="14"
+         ry="16"
+         fill="#818cf8"
+         id="ellipse19" />
+      <ellipse
+         cx="22"
+         cy="19"
+         rx="11"
+         ry="13"
+         fill="#6366f1"
+         id="ellipse20" />
+    </g>
+    <!-- Waveforms -->
+    <g
+       id="wave-noisy">
+      <polyline
+         points="0,16 3,8 6,22 9,5 12,19 15,3 18,24 21,7 24,20 27,4 30,18 33,9 36,21 39,6 42,17"
+         fill="none"
+         stroke="#f87171"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="polyline20" />
+    </g>
+    <g
+       id="wave-clean">
+      <polyline
+         points="0,14 3,11 6,16 9,10 12,15 15,9 18,14 21,10 24,13 27,9 30,12 33,10 36,13 39,11 42,12"
+         fill="none"
+         stroke="#34d399"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="polyline21" />
+    </g>
+    <g
+       id="wave-motion">
+      <polyline
+         points="0,14 4,10 8,17 12,8 16,20 20,6 24,15 28,11 32,16 36,9 40,13"
+         fill="none"
+         stroke="#fbbf24"
+         stroke-width="1.3"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="polyline22" />
+      <line
+         x1="0"
+         y1="13"
+         x2="42"
+         y2="13"
+         stroke="#fbbf24"
+         stroke-width="0.5"
+         stroke-dasharray="2,2"
+         opacity="0.5"
+         id="line22" />
+    </g>
+    <!-- Heatmap -->
+    <g
+       id="heatmap">
+      <rect
+         x="0"
+         y="0"
+         width="8"
+         height="8"
+         fill="#fef3c7"
+         id="rect22" />
+      <rect
+         x="8"
+         y="0"
+         width="8"
+         height="8"
+         fill="#fde68a"
+         id="rect23" />
+      <rect
+         x="16"
+         y="0"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect24" />
+      <rect
+         x="24"
+         y="0"
+         width="8"
+         height="8"
+         fill="#fbbf24"
+         id="rect25" />
+      <rect
+         x="0"
+         y="8"
+         width="8"
+         height="8"
+         fill="#fde68a"
+         id="rect26" />
+      <rect
+         x="8"
+         y="8"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect27" />
+      <rect
+         x="16"
+         y="8"
+         width="8"
+         height="8"
+         fill="#dc2626"
+         id="rect28" />
+      <rect
+         x="24"
+         y="8"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect29" />
+      <rect
+         x="0"
+         y="16"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect30" />
+      <rect
+         x="8"
+         y="16"
+         width="8"
+         height="8"
+         fill="#dc2626"
+         id="rect31" />
+      <rect
+         x="16"
+         y="16"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect32" />
+      <rect
+         x="24"
+         y="16"
+         width="8"
+         height="8"
+         fill="#fde68a"
+         id="rect33" />
+      <rect
+         x="0"
+         y="24"
+         width="8"
+         height="8"
+         fill="#fbbf24"
+         id="rect34" />
+      <rect
+         x="8"
+         y="24"
+         width="8"
+         height="8"
+         fill="#f59e0b"
+         id="rect35" />
+      <rect
+         x="16"
+         y="24"
+         width="8"
+         height="8"
+         fill="#fde68a"
+         id="rect36" />
+      <rect
+         x="24"
+         y="24"
+         width="8"
+         height="8"
+         fill="#fef3c7"
+         id="rect37" />
+    </g>
+    <!-- Correlation matrix -->
+    <g
+       id="corrmat">
+      <rect
+         x="0"
+         y="0"
+         width="32"
+         height="32"
+         fill="#1e293b"
+         opacity="0.05"
+         id="rect38" />
+      <rect
+         x="1"
+         y="1"
+         width="6"
+         height="6"
+         fill="#7c3aed"
+         id="rect39" />
+      <rect
+         x="8"
+         y="1"
+         width="6"
+         height="6"
+         fill="#c4b5fd"
+         id="rect40" />
+      <rect
+         x="15"
+         y="1"
+         width="6"
+         height="6"
+         fill="#ede9fe"
+         id="rect41" />
+      <rect
+         x="22"
+         y="1"
+         width="6"
+         height="6"
+         fill="#ddd6fe"
+         id="rect42" />
+      <rect
+         x="1"
+         y="8"
+         width="6"
+         height="6"
+         fill="#c4b5fd"
+         id="rect43" />
+      <rect
+         x="8"
+         y="8"
+         width="6"
+         height="6"
+         fill="#7c3aed"
+         id="rect44" />
+      <rect
+         x="15"
+         y="8"
+         width="6"
+         height="6"
+         fill="#a78bfa"
+         id="rect45" />
+      <rect
+         x="22"
+         y="8"
+         width="6"
+         height="6"
+         fill="#ede9fe"
+         id="rect46" />
+      <rect
+         x="1"
+         y="15"
+         width="6"
+         height="6"
+         fill="#ede9fe"
+         id="rect47" />
+      <rect
+         x="8"
+         y="15"
+         width="6"
+         height="6"
+         fill="#a78bfa"
+         id="rect48" />
+      <rect
+         x="15"
+         y="15"
+         width="6"
+         height="6"
+         fill="#7c3aed"
+         id="rect49" />
+      <rect
+         x="22"
+         y="15"
+         width="6"
+         height="6"
+         fill="#c4b5fd"
+         id="rect50" />
+      <rect
+         x="1"
+         y="22"
+         width="6"
+         height="6"
+         fill="#ddd6fe"
+         id="rect51" />
+      <rect
+         x="8"
+         y="22"
+         width="6"
+         height="6"
+         fill="#ede9fe"
+         id="rect52" />
+      <rect
+         x="15"
+         y="22"
+         width="6"
+         height="6"
+         fill="#c4b5fd"
+         id="rect53" />
+      <rect
+         x="22"
+         y="22"
+         width="6"
+         height="6"
+         fill="#7c3aed"
+         id="rect54" />
+    </g>
+  </defs>
+  <!-- Background phase regions -->
+  <path
+     d="m 66,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 H 66 Q 50,493 50,477 V 139 q 0,-16 16,-16 z"
+     fill="url(#bg-anat)"
+     id="path54"
+     style="fill:url(#bg-anat)" />
+  <path
+     d="m 546,123 h 348 q 16,0 16,16 v 338 q 0,16 -16,16 H 546 q -16,0 -16,-16 V 139 q 0,-16 16,-16 z"
+     fill="url(#bg-func)"
+     id="path55"
+     style="fill:url(#bg-func)" />
+  <path
+     d="m 196,520.45353 h 531.81226 c 10.66666,0 16,5.33333 16,16 V 742 c 0,10.66667 -5.33334,16 -16,16 H 196 c -10.66667,0 -16,-5.33333 -16,-16 V 536.45353 c 0,-10.66667 5.33333,-16 16,-16 z"
+     fill="url(#bg-converge)"
+     id="path56"
+     sodipodi:nodetypes="sssssssss"
+     style="fill:url(#bg-converge)" />
+  <!-- Title -->
+  <text
+     x="480"
+     y="46"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="20"
+     font-weight="bold"
+     fill="#0f172a"
+     id="text56">
+    RBC Processing Pipeline
+  </text>
+  <text
+     x="480"
+     y="68"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="12px"
+     fill="#64748b"
+     id="text57">Anatomical &amp; functional preprocessing · Single-step resampling · Nuisance regression · Metrics</text>
+  <!-- INPUTS -->
+  <g
+     id="g142"
+     transform="translate(-9.1387853,8)">
+    <path
+       d="m 180.73111,85 h 136.81536 c 6.66667,0 10,3.333333 10,10 v 20 c 0,6.66667 -3.33333,10 -10,10 H 180.73111 c -6.66667,0 -10,-3.33333 -10,-10 V 95 c 0,-6.666667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#e2e8f0"
+       stroke-width="1"
+       id="path57"
+       style="filter:url(#card)"
+       sodipodi:nodetypes="sssssssss" />
+    <use
+       href="#brain-raw"
+       transform="matrix(0.8,0,0,0.8,178,88)"
+       id="use57"
+       style="filter:url(#card)" />
+    <text
+       x="218"
+       y="109"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text58"
+       style="filter:url(#card)">T1w Anatomical</text>
+  </g>
+  <g
+     id="g143"
+     transform="translate(-12.063197,7.2688971)">
+    <path
+       d="m 660,85 h 143.39529 c 6.66667,0 10,3.333333 10,10 v 20 c 0,6.66667 -3.33333,10 -10,10 H 660 c -6.66667,0 -10,-3.33333 -10,-10 V 95 c 0,-6.666667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#e2e8f0"
+       stroke-width="1"
+       id="path58"
+       style="filter:url(#card)"
+       sodipodi:nodetypes="sssssssss" />
+    <g
+       transform="translate(658,96)"
+       id="g58"
+       style="filter:url(#card)">
+      <use
+         href="#wave-noisy"
+         transform="scale(0.55)"
+         id="use58" />
+    </g>
+    <text
+       x="696"
+       y="109"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text59"
+       style="filter:url(#card)">BOLD Functional</text>
+  </g>
+  <!-- ANATOMICAL STREAM -->
+  <text
+     x="240"
+     y="153"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#2563eb"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text60">Anatomical</text>
+  <g
+     id="anat-extract"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 100,160 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#bfdbfe"
+       stroke-width="1"
+       id="path60" />
+    <use
+       href="#brain-stripped"
+       transform="matrix(0.85,0,0,0.85,102,168)"
+       id="use60" />
+    <text
+       x="146"
+       y="184"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text61">Brain Extraction</text>
+    <text
+       x="146"
+       y="198"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text62">ANTs · N4 bias field correction</text>
+    <text
+       x="146"
+       y="210"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text63">Registration to OASIS template · mask at p &gt; 0.5</text>
+  </g>
+  <g
+     id="anat-segment"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 100,240 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#bfdbfe"
+       stroke-width="1"
+       id="path63" />
+    <use
+       href="#brain-seg"
+       transform="matrix(0.85,0,0,0.85,102,248)"
+       id="use63" />
+    <text
+       x="146"
+       y="264"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text64">Tissue Segmentation</text>
+    <text
+       x="146"
+       y="278"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text65">FSL FAST · 3-class (CSF / GM / WM)</text>
+    <text
+       x="146"
+       y="290"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text66">Probability maps thresholded at 0.95</text>
+  </g>
+  <g
+     id="anat-mni"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 100,320 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 100 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#bfdbfe"
+       stroke-width="1"
+       id="path66" />
+    <use
+       href="#brain-mni"
+       transform="matrix(0.85,0,0,0.85,100,326)"
+       id="use66" />
+    <text
+       x="146"
+       y="344"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text67">Register to MNI-152</text>
+    <text
+       x="146"
+       y="358"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text68">ANTs · Rigid → Affine → SyN</text>
+    <text
+       x="146"
+       y="370"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text69">LanczosWindowedSinc interpolation</text>
+  </g>
+  <!-- Anatomical arrows -->
+  <line
+     x1="240"
+     y1="133"
+     x2="240"
+     y2="168"
+     fill="none"
+     stroke="#93c5fd"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-blue)"
+     id="line69" />
+  <line
+     x1="240"
+     y1="230"
+     x2="240"
+     y2="248"
+     fill="none"
+     stroke="#93c5fd"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-blue)"
+     id="line70" />
+  <line
+     x1="240"
+     y1="310"
+     x2="240"
+     y2="328"
+     fill="none"
+     stroke="#93c5fd"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-blue)"
+     id="line71" />
+  <!-- FUNCTIONAL STREAM -->
+  <text
+     x="720"
+     y="153"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#059669"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text71">Functional</text>
+  <g
+     id="func-motion"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 580,160 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#a7f3d0"
+       stroke-width="1"
+       id="path71" />
+    <g
+       transform="translate(580,172)"
+       id="g71">
+      <use
+         href="#wave-motion"
+         transform="scale(0.7)"
+         id="use71" />
+    </g>
+    <text
+       x="620"
+       y="184"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text72">Motion Correction</text>
+    <text
+       x="620"
+       y="198"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text73">FSL mcflirt · 6 DOF rigid-body</text>
+    <text
+       x="620"
+       y="210"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text74">Reference: middle volume</text>
+  </g>
+  <g
+     id="func-despike"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 580,240 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#a7f3d0"
+       stroke-width="1"
+       id="path74" />
+    <g
+       transform="translate(580,251)"
+       id="g74">
+      <use
+         href="#wave-noisy"
+         transform="scale(0.5)"
+         id="use74" />
+    </g>
+    <text
+       x="604"
+       y="260"
+       fill="#94a3b8"
+       font-size="9px"
+       id="text75">→</text>
+    <g
+       transform="translate(580,265)"
+       id="g75">
+      <use
+         href="#wave-clean"
+         transform="scale(0.5)"
+         id="use75" />
+    </g>
+    <text
+       x="620"
+       y="264"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text76">Despike + Slice Timing</text>
+    <text
+       x="620"
+       y="278"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text77">AFNI 3dDespike · 3dTshift</text>
+    <text
+       x="620"
+       y="290"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text78">Timing from BIDS SliceTiming metadata</text>
+  </g>
+  <g
+     id="func-mask"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 580,320 h 280 q 10,0 10,10 v 42 q 0,10 -10,10 H 580 q -10,0 -10,-10 v -42 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#a7f3d0"
+       stroke-width="1"
+       id="path78" />
+    <g
+       transform="matrix(0.8,0,0,0.8,578,328)"
+       id="g78">
+      <circle
+         cx="22"
+         cy="22"
+         r="20"
+         fill="none"
+         stroke="#6ee7b7"
+         stroke-width="1.5"
+         stroke-dasharray="3, 2"
+         id="circle78" />
+      <ellipse
+         cx="22"
+         cy="21"
+         rx="14"
+         ry="16"
+         fill="#34d399"
+         opacity="0.3"
+         id="ellipse78" />
+    </g>
+    <text
+       x="620"
+       y="344"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text79">Brain Masking</text>
+    <text
+       x="620"
+       y="358"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text80">FSL BET + AFNI hybrid</text>
+    <text
+       x="620"
+       y="370"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text81">Dilated intersection mask</text>
+  </g>
+  <!-- Functional arrows -->
+  <line
+     x1="720"
+     y1="133"
+     x2="720"
+     y2="168"
+     fill="none"
+     stroke="#6ee7b7"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-green)"
+     id="line81" />
+  <line
+     x1="720"
+     y1="230"
+     x2="720"
+     y2="248"
+     fill="none"
+     stroke="#6ee7b7"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-green)"
+     id="line82" />
+  <line
+     x1="720"
+     y1="310"
+     x2="720"
+     y2="328"
+     fill="none"
+     stroke="#6ee7b7"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr-green)"
+     id="line83" />
+  <!-- Cross-stream dependencies -->
+  <path
+     d="m 88.785626,290.69765 c -3.958129,-0.25849 -11.19671,13.45606 -10.848313,28.17368 0.670782,28.33636 -0.662127,84.9133 0.52483,147.90212 2.067872,109.73674 136.942547,111.93624 190.599367,112.05994"
+     fill="none"
+     stroke="#a78bfa"
+     stroke-width="1.6"
+     stroke-dasharray="5, 3"
+     opacity="0.6"
+     marker-end="url(#arr-purple)"
+     id="path83"
+     style="marker-end:url(#marker145)"
+     sodipodi:nodetypes="cssc" />
+  <text
+     x="-458.61084"
+     y="73.3601"
+     font-family="Arial, sans-serif"
+     font-size="8px"
+     fill="#a78bfa"
+     opacity="0.8"
+     transform="rotate(-90,-1.4832714,-2.2143742)"
+     id="text83"
+     style="white-space:pre;inline-size:54.5639"
+     xml:space="preserve"><tspan
+       x="-458.61084"
+       y="73.3601"
+       id="tspan1">WM boundary</tspan></text>
+  <text
+     x="-605.14087"
+     y="34.458263"
+     font-family="Arial, sans-serif"
+     font-size="8px"
+     fill="#a78bfa"
+     opacity="0.8"
+     transform="rotate(-90)"
+     id="text84">tissue masks</text>
+  <text
+     x="-428"
+     y="898"
+     font-family="Arial, sans-serif"
+     font-size="8px"
+     fill="#a78bfa"
+     opacity="0.8"
+     transform="rotate(-90)"
+     id="text85">motion params</text>
+  <!-- CONVERGENCE -->
+  <text
+     x="276.75342"
+     y="537.50433"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#7c3aed"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text86">Coregistration · Resampling</text>
+  <path
+     d="m 240,390 v 78 c 0,20 13.33333,30 40,30 h 198.01735"
+     fill="none"
+     stroke="#93c5fd"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path86"
+     sodipodi:nodetypes="cssc" />
+  <path
+     d="m 720,390 v 78 c 0,20 -13.33333,30 -40,30 H 480.26022"
+     fill="none"
+     stroke="#6ee7b7"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path87"
+     sodipodi:nodetypes="cssc" />
+  <g
+     id="coreg"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 290,542 h 401.9008 c 6.66667,0 10,3.33333 10,10 v 36 c 0,6.66667 -3.33333,10 -10,10 H 290 c -6.66667,0 -10,-3.33333 -10,-10 v -36 c 0,-6.66667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#c4b5fd"
+       stroke-width="1"
+       id="path88"
+       sodipodi:nodetypes="sssssssss" />
+    <g
+       transform="translate(292,548)"
+       id="g89">
+      <ellipse
+         cx="16"
+         cy="20"
+         rx="12"
+         ry="15"
+         fill="#60a5fa"
+         opacity="0.5"
+         id="ellipse88" />
+      <ellipse
+         cx="28"
+         cy="20"
+         rx="12"
+         ry="15"
+         fill="#34d399"
+         opacity="0.5"
+         id="ellipse89" />
+    </g>
+    <text
+       x="342"
+       y="566"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text89">BOLD → T1w Coregistration</text>
+    <text
+       x="342"
+       y="580"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text90">FSL FLIRT · 6 DOF · boundary-based registration with WM segment</text>
+  </g>
+  <g
+     id="resample"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 290,614 h 401.71265 c 6.66666,0 10,3.33333 10,10 v 36 c 0,6.66667 -3.33334,10 -10,10 H 290 c -6.66667,0 -10,-3.33333 -10,-10 v -36 c 0,-6.66667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#c4b5fd"
+       stroke-width="1"
+       id="path90"
+       sodipodi:nodetypes="sssssssss" />
+    <g
+       transform="translate(292,622)"
+       id="g94">
+      <rect
+         x="2"
+         y="2"
+         width="36"
+         height="36"
+         fill="none"
+         stroke="#a78bfa"
+         stroke-width="0.8"
+         id="rect90" />
+      <line
+         x1="14"
+         y1="2"
+         x2="14"
+         y2="38"
+         stroke="#a78bfa"
+         stroke-width="0.5"
+         opacity="0.5"
+         id="line91" />
+      <line
+         x1="26"
+         y1="2"
+         x2="26"
+         y2="38"
+         stroke="#a78bfa"
+         stroke-width="0.5"
+         opacity="0.5"
+         id="line92" />
+      <line
+         x1="2"
+         y1="14"
+         x2="38"
+         y2="14"
+         stroke="#a78bfa"
+         stroke-width="0.5"
+         opacity="0.5"
+         id="line93" />
+      <line
+         x1="2"
+         y1="26"
+         x2="38"
+         y2="26"
+         stroke="#a78bfa"
+         stroke-width="0.5"
+         opacity="0.5"
+         id="line94" />
+    </g>
+    <text
+       x="342"
+       y="638"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text94">Single-Step Resample → MNI 2 mm</text>
+    <text
+       x="342"
+       y="652"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text95">All transforms composed (motion + distortion + coreg + warp) · one interpolation</text>
+  </g>
+  <!-- DENOISING -->
+  <text
+     x="259.93805"
+     y="718"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#dc2626"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text96">Nuisance Regression</text>
+  <path
+     d="m 250,734 h 460 q 10,0 10,10 v 48 q 0,10 -10,10 H 250 q -10,0 -10,-10 v -48 q 0,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#fca5a5"
+     stroke-width="1"
+     id="path96"
+     style="filter:url(#card)" />
+  <use
+     href="#wave-noisy"
+     transform="matrix(0.7,0,0,0.7,252.83032,758.60099)"
+     id="use96"
+     style="filter:url(#card)" />
+  <text
+     x="284.83032"
+     y="770"
+     fill="#94a3b8"
+     font-size="10px"
+     id="text97"
+     style="filter:url(#card)">→</text>
+  <g
+     transform="translate(298.83032,758.60099)"
+     id="g97"
+     style="filter:url(#card)">
+    <use
+       href="#wave-clean"
+       transform="scale(0.7)"
+       id="use97" />
+  </g>
+  <text
+     x="344"
+     y="757"
+     font-family="Arial, sans-serif"
+     font-size="13.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text98"
+     style="filter:url(#card)">Confound Removal + Bandpass Filtering</text>
+  <text
+     x="344"
+     y="772"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text99"
+     style="filter:url(#card)">36-parameter or aCompCor regression · AFNI 3dTproject</text>
+  <text
+     x="344"
+     y="786"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text100"
+     style="filter:url(#card)">Bandpass 0.01 – 0.1 Hz · template-space despiking (2nd pass)</text>
+  <path
+     d="m 87.565376,270.1495 c -31.57308,0 -49.594283,20.18006 -49.427491,87.42004 0.265689,107.10905 -0.19773,240.14568 -0.39868,329.91391 -0.174468,77.93806 109.079745,85.34584 196.167725,85.93754"
+     fill="none"
+     stroke="#a78bfa"
+     stroke-width="1.6"
+     stroke-dasharray="5, 3"
+     opacity="0.6"
+     marker-end="url(#arr-purple)"
+     id="path84"
+     style="marker-end:url(#marker145)"
+     sodipodi:nodetypes="cssc" />
+  <!-- DERIVATIVES -->
+  <text
+     x="452.94919"
+     y="831.14368"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#b45309"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text101">Metrics</text>
+  <g
+     id="deriv-alff"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 70,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 70 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#fcd34d"
+       stroke-width="1"
+       id="path101" />
+    <use
+       href="#heatmap"
+       transform="matrix(1.1,0,0,1.1,72,864)"
+       id="use101" />
+    <text
+       x="114"
+       y="876"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text102">ALFF / fALFF</text>
+    <text
+       x="114"
+       y="891"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text103"><tspan
+         sodipodi:role="line"
+         id="tspan145"
+         x="114"
+         y="891">Low-frequency fluctuation</tspan><tspan
+         sodipodi:role="line"
+         id="tspan146"
+         x="114"
+         y="903.5">amplitude</tspan></text>
+  </g>
+  <g
+     id="deriv-reho"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 275,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 275 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#fcd34d"
+       stroke-width="1"
+       id="path103" />
+    <use
+       href="#heatmap"
+       transform="matrix(1.1,0,0,1.1,277,864)"
+       id="use103" />
+    <text
+       x="319"
+       y="876"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text104">ReHo</text>
+    <text
+       x="319"
+       y="891"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text105"><tspan
+         sodipodi:role="line"
+         id="tspan147"
+         x="319"
+         y="891">Kendall's W ·</tspan><tspan
+         sodipodi:role="line"
+         id="tspan148"
+         x="319"
+         y="903.5">27-voxel neighborhood</tspan></text>
+  </g>
+  <g
+     id="deriv-central"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 480,854 h 165 q 10,0 10,10 v 36 q 0,10 -10,10 H 480 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#fcd34d"
+       stroke-width="1"
+       id="path105" />
+    <g
+       transform="translate(480,864)"
+       id="g112">
+      <circle
+         cx="8"
+         cy="8"
+         r="3"
+         fill="#f59e0b"
+         id="circle105" />
+      <circle
+         cx="26"
+         cy="5"
+         r="3"
+         fill="#f59e0b"
+         id="circle106" />
+      <circle
+         cx="30"
+         cy="22"
+         r="3"
+         fill="#f59e0b"
+         id="circle107" />
+      <circle
+         cx="10"
+         cy="28"
+         r="3"
+         fill="#f59e0b"
+         id="circle108" />
+      <line
+         x1="8"
+         y1="8"
+         x2="26"
+         y2="5"
+         stroke="#fbbf24"
+         stroke-width="0.8"
+         id="line108" />
+      <line
+         x1="26"
+         y1="5"
+         x2="30"
+         y2="22"
+         stroke="#fbbf24"
+         stroke-width="0.8"
+         id="line109" />
+      <line
+         x1="8"
+         y1="8"
+         x2="30"
+         y2="22"
+         stroke="#fbbf24"
+         stroke-width="0.8"
+         id="line110" />
+      <line
+         x1="8"
+         y1="8"
+         x2="10"
+         y2="28"
+         stroke="#fbbf24"
+         stroke-width="0.8"
+         id="line111" />
+      <line
+         x1="10"
+         y1="28"
+         x2="30"
+         y2="22"
+         stroke="#fbbf24"
+         stroke-width="0.8"
+         id="line112" />
+    </g>
+    <text
+       x="520"
+       y="876"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text112">Centrality</text>
+    <text
+       x="520"
+       y="891"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text113">Degree centrality · lFCD</text>
+  </g>
+  <g
+     id="deriv-ts"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 685,854 h 180 q 10,0 10,10 v 36 q 0,10 -10,10 H 685 q -10,0 -10,-10 v -36 q 0,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#fcd34d"
+       stroke-width="1"
+       id="path113" />
+    <use
+       href="#corrmat"
+       transform="translate(685,866)"
+       id="use113" />
+    <text
+       x="730"
+       y="876"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text114">Timeseries + FC</text>
+    <text
+       x="730"
+       y="891"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text115">Schaefer · AAL · HO · Glasser …</text>
+  </g>
+  <!-- Fan-out to derivatives -->
+  <path
+     d="M 480,834.55884 152,862"
+     fill="none"
+     stroke="#fcd34d"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path115"
+     sodipodi:nodetypes="cc" />
+  <path
+     d="M 480,836.62671 357,862"
+     fill="none"
+     stroke="#fcd34d"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path116"
+     sodipodi:nodetypes="cc" />
+  <path
+     d="M 480,835.59277 562,862"
+     fill="none"
+     stroke="#fcd34d"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path117"
+     sodipodi:nodetypes="cc" />
+  <path
+     d="M 480,835.07581 775,862"
+     fill="none"
+     stroke="#fcd34d"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     id="path118"
+     sodipodi:nodetypes="cc" />
+  <path
+     id="line87"
+     style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
+     d="m 480,498 v 43.987"
+     sodipodi:nodetypes="cc" />
+  <path
+     id="line90"
+     style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
+     d="m 480,606 v 9.5379"
+     sodipodi:nodetypes="cc" />
+  <path
+     id="line95"
+     style="fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
+     d="m 480,678 v 48.96606"
+     sodipodi:nodetypes="cc" />
+  <path
+     id="line100"
+     style="fill:none;stroke:#94a3b8;stroke-width:1.6;stroke-linecap:round;marker-end:url(#marker144)"
+     d="m 480,802 v 25.32129"
+     sodipodi:nodetypes="cc" />
+  <!-- Converge to smoothing -->
+  <path
+     d="m 152,918 v 25 q 0,10 10,10 h 293"
+     fill="none"
+     stroke="#cbd5e1"
+     stroke-width="1.2"
+     id="path119" />
+  <path
+     d="m 357,918 v 25 c 0,6.66667 3.33333,10 10,10 h 112.8575"
+     fill="none"
+     stroke="#cbd5e1"
+     stroke-width="1.2"
+     id="path120"
+     sodipodi:nodetypes="cssc" />
+  <path
+     d="m 562,918 v 25 q 0,10 -10,10 h -47"
+     fill="none"
+     stroke="#cbd5e1"
+     stroke-width="1.2"
+     id="path121" />
+  <path
+     d="m 775,918 v 25 c 0,6.66667 -3.33333,10 -10,10 H 480.1425"
+     fill="none"
+     stroke="#cbd5e1"
+     stroke-width="1.2"
+     id="path122"
+     sodipodi:nodetypes="cssc" />
+  <g
+     id="smooth"
+     filter="url(#card)"
+     transform="translate(0,8)">
+    <path
+       d="m 330,958 h 300 c 6.66667,0 10,3.33333 10,10 v 24 c 0,6.66667 -3.33333,10 -10,10 H 330 c -6.66667,0 -10,-3.33333 -10,-10 v -24 c 0,-6.66667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#fcd34d"
+       stroke-width="1"
+       id="path123"
+       sodipodi:nodetypes="sssssssss" />
+    <text
+       x="480"
+       y="980"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="600"
+       fill="#1e293b"
+       id="text123">Spatial Smoothing + Z-Scoring</text>
+    <text
+       x="480"
+       y="994"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="10px"
+       fill="#64748b"
+       id="text124">AFNI 3dBlurToFWHM · 6 mm FWHM · voxelwise standardization</text>
+  </g>
+  <path
+     id="line122"
+     style="fill:none;stroke:#cbd5e1;stroke-width:1.2;marker-end:url(#marker145)"
+     d="m 480,953 v 7.88228"
+     sodipodi:nodetypes="cc" />
+  <!-- QC PANEL -->
+  <path
+     d="m 782,563 h 139.40768 c 8,0 12,4 12,12 v 171 c 0,8 -4,12 -12,12 H 782 c -8,0 -12,-4 -12,-12 V 575 c 0,-8 4,-12 12,-12 z"
+     fill="#ecfeff"
+     opacity="0.5"
+     stroke="#a5f3fc"
+     stroke-width="1"
+     id="path124"
+     sodipodi:nodetypes="sssssssss" />
+  <text
+     x="848"
+     y="583"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="bold"
+     fill="#0891b2"
+     style="letter-spacing:0.1em;text-transform:uppercase"
+     id="text125">Quality Control</text>
+  <path
+     d="m 795,593 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 795 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#67e8f9"
+     stroke-width="1"
+     id="path125"
+     style="filter:url(#card)"
+     sodipodi:nodetypes="sssssssss" />
+  <g
+     transform="translate(793,611.69765)"
+     id="g125"
+     style="filter:url(#card)">
+    <use
+       href="#wave-motion"
+       transform="scale(0.45)"
+       id="use125" />
+  </g>
+  <text
+     x="817"
+     y="615"
+     font-family="Arial, sans-serif"
+     font-size="11.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text126"
+     style="filter:url(#card)">Motion Metrics</text>
+  <text
+     x="817"
+     y="628"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text127"
+     style="filter:url(#card)">FD · DVARS · RMS</text>
+  <path
+     d="m 870,199 c 26.66667,0 31.98699,113.84524 31.98699,386.5119"
+     fill="none"
+     stroke="#a78bfa"
+     stroke-width="1.6"
+     stroke-dasharray="5, 3"
+     opacity="0.6"
+     marker-end="url(#arr-purple)"
+     id="path85"
+     sodipodi:nodetypes="cc"
+     style="marker-end:url(#marker143)" />
+  <path
+     d="m 795,653 h 111.94548 c 6.66666,0 10,3.33333 10,10 v 30 c 0,6.66667 -3.33334,10 -10,10 H 795 c -6.66667,0 -10,-3.33333 -10,-10 v -30 c 0,-6.66667 3.33333,-10 10,-10 z"
+     fill="#ffffff"
+     stroke="#67e8f9"
+     stroke-width="1"
+     id="path127"
+     style="filter:url(#card)"
+     sodipodi:nodetypes="sssssssss" />
+  <g
+     transform="translate(788.97893,660)"
+     id="g128"
+     style="filter:url(#card)">
+    <circle
+       cx="12"
+       cy="16"
+       r="10"
+       fill="#06b6d4"
+       opacity="0.25"
+       id="circle127" />
+    <circle
+       cx="22"
+       cy="16"
+       r="10"
+       fill="#06b6d4"
+       opacity="0.25"
+       id="circle128" />
+  </g>
+  <text
+     x="824"
+     y="675"
+     font-family="Arial, sans-serif"
+     font-size="11.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text128"
+     style="filter:url(#card)">Registration</text>
+  <text
+     x="824"
+     y="688"
+     font-family="Arial, sans-serif"
+     font-size="10px"
+     fill="#64748b"
+     id="text129"
+     style="filter:url(#card)">Dice · Jaccard · CC</text>
+  <ellipse
+     fill="#ffffff"
+     stroke="#67e8f9"
+     stroke-width="1"
+     id="ellipse129"
+     ry="15"
+     rx="53.428162"
+     cy="733"
+     cx="848"
+     style="filter:url(#card)" />
+  <circle
+     cx="817.93213"
+     cy="733"
+     r="5"
+     fill="#22c55e"
+     id="circle129"
+     style="filter:url(#card)" />
+  <text
+     x="852.65271"
+     y="737"
+     text-anchor="middle"
+     font-family="Arial, sans-serif"
+     font-size="10.5px"
+     font-weight="600"
+     fill="#1e293b"
+     id="text130"
+     style="filter:url(#card)">Pass / Fail</text>
+  <path
+     id="line130"
+     style="fill:none;stroke:#67e8f9;stroke-width:1.2;marker-end:url(#ConcaveTriangle)"
+     d="m 848,643 v 4.83032"
+     sodipodi:nodetypes="cc" />
+  <path
+     id="line131"
+     style="fill:none;stroke:#67e8f9;stroke-width:1.2;marker-end:url(#ConcaveTriangle)"
+     d="m 848,703 v 9.05487"
+     sodipodi:nodetypes="cc" />
+  <!-- OUTPUT -->
+  <line
+     x1="480"
+     y1="1010"
+     x2="480"
+     y2="1054"
+     fill="none"
+     stroke="#94a3b8"
+     stroke-width="1.6"
+     stroke-linecap="round"
+     marker-end="url(#arr)"
+     id="line132"
+     style="marker-end:url(#marker145)" />
+  <!-- QC to output -->
+  <path
+     d="M 901.24768,757.72293 V 1090.4751 H 753.6029"
+     fill="none"
+     stroke="#67e8f9"
+     stroke-width="1.2"
+     stroke-dasharray="4, 3"
+     marker-end="url(#arr)"
+     id="path132"
+     style="marker-end:url(#ConcaveTriangle)"
+     sodipodi:nodetypes="ccc" />
+  <g
+     id="output"
+     filter="url(#card-lg)"
+     transform="translate(0,8)">
+    <path
+       d="m 223.11768,1046 h 512.73071 c 6.66667,0 10,3.3333 10,10 v 44 c 0,6.6667 -3.33333,10 -10,10 H 223.11768 c -6.66667,0 -10,-3.3333 -10,-10 v -44 c 0,-6.6667 3.33333,-10 10,-10 z"
+       fill="#ffffff"
+       stroke="#86efac"
+       stroke-width="1.5"
+       id="path133"
+       sodipodi:nodetypes="sssssssss" />
+    <text
+       x="480"
+       y="1072"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="15px"
+       font-weight="bold"
+       fill="#166534"
+       id="text133">Outputs</text>
+    <text
+       x="480"
+       y="1094"
+       text-anchor="middle"
+       font-family="Arial, sans-serif"
+       font-size="11px"
+       fill="#166534"
+       id="text134">Cleaned BOLD · Derivative maps (ALFF · ReHo · Centrality) · Timeseries · Correlation matrices · QC TSV</text>
+  </g>
+  <!-- LEGEND -->
+  <text
+     x="200"
+     y="1151.6555"
+     font-family="Arial, sans-serif"
+     font-size="9px"
+     font-weight="600"
+     fill="#64748b"
+     style="letter-spacing:0.08em;opacity:0.55"
+     id="text135">TOOLS</text>
+  <rect
+     x="250"
+     y="1144.6555"
+     width="8"
+     height="8"
+     fill="#93c5fd"
+     id="rect135"
+     style="opacity:0.55" />
+  <text
+     x="262"
+     y="1151.6555"
+     font-family="Arial, sans-serif"
+     font-size="9px"
+     fill="#64748b"
+     id="text136"
+     style="opacity:0.55">ANTs</text>
+  <rect
+     x="300"
+     y="1144.6555"
+     width="8"
+     height="8"
+     fill="#6ee7b7"
+     id="rect136"
+     style="opacity:0.55" />
+  <text
+     x="312"
+     y="1151.6555"
+     font-family="Arial, sans-serif"
+     font-size="9px"
+     fill="#64748b"
+     id="text137"
+     style="opacity:0.55">FSL</text>
+  <rect
+     x="340"
+     y="1144.6555"
+     width="8"
+     height="8"
+     fill="#fca5a5"
+     id="rect137"
+     style="opacity:0.55" />
+  <text
+     x="352"
+     y="1151.6555"
+     font-family="Arial, sans-serif"
+     font-size="9px"
+     fill="#64748b"
+     id="text138"
+     style="opacity:0.55">AFNI</text>
+  <rect
+     x="390"
+     y="1144.6555"
+     width="8"
+     height="8"
+     fill="#c4b5fd"
+     id="rect138"
+     style="opacity:0.55" />
+  <text
+     x="402"
+     y="1151.6555"
+     font-family="Arial, sans-serif"
+     font-size="9px"
+     fill="#64748b"
+     id="text139"
+     style="opacity:0.55">Python (nibabel · numpy)</text>
+  <g
+     transform="translate(560,1151.6555)"
+     id="g140"
+     style="opacity:0.55">
+    <line
+       x1="0"
+       y1="-3"
+       x2="20"
+       y2="-3"
+       stroke="#a78bfa"
+       stroke-width="1.2"
+       stroke-dasharray="4, 2"
+       opacity="0.8"
+       id="line139" />
+    <text
+       x="26"
+       y="0"
+       font-family="Arial, sans-serif"
+       font-size="9px"
+       fill="#64748b"
+       id="text140">cross-stream dependency</text>
+  </g>
+</svg>
