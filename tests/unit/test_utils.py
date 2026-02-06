@@ -2,6 +2,7 @@
 
 import pathlib as pl
 import tempfile
+from types import SimpleNamespace
 
 import pytest
 
@@ -41,3 +42,24 @@ class TestCreateCopy:
             tmp_dir = tmp_file.parent
             assert tmp_dir.exists()
         assert not tmp_file.exists() and not tmp_dir.exists()
+
+
+class TestGetBaseEntities:
+    """Test suite for utils.get_base_entities."""
+
+    def test_default_entities_extracted(self, test_subject: SimpleNamespace) -> None:
+        """Test default base entities, if they exist are extracted."""
+        result = utils.get_base_entities(test_subject.bold)
+        assert isinstance(result, dict)
+        assert "ses" not in result.keys()
+        assert result == {"sub": "01", "run": "01"}
+
+    def test_custom_entities_extracted(self, test_subject: SimpleNamespace) -> None:
+        """Test custom base entities are extracted if exists."""
+        result = utils.get_base_entities(test_subject.bold, ["sub", "task"])
+        assert result == {"sub": "01", "task": "balloonanalogrisktask"}
+
+    def test_nonexistent_entities(self, test_subject: SimpleNamespace) -> None:
+        """Test nonexistent entities are not returned."""
+        result = utils.get_base_entities(test_subject.bold, base_entities=["acq", "ce"])
+        assert result == {}
