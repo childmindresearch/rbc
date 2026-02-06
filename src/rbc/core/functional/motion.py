@@ -1,7 +1,6 @@
 """RBC motion reference & correction."""
 
 from pathlib import Path
-
 from types import SimpleNamespace
 
 from niwrap import afni
@@ -36,20 +35,31 @@ def generate_motion_reference(
 
 def motion_correction(
         in_file: Path, ref_file: Path, output_prefix: str
-) -> fsl.McflirtOutputs:
+) -> SimpleNamespace:
     """Estimate and correct head motion using FSL mcflirt.
 
     Args:
         in_file: Path to input BOLD timeseries to correct.
         ref_file: Path to reference volume for motion correction.
-        output_prefix: Prefix of output file.
+        output_fname: Name of output file.
     """
-    return fsl.mcflirt(
+
+    mc_result = fsl.mcflirt(
         in_file=in_file,
         ref_file=ref_file,
         save_mats=True,
         save_plots=True,
         save_rmsrel=True,
         save_rmsabs=True,
-        out_file=output_prefix,
+        out_file=f"{output_prefix}_mc_bold",
+    )
+
+    all_dirs = [d for d in Path(mc_result.root).iterdir() if d.is_dir() and d.suffix == ".mat"]
+
+    return SimpleNamespace(
+        bold = Path(mc_result.out_file),
+        par = Path(mc_result.par_file),
+        rms_rel = Path(mc_result.rmsrel_files),
+        rms_abs = Path(mc_result.rmsabs_files),
+        mat_dir=all_dirs[0]
     )
