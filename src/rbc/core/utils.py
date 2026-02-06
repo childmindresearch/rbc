@@ -29,17 +29,20 @@ def create_copy(in_file: str | Path) -> Iterator[Path]:
         shutil.rmtree(tmp_dir)
 
 
-def get_base_entities(in_file: Path) -> dict[str, str]:
+def get_base_entities(
+    in_file: Path, base_entities: list[str] = ["sub", "ses", "run"]
+) -> dict[str, str]:
     """Parse base BIDS entities to be used for file naming.
 
     Args:
         in_file: Path to parse bids entities for.
+        base_entities: List of base entities to extract (default: ['sub', 'ses' run'])
 
     Returns:
         A string-mapping of BIDS entities to values.
     """
     file_entities = parse_bids_entities(in_file)
-    return {k: v for k, v in file_entities.items() if k in ["sub", "ses", "run"]}
+    return {k: v for k, v in file_entities.items() if k in base_entities}
 
 
 def rename(in_file: str | Path, new_name: str | Path) -> Path:
