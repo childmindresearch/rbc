@@ -71,13 +71,6 @@ jobs:
           --cov-report=xml:coverage.xml \
           --cov=src
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage.xml
-        verbose: true
-
   ruff:
     runs-on: ubuntu-latest
     steps:
