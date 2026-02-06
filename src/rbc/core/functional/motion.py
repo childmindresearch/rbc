@@ -54,12 +54,12 @@ def motion_correction(
         out_file=f"{output_prefix}_mc_bold",
     )
 
-    all_dirs = [d for d in Path(mc_result.root).iterdir() if d.is_dir() and d.suffix == ".mat"]
+    motion_mat_dir = [d for d in Path(mc_result.root).iterdir() if d.is_dir() and d.suffix == ".mat"]
 
     return SimpleNamespace(
         bold = Path(mc_result.out_file),
         par = Path(mc_result.par_file),
         rms_rel = Path(mc_result.rmsrel_files),
         rms_abs = Path(mc_result.rmsabs_files),
-        mat_dir=all_dirs[0]
+        mat_dir=motion_mat_dir[0]
     )
