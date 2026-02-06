@@ -53,8 +53,8 @@ def fsl_tissue_segmentation(in_file: Path, output_prefix: str) -> SimpleNamespac
         tissue_type: fsl.fslmaths(
             input_files=[tissues.root / f"{output_prefix}_pve_{idx}.nii.gz"],
             operations=[
-                fsl.fslmaths_operation(thr=0.95),
-                fsl.fslmaths_operation(bin_=True),
+                fsl.fslmaths_operation_thr(thr=0.95),
+                fsl.fslmaths_operation_bin(bin_=True),
             ],
             output=f"{tissue_type}_mask.nii.gz",
         ).output_file

@@ -144,4 +144,6 @@ def ants_registration(
             print_out_composite_warp_file=True,
         ),
     )
-    return SimpleNamespace(forward=fwd.output, inverse=rev.output)
+    return SimpleNamespace(
+        forward=fwd.output.output_image_outfile, inverse=rev.output.output_image_outfile
+    )

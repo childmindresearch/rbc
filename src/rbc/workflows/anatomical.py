@@ -42,16 +42,15 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
     )
 
     # Prep files to save
-    t1w_outputs = [
-        (extracted_t1w.brain_extracted_image, "brain", "T1w"),
-        (extracted_t1w.brain_mask, "T1w", "mask"),
-        (tissue_masks.csf, "csf", "mask"),
-        (tissue_masks.gm, "gm", "mask"),
-        (tissue_masks.wm, "wm", "mask"),
-    ]
     renamed_files = [
         rename(out_file, bids(desc=desc, suffix=suffix, ext=".nii.gz"))
-        for out_file, desc, suffix in t1w_outputs
+        for out_file, desc, suffix in [
+            (extracted_t1w.brain_extracted_image, "brain", "T1w"),
+            (extracted_t1w.brain_mask, "T1w", "mask"),
+            (tissue_masks.csf, "csf", "mask"),
+            (tissue_masks.gm, "gm", "mask"),
+            (tissue_masks.wm, "wm", "mask"),
+        ]
     ]
     niwrap_helper.save(
         [*renamed_files, transforms.forward, transforms.inverse],
