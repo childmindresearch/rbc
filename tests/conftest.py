@@ -2,8 +2,18 @@
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Sequence
 
 import pytest
+
+
+def pytest_collection_modifyitems(items: Sequence[pytest.Item]) -> None:
+    """Apply appropriate markers based on test location."""
+    for item in items:
+        test_path = Path(item.fspath)
+
+        if "unit" in test_path.parts:
+            item.add_marker(pytest.mark.unit)
 
 
 @pytest.fixture
