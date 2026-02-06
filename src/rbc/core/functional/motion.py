@@ -3,8 +3,7 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from niwrap import afni
-from niwrap import fsl
+from niwrap import afni, fsl
 
 
 def generate_motion_reference(
