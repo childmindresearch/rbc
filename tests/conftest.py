@@ -1,8 +1,8 @@
 """Shared fixtures for tests data."""
 
+from collections.abc import Sequence
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Sequence
 
 import pytest
 
