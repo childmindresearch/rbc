@@ -42,7 +42,9 @@ def get_base_entities(
         A string-mapping of BIDS entities to values.
     """
     file_entities = parse_bids_entities(in_file)
-    return {k: v for k, v in file_entities.items() if k in ["sub", "ses", "task", "run"]}
+    return {
+        k: v for k, v in file_entities.items() if k in ["sub", "ses", "task", "run"]
+    }
 
 
 def rename(in_file: str | Path, new_name: str | Path) -> Path:
@@ -52,6 +54,7 @@ def rename(in_file: str | Path, new_name: str | Path) -> Path:
     if new_path.exists():
         raise FileExistsError(f"Target file already exists: {new_path}")
     return in_file.rename(new_path)
+
 
 def save_directory(in_dir: str | Path, out_dir: str | Path, name: str) -> Path:
     """Save a directory by copying it to a new location.

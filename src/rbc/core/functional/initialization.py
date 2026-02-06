@@ -4,8 +4,9 @@ from pathlib import Path
 
 from niwrap import afni
 
+
 def truncate_trs(
-    in_file: Path, output_fname: str, start_tr: int 
+    in_file: Path, output_fname: str, start_tr: int
 ) -> afni.V3dcalcOutputs:
     """Remove first N TRs from BOLD timeseries using AFNI 3dcalc.
 
@@ -19,17 +20,14 @@ def truncate_trs(
     """
     return afni.v_3dcalc(
         dataset_a=afni.v_3dcalc_dataset_a_file(
-            file=in_file,
-            selectors_=f"[{start_tr}..$]"
+            file=in_file, selectors_=f"[{start_tr}..$]"
         ),
         expression="a",
         prefix=output_fname,
     )
 
 
-def scale(
-    in_file: Path, scale_factor: float = 0.1
-) -> afni.V3drefitOutputs:
+def scale(in_file: Path, scale_factor: float = 0.1) -> afni.V3drefitOutputs:
     """Scale BOLD voxel dimensions using AFNI 3drefit.
 
     Args:
