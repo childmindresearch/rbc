@@ -48,4 +48,7 @@ def get_base_entities(
 def rename(in_file: str | Path, new_name: str | Path) -> Path:
     """Rename a file, keeping it in the same directory."""
     in_file = Path(in_file)
-    return in_file.rename(in_file.with_name(Path(new_name).name))
+    new_path = in_file.with_name(Path(new_name).name)
+    if new_path.exists():
+        raise FileExistsError(f"Target file already exists: {new_path}")
+    return in_file.rename(new_path)

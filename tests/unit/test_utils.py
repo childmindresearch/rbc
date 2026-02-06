@@ -12,13 +12,6 @@ from rbc.core import utils
 class TestCreateCopy:
     """Test suite for utils.create_copy."""
 
-    @pytest.fixture
-    def test_file(self, tmp_path: pl.Path) -> pl.Path:
-        """Create sample file for testing."""
-        test_file = tmp_path / "test_file.txt"
-        test_file.write_text("Sample content")
-        return test_file
-
     def test_copy_successful(self, test_file: pl.Path) -> None:
         """Test copy created successfully."""
         with utils.create_copy(test_file) as tmp_file:
