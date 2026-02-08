@@ -53,9 +53,10 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
         (truncated_bold.output_file, "truncated", "bold", ".nii.gz"),
         (motion_reference.output_file, None, "sbref", ".nii.gz"),
         (motion_corrected.bold.with_suffix(".nii.gz"), "motion", "bold", ".nii.gz"),
+        (motion_corrected.par, "motionParams", "motion", ".txt"),
         (motion_corrected.par, "movementParameters", "motion", ".1D"),
         (motion_corrected.rms_rel, "relsDisplacement", "motion", ".rms"),
-        (motion_corrected.rms_abs, "absDisplacement", "motion", ".rms"),
+        (motion_corrected.rms_abs, "maxDisplacement", "motion", ".rms"),
     ]
 
     func_out_dir = output_dir / bids(datatype="func", directory=True)
