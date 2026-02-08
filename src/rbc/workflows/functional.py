@@ -22,7 +22,9 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
         output_dir: Parent output directory to save data to.
         start_tr: Number of initial TRs to remove (default: 2).
     """
-    bids_entities = get_base_entities(in_bold)
+    bids_entities = get_base_entities(
+        in_bold, base_entities=["sub", "ses", "task", "run"]
+    )
     bids = partial(niwrap_helper.bids_path, **bids_entities)
 
     reoriented_bold = reorient(
