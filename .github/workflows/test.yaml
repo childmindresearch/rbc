@@ -11,6 +11,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      slow:
+        description: Run slow tests
+        required: false
+        default: true
+        type: boolean
       e2e:
         description: Run end-to-end tests
         required: false
@@ -54,7 +59,7 @@ jobs:
           --verbose
 
     - name: Run slow tests
-      if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch'
+      if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch' && inputs.slow == true
       shell: bash
       run: >
         uv run pytest \
