@@ -86,7 +86,7 @@ jobs:
         from pathlib import Path
 
         merged = JUnitXml()
-        for f in ["pytest_quick.xml", "pytest-slow.xml", "pytest-full.xml"]:
+        for f in ["pytest-quick.xml", "pytest-slow.xml", "pytest-full.xml"]:
           if Path(f).exists():
             merged += JUnitXml.fromfile(f)
         merged.write("pytest.xml")
