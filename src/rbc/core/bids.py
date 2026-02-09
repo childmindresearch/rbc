@@ -779,12 +779,12 @@ def bids_path(
     extra: dict[str, str | int] | None = None,
     suffix: str,
     extension: str,
-    datatype: str | None = None,
+    datatype: str,
 ) -> PurePath:
     """Build a BIDS-compliant relative path.
 
     Constructs a path following the BIDS directory convention:
-    ``sub-<label>/[ses-<label>/][<datatype>/]<filename>``
+    ``sub-<label>/[ses-<label>/]<datatype>/<filename>``
 
     Args:
         sub: Subject. A person or animal participating in the study.
@@ -921,8 +921,7 @@ def bids_path(
         dirs.append(f"sub-{sub}")
     if ses is not None:
         dirs.append(f"ses-{ses}")
-    if datatype is not None:
-        dirs.append(datatype)
+    dirs.append(datatype)
     return PurePath(*dirs, filename)
 
 

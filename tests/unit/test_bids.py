@@ -184,23 +184,13 @@ class TestBidsPath:
         expected = PurePath("sub-01", "anat", "sub-01_T1w.nii.gz")
         assert result == expected
 
-    def test_no_datatype(self) -> None:
-        """Path without datatype only has sub/ses dirs."""
-        result = bids_path(
-            sub="01",
-            ses="01",
-            suffix="scans",
-            extension=".tsv",
-        )
-        expected = PurePath("sub-01", "ses-01", "sub-01_ses-01_scans.tsv")
-        assert result == expected
-
     def test_returns_purepath(self) -> None:
         """Return type is PurePath."""
         result = bids_path(
             sub="01",
             suffix="T1w",
             extension=".nii.gz",
+            datatype=Datatype.ANAT,
         )
         assert isinstance(result, PurePath)
 
