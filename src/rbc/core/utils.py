@@ -47,11 +47,10 @@ def get_base_entities(
 
 def rename(in_file: str | Path, new_name: str | Path) -> Path:
     """Rename a file, keeping it in the same directory."""
-    in_file = Path(in_file)
-    new_path = in_file.with_name(Path(new_name).name)
-    if new_path.exists():
-        raise FileExistsError(f"Target file already exists: {new_path}")
-    return in_file.rename(new_path)
+    target = in_file.with_name(new_name)
+    if in_file == target:
+        return in_file
+    return Path(shutil.move(str(in_file), str(target)))
 
 def save_directory(in_dir: str | Path, out_dir: str | Path, name: str) -> Path:
     """Save a directory by copying it to a new location.
