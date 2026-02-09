@@ -55,7 +55,7 @@ def motion_correction(
         if d.is_dir() and d.suffix == ".mat":
             motion_mat_dir = d
             break
-    
+
     if motion_mat_dir is None:
         raise FileNotFoundError(f"Missing .mat directory in {mc_result.root}")
 
