@@ -75,12 +75,18 @@ select = [
     "S",    # flake8-bandit
     "SIM",  # flake8-simplify
     "T20",  # flake8-print
+    "TID",  # flake8-tidy-imports
     "TCH",  # flake8-type-checking
     "UP",   # pyupgrade
 ]
 ignore = []
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"niwrap_helper.bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
+"bids2table.format_bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
+"bids2table.parse_bids_entities".msg = "Prefer rbc.core.bids.parse_bids_name"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
