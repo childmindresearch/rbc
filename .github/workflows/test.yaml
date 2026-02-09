@@ -79,9 +79,9 @@ jobs:
     - name: Merge XML files
       if: matrix.os == 'ubuntu-latest'
       shell: bash
-      run: >
+      run: |
         uv pip install junitparser
-        uv run python3 << 'EOF'
+        uv run python -c '
         from junitparser import JUnitXml
         from pathlib import Path
 
@@ -90,7 +90,7 @@ jobs:
           if Path(f).exists():
             merged += JUnitXml.fromfile(f)
         merged.write("pytest.xml")
-        EOF
+        '
 
     - name: Pytest coverage comment
       if: matrix.os == 'ubuntu-latest'
