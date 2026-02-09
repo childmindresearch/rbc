@@ -1,14 +1,15 @@
 """Unit tests for functional workflow."""
 
 import shutil
-import pytest
 from types import SimpleNamespace
 
+import pytest
 from niwrap import afni
 
 from rbc.core import functional
 
 DOCKER_MISSING = shutil.which("docker") is None
+
 
 class TestFuncInitialization:
     """Test suite for functional workflow initialization."""
