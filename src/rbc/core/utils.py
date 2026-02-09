@@ -52,6 +52,7 @@ def rename(in_file: str | Path, new_name: str | Path) -> Path:
         return in_file
     return Path(shutil.move(str(in_file), str(target)))
 
+
 def save_directory(in_dir: str | Path, out_dir: str | Path, name: str) -> Path:
     """Save a directory by copying it to a new location.
 
