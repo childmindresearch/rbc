@@ -50,14 +50,19 @@ def motion_correction(
         out_file=output_prefix,
     )
 
-    motion_mat_dir = [
-        d for d in Path(mc_result.root).iterdir() if d.is_dir() and d.suffix == ".mat"
-    ]
+    motion_mat_dir = None
+    for d in Path(mc_result.root).iterdir():
+        if d.is_dir() and d.suffix == ".mat":
+            motion_mat_dir = d
+            break
+    
+    if motion_mat_dir is None:
+        raise FileNotFoundError(f"Missing .mat directory in {mc_result.root}")
 
     return SimpleNamespace(
         bold=Path(mc_result.out_file),
         par=Path(mc_result.par_file),
         rms_rel=Path(mc_result.rmsrel_files),
         rms_abs=Path(mc_result.rmsabs_files),
-        mat_dir=motion_mat_dir[0],
+        mat_dir=motion_mat_dir,
     )
