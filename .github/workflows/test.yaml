@@ -92,18 +92,8 @@ jobs:
     - name: Merge JUnitXml files
       if: matrix.os == 'ubuntu-latest'
       shell: bash
-      run: |
-        uv pip install junitparser
-        uv run python -c '
-        from junitparser import JUnitXml
-        from pathlib import Path
-
-        merged = JUnitXml()
-        for f in ["pytest-quick.xml", "pytest-slow.xml", "pytest-full.xml"]:
-          if Path(f).exists():
-            merged += JUnitXml.fromfile(f)
-        merged.write("pytest.xml")
-        '
+      run: >
+        uv run scripts/merge_cov_junitxml.py
 
     - name: Pytest coverage comment
       if: matrix.os == 'ubuntu-latest'
