@@ -502,6 +502,47 @@ def _format_entity(key: str, val: str | int) -> str:
     return f"{key}-{val}"
 
 
+_STANDARD_ENTITIES: frozenset[str] = frozenset(
+    {
+        "sub",
+        "tpl",
+        "ses",
+        "cohort",
+        "sample",
+        "task",
+        "tracksys",
+        "acq",
+        "nuc",
+        "voi",
+        "ce",
+        "trc",
+        "stain",
+        "rec",
+        "dir",
+        "run",
+        "mod",
+        "echo",
+        "flip",
+        "inv",
+        "mt",
+        "part",
+        "proc",
+        "hemi",
+        "space",
+        "split",
+        "recording",
+        "chunk",
+        "atlas",
+        "seg",
+        "scale",
+        "res",
+        "den",
+        "label",
+        "desc",
+    }
+)
+
+
 def bids_name(
     *,
     sub: str | None = None,
@@ -685,6 +726,12 @@ def bids_name(
         if _val is not None:
             parts.append(_format_entity(_key, _val))
     if extra is not None:
+        _overlap = set(extra) & _STANDARD_ENTITIES
+        if _overlap:
+            raise ValueError(
+                f"Standard entities passed via extra: {_overlap}. "
+                "Use the corresponding keyword argument instead."
+            )
         for _key, _val in extra.items():
             parts.append(_format_entity(_key, _val))
     if desc is not None:

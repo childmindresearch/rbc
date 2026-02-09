@@ -194,6 +194,14 @@ def generate_module(  # noqa: C901
     w('    return f"{key}-{val}"')
     w()
     w()
+    # -- Standard entity keys set (for extra-entity validation) --
+    entity_keys = [str(e["key"]) for e in entities]
+    w("_STANDARD_ENTITIES: frozenset[str] = frozenset({")
+    for key in entity_keys:
+        w(f'    "{key}",')
+    w("})")
+    w()
+    w()
 
     # -- Typed parameter list: (key, type_hint, short_description, long_description) --
     params: list[tuple[str, str, str, str]] = []
@@ -265,8 +273,14 @@ def generate_module(  # noqa: C901
     w("    for _key, _val in _entities:")
     w("        if _val is not None:")
     w("            parts.append(_format_entity(_key, _val))")
-    # extra entities
+    # extra entities (with standard-key guard)
     w("    if extra is not None:")
+    w("        _overlap = set(extra) & _STANDARD_ENTITIES")
+    w("        if _overlap:")
+    w("            raise ValueError(")
+    w('                f"Standard entities passed via extra: {_overlap}. "')
+    w('                "Use the corresponding keyword argument instead."')
+    w("            )")
     w("        for _key, _val in extra.items():")
     w("            parts.append(_format_entity(_key, _val))")
     # desc (always last)
@@ -561,6 +575,18 @@ def generate_tests(
     w("            bids_name(")
     w('                sub="01",')
     w('                extra={"bad": "not valid!"},')
+    w('                suffix="T1w",')
+    w('                extension=".nii.gz",')
+    w("            )")
+    w()
+
+    # standard entity in extra raises
+    w("    def test_extra_rejects_standard_entity(self) -> None:")
+    w('        """Standard entities passed via extra raise ValueError."""')
+    w('        with pytest.raises(ValueError, match="Standard entities"):')
+    w("            bids_name(")
+    w('                sub="01",')
+    w('                extra={"run": 1},')
     w('                suffix="T1w",')
     w('                extension=".nii.gz",')
     w("            )")

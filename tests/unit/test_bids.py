@@ -141,6 +141,16 @@ class TestBidsName:
                 extension=".nii.gz",
             )
 
+    def test_extra_rejects_standard_entity(self) -> None:
+        """Standard entities passed via extra raise ValueError."""
+        with pytest.raises(ValueError, match="Standard entities"):
+            bids_name(
+                sub="01",
+                extra={"run": 1},
+                suffix="T1w",
+                extension=".nii.gz",
+            )
+
 
 @pytest.mark.unit
 class TestBidsPath:
