@@ -7,6 +7,9 @@
    id="svg141"
    sodipodi:docname="pipeline_flow.svg"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   inkscape:export-filename="pipeline_flow.png"
+   inkscape:export-xdpi="162.71187"
+   inkscape:export-ydpi="162.71187"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -28,7 +31,8 @@
      inkscape:window-x="1912"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg141" />
+     inkscape:current-layer="svg141"
+     inkscape:export-bgcolor="#ffffffff" />
   <defs
      id="defs54">
     <marker
