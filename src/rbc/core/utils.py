@@ -45,7 +45,7 @@ def get_base_entities(
     return {k: v for k, v in file_entities.items() if k in base_entities}
 
 
-def rename(in_file: str | Path, new_name: str | Path) -> Path:
+def rename(in_file: Path | Path, new_name: str | Path) -> Path:
     """Rename a file, keeping it in the same directory."""
     target = in_file.with_name(new_name)
     if in_file == target:
