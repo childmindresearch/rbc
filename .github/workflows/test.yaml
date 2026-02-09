@@ -11,11 +11,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      slow:
-        description: Run slow tests
-        required: false
-        default: true
-        type: boolean
       e2e:
         description: Run end-to-end tests
         required: false
