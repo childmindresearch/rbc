@@ -96,6 +96,51 @@ class TestBidsName:
         result = bids_name(sub="01", suffix=Suffix.T1W, extension=".nii.gz")
         assert result == "sub-01_T1w.nii.gz"
 
+    def test_extra_entities(self) -> None:
+        """Non-standard entities are inserted before desc."""
+        result = bids_name(
+            sub="01",
+            extra={
+                "from": "T1w",
+                "to": "template",
+                "mode": "image",
+            },
+            suffix="xfm",
+            extension=".nii.gz",
+        )
+        assert result == ("sub-01_from-T1w_to-template_mode-image_xfm.nii.gz")
+
+    def test_extra_before_desc(self) -> None:
+        """Extra entities appear after standard ones but before desc."""
+        result = bids_name(
+            sub="01",
+            desc="brain",
+            extra={"from": "T1w", "to": "MNI"},
+            suffix="T1w",
+            extension=".nii.gz",
+        )
+        assert result == ("sub-01_from-T1w_to-MNI_desc-brain_T1w.nii.gz")
+
+    def test_extra_with_int_value(self) -> None:
+        """Extra entities accept integer values."""
+        result = bids_name(
+            sub="01",
+            extra={"iter": 3},
+            suffix="T1w",
+            extension=".nii.gz",
+        )
+        assert "iter-3" in result
+
+    def test_extra_validation(self) -> None:
+        """Extra entity values are validated."""
+        with pytest.raises(ValueError, match="Invalid label"):
+            bids_name(
+                sub="01",
+                extra={"bad": "not valid!"},
+                suffix="T1w",
+                extension=".nii.gz",
+            )
+
 
 @pytest.mark.unit
 class TestBidsPath:
@@ -203,6 +248,14 @@ class TestParseBidsName:
         assert parsed.entities["ses"] == "pre"
         assert parsed.entities["run"] == "3"
         assert parsed.entities["desc"] == "preproc"
+
+    def test_non_standard_entities(self) -> None:
+        """Non-standard entity keys are parsed into entities dict."""
+        result = parse_bids_name("sub-01_from-T1w_to-template_mode-image_xfm.nii.gz")
+        assert result.entities["from"] == "T1w"
+        assert result.entities["to"] == "template"
+        assert result.entities["mode"] == "image"
+        assert result.suffix == "xfm"
 
 
 @pytest.mark.unit

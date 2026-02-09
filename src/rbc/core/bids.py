@@ -489,6 +489,19 @@ class BIDSFile:
     """File extension including leading dot (e.g. ``".nii.gz"``)."""
 
 
+def _format_entity(key: str, val: str | int) -> str:
+    """Validate and format a single entity key-value pair."""
+    if isinstance(val, int):
+        if val < 0:
+            raise ValueError(f"Negative index for entity '{key}': {val}")
+        return f"{key}-{val}"
+    if not _LABEL_RE.fullmatch(val):
+        raise ValueError(
+            f"Invalid label for entity '{key}': {val!r}. Must match: [0-9a-zA-Z+]+"
+        )
+    return f"{key}-{val}"
+
+
 def bids_name(
     *,
     sub: str | None = None,
@@ -526,14 +539,15 @@ def bids_name(
     den: str | None = None,
     label: str | None = None,
     desc: str | None = None,
+    extra: dict[str, str | int] | None = None,
     suffix: str,
     extension: str,
 ) -> str:
     """Build a BIDS-compliant filename.
 
-    Entities are ordered per the BIDS specification. Label values are
-    validated against the BIDS label pattern. Index values must be
-    non-negative integers and are converted to strings.
+    Entities are ordered per the BIDS specification. Label values
+    are validated against the BIDS label pattern. Index values
+    must be non-negative integers and are converted to strings.
 
     Args:
         sub: Subject. A person or animal participating in the study.
@@ -614,6 +628,11 @@ def bids_name(
         label: Label. Tissue-type label, following a prescribed vocabulary.
         desc: Description. When necessary to distinguish two files that do not otherwise
             have a distinguishing entity, the desc-<label> entity SHOULD be used.
+        extra: Non-standard entities inserted just before
+            ``desc`` (e.g.
+            ``{"from": "T1w", "to": "template"}``).
+            Values follow the same validation rules as
+            standard entities.
         suffix: File suffix (e.g. "T1w", "bold").
         extension: File extension with leading dot
             (e.g. ".nii.gz").
@@ -660,23 +679,16 @@ def bids_name(
         ("res", res),
         ("den", den),
         ("label", label),
-        ("desc", desc),
     ]
     parts: list[str] = []
     for _key, _val in _entities:
-        if _val is None:
-            continue
-        if isinstance(_val, int):
-            if _val < 0:
-                raise ValueError(f"Negative index for entity '{_key}': {_val}")
-            parts.append(f"{_key}-{_val}")
-        else:
-            if not _LABEL_RE.fullmatch(_val):
-                raise ValueError(
-                    f"Invalid label for entity '{_key}': {_val!r}. "
-                    "Must match: [0-9a-zA-Z+]+"
-                )
-            parts.append(f"{_key}-{_val}")
+        if _val is not None:
+            parts.append(_format_entity(_key, _val))
+    if extra is not None:
+        for _key, _val in extra.items():
+            parts.append(_format_entity(_key, _val))
+    if desc is not None:
+        parts.append(_format_entity("desc", desc))
     return "_".join([*parts, suffix]) + extension
 
 
@@ -717,6 +729,7 @@ def bids_path(
     den: str | None = None,
     label: str | None = None,
     desc: str | None = None,
+    extra: dict[str, str | int] | None = None,
     suffix: str,
     extension: str,
     datatype: str | None = None,
@@ -805,6 +818,8 @@ def bids_path(
         label: Label. Tissue-type label, following a prescribed vocabulary.
         desc: Description. When necessary to distinguish two files that do not otherwise
             have a distinguishing entity, the desc-<label> entity SHOULD be used.
+        extra: Non-standard entities inserted just before
+            ``desc``. See :func:`bids_name` for details.
         suffix: File suffix (e.g. "T1w", "bold").
         extension: File extension with leading dot
             (e.g. ".nii.gz").
@@ -850,6 +865,7 @@ def bids_path(
         den=den,
         label=label,
         desc=desc,
+        extra=extra,
         suffix=suffix,
         extension=extension,
     )

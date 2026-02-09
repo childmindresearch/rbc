@@ -90,7 +90,6 @@ def wrap_arg_doc(key: str, desc: str, indent: int = 8) -> list[str]:
 
 
 def generate_module(  # noqa: C901
-    schema: object,
     bids_version: str,
     entities: list[dict[str, object]],
     datatypes: list[tuple[str, str]],
@@ -178,8 +177,27 @@ def generate_module(  # noqa: C901
     w()
     w()
 
-    # -- Typed parameter list --
-    # (key, type_hint, short_description, long_description)
+    # -- Internal validation helper --
+    w("def _format_entity(key: str, val: str | int) -> str:")
+    w('    """Validate and format a single entity key-value pair."""')
+    w("    if isinstance(val, int):")
+    w("        if val < 0:")
+    w("            raise ValueError(")
+    w('                f"Negative index for entity'
+       " '{key}': {val}\"")
+    w("            )")
+    w('        return f"{key}-{val}"')
+    w("    if not _LABEL_RE.fullmatch(val):")
+    w("        raise ValueError(")
+    w('            f"Invalid label for entity'
+       " '{key}': {val!r}. \"")
+    w(f'            "Must match: {label_pattern}"')
+    w("        )")
+    w('    return f"{key}-{val}"')
+    w()
+    w()
+
+    # -- Typed parameter list: (key, type_hint, short_description, long_description) --
     params: list[tuple[str, str, str, str]] = []
     for e in entities:
         key = str(e["key"])
@@ -188,10 +206,7 @@ def generate_module(  # noqa: C901
         display = str(e["display_name"])
         desc_raw = str(e.get("description") or "")
         sentence = first_sentence(desc_raw) if desc_raw else ""
-        if sentence:
-            long_desc = f"{display}. {sentence}"
-        else:
-            long_desc = f"{display}."
+        long_desc = f"{display}. {sentence}" if sentence else f"{display}."
 
         if enum is not None:
             lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr]
@@ -203,24 +218,34 @@ def generate_module(  # noqa: C901
 
         params.append((key, hint, display, long_desc))
 
+    # Split params: everything before desc, then desc separately.
+    # Extra (non-standard) entities are inserted just before desc.
+    params_before_desc = [p for p in params if p[0] != "desc"]
+
     # -- bids_name --
     w("def bids_name(")
     w("    *,")
     for key, hint, _, _ in params:
         w(f"    {key}: {hint} = None,")
+    w("    extra: dict[str, str | int] | None = None,")
     w("    suffix: str,")
     w("    extension: str,")
     w(") -> str:")
     w('    """Build a BIDS-compliant filename.')
     w()
-    w("    Entities are ordered per the BIDS specification. Label values are")
-    w("    validated against the BIDS label pattern. Index values must be")
-    w("    non-negative integers and are converted to strings.")
+    w("    Entities are ordered per the BIDS specification. Label values")
+    w("    are validated against the BIDS label pattern. Index values")
+    w("    must be non-negative integers and are converted to strings.")
     w()
     w("    Args:")
     for key, _, _, long_desc in params:
         for line in wrap_arg_doc(key, long_desc):
             w(line)
+    w("        extra: Non-standard entities inserted just before")
+    w("            ``desc`` (e.g.")
+    w('            ``{"from": "T1w", "to": "template"}``).')
+    w("            Values follow the same validation rules as")
+    w("            standard entities.")
     w('        suffix: File suffix (e.g. "T1w", "bold").')
     w("        extension: File extension with leading dot")
     w('            (e.g. ".nii.gz").')
@@ -233,30 +258,22 @@ def generate_module(  # noqa: C901
     w("            index is negative.")
     w('    """')
 
-    # body
+    # body — standard entities (except desc)
     w("    _entities: list[tuple[str, str | int | None]] = [")
-    for key, _, _, _ in params:
+    for key, _, _, _ in params_before_desc:
         w(f'        ("{key}", {key}),')
     w("    ]")
     w("    parts: list[str] = []")
     w("    for _key, _val in _entities:")
-    w("        if _val is None:")
-    w("            continue")
-    w("        if isinstance(_val, int):")
-    w("            if _val < 0:")
-    w("                raise ValueError(")
-    w("                    f\"Negative index for entity"
-       " '{_key}': {_val}\"")
-    w("                )")
-    w('            parts.append(f"{_key}-{_val}")')
-    w("        else:")
-    w("            if not _LABEL_RE.fullmatch(_val):")
-    w("                raise ValueError(")
-    w("                    f\"Invalid label for entity"
-       " '{_key}': {_val!r}. \"")
-    w(f'                    "Must match: {label_pattern}"')
-    w("                )")
-    w('            parts.append(f"{_key}-{_val}")')
+    w("        if _val is not None:")
+    w("            parts.append(_format_entity(_key, _val))")
+    # extra entities
+    w("    if extra is not None:")
+    w("        for _key, _val in extra.items():")
+    w("            parts.append(_format_entity(_key, _val))")
+    # desc (always last)
+    w("    if desc is not None:")
+    w('        parts.append(_format_entity("desc", desc))')
     w('    return "_".join([*parts, suffix]) + extension')
     w()
     w()
@@ -266,6 +283,7 @@ def generate_module(  # noqa: C901
     w("    *,")
     for key, hint, _, _ in params:
         w(f"    {key}: {hint} = None,")
+    w("    extra: dict[str, str | int] | None = None,")
     w("    suffix: str,")
     w("    extension: str,")
     w("    datatype: str | None = None,")
@@ -279,6 +297,8 @@ def generate_module(  # noqa: C901
     for key, _, _, long_desc in params:
         for line in wrap_arg_doc(key, long_desc):
             w(line)
+    w("        extra: Non-standard entities inserted just before")
+    w("            ``desc``. See :func:`bids_name` for details.")
     w('        suffix: File suffix (e.g. "T1w", "bold").')
     w("        extension: File extension with leading dot")
     w('            (e.g. ".nii.gz").')
@@ -292,6 +312,7 @@ def generate_module(  # noqa: C901
     w("    filename = bids_name(")
     for key, _, _, _ in params:
         w(f"        {key}={key},")
+    w("        extra=extra,")
     w("        suffix=suffix,")
     w("        extension=extension,")
     w("    )")
@@ -454,7 +475,7 @@ def generate_tests(
     # label validation
     w("    def test_invalid_label_raises(self) -> None:")
     w('        """Labels with invalid characters raise ValueError."""')
-    w("        with pytest.raises(ValueError, match=\"Invalid label\"):")
+    w('        with pytest.raises(ValueError, match="Invalid label"):')
     w("            bids_name(")
     w('                sub="bad label!",')
     w('                suffix="T1w",')
@@ -465,7 +486,7 @@ def generate_tests(
     # negative index validation
     w("    def test_negative_index_raises(self) -> None:")
     w('        """Negative index values raise ValueError."""')
-    w("        with pytest.raises(ValueError, match=\"Negative index\"):")
+    w('        with pytest.raises(ValueError, match="Negative index"):')
     w("            bids_name(")
     w('                sub="01",')
     w("                run=-1,")
@@ -495,6 +516,60 @@ def generate_tests(
     w('            sub="01", suffix=Suffix.T1W, extension=".nii.gz"')
     w("        )")
     w('        assert result == "sub-01_T1w.nii.gz"')
+    w()
+
+    # extra entities
+    w("    def test_extra_entities(self) -> None:")
+    w('        """Non-standard entities are inserted before desc."""')
+    w("        result = bids_name(")
+    w('            sub="01",')
+    w("            extra={")
+    w('                "from": "T1w",')
+    w('                "to": "template",')
+    w('                "mode": "image",')
+    w("            },")
+    w('            suffix="xfm",')
+    w('            extension=".nii.gz",')
+    w("        )")
+    w("        assert result == (")
+    w('            "sub-01_from-T1w_to-template_mode-image_xfm.nii.gz"')
+    w("        )")
+    w()
+
+    w("    def test_extra_before_desc(self) -> None:")
+    w('        """Extra entities appear after standard ones but before desc."""')
+    w("        result = bids_name(")
+    w('            sub="01",')
+    w('            desc="brain",')
+    w('            extra={"from": "T1w", "to": "MNI"},')
+    w('            suffix="T1w",')
+    w('            extension=".nii.gz",')
+    w("        )")
+    w("        assert result == (")
+    w('            "sub-01_from-T1w_to-MNI_desc-brain_T1w.nii.gz"')
+    w("        )")
+    w()
+
+    w("    def test_extra_with_int_value(self) -> None:")
+    w('        """Extra entities accept integer values."""')
+    w("        result = bids_name(")
+    w('            sub="01",')
+    w('            extra={"iter": 3},')
+    w('            suffix="T1w",')
+    w('            extension=".nii.gz",')
+    w("        )")
+    w('        assert "iter-3" in result')
+    w()
+
+    w("    def test_extra_validation(self) -> None:")
+    w('        """Extra entity values are validated."""')
+    w('        with pytest.raises(ValueError, match="Invalid label"):')
+    w("            bids_name(")
+    w('                sub="01",')
+    w('                extra={"bad": "not valid!"},')
+    w('                suffix="T1w",')
+    w('                extension=".nii.gz",')
+    w("            )")
     w()
     w()
 
@@ -629,6 +704,17 @@ def generate_tests(
     w('        assert parsed.entities["run"] == "3"')
     w('        assert parsed.entities["desc"] == "preproc"')
     w()
+
+    w("    def test_non_standard_entities(self) -> None:")
+    w('        """Non-standard entity keys are parsed into entities dict."""')
+    w("        result = parse_bids_name(")
+    w('            "sub-01_from-T1w_to-template_mode-image_xfm.nii.gz"')
+    w("        )")
+    w('        assert result.entities["from"] == "T1w"')
+    w('        assert result.entities["to"] == "template"')
+    w('        assert result.entities["mode"] == "image"')
+    w('        assert result.suffix == "xfm"')
+    w()
     w()
 
     # ---- TestConstants ----
@@ -725,7 +811,6 @@ def main() -> None:
     # --- Generate & write module --------------------------------------------
 
     module_src = generate_module(
-        schema=schema,
         bids_version=bids_version,
         entities=entities,
         datatypes=datatypes,
@@ -735,7 +820,7 @@ def main() -> None:
         label_pattern=label_pattern,
     )
     OUTPUT_MODULE.write_text(module_src, encoding="utf-8")
-    print(f"Generated {OUTPUT_MODULE}")
+    print(f"Generated {OUTPUT_MODULE}")  # noqa: T201
 
     # --- Generate & write tests ---------------------------------------------
 
@@ -746,7 +831,7 @@ def main() -> None:
         modalities=modalities,
     )
     OUTPUT_TESTS.write_text(tests_src, encoding="utf-8")
-    print(f"Generated {OUTPUT_TESTS}")
+    print(f"Generated {OUTPUT_TESTS}")  # noqa: T201
 
     # --- Format & lint both files -------------------------------------------
 
@@ -759,10 +844,10 @@ def main() -> None:
             ),
         ]:
             try:
-                subprocess.run(cmd, check=True, capture_output=True)
-                print(f"  {path.name} {label}: ok")
+                subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
+                print(f"  {path.name} {label}: ok")  # noqa: T201
             except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-                print(f"  {path.name} {label}: FAILED ({exc})")
+                print(f"  {path.name} {label}: FAILED ({exc})")  # noqa: T201
 
 
 if __name__ == "__main__":
