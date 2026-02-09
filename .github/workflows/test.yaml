@@ -81,7 +81,7 @@ jobs:
       shell: bash
       run: >
         uv pip install junitparser
-        python3 << 'EOF'
+        uv run python3 << 'EOF'
         from junitparser import JUnitXml
         from pathlib import Path
 
@@ -93,6 +93,7 @@ jobs:
         EOF
 
     - name: Pytest coverage comment
+      if: matrix.os == 'ubuntu-latest'
       uses: MishaKav/pytest-coverage-comment@v1
       with:
         pytest-coverage-path: ./pytest-coverage.txt
