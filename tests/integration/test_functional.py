@@ -29,6 +29,32 @@ def test_truncate_trs(test_subject: SimpleNamespace) -> None:
     assert int(new_info.info[0]) == original_count - start_tr
 
 
+def test_truncate_to_min_volume(test_subject: SimpleNamespace) -> None:
+    """Test truncating to minimum volume count of 1."""
+    original_info = afni.v_3dinfo(dataset=[test_subject.bold], nv=True)
+    original_count = int(original_info.info[0])
+
+    start_tr = original_count - 1
+    truncated_bold = functional.truncate_trs(
+        in_file=test_subject.bold,
+        output_fname="test_truncated_min.nii.gz",
+        start_tr=start_tr,
+    )
+    # Test truncated BOLD file volume count is 1
+    new_info = afni.v_3dinfo(dataset=[truncated_bold.output_file], nv=True)
+    assert int(new_info.info[0]) == 1
+
+
+def test_motion_reference_volume_count(test_subject: SimpleNamespace) -> None:
+    """Test motion reference volume count is 1."""
+    reference = functional.generate_motion_reference(
+        in_file=test_subject.bold, output_fname="test_motion_ref.nii.gz"
+    )
+    # Test motion reference file has 1 volume
+    ref_info = afni.v_3dinfo(dataset=[reference.output_file], nv=True)
+    assert int(ref_info.info[0]) == 1
+
+
 def test_motion_correction_10vols(test_subject: SimpleNamespace) -> None:
     """Test motion correction on 10 volumes of BOLD timeseries."""
     reoriented = reorient(
