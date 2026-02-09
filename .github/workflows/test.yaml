@@ -83,7 +83,7 @@ jobs:
           --cov-append \
           --verbose
 
-    - name: Generate combined coverae report
+    - name: Generate combined coverage report
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: >
