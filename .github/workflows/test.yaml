@@ -78,11 +78,18 @@ jobs:
           -m "full_pipeline" \
           --runner=docker \
           --junitxml=pytest-full.xml \
+          --cov-report=xml:coverage.xml \
           --cov=src tests \
           --cov-append \
           --verbose
 
-    - name: Merge XML files
+    - name: Generate combined coverae report
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: >
+        uv run coverage xml -o coverage.xml
+
+    - name: Merge JUnitXml files
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
@@ -102,7 +109,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       uses: MishaKav/pytest-coverage-comment@v1
       with:
-        pytest-coverage-path: ./pytest-coverage.txt
+        pytest-xml-coverage-path: ./coverage.xml
         junitxml-path: ./pytest.xml
 
   ruff:
