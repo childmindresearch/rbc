@@ -1,11 +1,14 @@
 """Unit tests for functional workflow."""
 
+import shutil
+import pytest
 from types import SimpleNamespace
 
 from niwrap import afni
 
 from rbc.core import functional
 
+DOCKER_MISSING = shutil.which("docker") is None
 
 class TestFuncInitialization:
     """Test suite for functional workflow initialization."""
@@ -16,6 +19,7 @@ class TestFuncInitialization:
         selector = f"[{start_tr}..$]"
         assert selector == "[4..$]"
 
+    @pytest.mark.skipif(DOCKER_MISSING, reason="Docker is required")
     def test_truncate_to_min_volume(self, test_subject: SimpleNamespace) -> None:
         """Test truncating to minimum volume count of 1."""
         original_info = afni.v_3dinfo(dataset=[test_subject.bold], nv=True)
@@ -41,6 +45,7 @@ class TestFuncMotion:
         results = [nv // 2 for nv in volumes_list]
         assert results == [50, 50, 1, 0]
 
+    @pytest.mark.skipif(DOCKER_MISSING, reason="Docker is required")
     def test_motion_reference_volume_count(self, test_subject: SimpleNamespace) -> None:
         """Test motion reference volume count is 1."""
         reference = functional.generate_motion_reference(
