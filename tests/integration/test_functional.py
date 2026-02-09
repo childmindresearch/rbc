@@ -55,6 +55,7 @@ def test_motion_reference_volume_count(test_subject: SimpleNamespace) -> None:
     assert int(ref_info.info[0]) == 1
 
 
+@pytest.mark.slow
 def test_motion_correction_10vols(test_subject: SimpleNamespace) -> None:
     """Test motion correction on 10 volumes of BOLD timeseries."""
     reoriented = reorient(
