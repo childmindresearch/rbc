@@ -183,14 +183,12 @@ def generate_module(  # noqa: C901
     w("    if isinstance(val, int):")
     w("        if val < 0:")
     w("            raise ValueError(")
-    w('                f"Negative index for entity'
-       " '{key}': {val}\"")
+    w("                f\"Negative index for entity '{key}': {val}\"")
     w("            )")
     w('        return f"{key}-{val}"')
     w("    if not _LABEL_RE.fullmatch(val):")
     w("        raise ValueError(")
-    w('            f"Invalid label for entity'
-       " '{key}': {val!r}. \"")
+    w("            f\"Invalid label for entity '{key}': {val!r}. \"")
     w(f'            "Must match: {label_pattern}"')
     w("        )")
     w('    return f"{key}-{val}"')
@@ -209,7 +207,7 @@ def generate_module(  # noqa: C901
         long_desc = f"{display}. {sentence}" if sentence else f"{display}."
 
         if enum is not None:
-            lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr]
+            lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr,attr-defined]
             hint = f"{lit} | None"
         elif fmt == "index":
             hint = "int | None"
@@ -361,11 +359,7 @@ def generate_module(  # noqa: C901
     w('        key, _, value = part.partition("-")')
     w("        if value:")
     w("            entities[key] = value")
-    w(
-        "    return BIDSFile("
-        "entities=entities, suffix=suffix, extension=extension"
-        ")"
-    )
+    w("    return BIDSFile(entities=entities, suffix=suffix, extension=extension)")
     w()
 
     return "\n".join(lines)
@@ -795,15 +789,9 @@ def main() -> None:
         for key, mod in schema.objects.modalities.items()
     )
 
-    all_extensions = sorted(
-        ext.value for ext in schema.objects.extensions.values()
-    )
+    all_extensions = sorted(ext.value for ext in schema.objects.extensions.values())
     compound_extensions = sorted(
-        (
-            v
-            for v in all_extensions
-            if v.startswith(".") and v[1:].count(".") >= 1
-        ),
+        (v for v in all_extensions if v.startswith(".") and v[1:].count(".") >= 1),
         key=len,
         reverse=True,
     )
