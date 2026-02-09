@@ -76,6 +76,28 @@ jobs:
           --cov-append \
           --verbose
 
+    - name: Merge XML files
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: >
+        uv pip install junitparser
+        python3 << 'EOF'
+        from junitparser import JUnitXml
+        from pathlib import Path
+
+        merged = JUnitXml()
+        for f in ["pytest_quick.xml", "pytest-slow.xml", "pytest-full.xml"]:
+          if Path(f).exists():
+            merged += JUnitXml.fromfile(f)
+        merged.write("pytest.xml")
+        EOF
+
+    - name: Pytest coverage comment
+      uses: MishaKav/pytest-coverage-comment@v1
+      with:
+        pytest-coverage-path: ./pytest-coverage.txt
+        junitxml-path: ./pytest.xml
+
   ruff:
     runs-on: ubuntu-latest
     steps:
