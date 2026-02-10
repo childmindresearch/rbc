@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import shutil
 import tempfile
-from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
 
 __all__ = ["file_rename", "file_save", "file_tmp_copy"]
 
