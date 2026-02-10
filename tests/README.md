@@ -10,7 +10,7 @@
 # Unit tests only (fast, no runner needed)
 pytest -m unit
 
-# Unit + integration (standard CI run)
+# Unit + integration (locally, before committing)
 pytest -m "not full_pipeline" --runner docker
 
 # Full pipeline (slow, manual trigger on CI)

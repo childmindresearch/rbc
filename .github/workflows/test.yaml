@@ -46,7 +46,7 @@ jobs:
       shell: bash
       run: >
         uv run pytest \
-          -m "not full_pipeline" \
+          -m "unit" \
           --runner=docker \
           --junitxml=pytest-quick.xml \
           --cov=src tests \
