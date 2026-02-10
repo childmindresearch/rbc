@@ -1,4 +1,4 @@
-"""Preprocessing steps shared across anatomical and functional streams.
+"""Processing steps shared across anatomical and functional streams.
 
 Currently provides deobliquing and RPI reorientation, which is the first
 step applied to both T1w and BOLD images.
