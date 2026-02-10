@@ -31,7 +31,6 @@ norecursedirs = [
 markers = [
   "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations)",
   "integration: Medium (1-5 min) integration tests with small/downsampled data",
-  "slow: Long (30+ min) tests; skip on CI",
   "full_pipeline: End-to-end workflow tests; skip on CI"
 ]
 

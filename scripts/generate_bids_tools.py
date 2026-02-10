@@ -419,7 +419,6 @@ def generate_tests(
     w()
 
     # ---- TestBidsName ----
-    w("@pytest.mark.unit")
     w("class TestBidsName:")
     w('    """Tests for bids_name."""')
     w()
@@ -593,7 +592,6 @@ def generate_tests(
     w()
 
     # ---- TestBidsPath ----
-    w("@pytest.mark.unit")
     w("class TestBidsPath:")
     w('    """Tests for bids_path."""')
     w()
@@ -641,7 +639,6 @@ def generate_tests(
     w()
 
     # ---- TestParseBidsName ----
-    w("@pytest.mark.unit")
     w("class TestParseBidsName:")
     w('    """Tests for parse_bids_name."""')
     w()
@@ -724,7 +721,6 @@ def generate_tests(
     w()
 
     # ---- TestConstants ----
-    w("@pytest.mark.unit")
     w("class TestConstants:")
     w('    """Tests for namespace constant classes."""')
     w()

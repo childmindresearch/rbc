@@ -66,13 +66,13 @@ def niwrap_runner(
     return runner
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_dataset_dir() -> Path:
     """Return path to test dataset directory."""
     return Path(__file__).parent / "data" / "ds000001"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_subject(test_dataset_dir: Path) -> TestSubjectData:
     """Return namespace containing file paths to test subject data."""
     subject_id = "01"

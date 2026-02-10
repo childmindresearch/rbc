@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
 from niwrap import afni
 
 from rbc.core.common import deoblique_and_reorient
@@ -54,7 +53,6 @@ def test_motion_reference_volume_count(test_subject: TestSubjectData) -> None:
     assert nifti_num_volumes(reference.output_file) == 1
 
 
-@pytest.mark.slow
 def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
     """Test motion correction on 10 volumes of BOLD timeseries."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
@@ -78,7 +76,6 @@ def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
     assert len(par_data) == 10
 
 
-@pytest.mark.slow
 def test_motion_correction(test_subject: TestSubjectData) -> None:
     """Test motion correction on full BOLD timeseries."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
