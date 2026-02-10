@@ -54,21 +54,3 @@ def rename(in_file: str | Path, new_name: str) -> Path:
     if target.exists():
         raise FileExistsError(f"Target file {target} already exists.")
     return Path(shutil.move(str(in_file), str(target)))
-
-
-def save_directory(in_dir: str | Path, out_dir: str | Path, name: str) -> Path:
-    """Save a directory by copying it to a new location.
-
-    Args:
-        in_dir: Path to directory to copy.
-        out_dir: Path to destination directory.
-        name: BIDS compliant name for the directory.
-    """
-    in_dir = Path(in_dir)
-    target = Path(out_dir) / name
-
-    if not in_dir.is_dir():
-        raise ValueError(f"Input path {in_dir} is not a directory.")
-
-    shutil.copytree(in_dir, target, dirs_exist_ok=True)
-    return target
