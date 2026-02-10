@@ -49,34 +49,34 @@ extend-exclude = ["src/rbc/core/bids.py", "tests/unit/test_bids.py"]
 
 [tool.ruff.lint]
 select = [
-    "ANN",  # flake8-annotations
-    "ARG",  # flake8-unused-arguments
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "C90",  # mccabe
-    "D",    # pydocstyle
-    "E",    # pycodestyle errors
-    "ERA",  # eradicate
-    "F",    # Pyflakes
-    "FA",   # flake8-future-annotations
-    "FBT",  # flake8-boolean-trap
-    "FURB", # refurb
-    "I",    # isort
-    "N",    # pep8-naming
-    "NPY",  # NumPy-specific rules
-    "PD",   # pandas-vet
-    "PERF", # Perflint
-    "PIE",  # flake8-pie
-    "PT",   # flake8-pytest-style
-    "PTH",  # flake8-use-pathlib
-    "Q",    # flake8-quotes
-    "RET",  # flake8-return
-    "RUF",  # Ruff-specific rules
-    "S",    # flake8-bandit
-    "SIM",  # flake8-simplify
-    "T20",  # flake8-print
-    "TCH",  # flake8-type-checking
-    "UP",   # pyupgrade
+  "ANN",  # flake8-annotations
+  "ARG",  # flake8-unused-arguments
+  "B",  # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "C90",  # mccabe
+  "D",  # pydocstyle
+  "E",  # pycodestyle errors
+  "ERA",  # eradicate
+  "F",  # Pyflakes
+  "FA",  # flake8-future-annotations
+  "FBT",  # flake8-boolean-trap
+  "FURB",  # refurb
+  "I",  # isort
+  "N",  # pep8-naming
+  "NPY",  # NumPy-specific rules
+  "PD",  # pandas-vet
+  "PERF",  # Perflint
+  "PIE",  # flake8-pie
+  "PT",  # flake8-pytest-style
+  "PTH",  # flake8-use-pathlib
+  "Q",  # flake8-quotes
+  "RET",  # flake8-return
+  "RUF",  # Ruff-specific rules
+  "S",  # flake8-bandit
+  "SIM",  # flake8-simplify
+  "T20",  # flake8-print
+  "TCH",  # flake8-type-checking
+  "UP"  # pyupgrade
 ]
 ignore = []
 fixable = ["ALL"]
