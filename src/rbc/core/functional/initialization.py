@@ -27,7 +27,7 @@ def truncate_trs(
     )
 
 
-def scale(in_file: Path, scale_factor: float = 0.1) -> afni.V3drefitOutputs:
+def scale_bold(in_file: Path, scale_factor: float = 0.1) -> afni.V3drefitOutputs:
     """Scale BOLD voxel dimensions using AFNI 3drefit.
 
     Args:
