@@ -1,4 +1,10 @@
-"""RBC registration method."""
+"""Anatomical-to-template registration via ANTs (pipeline step 5).
+
+Registers a skull-stripped T1w brain to the MNI152 1 mm template using a
+three-stage ANTs registration (Rigid -> Affine -> SyN). Produces composite
+forward and inverse displacement fields that can later be used to warp
+functional data and derivatives into template space.
+"""
 
 from __future__ import annotations
 
@@ -23,14 +29,18 @@ class CompositeTransforms(NamedTuple):
 
 
 def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTransforms:
-    """ANTs registration to MNI152 template.
+    """Register a skull-stripped T1w to the MNI152 1 mm template with ANTs.
+
+    Runs a three-stage registration (Rigid -> Affine -> SyN) and then
+    collapses the resulting affine matrix and warp field into a single
+    composite displacement field in each direction.
 
     Args:
-        in_file: Path to file to be compute transformation with template.
-        seed: Seed to use for reproducibility.
+        in_file: Skull-stripped T1w brain image (output of brain extraction).
+        seed: Random seed for ANTs reproducibility.
 
     Returns:
-        A namespace mapping forward and inverse transformation paths.
+        Forward (T1w -> MNI) and inverse (MNI -> T1w) composite transforms.
     """
     registration = ants.ants_registration(
         stages=[

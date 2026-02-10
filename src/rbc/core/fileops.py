@@ -1,4 +1,10 @@
-"""File operation helpers."""
+"""File-system helpers used throughout the pipeline.
+
+Provides utilities for safely copying, renaming, and temporarily duplicating
+files. The temporary-copy context manager is especially useful for AFNI tools
+like ``3drefit`` that modify files in-place -- it lets us work on a throwaway
+copy so the original input is never altered.
+"""
 
 from __future__ import annotations
 
@@ -16,13 +22,16 @@ __all__ = ["file_copy_many", "file_rename", "file_tmp_copy"]
 
 @contextmanager
 def file_tmp_copy(in_file: str | Path) -> Iterator[Path]:
-    """Create a temporary copy of a file.
+    """Context manager that yields a temporary copy of a file.
+
+    Useful for tools that modify images in-place (e.g. ``3drefit``). The copy
+    lives in a fresh temp directory and is cleaned up automatically on exit.
 
     Args:
-        in_file: Path to file to copy.
+        in_file: Path to the file to copy.
 
     Yields:
-        Path to the temporary copy.
+        Path to the temporary copy (safe to modify in-place).
     """
     in_file = Path(in_file)
     tmp_dir = Path(tempfile.mkdtemp())
@@ -35,7 +44,11 @@ def file_tmp_copy(in_file: str | Path) -> Iterator[Path]:
 
 
 def file_rename(in_file: str | Path, new_name: str) -> Path:
-    """Rename a file, keeping it in the same directory."""
+    """Rename a file in-place, keeping it in the same directory.
+
+    Raises ``FileExistsError`` if the target name already exists to prevent
+    silent overwrites.
+    """
     in_file = Path(in_file)
     new_path = in_file.with_name(new_name)
     if new_path.exists():

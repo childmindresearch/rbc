@@ -1,4 +1,10 @@
-"""Core RBC methods for varying workflows."""
+"""Core processing steps for the RBC pipeline.
+
+Each submodule implements one or more steps from the RBC preprocessing pipeline
+(reorientation, brain extraction, segmentation, registration, motion correction,
+etc.) as thin wrappers around neuroimaging tools (AFNI, FSL, ANTs). Workflows in
+``rbc.workflows`` compose these steps into end-to-end pipelines.
+"""
 
 from __future__ import annotations
 

@@ -1,7 +1,8 @@
-"""Anatomical preprocessing CLI.
+"""CLI subcommand for anatomical preprocessing.
 
-Command-line interface for anatomical preprocessing workflows.
-Calls into rbc.workflows.anatomical.
+Parses subject/session arguments and delegates to
+``rbc.workflows.anatomical.single_session``, which runs the full anatomical
+stream (reorientation -> brain extraction -> segmentation -> registration).
 """
 
 from __future__ import annotations

@@ -1,4 +1,8 @@
-"""Functional workflows."""
+"""Functional preprocessing workflow.
+
+Chains the functional stream -- reorientation, TR truncation, motion-reference
+extraction, and motion correction -- and writes BIDS-named outputs to disk.
+"""
 
 from __future__ import annotations
 
@@ -20,12 +24,24 @@ if TYPE_CHECKING:
 
 
 def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
-    """Workflow for preprocessing functional data.
+    """Run the functional preprocessing pipeline for one session.
+
+    Pipeline steps (see ``rbc_reimplementation_guide.md``):
+
+    1. Deoblique and reorient BOLD to RPI.
+    2. Truncate first *start_tr* volumes (steady-state equilibration).
+    3. Extract middle-volume motion reference.
+    4. Motion correction via FSL mcflirt (6-DOF rigid-body).
+
+    All outputs (reoriented BOLD, truncated BOLD, sbref, motion-corrected
+    BOLD, motion parameters, displacement metrics, and per-volume transform
+    matrices) are renamed to BIDS convention and saved into
+    ``<output_dir>/sub-<label>/[ses-<label>/]func/``.
 
     Args:
-        in_bold: Input BOLD timeseries to process.
-        output_dir: Parent output directory to save data to.
-        start_tr: Number of initial TRs to remove (default: 2).
+        in_bold: Raw BOLD timeseries (BIDS-named) to preprocess.
+        output_dir: Root output directory (e.g. ``derivatives/rbc``).
+        start_tr: Number of initial TRs to discard (default: 2).
     """
     entities = parse_bids_name(in_bold.name).entities
     sub = entities.get("sub")

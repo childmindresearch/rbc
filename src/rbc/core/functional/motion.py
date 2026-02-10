@@ -1,4 +1,11 @@
-"""RBC motion reference & correction."""
+"""Motion reference extraction and head-motion correction (pipeline steps 7-8).
+
+Before correcting motion, a single reference volume is extracted from the
+middle of the BOLD timeseries (step 7). Every other volume is then realigned
+to this reference using FSL ``mcflirt`` (step 8), producing motion-corrected
+data along with per-volume rigid-body parameters (3 rotations + 3 translations)
+and displacement metrics used downstream for QC and nuisance regression.
+"""
 
 from __future__ import annotations
 
@@ -13,13 +20,17 @@ _MC_PREFIX = "mc"
 
 
 def extract_motion_reference(in_file: Path) -> afni.V3dcalcOutputs:
-    """Extract reference volume for motion correction from the middle of the timeseries.
+    """Extract the middle volume of a BOLD timeseries as a motion reference.
+
+    The middle volume is chosen because it minimizes the maximum temporal
+    distance to any other volume, reducing interpolation error during
+    motion correction.
 
     Args:
-        in_file: Path to input BOLD timeseries.
+        in_file: Truncated BOLD timeseries.
 
     Returns:
-        AFNI 3dcalc output object.
+        AFNI 3dcalc outputs (use ``.output_file`` for the reference image).
     """
     total_vols = nifti_num_volumes(in_file)
     mid_vol = total_vols // 2
@@ -32,7 +43,15 @@ def extract_motion_reference(in_file: Path) -> afni.V3dcalcOutputs:
 
 
 class MotionCorrectedOutputs(NamedTuple):
-    """NamedTuple for motion correction outputs."""
+    """Outputs from FSL mcflirt motion correction.
+
+    Attributes:
+        bold: Motion-corrected BOLD timeseries.
+        par: Six-column motion parameter file (3 rotations, 3 translations).
+        rms_rel: Frame-to-frame (relative) RMS displacement.
+        rms_abs: Volume-to-reference (absolute) RMS displacement.
+        mat_dir: Directory containing per-volume affine matrices.
+    """
 
     bold: Path
     par: Path
@@ -42,14 +61,20 @@ class MotionCorrectedOutputs(NamedTuple):
 
 
 def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutputs:
-    """Estimate and correct head motion using FSL mcflirt.
+    """Estimate and correct head motion using FSL ``mcflirt``.
+
+    Each volume is rigidly aligned to the reference image. The per-volume
+    affine matrices are saved so they can later be composed with other
+    transforms (distortion correction, coregistration, template warp) for
+    single-step resampling to template space.
 
     Args:
-        in_file: Path to input BOLD timeseries to correct.
-        ref_file: Path to reference volume for motion correction.
+        in_file: BOLD timeseries to motion-correct.
+        ref_file: Single-volume reference image (from :func:`extract_motion_reference`).
 
     Returns:
-        NamedTuple with paths to motion corrected outputs and matrices.
+        Motion-corrected data, parameter files, displacement metrics, and
+        the per-volume transform matrix directory.
     """
     mc_result = fsl.mcflirt(
         in_file=in_file,

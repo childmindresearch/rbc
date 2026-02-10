@@ -1,4 +1,9 @@
-"""Anatomical workflows."""
+"""Anatomical preprocessing workflow.
+
+Chains the full anatomical stream -- reorientation, brain extraction,
+tissue segmentation, and template registration -- and writes BIDS-named
+outputs to disk.
+"""
 
 from __future__ import annotations
 
@@ -19,11 +24,21 @@ if TYPE_CHECKING:
 
 
 def single_session(in_t1w: Path, output_dir: Path) -> None:
-    """Workflow for preprocessing anatomical data.
+    """Run the full anatomical preprocessing pipeline for one session.
+
+    Pipeline steps (see ``rbc_reimplementation_guide.md``):
+
+    1. Deoblique and reorient T1w to RPI.
+    2. ANTs brain extraction (N4 bias correction + skull-stripping).
+    3. FSL FAST tissue segmentation (CSF / GM / WM masks).
+    4. ANTs registration to MNI152 template (forward + inverse transforms).
+
+    All outputs are renamed to BIDS convention and copied into
+    ``<output_dir>/sub-<label>/[ses-<label>/]anat/``.
 
     Args:
-        in_t1w: Input T1w image to process.
-        output_dir: Parent output directory to save data to.
+        in_t1w: Raw T1w image (BIDS-named) to preprocess.
+        output_dir: Root output directory (e.g. ``derivatives/rbc``).
 
     Raises:
         FileNotFoundError: If brain extracted file could not be found.

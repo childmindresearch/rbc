@@ -1,4 +1,8 @@
-"""RBC processing workflows."""
+"""End-to-end RBC preprocessing workflows.
+
+Each workflow orchestrates the core processing steps (defined in ``rbc.core``)
+into a complete pipeline, handling BIDS naming and output organization.
+"""
 
 from __future__ import annotations
 

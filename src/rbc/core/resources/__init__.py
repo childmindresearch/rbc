@@ -1,4 +1,12 @@
-"""Module containing paths to resources."""
+"""Bundled template images used by the pipeline.
+
+Provides resolved paths to:
+
+- **OASIS templates** -- used by ANTs brain extraction (step 2) to map a brain
+  probability mask into subject space.
+- **MNI152 templates** -- the standard-space target for anatomical registration
+  (step 5) and the reference grid for template-space outputs.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +17,13 @@ RESOURCES_DIR = Path(__file__).parent.resolve()
 
 
 class OasisTemplates(NamedTuple):
-    """OASIS template paths."""
+    """Paths to OASIS brain-extraction templates.
+
+    Attributes:
+        template: OASIS T1w group template.
+        probability_mask: Brain+cerebellum probability mask for extraction.
+        registration_mask: Brain+cerebellum registration mask.
+    """
 
     template: Path
     probability_mask: Path
@@ -17,7 +31,11 @@ class OasisTemplates(NamedTuple):
 
 
 class MniTemplates(NamedTuple):
-    """MNI152 template paths."""
+    """Paths to MNI152 standard-space templates.
+
+    Attributes:
+        brain_1mm: MNI152 T1w brain at 1 mm resolution (registration target).
+    """
 
     brain_1mm: Path
 

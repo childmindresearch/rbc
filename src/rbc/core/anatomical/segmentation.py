@@ -1,4 +1,11 @@
-"""RBC skull stripping method."""
+"""Brain extraction and tissue segmentation (pipeline steps 2-4).
+
+Brain extraction (skull-stripping) isolates brain tissue from the T1w image
+using ANTs ``antsBrainExtraction.sh``, which also performs N4 bias-field
+correction. The bias-corrected, skull-stripped brain is then segmented into
+CSF, gray matter, and white matter using FSL FAST. The resulting tissue masks
+are used downstream for nuisance regression and coregistration.
+"""
 
 from __future__ import annotations
 
@@ -23,13 +30,19 @@ class TissueMasks(NamedTuple):
 def ants_brain_extraction(
     in_file: Path,
 ) -> ants.AntsBrainExtractionShOutputs:
-    """ANTs N4 bias correction and brain extraction.
+    """Skull-strip a T1w image using ANTs ``antsBrainExtraction.sh``.
+
+    Internally performs N4 bias-field correction, registers the input to
+    the OASIS template, maps a brain probability mask back to subject
+    space, and thresholds it to produce a binary brain mask. The key
+    outputs are the bias-corrected brain image and the brain mask.
 
     Args:
-        in_file: Input anatomical file to perform brain extraction on.
+        in_file: Reoriented (RPI) T1w image.
 
     Returns:
-        ANTs brain extraction output object.
+        ANTs brain extraction outputs (brain image, brain mask, N4-corrected
+        full-head image, etc.).
     """
     return ants.ants_brain_extraction_sh(
         image_dimension=3,
@@ -44,13 +57,18 @@ def ants_brain_extraction(
 
 
 def fsl_tissue_segmentation(in_file: Path) -> TissueMasks:
-    """FSL Fast tissue classification.
+    """Segment a brain into CSF, gray matter, and white matter with FSL FAST.
+
+    Runs three-class tissue classification on a skull-stripped brain image,
+    then thresholds each partial-volume estimate at 0.95 to produce binary
+    tissue masks. These masks are used later for nuisance regression (mean
+    CSF/WM signals) and boundary-based coregistration (WM boundary).
 
     Args:
-        in_file: Input anatomical file to perform tissue classification on.
+        in_file: Skull-stripped brain image (output of brain extraction).
 
     Returns:
-        Namespace with paths to each tissue mask.
+        Paths to binary CSF, GM, and WM masks (thresholded at 0.95).
     """
     prefix = "tissue_seg"
     tissues = fsl.fast(
