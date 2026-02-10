@@ -1,11 +1,19 @@
 """RBC skull stripping method."""
 
 from pathlib import Path
-from types import SimpleNamespace
+from typing import NamedTuple
 
 from niwrap import ants, fsl
 
 from rbc.core.resources import OASIS_TEMPLATES
+
+
+class TissueMasks(NamedTuple):
+    """Paths to tissue segmentation masks."""
+
+    csf: Path
+    gm: Path
+    wm: Path
 
 
 def ants_brain_extraction(
@@ -32,7 +40,7 @@ def ants_brain_extraction(
     )
 
 
-def fsl_tissue_segmentation(in_file: Path, output_prefix: str) -> SimpleNamespace:
+def fsl_tissue_segmentation(in_file: Path, output_prefix: str) -> TissueMasks:
     """FSL Fast tissue classification.
 
     Args:
@@ -60,4 +68,4 @@ def fsl_tissue_segmentation(in_file: Path, output_prefix: str) -> SimpleNamespac
         ).output_file
         for idx, tissue_type in enumerate(["csf", "gm", "wm"])
     }
-    return SimpleNamespace(**masks)
+    return TissueMasks(**masks)

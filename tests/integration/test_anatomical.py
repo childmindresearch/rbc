@@ -1,14 +1,19 @@
 """Integration tests for AFNI methods used across modalities."""
 
-from types import SimpleNamespace
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rbc.core import anatomical
 
+if TYPE_CHECKING:
+    from conftest import TestSubjectData
+
 
 @pytest.mark.slow
-def test_brain_extraction(test_subject: SimpleNamespace) -> None:
+def test_brain_extraction(test_subject: TestSubjectData) -> None:
     """Test brain extraction."""
     ants_bet_output = anatomical.ants_brain_extraction(
         in_file=test_subject.t1w, output_prefix="test"
@@ -22,7 +27,7 @@ def test_brain_extraction(test_subject: SimpleNamespace) -> None:
 
 
 @pytest.mark.slow
-def test_tissue_segmentation(test_subject: SimpleNamespace) -> None:
+def test_tissue_segmentation(test_subject: TestSubjectData) -> None:
     """Test tissue segmentation."""
     tissue_mask = anatomical.fsl_tissue_segmentation(
         in_file=test_subject.t1w, output_prefix="test"
@@ -33,7 +38,7 @@ def test_tissue_segmentation(test_subject: SimpleNamespace) -> None:
 
 
 @pytest.mark.slow
-def test_registration(test_subject: SimpleNamespace) -> None:
+def test_registration(test_subject: TestSubjectData) -> None:
     """Test anatomical registration."""
     composite_xfms = anatomical.ants_registration(
         in_file=test_subject.t1w, output_prefix="test"

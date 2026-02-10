@@ -3,10 +3,21 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from types import SimpleNamespace
+from typing import NamedTuple
 
 import niwrap
 import pytest
+
+
+class TestSubjectData(NamedTuple):
+    """Test subject file paths."""
+
+    subject_id: str
+    subject_dir: Path
+    t1w: Path
+    bold: Path
+    tasks: Path
+    events: Path
 
 
 def pytest_collection_modifyitems(items: Sequence[pytest.Item]) -> None:
@@ -58,7 +69,7 @@ def test_dataset_dir() -> Path:
 
 
 @pytest.fixture
-def test_subject(test_dataset_dir: Path) -> SimpleNamespace:
+def test_subject(test_dataset_dir: Path) -> TestSubjectData:
     """Return namespace containing file paths to test subject data."""
     subject_id = "01"
     task_id = "balloonanalogrisktask"
@@ -67,7 +78,7 @@ def test_subject(test_dataset_dir: Path) -> SimpleNamespace:
     anat_dir = subject_dir / "anat"
     func_dir = subject_dir / "func"
 
-    subject_data = SimpleNamespace(
+    subject_data = TestSubjectData(
         subject_id=subject_id,
         subject_dir=subject_dir,
         t1w=anat_dir / f"sub-{subject_id}_T1w.nii.gz",

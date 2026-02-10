@@ -1,12 +1,17 @@
 """Full e2e tests for different pipelines."""
 
+from __future__ import annotations
+
 import pathlib as pl
-from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 from rbc.workflows.anatomical import single_session
 
+if TYPE_CHECKING:
+    from conftest import TestSubjectData
 
-def test_single_session(test_subject: SimpleNamespace, tmp_path: pl.Path) -> None:
+
+def test_single_session(test_subject: TestSubjectData, tmp_path: pl.Path) -> None:
     """e2e test for single session anatomical workflow."""
     subject_id = f"sub-{test_subject.id}"
     expected_output_dir = tmp_path / subject_id / "anat"

@@ -1,10 +1,15 @@
 """Unit tests for utility methods."""
 
+from __future__ import annotations
+
 import pathlib as pl
 import tempfile
-from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from conftest import TestSubjectData
 
 from rbc.core import utils
 
@@ -42,19 +47,19 @@ class TestCreateCopy:
 class TestGetBaseEntities:
     """Test suite for utils.get_base_entities."""
 
-    def test_default_entities_extracted(self, test_subject: SimpleNamespace) -> None:
+    def test_default_entities_extracted(self, test_subject: TestSubjectData) -> None:
         """Test default base entities, if they exist are extracted."""
         result = utils.get_base_entities(test_subject.bold)
         assert isinstance(result, dict)
         assert "ses" not in result
         assert result == {"sub": "01", "run": "01"}
 
-    def test_custom_entities_extracted(self, test_subject: SimpleNamespace) -> None:
+    def test_custom_entities_extracted(self, test_subject: TestSubjectData) -> None:
         """Test custom base entities are extracted if exists."""
         result = utils.get_base_entities(test_subject.bold, ["sub", "task"])
         assert result == {"sub": "01", "task": "balloonanalogrisktask"}
 
-    def test_nonexistent_entities(self, test_subject: SimpleNamespace) -> None:
+    def test_nonexistent_entities(self, test_subject: TestSubjectData) -> None:
         """Test nonexistent entities are not returned."""
         result = utils.get_base_entities(test_subject.bold, base_entities=["acq", "ce"])
         assert result == {}

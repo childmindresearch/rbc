@@ -1,7 +1,7 @@
 """RBC registration method."""
 
 from pathlib import Path
-from types import SimpleNamespace
+from typing import NamedTuple
 
 from niwrap import ants
 
@@ -9,9 +9,16 @@ from rbc.core import CPAC_ANTS_SEED
 from rbc.core.resources import MNI_TEMPLATES
 
 
+class CompositeTransforms(NamedTuple):
+    """Forward and inverse composite transformation paths."""
+
+    forward: Path
+    inverse: Path
+
+
 def ants_registration(
     in_file: Path, output_prefix: str, seed: int = CPAC_ANTS_SEED
-) -> SimpleNamespace:
+) -> CompositeTransforms:
     """ANTs registration to MNI152 template.
 
     Args:
@@ -144,6 +151,6 @@ def ants_registration(
             print_out_composite_warp_file=True,
         ),
     )
-    return SimpleNamespace(
+    return CompositeTransforms(
         forward=fwd.output.output_image_outfile, inverse=rev.output.output_image_outfile
     )
