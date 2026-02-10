@@ -8,6 +8,8 @@ from niwrap import ants
 from rbc.core import CPAC_ANTS_SEED
 from rbc.core.resources import MNI_TEMPLATES
 
+_PREFIX = "ants_reg"
+
 
 class CompositeTransforms(NamedTuple):
     """Forward and inverse composite transformation paths."""
@@ -17,13 +19,12 @@ class CompositeTransforms(NamedTuple):
 
 
 def ants_registration(
-    in_file: Path, output_prefix: str, seed: int = CPAC_ANTS_SEED
+    in_file: Path, seed: int = CPAC_ANTS_SEED
 ) -> CompositeTransforms:
     """ANTs registration to MNI152 template.
 
     Args:
         in_file: Path to file to be compute transformation with template.
-        output_prefix: Prefix of output file.
         seed: Seed to use for reproducibility.
 
     Returns:
@@ -119,20 +120,20 @@ def ants_registration(
             lower_quantile=0.005, upper_quantile=0.995
         ),
         interpolation="LanczosWindowedSinc",
-        output=f"[{output_prefix}_,{output_prefix}_Warped.nii.gz]",
+        output=f"[{_PREFIX}_,{_PREFIX}_Warped.nii.gz]",
     )
     fwd = ants.ants_apply_transforms(
         reference_image=MNI_TEMPLATES.brain_1mm,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_0GenericAffine.mat"
+                registration.root / f"{_PREFIX}_0GenericAffine.mat"
             ),
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_1Warp.nii.gz"
+                registration.root / f"{_PREFIX}_1Warp.nii.gz"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-T1w_to-template_mode-image_xfm.nii.gz",
+            composite_displacement_field="forward_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )
@@ -140,14 +141,14 @@ def ants_registration(
         reference_image=in_file,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_1InverseWarp.nii.gz"
+                registration.root / f"{_PREFIX}_1InverseWarp.nii.gz"
             ),
             ants.ants_apply_transforms_use_inverse(
-                registration.root / f"{output_prefix}_0GenericAffine.mat"
+                registration.root / f"{_PREFIX}_0GenericAffine.mat"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-template_to-T1w_mode-image_xfm.nii.gz",
+            composite_displacement_field="inverse_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )

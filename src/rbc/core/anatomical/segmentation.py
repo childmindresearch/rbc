@@ -17,13 +17,12 @@ class TissueMasks(NamedTuple):
 
 
 def ants_brain_extraction(
-    in_file: Path, output_prefix: str
+    in_file: Path,
 ) -> ants.AntsBrainExtractionShOutputs:
     """ANTs N4 bias correction and brain extraction.
 
     Args:
         in_file: Input anatomical file to perform brain extraction on.
-        output_prefix: Prefix for output file names
 
     Returns:
         ANTs brain extraction output object.
@@ -34,32 +33,32 @@ def ants_brain_extraction(
         template=OASIS_TEMPLATES.template,
         probability_mask=OASIS_TEMPLATES.probability_mask,
         brain_extraction_registration_mask=OASIS_TEMPLATES.registration_mask,
-        output_prefix=output_prefix,
+        output_prefix="ants_be",
         image_file_suffix="nii.gz",
         random_seeding=False,
     )
 
 
-def fsl_tissue_segmentation(in_file: Path, output_prefix: str) -> TissueMasks:
+def fsl_tissue_segmentation(in_file: Path) -> TissueMasks:
     """FSL Fast tissue classification.
 
     Args:
         in_file: Input anatomical file to perform tissue classification on.
-        output_prefix: Prefix for output file names
 
     Returns:
         Namespace with paths to each tissue mask.
     """
+    prefix = "tissue_seg"
     tissues = fsl.fast(
         in_files=[in_file],
         img_type=1,
         number_classes=3,
         segments=True,
-        out_basename=output_prefix,
+        out_basename=prefix,
     )
     masks = {
         tissue_type: fsl.fslmaths(
-            input_files=[tissues.root / f"{output_prefix}_pve_{idx}.nii.gz"],
+            input_files=[tissues.root / f"{prefix}_pve_{idx}.nii.gz"],
             operations=[
                 fsl.fslmaths_operation_thr(thr=0.95),
                 fsl.fslmaths_operation_bin(bin_=True),

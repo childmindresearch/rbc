@@ -15,9 +15,7 @@ if TYPE_CHECKING:
 @pytest.mark.slow
 def test_brain_extraction(test_subject: TestSubjectData) -> None:
     """Test brain extraction."""
-    ants_bet_output = anatomical.ants_brain_extraction(
-        in_file=test_subject.t1w, output_prefix="test"
-    )
+    ants_bet_output = anatomical.ants_brain_extraction(in_file=test_subject.t1w)
     # Test extracted brain image exists
     assert ants_bet_output.brain_extracted_image is not None
     assert ants_bet_output.brain_extracted_image.exists()
@@ -29,9 +27,7 @@ def test_brain_extraction(test_subject: TestSubjectData) -> None:
 @pytest.mark.slow
 def test_tissue_segmentation(test_subject: TestSubjectData) -> None:
     """Test tissue segmentation."""
-    tissue_mask = anatomical.fsl_tissue_segmentation(
-        in_file=test_subject.t1w, output_prefix="test"
-    )
+    tissue_mask = anatomical.fsl_tissue_segmentation(in_file=test_subject.t1w)
     assert tissue_mask.csf.exists()
     assert tissue_mask.gm.exists()
     assert tissue_mask.wm.exists()
@@ -40,8 +36,6 @@ def test_tissue_segmentation(test_subject: TestSubjectData) -> None:
 @pytest.mark.slow
 def test_registration(test_subject: TestSubjectData) -> None:
     """Test anatomical registration."""
-    composite_xfms = anatomical.ants_registration(
-        in_file=test_subject.t1w, output_prefix="test"
-    )
+    composite_xfms = anatomical.ants_registration(in_file=test_subject.t1w)
     assert composite_xfms.forward.exists()
     assert composite_xfms.inverse.exists()

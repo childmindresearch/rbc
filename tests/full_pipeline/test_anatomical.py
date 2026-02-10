@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import pathlib as pl
 from typing import TYPE_CHECKING
 
 from rbc.workflows.anatomical import single_session
 
 if TYPE_CHECKING:
+    import pathlib as pl
+
     from conftest import TestSubjectData
 
 
