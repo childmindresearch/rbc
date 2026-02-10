@@ -16,7 +16,7 @@ from rbc.core.functional import (
 
 def test_truncate_trs(test_subject: SimpleNamespace) -> None:
     """Test truncating initial TRs from BOLD timeseries."""
-    original_count = nib.load(test_subject.bold).header.get_data_shape()[3]
+    original_count = nib.load(test_subject.bold).shape[3]
 
     start_tr = 4
     reoriented = reorient(
@@ -29,13 +29,13 @@ def test_truncate_trs(test_subject: SimpleNamespace) -> None:
     )
     # Test truncated BOLD file exists & volume count is reduced
     assert truncated_bold.output_file.exists()
-    new_shape = nib.load(truncated_bold.output_file).header.get_data_shape()
+    new_shape = nib.load(truncated_bold.output_file).shape
     assert new_shape[3] == original_count - start_tr
 
 
 def test_truncate_to_min_volume(test_subject: SimpleNamespace) -> None:
     """Test truncating to minimum volume count of 1."""
-    original_count = nib.load(test_subject.bold).header.get_data_shape()[3]
+    original_count = nib.load(test_subject.bold).shape[3]
 
     start_tr = original_count - 1
     truncated_bold = truncate_trs(
@@ -44,7 +44,7 @@ def test_truncate_to_min_volume(test_subject: SimpleNamespace) -> None:
         start_tr=start_tr,
     )
     # Test truncated BOLD file volume count is 1
-    new_shape = nib.load(truncated_bold.output_file).header.get_data_shape()
+    new_shape = nib.load(truncated_bold.output_file).shape
     nvols = new_shape[3] if len(new_shape) > 3 else 1
     assert nvols == 1
 
@@ -55,7 +55,7 @@ def test_motion_reference_volume_count(test_subject: SimpleNamespace) -> None:
         in_file=test_subject.bold, output_fname="test_motion_ref.nii.gz"
     )
     # Test motion reference file has 1 volume
-    ref_shape = nib.load(reference.output_file).header.get_data_shape()
+    ref_shape = nib.load(reference.output_file).shape
     nvols = ref_shape[3] if len(ref_shape) > 3 else 1
     assert nvols == 1
 
@@ -82,9 +82,7 @@ def test_motion_correction_10vols(test_subject: SimpleNamespace) -> None:
         output_prefix="test_mc_10v",
     )
     assert motion_corrected.bold.with_suffix(".nii.gz").exists()
-    mc_shape = nib.load(
-        motion_corrected.bold.with_suffix(".nii.gz")
-    ).header.get_data_shape()
+    mc_shape = nib.load(motion_corrected.bold.with_suffix(".nii.gz")).shape
     assert mc_shape[3] == 10
 
     assert motion_corrected.par.exists()
