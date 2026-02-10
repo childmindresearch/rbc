@@ -38,7 +38,7 @@ def ants_brain_extraction(
     outputs are the bias-corrected brain image and the brain mask.
 
     Args:
-        in_file: Reoriented (RPI) T1w image.
+        in_file: Input anatomical T1w image to perform brain extraction on. In RBC this is the Reoriented (RPI) T1w.
 
     Returns:
         ANTs brain extraction outputs (brain image, brain mask, N4-corrected
