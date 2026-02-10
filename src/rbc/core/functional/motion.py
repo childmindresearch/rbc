@@ -1,7 +1,7 @@
 """RBC motion reference & correction."""
 
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import nibabel as nib
 from niwrap import afni, fsl
@@ -17,7 +17,8 @@ def generate_motion_reference(in_file: Path, output_fname: str) -> afni.V3dcalcO
     Returns:
         AFNI 3dcalc output object.
     """
-    total_vols = nib.load(in_file).shape[3]
+    img = cast("nib.Nifti1Image", nib.load(in_file))
+    total_vols = img.shape[3]
 
     mid_vol = total_vols // 2
 
