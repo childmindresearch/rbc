@@ -25,6 +25,10 @@ docs = ["pdoc>=15.0.0"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+norecursedirs = [
+    "tests/data"
+]
+
 markers = [
   "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations",
   "integration: Medium (1-5 min) integration tests with small/downsampled data",
