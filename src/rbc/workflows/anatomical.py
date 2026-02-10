@@ -1,4 +1,4 @@
-"""Anatomical preprocessing workflow.
+"""Anatomical processing workflows.
 
 Chains the full anatomical stream -- reorientation, brain extraction,
 tissue segmentation, and template registration -- and writes BIDS-named

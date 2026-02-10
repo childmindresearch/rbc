@@ -1,4 +1,4 @@
-"""CLI subcommand for anatomical preprocessing.
+"""CLI subcommand for anatomical processing.
 
 Parses subject/session arguments and delegates to
 ``rbc.workflows.anatomical.single_session``, which runs the full anatomical
