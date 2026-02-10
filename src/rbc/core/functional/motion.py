@@ -1,31 +1,33 @@
 """RBC motion reference & correction."""
 
-from pathlib import Path
-from typing import NamedTuple, cast
+from __future__ import annotations
 
-import nibabel as nib
+from pathlib import Path
+from typing import NamedTuple
+
 from niwrap import afni, fsl
 
+from rbc.core.nifti import nifti_num_volumes
 
-def generate_motion_reference(in_file: Path, output_fname: str) -> afni.V3dcalcOutputs:
-    """Creates reference volume for motion correction by extracting middle volume.
+_MC_PREFIX = "mc"
+
+
+def extract_motion_reference(in_file: Path) -> afni.V3dcalcOutputs:
+    """Extract reference volume for motion correction from the middle of the timeseries.
 
     Args:
         in_file: Path to input BOLD timeseries.
-        output_fname: Name of output file.
 
     Returns:
         AFNI 3dcalc output object.
     """
-    img = cast("nib.Nifti1Image", nib.load(in_file))
-    total_vols = img.shape[3]
-
+    total_vols = nifti_num_volumes(in_file)
     mid_vol = total_vols // 2
 
     return afni.v_3dcalc(
         dataset_a=afni.v_3dcalc_dataset_a_file(file=in_file, selectors_=f"[{mid_vol}]"),
         expression="a",
-        prefix=output_fname,
+        prefix="motion_ref.nii.gz",
     )
 
 
@@ -39,15 +41,12 @@ class MotionCorrectedOutputs(NamedTuple):
     mat_dir: Path
 
 
-def motion_correction(
-    in_file: Path, ref_file: Path, output_prefix: str
-) -> MotionCorrectedOutputs:
+def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutputs:
     """Estimate and correct head motion using FSL mcflirt.
 
     Args:
         in_file: Path to input BOLD timeseries to correct.
         ref_file: Path to reference volume for motion correction.
-        output_prefix: Prefix for output files.
 
     Returns:
         NamedTuple with paths to motion corrected outputs and matrices.
@@ -59,10 +58,10 @@ def motion_correction(
         save_plots=True,
         save_rmsrel=True,
         save_rmsabs=True,
-        out_file=output_prefix,
+        out_file=_MC_PREFIX,
     )
 
-    motion_mat_dir = Path(mc_result.root) / f"{output_prefix}.mat"
+    motion_mat_dir = Path(mc_result.root) / f"{_MC_PREFIX}.mat"
 
     if not motion_mat_dir.exists():
         raise FileNotFoundError(f"Missing .mat directory at {motion_mat_dir}")

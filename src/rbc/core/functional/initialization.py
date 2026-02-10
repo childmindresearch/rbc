@@ -1,18 +1,20 @@
 """RBC functional initialization."""
 
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from niwrap import afni
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def truncate_trs(
-    in_file: Path, output_fname: str, start_tr: int
-) -> afni.V3dcalcOutputs:
+
+def truncate_trs(in_file: Path, start_tr: int) -> afni.V3dcalcOutputs:
     """Remove first N TRs from BOLD timeseries using AFNI 3dcalc.
 
     Args:
         in_file: Path to input BOLD timeseries to be truncated.
-        output_fname: Name of output file.
         start_tr: Number of TRs to remove from beginning.
 
     Returns:
@@ -23,7 +25,7 @@ def truncate_trs(
             file=in_file, selectors_=f"[{start_tr}..$]"
         ),
         expression="a",
-        prefix=output_fname,
+        prefix="truncated.nii.gz",
     )
 
 

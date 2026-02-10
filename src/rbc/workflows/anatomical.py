@@ -12,7 +12,7 @@ from rbc.core.anatomical import (
 )
 from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
-from rbc.core.fileops import file_rename, file_save
+from rbc.core.fileops import file_copy_many, file_rename
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -65,7 +65,7 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
         ).name,
     )
 
-    file_save(
+    file_copy_many(
         [brain, brain_mask, csf_mask, gm_mask, wm_mask, fwd_xfm, inv_xfm],
         out_dir=output_dir / name(desc="brain", suffix="T1w").parent,
     )

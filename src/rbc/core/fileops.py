@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-__all__ = ["file_rename", "file_save", "file_tmp_copy"]
+__all__ = ["file_copy_many", "file_rename", "file_tmp_copy"]
 
 
 @contextmanager
@@ -43,7 +43,7 @@ def file_rename(in_file: str | Path, new_name: str) -> Path:
     return in_file.rename(new_path)
 
 
-def file_save(files: Iterable[str | Path], out_dir: str | Path) -> None:
+def file_copy_many(files: Iterable[str | Path], out_dir: str | Path) -> None:
     """Copy files to an output directory.
 
     Args:
