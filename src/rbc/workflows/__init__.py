@@ -1,4 +1,4 @@
-"""End-to-end RBC preprocessing workflows.
+"""End-to-end RBC processing workflows.
 
 Each workflow orchestrates the core processing steps (defined in ``rbc.core``)
 into a complete pipeline, handling BIDS naming and output organization.
