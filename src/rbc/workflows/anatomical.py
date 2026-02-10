@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def single_session_preprocess(in_t1w: Path, output_dir: Path) -> None:
     """Run the full anatomical preprocessing pipeline for one session.
 
-    Pipeline steps (see ``rbc_reimplementation_guide.md``):
+    Pipeline steps:
 
     1. Deoblique and reorient T1w to RPI.
     2. ANTs brain extraction (N4 bias correction + skull-stripping).

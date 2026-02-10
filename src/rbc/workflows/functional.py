@@ -28,7 +28,7 @@ def single_session_preprocess(
 ) -> None:
     """Run the functional preprocessing pipeline for one session.
 
-    Pipeline steps (see ``rbc_reimplementation_guide.md``):
+    Pipeline steps:
 
     1. Deoblique and reorient BOLD to RPI.
     2. Truncate first *start_tr* volumes (steady-state equilibration).
