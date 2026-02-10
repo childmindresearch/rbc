@@ -1,5 +1,7 @@
 """Anatomical workflows."""
 
+from __future__ import annotations
+
 from functools import partial
 from pathlib import Path
 
@@ -33,9 +35,7 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
 
     reoriented_t1w = deoblique_and_reorient(in_file=in_t1w)
     extracted_t1w = ants_brain_extraction(in_file=reoriented_t1w.out_file)
-    tissue_masks = fsl_tissue_segmentation(
-        in_file=extracted_t1w.brain_extracted_image
-    )
+    tissue_masks = fsl_tissue_segmentation(in_file=extracted_t1w.brain_extracted_image)
     transforms = ants_registration(in_file=extracted_t1w.brain_extracted_image)
 
     # Rename outputs to BIDS-compliant names
@@ -46,15 +46,9 @@ def single_session(in_t1w: Path, output_dir: Path) -> None:
     brain_mask = file_rename(
         extracted_t1w.brain_mask, name(desc="T1w", suffix="mask").name
     )
-    csf_mask = file_rename(
-        tissue_masks.csf, name(desc="csf", suffix="mask").name
-    )
-    gm_mask = file_rename(
-        tissue_masks.gm, name(desc="gm", suffix="mask").name
-    )
-    wm_mask = file_rename(
-        tissue_masks.wm, name(desc="wm", suffix="mask").name
-    )
+    csf_mask = file_rename(tissue_masks.csf, name(desc="csf", suffix="mask").name)
+    gm_mask = file_rename(tissue_masks.gm, name(desc="gm", suffix="mask").name)
+    wm_mask = file_rename(tissue_masks.wm, name(desc="wm", suffix="mask").name)
     fwd_xfm = file_rename(
         transforms.forward,
         name(

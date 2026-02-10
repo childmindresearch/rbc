@@ -1,5 +1,7 @@
 """RBC registration method."""
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import NamedTuple
 
@@ -18,9 +20,7 @@ class CompositeTransforms(NamedTuple):
     inverse: Path
 
 
-def ants_registration(
-    in_file: Path, seed: int = CPAC_ANTS_SEED
-) -> CompositeTransforms:
+def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTransforms:
     """ANTs registration to MNI152 template.
 
     Args:

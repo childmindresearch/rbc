@@ -839,7 +839,6 @@ name = "rbc"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "bids2table" },
     { name = "niwrap" },
     { name = "niwrap-helper" },
 ]
@@ -859,7 +858,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bids2table", specifier = ">=2.1.2" },
     { name = "niwrap", specifier = ">=0.8.3" },
     { name = "niwrap-helper", specifier = ">=0.7.0" },
 ]

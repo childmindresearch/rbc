@@ -1,5 +1,7 @@
 """Fixtures specific to unit tests."""
 
+from __future__ import annotations
+
 import pathlib as pl
 
 import pytest
