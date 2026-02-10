@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from rbc.core.bids import Datatype, Suffix, bids_name, bids_path, parse_bids_name
-from rbc.core.common import reorient
+from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
     generate_motion_reference,
     motion_correction,
@@ -28,7 +28,7 @@ def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
     bn = partial(bids_name, **entities)
     bp = partial(bids_path, **entities, datatype=Datatype.FUNC)
 
-    reoriented = reorient(
+    reoriented = deoblique_and_reorient(
         in_file=in_bold,
         output_fname=bn(desc="reoriented", suffix=Suffix.BOLD, extension=".nii.gz"),
     )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rbc.core.anatomical import (
     ants_brain_extraction,
@@ -13,6 +13,9 @@ from rbc.core.anatomical import (
 from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.fileops import file_rename, file_save
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def single_session(in_t1w: Path, output_dir: Path) -> None:

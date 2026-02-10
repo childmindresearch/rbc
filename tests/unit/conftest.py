@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-import pathlib as pl
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    import pathlib as pl
 
 
 @pytest.fixture

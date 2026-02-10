@@ -1,13 +1,17 @@
 """Integration tests for functional workflow."""
 
-from types import SimpleNamespace
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from conftest import TestSubjectData
 
 import nibabel as nib
 import pytest
 from niwrap import afni
 
-from rbc.core.common import reorient
+from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
     generate_motion_reference,
     motion_correction,
@@ -15,12 +19,12 @@ from rbc.core.functional import (
 )
 
 
-def test_truncate_trs(test_subject: SimpleNamespace) -> None:
+def test_truncate_trs(test_subject: TestSubjectData) -> None:
     """Test truncating initial TRs from BOLD timeseries."""
     original_count = cast("nib.Nifti1Image", nib.load(test_subject.bold)).shape[3]
 
     start_tr = 4
-    reoriented = reorient(
+    reoriented = deoblique_and_reorient(
         in_file=test_subject.bold, output_fname="test_reoriented.nii.gz"
     )
     truncated_bold = truncate_trs(
@@ -34,7 +38,7 @@ def test_truncate_trs(test_subject: SimpleNamespace) -> None:
     assert new_shape[3] == original_count - start_tr
 
 
-def test_truncate_to_min_volume(test_subject: SimpleNamespace) -> None:
+def test_truncate_to_min_volume(test_subject: TestSubjectData) -> None:
     """Test truncating to minimum volume count of 1."""
     original_count = cast("nib.Nifti1Image", nib.load(test_subject.bold)).shape[3]
 
@@ -50,7 +54,7 @@ def test_truncate_to_min_volume(test_subject: SimpleNamespace) -> None:
     assert nvols == 1
 
 
-def test_motion_reference_volume_count(test_subject: SimpleNamespace) -> None:
+def test_motion_reference_volume_count(test_subject: TestSubjectData) -> None:
     """Test motion reference volume count is 1."""
     reference = generate_motion_reference(
         in_file=test_subject.bold, output_fname="test_motion_ref.nii.gz"
@@ -62,9 +66,9 @@ def test_motion_reference_volume_count(test_subject: SimpleNamespace) -> None:
 
 
 @pytest.mark.slow
-def test_motion_correction_10vols(test_subject: SimpleNamespace) -> None:
+def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
     """Test motion correction on 10 volumes of BOLD timeseries."""
-    reoriented = reorient(
+    reoriented = deoblique_and_reorient(
         in_file=test_subject.bold, output_fname="test_reoriented.nii.gz"
     )
     truncated_10 = afni.v_3dcalc(
@@ -94,9 +98,9 @@ def test_motion_correction_10vols(test_subject: SimpleNamespace) -> None:
 
 
 @pytest.mark.slow
-def test_motion_correction(test_subject: SimpleNamespace) -> None:
+def test_motion_correction(test_subject: TestSubjectData) -> None:
     """Test motion correction on full BOLD timeseries."""
-    reoriented = reorient(
+    reoriented = deoblique_and_reorient(
         in_file=test_subject.bold, output_fname="test_reoriented.nii.gz"
     )
     truncated = truncate_trs(
