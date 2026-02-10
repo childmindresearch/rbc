@@ -10,10 +10,13 @@
 # Unit tests only (fast, no runner needed)
 pytest -m unit
 
-# Unit + integration (locally, before committing)
-pytest -m "not full_pipeline" --runner docker
+# Quick integration tests
+pytest -m "integration and not slow" --runner docker
 
-# Full pipeline (slow, manual trigger on CI)
+# All integration tests (including slow)
+pytest -m integration --runner docker
+
+# Full pipeline
 pytest -m full_pipeline --runner docker
 
 # Everything
@@ -22,13 +25,16 @@ pytest --runner docker
 
 ## Test tiers
 
-Markers are auto-applied based on directory — no need to decorate tests manually.
+Directory-based markers (`unit`, `integration`, `full_pipeline`) are auto-applied
+by `conftest.py`. The `slow` marker is applied manually on individual long-running
+integration tests.
 
-| Directory        | Marker           | Typical duration |
-| ---------------- | ---------------- | ---------------- |
-| `unit/`          | `unit`           | < 1 s per test   |
-| `integration/`   | `integration`    | 1–5 min          |
-| `full_pipeline/` | `full_pipeline`  | 30+ min          |
+| Marker           | Source         | Typical duration |
+| ---------------- | -------------- | ---------------- |
+| `unit`           | auto (dir)     | < 1 s per test   |
+| `integration`    | auto (dir)     | 1–5 min          |
+| `slow`           | manual         | 5–30 min         |
+| `full_pipeline`  | auto (dir)     | 30+ min          |
 
 ## Directory structure
 
@@ -36,7 +42,7 @@ Markers are auto-applied based on directory — no need to decorate tests manual
 tests/
 ├── conftest.py        # Shared fixtures (auto-markers, niwrap runner, test subject)
 ├── unit/              # Pure logic: BIDS parsing, file helpers
-├── integration/       # Single-tool runs with real data
+├── integration/       # Single-tool runs with real data (@slow on long ones)
 ├── full_pipeline/     # End-to-end workflow tests
 └── data/              # Test datasets (not in version control)
 ```

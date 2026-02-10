@@ -30,8 +30,9 @@ norecursedirs = [
 ]
 markers = [
   "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations)",
-  "integration: Medium (1-5 min) integration tests with small/downsampled data",
-  "full_pipeline: End-to-end workflow tests; skip on CI"
+  "integration: Integration tests with real data",
+  "slow: Long-running tests (manual marker on individual tests)",
+  "full_pipeline: End-to-end workflow tests"
 ]
 
 [tool.coverage.report]
