@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 def test_single_session(test_subject: TestSubjectData, tmp_path: pl.Path) -> None:
     """e2e test for single session anatomical workflow."""
-    subject_id = f"sub-{test_subject.id}"
+    subject_id = f"sub-{test_subject.subject_id}"
     expected_output_dir = tmp_path / subject_id / "anat"
     expected_fnames = [
         "desc-T1w_mask.nii.gz",
