@@ -8,8 +8,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "bids2table>=2.1.2",
+  "nibabel>=5.3.3",
   "niwrap>=0.8.3",
-  "niwrap-helper>=0.7.0"
+  "niwrap-helper>=0.7.0",
 ]
 
 [dependency-groups]
@@ -27,7 +28,7 @@ docs = ["pdoc>=15.0.0"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
-  "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations",
+  "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations)",
   "integration: Medium (1-5 min) integration tests with small/downsampled data",
   "slow: Long (30+ min) tests; skip on CI",
   "full_pipeline: End-to-end workflow tests; skip on CI"
