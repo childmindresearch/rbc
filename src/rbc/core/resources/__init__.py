@@ -2,10 +2,10 @@
 
 Provides resolved paths to:
 
-- **OASIS templates** -- used by ANTs brain extraction (step 2) to map a brain
+- **OASIS templates** -- used by ANTs brain extraction to map a brain
   probability mask into subject space.
 - **MNI152 templates** -- the standard-space target for anatomical registration
-  (step 5) and the reference grid for template-space outputs.
+  and the reference grid for template-space outputs.
 """
 
 from __future__ import annotations

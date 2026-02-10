@@ -1,4 +1,4 @@
-"""Anatomical-to-template registration via ANTs (pipeline step 5).
+"""Anatomical-to-template registration via ANTs.
 
 Registers a skull-stripped T1w brain to the MNI152 1 mm template using a
 three-stage ANTs registration (Rigid -> Affine -> SyN). Produces composite

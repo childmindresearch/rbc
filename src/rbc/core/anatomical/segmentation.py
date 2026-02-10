@@ -1,4 +1,4 @@
-"""Brain extraction and tissue segmentation (pipeline steps 2-4).
+"""Brain extraction and tissue segmentation.
 
 Brain extraction (skull-stripping) isolates brain tissue from the T1w image
 using ANTs ``antsBrainExtraction.sh``, which also performs N4 bias-field

@@ -1,4 +1,4 @@
-"""BOLD initialization steps (pipeline step 6).
+"""BOLD initialization steps.
 
 After reorientation (handled in ``rbc.core.common``), BOLD data undergoes
 two initialization steps before motion correction:

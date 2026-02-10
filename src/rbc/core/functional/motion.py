@@ -1,8 +1,8 @@
-"""Motion reference extraction and head-motion correction (pipeline steps 7-8).
+"""Motion reference extraction and head-motion correction.
 
 Before correcting motion, a single reference volume is extracted from the
-middle of the BOLD timeseries (step 7). Every other volume is then realigned
-to this reference using FSL ``mcflirt`` (step 8), producing motion-corrected
+middle of the BOLD timeseries. Every other volume is then realigned
+to this reference using FSL ``mcflirt``, producing motion-corrected
 data along with per-volume rigid-body parameters (3 rotations + 3 translations)
 and displacement metrics used downstream for QC and nuisance regression.
 """
