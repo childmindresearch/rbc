@@ -1,26 +1,42 @@
-"""General functions useful across modalities."""
+"""Processing steps shared across anatomical and functional streams.
 
-from pathlib import Path
+Currently provides deobliquing and RPI reorientation, which is the first
+step applied to both T1w and BOLD images.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from niwrap import afni
 
-from rbc.core.utils import create_copy
+if TYPE_CHECKING:
+    from pathlib import Path
+
+from rbc.core.fileops import file_tmp_copy
+
+__all__ = ["deoblique_and_reorient"]
 
 
-def reorient(in_file: Path, output_fname: str) -> afni.V3dresampleOutputs:
-    """AFNI deobliquing and reorientation to RPI.
+def deoblique_and_reorient(
+    in_file: Path, output_fname: str = "reoriented.nii.gz"
+) -> afni.V3dresampleOutputs:
+    """Deoblique and reorient an image to RPI orientation.
 
-    Sets image into a cardinal orientation if it was acquired obliquely from scanner
-    and standardize orientation of images ('RPI' is internal assumption from AFNI).
+    Many scanners acquire images at an oblique angle, producing a non-cardinal
+    orientation matrix. This step removes the oblique transform (``3drefit
+    -deoblique``) and resamples to a standard Right-Posterior-Inferior (RPI)
+    orientation (``3dresample``), which AFNI tools assume internally. Applied as
+    the first step to both anatomical and functional inputs.
 
     Args:
-        in_file: Input T1w to reorient
-        output_fname: Output filename
+        in_file: Image to reorient (T1w or BOLD).
+        output_fname: Output filename.
 
     Returns:
-        An object representing the outputs from AFNI's 3D resample.
+        AFNI 3dresample outputs (use ``.out_file`` for the reoriented image).
     """
-    with create_copy(in_file) as tmp_file:
+    with file_tmp_copy(in_file) as tmp_file:
         afni.v_3drefit(in_file=tmp_file, deoblique=True)
         return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"

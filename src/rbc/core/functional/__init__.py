@@ -7,12 +7,14 @@ fMRI contains motion artifacts, timing differences, and distortions that
 must be corrected before analysis.
 """
 
+from __future__ import annotations
+
 from .initialization import scale_bold, truncate_trs
-from .motion import generate_motion_reference, motion_correction
+from .motion import extract_motion_reference, fsl_motion_correction
 
 __all__ = [
-    "generate_motion_reference",
-    "motion_correction",
+    "extract_motion_reference",
+    "fsl_motion_correction",
     "scale_bold",
     "truncate_trs",
 ]

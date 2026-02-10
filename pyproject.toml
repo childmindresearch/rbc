@@ -7,10 +7,8 @@ license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "bids2table>=2.1.2",
   "nibabel>=5.3.3",
-  "niwrap>=0.8.3",
-  "niwrap-helper>=0.7.0",
+  "niwrap>=0.8.3"
 ]
 
 [dependency-groups]
@@ -27,11 +25,14 @@ docs = ["pdoc>=15.0.0"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+norecursedirs = [
+  "tests/data"
+]
 markers = [
   "unit: Fast (<1s) unit tests (e.g. utilities, BIDS parsing, file operations)",
-  "integration: Medium (1-5 min) integration tests with small/downsampled data",
-  "slow: Long (30+ min) tests; skip on CI",
-  "full_pipeline: End-to-end workflow tests; skip on CI"
+  "integration: Integration tests with real data",
+  "slow: Long-running tests (manual marker on individual tests)",
+  "full_pipeline: End-to-end workflow tests"
 ]
 
 [tool.coverage.report]
@@ -50,38 +51,44 @@ extend-exclude = ["src/rbc/core/bids.py", "tests/unit/test_bids.py"]
 
 [tool.ruff.lint]
 select = [
-    "ANN",  # flake8-annotations
-    "ARG",  # flake8-unused-arguments
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "C90",  # mccabe
-    "D",    # pydocstyle
-    "E",    # pycodestyle errors
-    "ERA",  # eradicate
-    "F",    # Pyflakes
-    "FA",   # flake8-future-annotations
-    "FBT",  # flake8-boolean-trap
-    "FURB", # refurb
-    "I",    # isort
-    "N",    # pep8-naming
-    "NPY",  # NumPy-specific rules
-    "PD",   # pandas-vet
-    "PERF", # Perflint
-    "PIE",  # flake8-pie
-    "PT",   # flake8-pytest-style
-    "PTH",  # flake8-use-pathlib
-    "Q",    # flake8-quotes
-    "RET",  # flake8-return
-    "RUF",  # Ruff-specific rules
-    "S",    # flake8-bandit
-    "SIM",  # flake8-simplify
-    "T20",  # flake8-print
-    "TCH",  # flake8-type-checking
-    "UP",   # pyupgrade
+  "ANN",  # flake8-annotations
+  "ARG",  # flake8-unused-arguments
+  "B",  # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "C90",  # mccabe
+  "D",  # pydocstyle
+  "E",  # pycodestyle errors
+  "ERA",  # eradicate
+  "F",  # Pyflakes
+  "FA",  # flake8-future-annotations
+  "FBT",  # flake8-boolean-trap
+  "FURB",  # refurb
+  "I",  # isort
+  "N",  # pep8-naming
+  "NPY",  # NumPy-specific rules
+  "PD",  # pandas-vet
+  "PERF",  # Perflint
+  "PIE",  # flake8-pie
+  "PT",  # flake8-pytest-style
+  "PTH",  # flake8-use-pathlib
+  "Q",  # flake8-quotes
+  "RET",  # flake8-return
+  "RUF",  # Ruff-specific rules
+  "S",  # flake8-bandit
+  "SIM",  # flake8-simplify
+  "T20",  # flake8-print
+  "TID",  # flake8-tidy-imports
+  "TCH",  # flake8-type-checking
+  "UP"  # pyupgrade
 ]
 ignore = []
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"bids2table.format_bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
+"bids2table.parse_bids_entities".msg = "Prefer rbc.core.bids.parse_bids_name"
+"types.SimpleNamespace".msg = "Prefer NamedTuple"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

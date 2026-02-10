@@ -17,7 +17,6 @@ from rbc.core.bids import (
 )
 
 
-@pytest.mark.unit
 class TestBidsName:
     """Tests for bids_name."""
 
@@ -152,7 +151,6 @@ class TestBidsName:
             )
 
 
-@pytest.mark.unit
 class TestBidsPath:
     """Tests for bids_path."""
 
@@ -195,7 +193,6 @@ class TestBidsPath:
         assert isinstance(result, PurePath)
 
 
-@pytest.mark.unit
 class TestParseBidsName:
     """Tests for parse_bids_name."""
 
@@ -258,7 +255,6 @@ class TestParseBidsName:
         assert result.suffix == "xfm"
 
 
-@pytest.mark.unit
 class TestConstants:
     """Tests for namespace constant classes."""
 

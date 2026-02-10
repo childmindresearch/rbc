@@ -1,26 +1,46 @@
-"""RBC registration method."""
+"""Anatomical-to-template registration via ANTs.
 
-from pathlib import Path
-from types import SimpleNamespace
+Registers a skull-stripped T1w brain to the MNI152 1 mm template using a
+three-stage ANTs registration (Rigid -> Affine -> SyN). Produces composite
+forward and inverse displacement fields that can later be used to warp
+functional data and derivatives into template space.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from niwrap import ants
 
 from rbc.core import CPAC_ANTS_SEED
 from rbc.core.resources import MNI_TEMPLATES
 
+_PREFIX = "ants_reg"
 
-def ants_registration(
-    in_file: Path, output_prefix: str, seed: int = CPAC_ANTS_SEED
-) -> SimpleNamespace:
-    """ANTs registration to MNI152 template.
+
+class CompositeTransforms(NamedTuple):
+    """Forward and inverse composite transformation paths."""
+
+    forward: Path
+    inverse: Path
+
+
+def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTransforms:
+    """Register a skull-stripped T1w to the MNI152 1 mm template with ANTs.
+
+    Runs a three-stage registration (Rigid -> Affine -> SyN) and then
+    collapses the resulting affine matrix and warp field into a single
+    composite displacement field in each direction.
 
     Args:
-        in_file: Path to file to be compute transformation with template.
-        output_prefix: Prefix of output file.
-        seed: Seed to use for reproducibility.
+        in_file: Skull-stripped T1w brain image (output of brain extraction).
+        seed: Random seed for ANTs reproducibility.
 
     Returns:
-        A namespace mapping forward and inverse transformation paths.
+        Forward (T1w -> MNI) and inverse (MNI -> T1w) composite transforms.
     """
     registration = ants.ants_registration(
         stages=[
@@ -112,20 +132,20 @@ def ants_registration(
             lower_quantile=0.005, upper_quantile=0.995
         ),
         interpolation="LanczosWindowedSinc",
-        output=f"[{output_prefix}_,{output_prefix}_Warped.nii.gz]",
+        output=f"[{_PREFIX}_,{_PREFIX}_Warped.nii.gz]",
     )
     fwd = ants.ants_apply_transforms(
         reference_image=MNI_TEMPLATES.brain_1mm,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_0GenericAffine.mat"
+                registration.root / f"{_PREFIX}_0GenericAffine.mat"
             ),
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_1Warp.nii.gz"
+                registration.root / f"{_PREFIX}_1Warp.nii.gz"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-T1w_to-template_mode-image_xfm.nii.gz",
+            composite_displacement_field="forward_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )
@@ -133,17 +153,17 @@ def ants_registration(
         reference_image=in_file,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{output_prefix}_1InverseWarp.nii.gz"
+                registration.root / f"{_PREFIX}_1InverseWarp.nii.gz"
             ),
             ants.ants_apply_transforms_use_inverse(
-                registration.root / f"{output_prefix}_0GenericAffine.mat"
+                registration.root / f"{_PREFIX}_0GenericAffine.mat"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field=f"{output_prefix}_from-template_to-T1w_mode-image_xfm.nii.gz",
+            composite_displacement_field="inverse_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )
-    return SimpleNamespace(
+    return CompositeTransforms(
         forward=fwd.output.output_image_outfile, inverse=rev.output.output_image_outfile
     )

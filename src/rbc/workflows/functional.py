@@ -1,78 +1,110 @@
-"""Functional workflows."""
+"""Functional preprocessing workflow.
+
+Chains the functional stream -- reorientation, TR truncation, motion-reference
+extraction, and motion correction -- and writes BIDS-named outputs to disk.
+"""
+
+from __future__ import annotations
 
 import shutil
 from functools import partial
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
-from rbc.core.bids import Datatype, Suffix, bids_name, bids_path, parse_bids_name
-from rbc.core.common import reorient
+from rbc.core.bids import bids_path, parse_bids_name
+from rbc.core.common import deoblique_and_reorient
+from rbc.core.fileops import file_copy_many, file_rename
 from rbc.core.functional import (
-    generate_motion_reference,
-    motion_correction,
+    extract_motion_reference,
+    fsl_motion_correction,
     truncate_trs,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
-    """Workflow for preprocessing functional data.
+
+def single_session_preprocess(
+    in_bold: Path, output_dir: Path, start_tr: int = 2
+) -> None:
+    """Run the functional preprocessing pipeline for one session.
+
+    Pipeline steps:
+
+    1. Deoblique and reorient BOLD to RPI.
+    2. Truncate first *start_tr* volumes (steady-state equilibration).
+    3. Extract middle-volume motion reference.
+    4. Motion correction via FSL mcflirt (6-DOF rigid-body).
+
+    All outputs (reoriented BOLD, truncated BOLD, sbref, motion-corrected
+    BOLD, motion parameters, displacement metrics, and per-volume transform
+    matrices) are renamed to BIDS convention and saved into
+    ``<output_dir>/sub-<label>/[ses-<label>/]func/``.
 
     Args:
-        in_bold: Input BOLD timeseries to process.
-        output_dir: Parent output directory to save data to.
-        start_tr: Number of initial TRs to remove (default: 2).
+        in_bold: Raw BOLD timeseries (BIDS-named) to preprocess.
+        output_dir: Root output directory (e.g. ``derivatives/rbc``).
+        start_tr: Number of initial TRs to discard (default: 2).
     """
-    parsed = parse_bids_name(in_bold.name)
-    entities: dict[str, Any] = parsed.entities
+    entities = parse_bids_name(in_bold.name).entities
+    sub = entities.get("sub")
+    ses = entities.get("ses")
+    task = entities.get("task")
+    run = int(entities["run"]) if "run" in entities else None
+    name = partial(bids_path, sub=sub, ses=ses, task=task, run=run, datatype="func")
 
-    bn = partial(bids_name, **entities)
-    bp = partial(bids_path, **entities, datatype=Datatype.FUNC)
-
-    reoriented = reorient(
-        in_file=in_bold,
-        output_fname=bn(desc="reoriented", suffix=Suffix.BOLD, extension=".nii.gz"),
-    )
-
-    truncated = truncate_trs(
-        in_file=reoriented.out_file,
-        output_fname=bn(suffix=Suffix.BOLD, extension=".nii.gz"),
-        start_tr=start_tr,
-    )
-
-    motion_ref = generate_motion_reference(
-        in_file=truncated.output_file,
-        output_fname=bn(suffix=Suffix.SBREF, extension=".nii.gz"),
-    )
-
-    motion_corrected = motion_correction(
+    reoriented = deoblique_and_reorient(in_file=in_bold)
+    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
+    motion_ref = extract_motion_reference(in_file=truncated.output_file)
+    motion_corrected = fsl_motion_correction(
         in_file=truncated.output_file,
         ref_file=motion_ref.output_file,
-        output_prefix=bn(suffix=Suffix.MOTION, extension=""),
     )
 
-    func_out_dir = output_dir / bp(suffix=Suffix.BOLD, extension=".nii.gz").parent
-    func_out_dir.mkdir(parents=True, exist_ok=True)
+    # Rename outputs to BIDS-compliant names
+    reoriented_bold = file_rename(
+        reoriented.out_file,
+        name(desc="reorient", suffix="bold", extension=".nii.gz").name,
+    )
+    truncated_bold = file_rename(
+        truncated.output_file,
+        name(desc="truncated", suffix="bold", extension=".nii.gz").name,
+    )
+    sbref = file_rename(
+        motion_ref.output_file,
+        name(suffix="sbref", extension=".nii.gz").name,
+    )
+    mc_bold = file_rename(
+        motion_corrected.bold.with_suffix(".nii.gz"),
+        name(desc="motion", suffix="bold", extension=".nii.gz").name,
+    )
+    mc_par = file_rename(
+        motion_corrected.par,
+        name(desc="motionParams", suffix="motion", extension=".txt").name,
+    )
+    mc_rms_rel = file_rename(
+        motion_corrected.rms_rel,
+        name(desc="relsDisplacement", suffix="motion", extension=".rms").name,
+    )
+    mc_rms_abs = file_rename(
+        motion_corrected.rms_abs,
+        name(desc="maxDisplacement", suffix="motion", extension=".rms").name,
+    )
+
+    func_out_dir = output_dir / name(suffix="bold", extension=".nii.gz").parent
+
+    file_copy_many(
+        [
+            reoriented_bold,
+            truncated_bold,
+            sbref,
+            mc_bold,
+            mc_par,
+            mc_rms_rel,
+            mc_rms_abs,
+        ],
+        out_dir=func_out_dir,
+    )
 
     # Save transform .mat directory
-    mat_target = func_out_dir / bn(desc="motion", suffix="mat", extension="")
+    mat_target = func_out_dir / name(desc="motion", suffix="mat", extension="").name
     shutil.copytree(motion_corrected.mat_dir, mat_target, dirs_exist_ok=True)
-
-    # Output files
-    outputs = [
-        (reoriented.out_file, "reorient", Suffix.BOLD, ".nii.gz"),
-        (truncated.output_file, "truncated", Suffix.BOLD, ".nii.gz"),
-        (motion_ref.output_file, None, Suffix.SBREF, ".nii.gz"),
-        (
-            motion_corrected.bold.with_suffix(".nii.gz"),
-            "motion",
-            Suffix.BOLD,
-            ".nii.gz",
-        ),
-        (motion_corrected.par, "motionParams", Suffix.MOTION, ".txt"),
-        (motion_corrected.rms_rel, "relsDisplacement", Suffix.MOTION, ".rms"),
-        (motion_corrected.rms_abs, "maxDisplacement", Suffix.MOTION, ".rms"),
-    ]
-
-    for out_file, desc, suffix, ext in outputs:
-        dest_path = func_out_dir / bn(desc=desc, suffix=suffix, extension=ext)
-        shutil.move(str(out_file), str(dest_path))
