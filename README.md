@@ -43,13 +43,13 @@ The pipeline requires the following neuroimaging tools:
 from rbc.workflows import anatomical, functional
 
 # Anatomical preprocessing
-anatomical.single_session(
+anatomical.single_session_preprocess(
     in_t1w="sub-01_T1w.nii.gz",
     output_dir="derivatives/rbc"
 )
 
 # Functional preprocessing (in development)
-functional.single_session(
+functional.single_session_preprocess(
     in_bold="sub-01_task-rest_bold.nii.gz",
     in_t1w="sub-01_T1w.nii.gz",
     output_dir="derivatives/rbc"

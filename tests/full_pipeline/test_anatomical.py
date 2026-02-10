@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.workflows.anatomical import single_session
+from rbc.workflows.anatomical import single_session_preprocess
 
 if TYPE_CHECKING:
     import pathlib as pl
@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from conftest import TestSubjectData
 
 
-def test_single_session(test_subject: TestSubjectData, tmp_path: pl.Path) -> None:
+def test_single_session_preprocess(
+    test_subject: TestSubjectData, tmp_path: pl.Path
+) -> None:
     """e2e test for single session anatomical workflow."""
     subject_id = f"sub-{test_subject.subject_id}"
     expected_output_dir = tmp_path / subject_id / "anat"
@@ -25,7 +27,7 @@ def test_single_session(test_subject: TestSubjectData, tmp_path: pl.Path) -> Non
         "from-T1w_to-template_mode-image_xfm.nii.gz",
         "from-template_to-T1w_mode-image_xfm.nii.gz",
     ]
-    single_session(test_subject.t1w, output_dir=tmp_path)
+    single_session_preprocess(test_subject.t1w, output_dir=tmp_path)
 
     assert expected_output_dir.exists()
     assert all(

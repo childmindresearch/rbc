@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def single_session(in_t1w: Path, output_dir: Path) -> None:
+def single_session_preprocess(in_t1w: Path, output_dir: Path) -> None:
     """Run the full anatomical preprocessing pipeline for one session.
 
     Pipeline steps (see ``rbc_reimplementation_guide.md``):

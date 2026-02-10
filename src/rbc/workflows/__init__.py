@@ -6,6 +6,6 @@ into a complete pipeline, handling BIDS naming and output organization.
 
 from __future__ import annotations
 
-from .anatomical import single_session
+from .anatomical import single_session_preprocess
 
-__all__ = ["single_session"]
+__all__ = ["single_session_preprocess"]

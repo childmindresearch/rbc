@@ -23,7 +23,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def single_session(in_bold: Path, output_dir: Path, start_tr: int = 2) -> None:
+def single_session_preprocess(
+    in_bold: Path, output_dir: Path, start_tr: int = 2
+) -> None:
     """Run the functional preprocessing pipeline for one session.
 
     Pipeline steps (see ``rbc_reimplementation_guide.md``):
