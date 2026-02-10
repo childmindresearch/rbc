@@ -1,4 +1,4 @@
-"""CLI subcommand for functional processing
+"""CLI subcommand for functional processing.
 
 Parses subject/session/task arguments and delegates to
 ``rbc.workflows.functional.single_session``, which runs the functional
