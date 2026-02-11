@@ -1,7 +1,8 @@
 """Functional preprocessing workflow.
 
-Chains the functional stream -- reorientation, TR truncation, motion-reference
-extraction, and motion correction -- and writes BIDS-named outputs to disk.
+Chains the functional stream -- reorientation, TR truncation, slice timing,
+motion-reference extraction, and motion correction -- and writes BIDS-named
+outputs to disk.
 """
 
 from __future__ import annotations
@@ -16,8 +17,10 @@ from rbc.core.fileops import file_copy_many, file_rename
 from rbc.core.functional import (
     extract_motion_reference,
     fsl_motion_correction,
+    slice_timing_correction,
     truncate_trs,
 )
+from rbc.core.metadata import get_repetition_time
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -32,8 +35,9 @@ def single_session_preprocess(
 
     1. Deoblique and reorient BOLD to RPI.
     2. Truncate first *start_tr* volumes (steady-state equilibration).
-    3. Extract middle-volume motion reference.
-    4. Motion correction via FSL mcflirt (6-DOF rigid-body).
+    3. Slice timing correction.
+    4. Extract middle-volume motion reference.
+    5. Motion correction via FSL mcflirt (6-DOF rigid-body).
 
     All outputs (reoriented BOLD, truncated BOLD, sbref, motion-corrected
     BOLD, motion parameters, displacement metrics, and per-volume transform
@@ -53,10 +57,13 @@ def single_session_preprocess(
     name = partial(bids_path, sub=sub, ses=ses, task=task, run=run, datatype="func")
 
     reoriented = deoblique_and_reorient(in_file=in_bold)
-    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
-    motion_ref = extract_motion_reference(in_file=truncated.output_file)
+    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=int(start_tr))
+    st_corrected = slice_timing_correction(
+        in_file=truncated.output_file, tr=get_repetition_time(in_bold)
+    )
+    motion_ref = extract_motion_reference(in_file=st_corrected.out_file)
     motion_corrected = fsl_motion_correction(
-        in_file=truncated.output_file,
+        in_file=st_corrected.out_file,
         ref_file=motion_ref.output_file,
     )
 
@@ -68,6 +75,10 @@ def single_session_preprocess(
     truncated_bold = file_rename(
         truncated.output_file,
         name(desc="truncated", suffix="bold", extension=".nii.gz").name,
+    )
+    stc_bold = file_rename(
+        st_corrected.out_file,
+        name(desc="stc", suffix="bold", extension=".nii.gz").name,
     )
     sbref = file_rename(
         motion_ref.output_file,
@@ -96,6 +107,7 @@ def single_session_preprocess(
         [
             reoriented_bold,
             truncated_bold,
+            stc_bold,
             sbref,
             mc_bold,
             mc_par,
