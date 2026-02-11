@@ -11,10 +11,12 @@ from __future__ import annotations
 
 from .initialization import scale_bold, truncate_trs
 from .motion import extract_motion_reference, fsl_motion_correction
+from .timing import slice_timing_correction
 
 __all__ = [
     "extract_motion_reference",
     "fsl_motion_correction",
     "scale_bold",
+    "slice_timing_correction",
     "truncate_trs",
 ]
