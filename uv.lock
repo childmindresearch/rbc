@@ -755,6 +755,7 @@ source = { editable = "." }
 dependencies = [
     { name = "nibabel" },
     { name = "niwrap" },
+    { name = "numpy" },
     { name = "scipy" },
 ]
 
@@ -775,6 +776,7 @@ docs = [
 requires-dist = [
     { name = "nibabel", specifier = ">=5.3.3" },
     { name = "niwrap", specifier = ">=0.8.3" },
+    { name = "numpy", specifier = ">=2.4.2" },
     { name = "scipy", specifier = ">=1.17.0" },
 ]
 
