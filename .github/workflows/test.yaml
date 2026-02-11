@@ -79,7 +79,7 @@ jobs:
         uv run scripts/merge_cov_junitxml.py
 
     - name: Pytest coverage comment
-      if: "matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'"
+      if: matrix.os == 'ubuntu-latest'
       uses: MishaKav/pytest-coverage-comment@v1
       with:
         pytest-xml-coverage-path: ./coverage.xml

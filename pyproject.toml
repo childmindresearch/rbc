@@ -8,7 +8,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "nibabel>=5.3.3",
-  "niwrap>=0.8.3"
+  "niwrap>=0.8.3",
+  "scipy>=1.17.0"
 ]
 
 [dependency-groups]
@@ -86,6 +87,7 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
+"niwrap_helper.bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
 "bids2table.format_bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
 "bids2table.parse_bids_entities".msg = "Prefer rbc.core.bids.parse_bids_name"
 "types.SimpleNamespace".msg = "Prefer NamedTuple"
