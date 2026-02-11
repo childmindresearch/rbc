@@ -29,12 +29,14 @@ def test_despike_reduces_single_outlier(
     img = nib.nifti1.load(test_subject.bold)
     data = img.get_fdata()
 
-    original_val = data[10, 10, 10, 5]
+    center_x, center_y, center_z = [s // 2 for s in data.shape[:3]]
+
+    original_val = data[center_x, center_y, center_z, 5]
 
     # Inject spike into single voxel
     spike_multiplier = 100
-    data[10, 10, 10, 5] = data.mean() * spike_multiplier
-    spiked_val = data[10, 10, 10, 5]
+    data[center_x, center_y, center_z, 5] = data.mean() * spike_multiplier
+    spiked_val = data[center_x, center_y, center_z, 5]
 
     spiked_img = nib.Nifti1Image(data, img.affine, img.header)
     spiked_path = tmp_path / "spiked_input.nii.gz"
@@ -43,7 +45,7 @@ def test_despike_reduces_single_outlier(
     despiked = despike_bold(in_file=spiked_path)
 
     despiked_data = nib.nifti1.load(despiked.out_file).get_fdata()
-    despiked_val = despiked_data[10, 10, 10, 5]
+    despiked_val = despiked_data[center_x, center_y, center_z, 5]
 
     assert despiked_val < spiked_val, (
         f"Despike failed to reduce spike: {despiked_val} >= {spiked_val}"
@@ -58,9 +60,16 @@ def test_despike_multiple_spikes(test_subject: TestSubjectData, tmp_path: Path) 
     img = nib.nifti1.load(test_subject.bold)
     data = img.get_fdata()
 
+    center_x, center_y, center_z = [s // 2 for s in data.shape[:3]]
+
     # Inject spikes into multiple voxels
     spike_multiplier = 100
-    spike_coords = [(10, 10, 10, 5), (20, 20, 20, 10), (30, 30, 30, 15)]
+    spike_coords = [
+        (center_x, center_y, center_z, 5),
+        (center_x + 2, center_y - 2, center_z, 10),
+        (center_x + 4, center_y - 4, center_z, 15),
+    ]
+
     for coord in spike_coords:
         data[coord] = data.mean() * spike_multiplier
 
