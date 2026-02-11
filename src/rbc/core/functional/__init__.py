@@ -9,10 +9,12 @@ must be corrected before analysis.
 
 from __future__ import annotations
 
+from .despiking import despike_bold
 from .initialization import scale_bold, truncate_trs
 from .motion import extract_motion_reference, fsl_motion_correction
 
 __all__ = [
+    "despike_bold",
     "extract_motion_reference",
     "fsl_motion_correction",
     "scale_bold",
