@@ -21,7 +21,7 @@ class StyxContext(NamedTuple):
 
 def setup_runner(
     runner: Literal["local", "docker", "singularity"] = "local",
-    tmp_dir: Path | None = None,
+    tmp_dir: str | Path | None = None,
     image_overrides: dict[str, str] | None = None,
     **kwargs,  # noqa: ANN003 (ignore annotation for kwargs)
 ) -> StyxContext:
@@ -38,7 +38,7 @@ def setup_runner(
         Configured logger instance and initialized runner
     """
     if tmp_dir is None:
-        tmp_dir = Path(tempfile.mkdtemp())
+        tmp_dir = tempfile.mkdtemp()
 
     match runner_exec := runner.lower():
         case "local":
@@ -62,7 +62,7 @@ def setup_runner(
             )
 
     styx_runner = niwrap.get_global_runner()
-    styx_runner.data_dir = tmp_dir
+    styx_runner.data_dir = Path(tmp_dir)
     logger = logging.getLogger(styx_runner.logger_name)
     logger.setLevel(logging.INFO)
     return StyxContext(logger=logger, runner=styx_runner)
