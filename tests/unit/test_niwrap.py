@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -29,7 +30,14 @@ class TestSetupRunner:
         [
             ("local", LocalRunner),
             ("docker", DockerRunner),
-            ("singularity", SingularityRunner),
+            pytest.param(
+                "singularity",
+                SingularityRunner,
+                marks=pytest.mark.skipif(
+                    os.name == "nt",
+                    reason="SingularityRunner not supported on Windows",
+                ),
+            ),
         ],
     )
     def test_set_runner(self, runner: str, runner_type: type[Runner]) -> None:
