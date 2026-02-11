@@ -1,7 +1,6 @@
 # RBC Pipeline
 
 [![Build](https://github.com/childmindresearch/rbc/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/rbc/actions/workflows/test.yaml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/childmindresearch/rbc/branch/main/graph/badge.svg?token=22HWWFWPW5)](https://codecov.io/gh/childmindresearch/rbc)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![stability-stable](https://img.shields.io/badge/stability-stable-green.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/childmindresearch/rbc/blob/main/LICENSE)
