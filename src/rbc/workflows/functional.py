@@ -11,7 +11,7 @@ import shutil
 from functools import partial
 from typing import TYPE_CHECKING
 
-from bids2table._metadata import load_bids_metadata
+from bids2table import load_bids_metadata
 
 from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
