@@ -21,16 +21,11 @@ def test_slice_timing_tpattern_list(test_subject: TestSubjectData) -> None:
     """Test that tpattern accepts a list of slice timing offsets."""
     num_slices = nifti_num_slices(test_subject.bold)
 
-    expected_1d = test_subject.bold.parent / "SliceTiming.1D"
-
     # sample tpattern based on total slices
     tpattern = [0.1 * i for i in range(num_slices)]
     corrected = slice_timing_correction(
-        in_file=test_subject.bold, tr=2, tpattern=tpattern
+        in_file=test_subject.bold, tr=2.0, tpattern=tpattern
     )
-
-    assert expected_1d.exists()
-    assert len(expected_1d.read_text().splitlines()) == num_slices
     assert corrected.out_file.exists()
 
 

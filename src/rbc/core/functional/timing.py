@@ -13,13 +13,15 @@ from typing import TYPE_CHECKING
 
 from niwrap import afni
 
+from rbc.core.niwrap import generate_exec_folder
+
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 def slice_timing_correction(
     in_file: Path,
-    tr: float,
+    tr: float | None = None,
     tpattern: str | list[float] | None = None,
 ) -> afni.V3dTshiftOutputs:
     """Apply slice timing correction to a BOLD timeseries.
@@ -35,21 +37,23 @@ def slice_timing_correction(
     Returns:
         AFNI 3dTshift outputs (use ``.out_file`` for corrected timeseries).
     """
-    tpattern_arg = None
-
     if isinstance(tpattern, str):
         tpattern_arg = afni.v_3d_tshift_tpattern_mode_string(tpattern_string=tpattern)
 
-    if isinstance(tpattern, list):
-        timing_file = in_file.parent / "SliceTiming.1D"
+    elif isinstance(tpattern, list):
+        exec_dir = generate_exec_folder()
+        timing_file = exec_dir / "SliceTiming.1D"
         timing_file.write_text("\n".join(map(str, tpattern)))
         tpattern_arg = afni.v_3d_tshift_tpattern_mode_file(
             tpattern_file=str(timing_file)
         )
 
+    else:
+        tpattern_arg = None
+
     return afni.v_3d_tshift(
         in_file=in_file,
         prefix="stc.nii.gz",
-        tr=afni.v_3d_tshift_tr_microsyntax(value=tr, unit="s"),
+        tr=afni.v_3d_tshift_tr_microsyntax(value=tr, unit="s") if tr else None,
         tpattern=tpattern_arg if tpattern else None,
     )
