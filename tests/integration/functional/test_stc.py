@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import slice_timing_correction
 from rbc.core.nifti import nifti_num_slices
 
@@ -14,22 +13,20 @@ if TYPE_CHECKING:
 
 def test_slice_timing_correction(test_subject: TestSubjectData) -> None:
     """Test that slice timing correction runs successfully and produces output."""
-    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
-    corrected = slice_timing_correction(in_file=reoriented.out_file, tr=2)
+    corrected = slice_timing_correction(in_file=test_subject.bold, tr=2)
     assert corrected.out_file.exists()
 
 
 def test_slice_timing_tpattern_list(test_subject: TestSubjectData) -> None:
     """Test that tpattern accepts a list of slice timing offsets."""
-    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
-    num_slices = nifti_num_slices(reoriented.out_file)
+    num_slices = nifti_num_slices(test_subject.bold)
 
-    expected_1d = reoriented.out_file.parent / "SliceTiming.1D"
+    expected_1d = test_subject.bold.parent / "SliceTiming.1D"
 
     # sample tpattern based on total slices
     tpattern = [0.1 * i for i in range(num_slices)]
     corrected = slice_timing_correction(
-        in_file=reoriented.out_file, tr=2, tpattern=tpattern
+        in_file=test_subject.bold, tr=2, tpattern=tpattern
     )
 
     assert expected_1d.exists()
@@ -39,8 +36,7 @@ def test_slice_timing_tpattern_list(test_subject: TestSubjectData) -> None:
 
 def test_slice_timing_tpattern_string(test_subject: TestSubjectData) -> None:
     """Test that tpattern accepts a string acquisition pattern."""
-    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     corrected = slice_timing_correction(
-        in_file=reoriented.out_file, tr=2.0, tpattern="alt+z"
+        in_file=test_subject.bold, tr=2.0, tpattern="alt+z"
     )
     assert corrected.out_file.exists()
