@@ -783,7 +783,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "nibabel", specifier = ">=5.3.3" },
-    { name = "niwrap", specifier = "==0.8.7" },
+    { name = "niwrap", specifier = ">=0.8.3" },
 ]
 
 [package.metadata.requires-dev]
