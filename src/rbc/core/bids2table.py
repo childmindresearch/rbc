@@ -42,3 +42,28 @@ def load_table(
         )
         table = pa.concat_tables(tables)
     return pl.from_arrow(table)
+
+
+def get_extra_entity(key: str) -> pl.Expr:
+    """Extract a specific entity value from the extra_entities column from table.
+
+    Args:
+        key: The entity keyy to extract
+
+    Returns:
+        Polars expression extracting value associated with key.
+
+    Example:
+        >>> df.filter(get_extra_entity("foo") == "bar")
+
+    """
+    return (
+        pl.col("extra_entities")
+        .list.eval(
+            pl.element()
+            .filter(pl.element().struct.field("key") == key)
+            .struct.field("value")
+            .first()
+        )
+        .list.first()
+    )
