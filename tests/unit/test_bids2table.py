@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from rbc.core.bids2table import load_table
+from rbc.core.bids2table import get_extra_entity, load_table
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -63,3 +63,38 @@ class TestLoadBidsTable:
             mock_find.assert_called_once()
             mock_batch.assert_called_once()
             assert isinstance(result, pl.DataFrame)
+
+
+class TestGetExtraEntity:
+    """Testing suite for bids2table.get_extra_entity."""
+
+    @pytest.fixture
+    def test_table(self) -> pl.DataFrame:
+        """DataFrame for testing extra_entities."""
+        return pl.DataFrame(
+            {
+                "subject": ["sub-01", "sub-02"],
+                "extra_entities": [
+                    [
+                        {"key": "foo", "value": "bar"},
+                        {"key": "acq", "value": "multiband"},
+                    ],
+                    [{"key": "foo", "value": "bar"}],
+                ],
+            }
+        )
+
+    def test_key_exists(self, test_table: pl.DataFrame) -> None:
+        """Test existing key returns value."""
+        result = test_table.with_columns(foo=get_extra_entity("foo"))
+        assert result["foo"].to_list() == ["bar", "bar"]
+
+    def test_missing_row_return_none(self, test_table: pl.DataFrame) -> None:
+        """Test None is returned if entity missing."""
+        result = test_table.with_columns(acq=get_extra_entity("acq"))
+        assert result["acq"].to_list() == ["multiband", None]
+
+    def test_non_existent_key(self, test_table: pl.DataFrame) -> None:
+        """Test None is returned for all rows if key is non-existent."""
+        result = test_table.with_columns(missing=get_extra_entity("missing"))
+        assert result["missing"].to_list() == [None, None]
