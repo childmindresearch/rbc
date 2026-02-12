@@ -11,6 +11,8 @@ import shutil
 from functools import partial
 from typing import TYPE_CHECKING
 
+from bids2table._metadata import load_bids_metadata
+
 from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.fileops import file_copy_many, file_rename
@@ -28,7 +30,6 @@ if TYPE_CHECKING:
 def single_session_preprocess(
     in_bold: Path,
     output_dir: Path,
-    tr: float,
     start_tr: int = 2,
 ) -> None:
     """Run the functional preprocessing pipeline for one session.
@@ -58,10 +59,15 @@ def single_session_preprocess(
     task = entities.get("task")
     run = int(entities["run"]) if "run" in entities else None
     name = partial(bids_path, sub=sub, ses=ses, task=task, run=run, datatype="func")
+    metadata = load_bids_metadata(in_bold)
 
     reoriented = deoblique_and_reorient(in_file=in_bold)
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
-    st_corrected = slice_timing_correction(in_file=truncated.output_file, tr=tr)
+    st_corrected = slice_timing_correction(
+        in_file=truncated.output_file,
+        tr=metadata.get("RepetitionTime"),
+        tpattern=metadata.get("SliceTiming"),
+    )
     motion_ref = extract_motion_reference(in_file=st_corrected.out_file)
     motion_corrected = fsl_motion_correction(
         in_file=st_corrected.out_file,
