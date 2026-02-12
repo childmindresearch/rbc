@@ -20,14 +20,16 @@ from rbc.core.functional import (
     slice_timing_correction,
     truncate_trs,
 )
-from rbc.core.metadata import get_repetition_time
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 def single_session_preprocess(
-    in_bold: Path, output_dir: Path, start_tr: int = 2
+    in_bold: Path,
+    output_dir: Path,
+    tr: float,
+    start_tr: int = 2,
 ) -> None:
     """Run the functional preprocessing pipeline for one session.
 
@@ -47,6 +49,7 @@ def single_session_preprocess(
     Args:
         in_bold: Raw BOLD timeseries (BIDS-named) to preprocess.
         output_dir: Root output directory (e.g. ``derivatives/rbc``).
+        tr: Repetition time in seconds (e.g., 2.0).
         start_tr: Number of initial TRs to discard (default: 2).
     """
     entities = parse_bids_name(in_bold.name).entities
@@ -57,10 +60,8 @@ def single_session_preprocess(
     name = partial(bids_path, sub=sub, ses=ses, task=task, run=run, datatype="func")
 
     reoriented = deoblique_and_reorient(in_file=in_bold)
-    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=int(start_tr))
-    st_corrected = slice_timing_correction(
-        in_file=truncated.output_file, tr=get_repetition_time(in_bold)
-    )
+    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
+    st_corrected = slice_timing_correction(in_file=truncated.output_file, tr=tr)
     motion_ref = extract_motion_reference(in_file=st_corrected.out_file)
     motion_corrected = fsl_motion_correction(
         in_file=st_corrected.out_file,

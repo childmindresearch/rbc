@@ -18,29 +18,38 @@ if TYPE_CHECKING:
 
 
 def slice_timing_correction(
-    in_file: Path, tr: float, t_pattern: str | None = None, tzero: str | None = None
+    in_file: Path,
+    tr: float,
+    tpattern: str | list[float] | None = None,
 ) -> afni.V3dTshiftOutputs:
     """Apply slice timing correction to a BOLD timeseries.
 
     Temporally interpolates slices to align them to a common reference time,
     correcting for the sequential acquisition of slices within each volume.
-    If tpattern is not provided, AFNI will attempt to detect from the image
-    header.
 
     Args:
         in_file: Truncated BOLD timeseries to correct.
         tr: Repetition time in seconds (e.g., 2.0).
-        t_pattern: Slice acquisition pattern (e.g., 'alt+z', 'seq+z').
-            If None, auto-detected from header.
-        tzero: Time in seconds to align slices to. If None, uses first slice.
+        tpattern: Slice acquisition pattern.
 
     Returns:
         AFNI 3dTshift outputs (use ``.out_file`` for corrected timeseries).
     """
+    tpattern_arg = None
+
+    if isinstance(tpattern, str):
+        tpattern_arg = afni.v_3d_tshift_tpattern_mode_string(tpattern_string=tpattern)
+
+    if isinstance(tpattern, list):
+        timing_file = in_file.parent / "SliceTiming.1D"
+        timing_file.write_text("\n".join(map(str, tpattern)))
+        tpattern_arg = afni.v_3d_tshift_tpattern_mode_file(
+            tpattern_file=str(timing_file)
+        )
+
     return afni.v_3d_tshift(
         in_file=in_file,
-        tr=tr,
-        tpattern=t_pattern if t_pattern is not None else None,
-        tzero=tzero if tzero is not None else None,
         prefix="stc.nii.gz",
+        tr=afni.v_3d_tshift_tr_microsyntax(value=tr, unit="s"),
+        tpattern=tpattern_arg if tpattern else None,
     )
