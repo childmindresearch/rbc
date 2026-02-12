@@ -47,7 +47,7 @@ def get_extra_entity(key: str) -> pl.Expr:
     """Extract a specific entity value from the extra_entities column from table.
 
     Args:
-        key: The entity keyy to extract
+        key: The entity key to extract
 
     Returns:
         Polars expression extracting value associated with key.
