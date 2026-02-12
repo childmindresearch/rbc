@@ -31,7 +31,6 @@ def load_table(
     Returns:
         Polars DataFrame index for all BIDS datasets.
     """
-    # Load or generate table
     if index_fpath is not None and Path(index_fpath).exists():
         table = pq.read_table(index_fpath)
     else:
