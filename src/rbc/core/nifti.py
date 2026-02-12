@@ -23,6 +23,11 @@ def nifti_num_volumes(in_file: str | Path) -> int:
 
 
 def nifti_num_slices(in_file: str | Path) -> int:
-    """Return the number of slices (Z) in a NIfTI image."""
-    shape = nibabel.nifti1.load(in_file).shape
-    return shape[2] if len(shape) >= 3 else 1
+    """Return the number of slices along the slice axis in a NIfTI image."""
+    img = nibabel.nifti1.load(in_file)
+    dim_info = img.header.get_dim_info()
+    slice_axis = dim_info[2]
+    if slice_axis is not None:
+        return img.shape[slice_axis]
+
+    return img.shape[2] if len(img.shape) >= 3 else 1
