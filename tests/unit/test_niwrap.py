@@ -7,9 +7,15 @@ import os
 from typing import TYPE_CHECKING
 
 import pytest
-from niwrap import DockerRunner, LocalRunner, Runner, SingularityRunner
+from niwrap import (
+    DockerRunner,
+    LocalRunner,
+    Runner,
+    SingularityRunner,
+    get_global_runner,
+)
 
-from rbc.core.niwrap import setup_runner
+from rbc.core.niwrap import generate_exec_folder, setup_runner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,3 +74,30 @@ class TestSetupRunner:
         """Test setting of log levels."""
         ctx = setup_runner(verbose=verbose)
         assert ctx.logger.level == log_level
+
+
+class TestGenExecFolder:
+    """Testing suite for niwrap.generate_exec_folder."""
+
+    def test_create_folder_default(self) -> None:
+        """Test folder successfully generated with default arguments."""
+        runner = get_global_runner()
+        result = generate_exec_folder()
+        assert result.exists()
+        assert result.is_dir()
+        assert runner.execution_counter == 1
+        assert result.name == f"{runner.uid}_{runner.execution_counter - 1}_python"
+
+    def test_create_folder_with_suffix(self) -> None:
+        """Test folder successfully generates with suffix."""
+        runner = get_global_runner()
+        result = generate_exec_folder(suffix="pytest")
+        assert result.name == f"{runner.uid}_{runner.execution_counter - 1}_pytest"
+
+    def test_error_if_folder_exists(self) -> None:
+        """Test folder generation fails if duplicate."""
+        runner = get_global_runner()
+        generate_exec_folder()
+        runner.execution_counter -= 1
+        with pytest.raises(FileExistsError):
+            generate_exec_folder()
