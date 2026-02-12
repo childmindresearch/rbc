@@ -40,7 +40,8 @@ def load_table(
             show_progress=verbose,
         )
         table = pa.concat_tables(tables)
-    return pl.from_arrow(table)
+    df = pl.from_arrow(table)
+    return df.to_frame() if isinstance(df, pl.Series) else df
 
 
 def get_extra_entity(key: str) -> pl.Expr:
