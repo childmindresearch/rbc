@@ -267,9 +267,7 @@ def compute_alff(
     if falff_path == alff_path:
         falff_path = alff_path.parent / f"{stem}_falff.nii.gz"
 
-    nib.nifti1.Nifti1Image(alff_map, img.affine, img.header).to_filename(
-        str(alff_path)
-    )
+    nib.nifti1.Nifti1Image(alff_map, img.affine, img.header).to_filename(str(alff_path))
     nib.nifti1.Nifti1Image(falff_map, img.affine, img.header).to_filename(
         str(falff_path)
     )

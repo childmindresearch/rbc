@@ -331,7 +331,7 @@ class TestAlffDispatcher:
         data = np.random.default_rng(20).standard_normal(SHAPE)
         mask = np.ones(SHAPE[:3])
 
-        a_dispatch, fa_dispatch = alff(data, mask, TR, method=method)
+        a_dispatch, fa_dispatch = alff(data, mask, TR, method=method)  # type: ignore[arg-type]
 
         if method == "am":
             a_direct, fa_direct = am_alff(data, mask, TR)
