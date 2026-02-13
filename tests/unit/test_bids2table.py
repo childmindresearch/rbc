@@ -66,6 +66,26 @@ class TestLoadBidsTable:
             assert isinstance(result, pl.DataFrame)
             assert result.shape == (3, 2)
 
+    def test_load_table_with__series(self, tmp_path: Path) -> None:
+        """Test for pl.Series conditional."""
+        with (
+            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
+            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
+            patch("rbc.core.bids2table.pl.concat") as mock_concat,
+        ):
+            mock_find.return_value = ["fake_dataset"]
+            mock_batch.return_value = [pa.table({"col": [1]})]
+            mock_concat.return_value = pl.Series("col", [1, 2, 3])
+
+            result = load_table(tmp_path)
+            assert isinstance(result, pl.DataFrame)
+            assert result.shape == (3, 1)
+
+    def test_no_datasets(self, tmp_path: Path) -> None:
+        """Test ValueError raised if no datasets are found."""
+        with pytest.raises(ValueError, match="No datasets found"):
+            load_table(dataset_dir=tmp_path)
+
 
 class TestGetExtraEntity:
     """Testing suite for bids2table.get_extra_entity."""
