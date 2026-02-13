@@ -30,15 +30,17 @@ def load_table(
         Polars DataFrame index for all BIDS datasets.
     """
     if index_fpath is not None and Path(index_fpath).exists():
-        df = pl.read_parquet(index_fpath)
-    else:
-        tables = b2t.batch_index_dataset(
-            b2t.find_bids_datasets(dataset_dir),
-            max_workers=max_workers,
-            show_progress=verbose,
-        )
-        df = pl.concat([pl.from_arrow(table) for table in tables])
-    return df.to_frame() if isinstance(df, pl.Series) else df
+        return pl.read_parquet(index_fpath)
+
+    tables = b2t.batch_index_dataset(
+        b2t.find_bids_datasets(dataset_dir),
+        max_workers=max_workers,
+        show_progress=verbose,
+    )
+    df = pl.concat([pl.from_arrow(table) for table in tables])
+    if isinstance(df, pl.Series):
+        df = df.to_frame()
+    return df
 
 
 def get_extra_entity(key: str) -> pl.Expr:
