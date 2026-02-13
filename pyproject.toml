@@ -12,7 +12,6 @@ dependencies = [
   "niwrap>=0.8.7",
   "numpy>=2.4.2",
   "polars>=1.38.1",
-  "pyarrow>=23.0.0",
   "scipy>=1.17.0"
 ]
 

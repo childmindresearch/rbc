@@ -8,8 +8,6 @@ from pathlib import Path
 
 import bids2table as b2t
 import polars as pl
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 
 def load_table(
@@ -32,15 +30,14 @@ def load_table(
         Polars DataFrame index for all BIDS datasets.
     """
     if index_fpath is not None and Path(index_fpath).exists():
-        table = pq.read_table(index_fpath)
+        df = pl.read_parquet(index_fpath)
     else:
         tables = b2t.batch_index_dataset(
             b2t.find_bids_datasets(dataset_dir),
             max_workers=max_workers,
             show_progress=verbose,
         )
-        table = pa.concat_tables(tables)
-    df = pl.from_arrow(table)
+        df = pl.concat([pl.from_arrow(table) for table in tables])
     return df.to_frame() if isinstance(df, pl.Series) else df
 
 

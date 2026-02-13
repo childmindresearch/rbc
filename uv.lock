@@ -884,7 +884,6 @@ dependencies = [
     { name = "niwrap" },
     { name = "numpy" },
     { name = "polars" },
-    { name = "pyarrow" },
     { name = "scipy" },
 ]
 
@@ -908,7 +907,6 @@ requires-dist = [
     { name = "niwrap", specifier = ">=0.8.7" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "polars", specifier = ">=1.38.1" },
-    { name = "pyarrow", specifier = ">=23.0.0" },
     { name = "scipy", specifier = ">=1.17.0" },
 ]
 
