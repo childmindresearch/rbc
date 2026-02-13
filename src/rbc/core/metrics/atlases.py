@@ -32,19 +32,17 @@ ATLAS_DIR: Path = Path(__file__).resolve().parents[4] / "resources" / "atlases"
 
 _SCHAEFER = "Schaefer2018_space-FSLMNI152_res-2mm_desc"
 
-ATLAS_REGISTRY: dict[str, str] = {
+ATLAS_REGISTRY: dict[AtlasName, str] = {
     "schaefer_200": f"{_SCHAEFER}-200Parcels17NetworksOrder.nii.gz",
     "schaefer_300": f"{_SCHAEFER}-300Parcels17NetworksOrder.nii.gz",
     "schaefer_400": f"{_SCHAEFER}-400Parcels17NetworksOrder.nii.gz",
     "schaefer_1000": f"{_SCHAEFER}-1000Parcels17NetworksOrder.nii.gz",
     "aal": "aal_mask_pad.nii.gz",
     "harvard_oxford_cortical": (
-        "HarvardOxfordcort-maxprob-thr25"
-        "_space-MNI152NLin6_res-1x1x1.nii.gz"
+        "HarvardOxfordcort-maxprob-thr25_space-MNI152NLin6_res-1x1x1.nii.gz"
     ),
     "harvard_oxford_subcortical": (
-        "HarvardOxfordsub-maxprob-thr25"
-        "_space-MNI152NLin6_res-1x1x1.nii.gz"
+        "HarvardOxfordsub-maxprob-thr25_space-MNI152NLin6_res-1x1x1.nii.gz"
     ),
     "glasser": "Glasser_space-MNI152NLin6_res-1x1x1.nii.gz",
     "yeo_7": "Yeo-7_space-MNI152NLin6_res-1x1x1.nii.gz",
@@ -70,13 +68,11 @@ def get_atlas(name: AtlasName) -> Path:
     filename = ATLAS_REGISTRY.get(name)
     if filename is None:
         raise ValueError(
-            f"Unknown atlas {name!r}. "
-            f"Supported: {', '.join(sorted(ATLAS_REGISTRY))}"
+            f"Unknown atlas {name!r}. Supported: {', '.join(sorted(ATLAS_REGISTRY))}"
         )
     path = ATLAS_DIR / filename
     if not path.exists():
         raise FileNotFoundError(
-            f"Atlas file not found: {path}. "
-            "Expected in resources/atlases/."
+            f"Atlas file not found: {path}. Expected in resources/atlases/."
         )
     return path

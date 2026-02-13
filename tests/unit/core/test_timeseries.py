@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 
 from rbc.core.metrics.timeseries import (
-    correlation_matrix,
     compute_timeseries,
+    correlation_matrix,
     extract_timeseries,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestExtractTimeseries:
@@ -167,10 +170,12 @@ class TestCorrelationMatrix:
 
     def test_anticorrelated(self) -> None:
         """Perfectly anticorrelated timeseries should yield -1."""
-        ts = np.array([
-            [1.0, 2.0, 3.0, 4.0, 5.0],
-            [-1.0, -2.0, -3.0, -4.0, -5.0],
-        ])
+        ts = np.array(
+            [
+                [1.0, 2.0, 3.0, 4.0, 5.0],
+                [-1.0, -2.0, -3.0, -4.0, -5.0],
+            ]
+        )
         corr = correlation_matrix(ts)
 
         assert corr[0, 1] == pytest.approx(-1.0)

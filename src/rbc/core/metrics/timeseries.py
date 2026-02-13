@@ -74,13 +74,9 @@ def correlation_matrix(timeseries: np.ndarray) -> np.ndarray:
         ValueError: If fewer than 2 ROIs or fewer than 2 timepoints.
     """
     if timeseries.shape[0] < 2:
-        raise ValueError(
-            f"Need at least 2 ROIs, got {timeseries.shape[0]}"
-        )
+        raise ValueError(f"Need at least 2 ROIs, got {timeseries.shape[0]}")
     if timeseries.shape[1] < 2:
-        raise ValueError(
-            f"Need at least 2 timepoints, got {timeseries.shape[1]}"
-        )
+        raise ValueError(f"Need at least 2 timepoints, got {timeseries.shape[1]}")
     return np.corrcoef(timeseries)
 
 
