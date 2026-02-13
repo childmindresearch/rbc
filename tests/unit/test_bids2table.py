@@ -39,8 +39,8 @@ class TestLoadBidsTable:
     def test_load_no_existing_index(self, tmp_path: Path, test_table: pa.Table) -> None:
         """Testing indexing if existing index does not exist."""
         with (
-            patch("bids2table.batch_index_dataset") as mock_batch,
-            patch("bids2table.find_bids_datasets") as mock_find,
+            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
+            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
         ):
             mock_find.return_value = [tmp_path]
             mock_batch.return_value = [test_table]
@@ -50,12 +50,13 @@ class TestLoadBidsTable:
             mock_find.assert_called_once()
             mock_batch.assert_called_once()
             assert isinstance(result, pl.DataFrame)
+            assert result.shape == (3, 2)
 
     def test_load_without_index(self, tmp_path: Path, test_table: pa.Table) -> None:
         """Test indexing without passing an index."""
         with (
-            patch("bids2table.batch_index_dataset") as mock_batch,
-            patch("bids2table.find_bids_datasets") as mock_find,
+            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
+            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
         ):
             mock_find.return_value = [tmp_path]
             mock_batch.return_value = [test_table]
@@ -63,6 +64,7 @@ class TestLoadBidsTable:
             mock_find.assert_called_once()
             mock_batch.assert_called_once()
             assert isinstance(result, pl.DataFrame)
+            assert result.shape == (3, 2)
 
 
 class TestGetExtraEntity:
