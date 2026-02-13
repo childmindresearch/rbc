@@ -40,6 +40,9 @@ def load_table(
     df = pl.concat([pl.from_arrow(table) for table in tables])
     if isinstance(df, pl.Series):
         df = df.to_frame()
+
+    if index_fpath is not None:
+        df.write_parquet(file=index_fpath)
     return df
 
 
