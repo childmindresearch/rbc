@@ -28,6 +28,9 @@ def load_table(
 
     Returns:
         Polars DataFrame index for all BIDS datasets.
+
+    Raises:
+        ValueError: if no datasets found.
     """
     if index_fpath is not None and Path(index_fpath).exists():
         return pl.read_parquet(index_fpath)
@@ -37,9 +40,12 @@ def load_table(
         max_workers=max_workers,
         show_progress=verbose,
     )
-    df = pl.concat([pl.from_arrow(table) for table in tables])
-    if isinstance(df, pl.Series):
-        df = df.to_frame()
+    try:
+        df = pl.concat([pl.from_arrow(table) for table in tables])
+        if isinstance(df, pl.Series):
+            df = df.to_frame()
+    except ValueError:
+        raise ValueError(f"No datasets found at {dataset_dir}") from None
 
     if index_fpath is not None:
         df.write_parquet(file=index_fpath)
