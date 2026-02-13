@@ -12,34 +12,86 @@ from __future__ import annotations
 from pathlib import Path
 from typing import NamedTuple
 
+import nibabel as nib
+import numpy as np
 from niwrap import afni, fsl
 
-from rbc.core.nifti import nifti_num_volumes
+from rbc.core.niwrap import generate_exec_folder
 
 _MC_PREFIX = "mc"
+MAX_VOLUMES = 50
+_MIDDLE_SLICE_START = 20
+_MIDDLE_SLICE_END = 40
 
 
-def extract_motion_reference(in_file: Path) -> afni.V3dcalcOutputs:
-    """Extract the middle volume of a BOLD timeseries as a motion reference.
+class MotionReferenceOutputs(NamedTuple):
+    """Outputs from motion reference extraction.
 
-    The middle volume is chosen because it minimizes the maximum temporal
-    distance to any other volume, reducing interpolation error during
-    motion correction.
+    Attributes:
+        output_file: Path to the motion reference image.
+    """
+
+    output_file: Path
+
+
+def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
+    """Extract a motion-corrected reference image from BOLD timeseries.
+
+    This follows the fMRIPrep approach of:
+    1. Extracting 50 volumes from the input file.
+    2. Selecting middle 20 volumes (volumes 20-40) if more than 40 volumes are present.
+    3. Apply motion correction using AFNI's ``3dvolreg``.
+    4. Compute temporal median to create the reference image.
 
     Args:
         in_file: Truncated BOLD timeseries.
 
     Returns:
-        AFNI 3dcalc outputs (use ``.output_file`` for the reference image).
+        Motion reference image.
     """
-    total_vols = nifti_num_volumes(in_file)
-    mid_vol = total_vols // 2
+    img = nib.squeeze_image(nib.load(in_file))
 
-    return afni.v_3dcalc(
-        dataset_a=afni.v_3dcalc_dataset_a_file(file=in_file, selectors_=f"[{mid_vol}]"),
-        expression="a",
-        prefix="motion_ref.nii.gz",
+    if img.dataobj.ndim == 3:
+        ref_volumes = [img]
+    elif img.dataobj.ndim == 4:
+        ref_volumes = nib.four_to_three(img.slicer[..., :MAX_VOLUMES])
+    else:
+        raise ValueError(f"Unexpected number of dimensions: {img.dataobj.ndim}")
+
+    ref_im = nib.squeeze_image(nib.concat_images(ref_volumes))
+    ref_im.header.extensions.clear()
+
+    if ref_im.shape[-1] > _MIDDLE_SLICE_END:
+        ref_im = nib.Nifti1Image(
+            ref_im.dataobj[..., _MIDDLE_SLICE_START:_MIDDLE_SLICE_END],
+            affine=ref_im.affine,
+            header=ref_im.header,
+        )
+
+    exec_dir = generate_exec_folder()
+    temp_slice_file = exec_dir / "slice.nii.gz"
+    ref_im.to_filename(temp_slice_file)
+
+    mc_output_prefix = f"{_MC_PREFIX}_volreg.nii.gz"
+    volreg_result = afni.v_3dvolreg(
+        prefix=mc_output_prefix,
+        in_file=str(temp_slice_file),
+        fourier=True,
+        twopass=True,
+        zpad=4,
     )
+
+    mc_output_file = Path(volreg_result.out_file)
+    mc_data = nib.load(mc_output_file).get_fdata()
+    median_volume = np.median(mc_data, axis=3)
+
+    output_file = exec_dir / "motion_reference.nii.gz"
+    motion_ref_img = nib.Nifti1Image(
+        median_volume, affine=ref_im.affine, header=ref_im.header
+    )
+    motion_ref_img.to_filename(output_file)
+
+    return MotionReferenceOutputs(output_file=output_file)
 
 
 class MotionCorrectedOutputs(NamedTuple):
