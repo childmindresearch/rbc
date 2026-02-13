@@ -81,7 +81,7 @@ class TestZscore:
         assert in_mask.std() == pytest.approx(1.0, abs=1e-10)
 
     def test_rejects_non_3d(self) -> None:
-        """zscore should reject non-3D input."""
+        """Z-score should reject non-3D input."""
         with pytest.raises(ValueError, match="3D"):
             zscore(np.zeros((5, 5)), np.ones((5, 5)))
 

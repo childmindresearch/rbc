@@ -74,7 +74,5 @@ def compute_zscore(
         out_file = in_file.parent / f"{stem}_zscored.nii.gz"
     out_file = Path(out_file)
 
-    nib.nifti1.Nifti1Image(zscored, img.affine, img.header).to_filename(
-        str(out_file)
-    )
+    nib.nifti1.Nifti1Image(zscored, img.affine, img.header).to_filename(str(out_file))
     return out_file
