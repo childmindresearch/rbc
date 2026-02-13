@@ -31,6 +31,7 @@ def load_table(
 
     Raises:
         ValueError: if no datasets found.
+        TypeError: if found dataset does not return a DataFrame.
     """
     if index_fpath is not None and Path(index_fpath).exists():
         return pl.read_parquet(index_fpath)
@@ -40,12 +41,15 @@ def load_table(
         max_workers=max_workers,
         show_progress=verbose,
     )
-    try:
-        df = pl.concat([pl.from_arrow(table) for table in tables])
-        if isinstance(df, pl.Series):
-            df = df.to_frame()
-    except ValueError:
-        raise ValueError(f"No datasets found at {dataset_dir}") from None
+    dfs: list[pl.DataFrame] = []
+    for table in tables:
+        result = pl.from_arrow(table)
+        if not isinstance(result, pl.DataFrame):
+            raise TypeError(f"Expected DataFrame, got {type(result)}")
+        dfs.append(result)
+    if len(dfs) == 0:
+        raise ValueError(f"No datasets found in {dataset_dir}")
+    df = pl.concat(dfs)
 
     if index_fpath is not None:
         df.write_parquet(file=index_fpath)

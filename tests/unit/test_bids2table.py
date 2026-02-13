@@ -66,20 +66,19 @@ class TestLoadBidsTable:
             assert isinstance(result, pl.DataFrame)
             assert result.shape == (3, 2)
 
-    def test_load_table_with__series(self, tmp_path: Path) -> None:
-        """Test for pl.Series conditional."""
+    def test_not_a_dataframe(self, tmp_path: Path) -> None:
+        """Test TypeError raised if return is not a dataframe."""
         with (
             patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
             patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
-            patch("rbc.core.bids2table.pl.concat") as mock_concat,
+            patch("rbc.core.bids2table.pl.from_arrow") as mock_from_arrow,
         ):
             mock_find.return_value = ["fake_dataset"]
             mock_batch.return_value = [pa.table({"col": [1]})]
-            mock_concat.return_value = pl.Series("col", [1, 2, 3])
+            mock_from_arrow.return_value = "not a dataframe"
 
-            result = load_table(tmp_path)
-            assert isinstance(result, pl.DataFrame)
-            assert result.shape == (3, 1)
+            with pytest.raises(TypeError, match="Expected DataFrame"):
+                load_table(tmp_path)
 
     def test_no_datasets(self, tmp_path: Path) -> None:
         """Test ValueError raised if no datasets are found."""
