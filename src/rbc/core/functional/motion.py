@@ -82,7 +82,7 @@ def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
     )
 
     mc_output_file = Path(volreg_result.out_file)
-    mc_data = nib.load(mc_output_file).get_fdata()
+    mc_data = nib.nifti1.load(mc_output_file).get_fdata()
     median_volume = np.median(mc_data, axis=3)
 
     output_file = exec_dir / "motion_reference.nii.gz"
