@@ -59,6 +59,7 @@ def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
         raise ValueError(f"Unexpected number of dimensions: {img.dataobj.ndim}")
 
     ref_im = nib.squeeze_image(nib.concat_images(ref_volumes))
+    # Clear header extensions to avoid shape-dependent inconsistencies after slicing
     ref_im.header.extensions.clear()
 
     if ref_im.shape[-1] > _MIDDLE_SLICE_END:
@@ -68,14 +69,13 @@ def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
             header=ref_im.header,
         )
 
-    exec_dir = generate_exec_folder()
-    temp_slice_file = exec_dir / "slice.nii.gz"
+    temp_slice_file = generate_exec_folder(suffix="motion_ref_input") / "slice.nii.gz"
     ref_im.to_filename(temp_slice_file)
 
     mc_output_prefix = f"{_MC_PREFIX}_volreg.nii.gz"
     volreg_result = afni.v_3dvolreg(
         prefix=mc_output_prefix,
-        in_file=str(temp_slice_file),
+        in_file=temp_slice_file,
         fourier=True,
         twopass=True,
         zpad=4,
@@ -85,7 +85,9 @@ def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
     mc_data = nib.nifti1.load(mc_output_file).get_fdata()
     median_volume = np.median(mc_data, axis=3)
 
-    output_file = exec_dir / "motion_reference.nii.gz"
+    output_file = (
+        generate_exec_folder(suffix="motion_ref_output") / "motion_reference.nii.gz"
+    )
     motion_ref_img = nib.Nifti1Image(
         median_volume, affine=ref_im.affine, header=ref_im.header
     )
