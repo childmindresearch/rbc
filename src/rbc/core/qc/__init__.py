@@ -20,16 +20,30 @@ from rbc.core.qc.motion import (
     motion_qc_metrics,
     rms_motion,
 )
+from rbc.core.qc.registration import (
+    RegistrationQCMetrics,
+    coverage,
+    cross_correlation,
+    dice_coefficient,
+    jaccard_index,
+    registration_qc_metrics,
+)
 
 __all__ = [
     "DVARSQCMetrics",
     "MotionQCMetrics",
+    "RegistrationQCMetrics",
     "count_censored_volumes",
+    "coverage",
+    "cross_correlation",
+    "dice_coefficient",
     "dvars",
     "dvars_qc_metrics",
     "framewise_displacement_jenkinson",
     "framewise_displacement_power",
+    "jaccard_index",
     "motion_dvars_correlation",
     "motion_qc_metrics",
+    "registration_qc_metrics",
     "rms_motion",
 ]
