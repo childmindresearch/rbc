@@ -28,11 +28,18 @@ from rbc.core.qc.registration import (
     jaccard_index,
     registration_qc_metrics,
 )
+from rbc.core.qc.xcp import (
+    XCPQCMetrics,
+    generate_xcp_qc,
+    passes_rbc_qc,
+    write_xcp_qc,
+)
 
 __all__ = [
     "DVARSQCMetrics",
     "MotionQCMetrics",
     "RegistrationQCMetrics",
+    "XCPQCMetrics",
     "count_censored_volumes",
     "coverage",
     "cross_correlation",
@@ -41,9 +48,12 @@ __all__ = [
     "dvars_qc_metrics",
     "framewise_displacement_jenkinson",
     "framewise_displacement_power",
+    "generate_xcp_qc",
     "jaccard_index",
     "motion_dvars_correlation",
     "motion_qc_metrics",
+    "passes_rbc_qc",
     "registration_qc_metrics",
     "rms_motion",
+    "write_xcp_qc",
 ]

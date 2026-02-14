@@ -99,6 +99,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101"]
+"src/rbc/core/qc/xcp.py" = ["N815"]  # camelCase field names required by XCP-D TSV spec
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
