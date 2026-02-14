@@ -4,6 +4,10 @@ This module computes voxelwise metrics from preprocessed BOLD timeseries.
 """
 
 from rbc.core.metrics.atlases import get_atlas
+from rbc.core.metrics.gradients import (
+    compute_gradients,
+    compute_gradients_from_files,
+)
 from rbc.core.metrics.timeseries import (
     compute_timeseries,
     correlation_matrix,
@@ -11,6 +15,8 @@ from rbc.core.metrics.timeseries import (
 )
 
 __all__ = [
+    "compute_gradients",
+    "compute_gradients_from_files",
     "compute_timeseries",
     "correlation_matrix",
     "extract_timeseries",
