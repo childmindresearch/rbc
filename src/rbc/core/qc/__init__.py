@@ -1,7 +1,8 @@
 """Quality control.
 
-This module defines methods for computing quality control metrics, including metrics
-like framewise displacement (FD), DVARS, motion-DVARS correlation, and tSNR.
+This module defines methods for computing quality control metrics, including
+framewise displacement (FD), DVARS, motion-DVARS correlation, and registration
+overlap metrics.
 """
 
 from __future__ import annotations

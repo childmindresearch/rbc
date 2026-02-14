@@ -72,7 +72,7 @@ def rms_motion(motion_params: np.ndarray) -> tuple[float, float]:
             :func:`framewise_displacement_power`).
 
     Returns:
-        ``(mean_rms, max_rms)`` — the mean and maximum of the per-volume
+        ``(mean_rms, max_rms)`` - the mean and maximum of the per-volume
         RMS translation magnitude.
     """
     motion_params = np.asarray(motion_params, dtype=np.float64)
