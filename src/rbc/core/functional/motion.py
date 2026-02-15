@@ -24,27 +24,35 @@ _MIDDLE_SLICE_START = 20
 _MIDDLE_SLICE_END = 40
 
 
-class MotionReferenceOutputs(NamedTuple):
-    """Outputs from motion reference extraction.
+class MotionCorrectedOutputs(NamedTuple):
+    """Outputs from FSL mcflirt motion correction.
 
     Attributes:
-        output_file: Path to the motion reference image.
+        bold: Motion-corrected BOLD timeseries.
+        par: Six-column motion parameter file (3 rotations, 3 translations).
+        rms_rel: Frame-to-frame (relative) RMS displacement.
+        rms_abs: Volume-to-reference (absolute) RMS displacement.
+        mat_dir: Directory containing per-volume affine matrices.
     """
 
-    output_file: Path
+    bold: Path
+    par: Path
+    rms_rel: Path
+    rms_abs: Path
+    mat_dir: Path
 
 
-def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
+def extract_motion_reference(in_file: Path) -> Path:
     """Extract a motion-corrected reference image from BOLD timeseries.
 
     This follows the fMRIPrep approach of:
-    1. Extracting 50 volumes from the input file.
-    2. Selecting middle 20 volumes (volumes 20-40) if more than 40 volumes are present.
-    3. Apply motion correction using AFNI's ``3dvolreg``.
-    4. Compute temporal median to create the reference image.
+    1. Extracting up to 50 volumes from the input file.
+    2. Selecting middle 20 volumes (volumes 20-40) if available.
+    3. Applying motion correction using AFNI's ``3dvolreg``.
+    4. Computing temporal median to create the final reference image.
 
     Args:
-        in_file: Truncated BOLD timeseries.
+        in_file: BOLD timeseries (NIfTI).
 
     Returns:
         Motion reference image.
@@ -93,25 +101,7 @@ def extract_motion_reference(in_file: Path) -> MotionReferenceOutputs:
     )
     motion_ref_img.to_filename(output_file)
 
-    return MotionReferenceOutputs(output_file=output_file)
-
-
-class MotionCorrectedOutputs(NamedTuple):
-    """Outputs from FSL mcflirt motion correction.
-
-    Attributes:
-        bold: Motion-corrected BOLD timeseries.
-        par: Six-column motion parameter file (3 rotations, 3 translations).
-        rms_rel: Frame-to-frame (relative) RMS displacement.
-        rms_abs: Volume-to-reference (absolute) RMS displacement.
-        mat_dir: Directory containing per-volume affine matrices.
-    """
-
-    bold: Path
-    par: Path
-    rms_rel: Path
-    rms_abs: Path
-    mat_dir: Path
+    return output_file
 
 
 def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutputs:

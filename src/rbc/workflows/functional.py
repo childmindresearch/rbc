@@ -71,7 +71,7 @@ def single_session_preprocess(
     motion_ref = extract_motion_reference(in_file=st_corrected.out_file)
     motion_corrected = fsl_motion_correction(
         in_file=st_corrected.out_file,
-        ref_file=motion_ref.output_file,
+        ref_file=motion_ref,
     )
 
     # Rename outputs to BIDS-compliant names
@@ -88,7 +88,7 @@ def single_session_preprocess(
         name(desc="stc", suffix="bold", extension=".nii.gz").name,
     )
     sbref = file_rename(
-        motion_ref.output_file,
+        motion_ref,
         name(suffix="sbref", extension=".nii.gz").name,
     )
     mc_bold = file_rename(
