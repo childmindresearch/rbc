@@ -36,21 +36,11 @@ class TestLoadBidsTable:
         result = load_table(dataset_dir=tmp_path, index_fpath=index_path)
         assert isinstance(result, pl.DataFrame)
 
-    def test_load_no_existing_index(self, tmp_path: Path, test_table: pa.Table) -> None:
+    def test_load_no_existing_index(self, tmp_path: Path) -> None:
         """Testing indexing if existing index does not exist."""
         index_fpath = tmp_path / "index.parquet"
-        with (
-            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
-            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
-        ):
-            mock_find.return_value = [tmp_path]
-            mock_batch.return_value = [test_table]
-            result = load_table(dataset_dir=tmp_path, index_fpath=index_fpath)
-            mock_find.assert_called_once()
-            mock_batch.assert_called_once()
-            assert isinstance(result, pl.DataFrame)
-            assert result.shape == (3, 2)
-            assert index_fpath.exists()
+        with pytest.raises(FileNotFoundError):
+            load_table(dataset_dir=tmp_path, index_fpath=index_fpath)
 
     def test_load_without_index(self, tmp_path: Path, test_table: pa.Table) -> None:
         """Test indexing without passing an index."""

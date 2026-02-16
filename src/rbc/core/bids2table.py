@@ -33,7 +33,7 @@ def load_table(
         ValueError: if no datasets found.
         TypeError: if found dataset does not return a DataFrame.
     """
-    if index_fpath is not None and Path(index_fpath).exists():
+    if index_fpath is not None:
         return pl.read_parquet(index_fpath)
 
     tables = b2t.batch_index_dataset(
@@ -49,11 +49,8 @@ def load_table(
         dfs.append(result)
     if len(dfs) == 0:
         raise ValueError(f"No datasets found in {dataset_dir}")
-    df = pl.concat(dfs)
 
-    if index_fpath is not None:
-        df.write_parquet(file=index_fpath)
-    return df
+    return pl.concat(dfs)
 
 
 def get_extra_entity(key: str) -> pl.Expr:
