@@ -19,7 +19,7 @@ from niwrap import afni, fsl
 from rbc.core.niwrap import generate_exec_folder
 
 _MC_PREFIX = "mc"
-MAX_VOLUMES = 50
+_MAX_VOLUMES = 50
 _MIDDLE_SLICE_START = 20
 _MIDDLE_SLICE_END = 40
 
@@ -62,7 +62,7 @@ def extract_motion_reference(in_file: Path) -> Path:
     if img.dataobj.ndim == 3:
         ref_volumes = [img]
     elif img.dataobj.ndim == 4:
-        ref_volumes = nib.four_to_three(img.slicer[..., :MAX_VOLUMES])
+        ref_volumes = nib.four_to_three(img.slicer[..., :_MAX_VOLUMES])
     else:
         raise ValueError(f"Unexpected number of dimensions: {img.dataobj.ndim}")
 
