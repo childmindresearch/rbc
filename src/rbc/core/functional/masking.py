@@ -196,7 +196,7 @@ def bold_masking(
         bspline_fitting=ants.n4_bias_field_correction_bspline_fitting(
             spline_distance=[200], spline_order=3
         ),
-        mask_image=dilated_binary_mask.output_file,
+        mask_image=bold_ref_dir_corrected.output_file,
     )
 
     # --- Phase 4: First-Pass Skull Stripping ---
