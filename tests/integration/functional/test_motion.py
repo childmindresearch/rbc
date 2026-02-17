@@ -23,7 +23,23 @@ def test_motion_reference_volume_count(test_subject: TestSubjectData) -> None:
     """Test motion reference volume count is 1."""
     reference = extract_motion_reference(in_file=test_subject.bold)
     # Test motion reference file has 1 volume
-    assert nifti_num_volumes(reference.output_file) == 1
+    assert nifti_num_volumes(reference) == 1
+
+
+def test_motion_reference_short_series_fallback(test_subject: TestSubjectData) -> None:
+    """Test fallback to all volumes when timeseries is < 40 volumes."""
+    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
+
+    # 5 volume dataset
+    truncated_5 = afni.v_3dcalc(
+        dataset_a=afni.v_3dcalc_dataset_a_file(
+            file=reoriented.out_file, selectors_="[0..4]"
+        ),
+        expression="a",
+        prefix="test_5vols.nii.gz",
+    )
+    motion_reference = extract_motion_reference(in_file=truncated_5.output_file)
+    assert nifti_num_volumes(motion_reference) == 1
 
 
 @pytest.mark.slow
@@ -40,7 +56,7 @@ def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
     motion_reference = extract_motion_reference(in_file=truncated_10.output_file)
     motion_corrected = fsl_motion_correction(
         in_file=truncated_10.output_file,
-        ref_file=motion_reference.output_file,
+        ref_file=motion_reference,
     )
     assert motion_corrected.bold.with_suffix(".nii.gz").exists()
     assert nifti_num_volumes(motion_corrected.bold.with_suffix(".nii.gz")) == 10
@@ -58,7 +74,7 @@ def test_motion_correction(test_subject: TestSubjectData) -> None:
     motion_reference = extract_motion_reference(in_file=truncated.output_file)
     motion_corrected = fsl_motion_correction(
         in_file=truncated.output_file,
-        ref_file=motion_reference.output_file,
+        ref_file=motion_reference,
     )
     # Test motion corrected BOLD files exists
     assert motion_corrected.bold.with_suffix(".nii.gz").exists()

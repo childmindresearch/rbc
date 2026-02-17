@@ -52,7 +52,7 @@ def extract_motion_reference(in_file: Path) -> Path:
     4. Computing temporal median to create the final reference image.
 
     Args:
-        in_file: BOLD timeseries (NIfTI).
+        in_file: BOLD timeseries.
 
     Returns:
         Motion reference image.
@@ -70,7 +70,8 @@ def extract_motion_reference(in_file: Path) -> Path:
     # Clear header extensions to avoid shape-dependent inconsistencies after slicing
     ref_im.header.extensions.clear()
 
-    if ref_im.shape[-1] > _MIDDLE_SLICE_END:
+    # Middle volumes selection; fallback to all volumes if fewer than 40 are available
+    if ref_im.ndim == 4 and ref_im.shape[-1] > _MIDDLE_SLICE_END:
         ref_im = nib.Nifti1Image(
             ref_im.dataobj[..., _MIDDLE_SLICE_START:_MIDDLE_SLICE_END],
             affine=ref_im.affine,
@@ -89,7 +90,7 @@ def extract_motion_reference(in_file: Path) -> Path:
         zpad=4,
     )
 
-    mc_output_file = Path(volreg_result.out_file)
+    mc_output_file = volreg_result.out_file
     mc_data = nib.nifti1.load(mc_output_file).get_fdata()
     median_volume = np.median(mc_data, axis=3)
 
