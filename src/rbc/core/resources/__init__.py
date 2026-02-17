@@ -35,9 +35,13 @@ class MniTemplates(NamedTuple):
 
     Attributes:
         brain_1mm: MNI152 T1w brain at 1 mm resolution (registration target).
+        brain_mask_2mm: MNI152 T1w brain mask at 2 mm resolution.
+        bold_ref: MNI152 bold reference image.
     """
 
     brain_1mm: Path
+    brain_mask_2mm: Path
+    bold_ref: Path
 
 
 class FSL(NamedTuple):
@@ -55,9 +59,13 @@ OASIS_TEMPLATES = OasisTemplates(
     registration_mask=OASIS_DIR / "T_template0_BrainCerebellumRegistrationMask.nii.gz",
 )
 # MNI152
-# (sourced from FSL6.0 in C-PAC container: ghcr.io/fcp-indi/c-pac:many_pipes
+# FSL 6.0 via C-PAC (ghcr.io/fcp-indi/c-pac:many_pipes & cpindi/c-pac:release-v1.8.5.dev1)
 MNI_DIR = RESOURCES_DIR / "mni"
-MNI_TEMPLATES = MniTemplates(brain_1mm=MNI_DIR / "MNI152_T1_1mm_brain.nii.gz")
+MNI_TEMPLATES = MniTemplates(
+    brain_1mm=MNI_DIR / "MNI152_T1_1mm_brain.nii.gz",
+    brain_mask_2mm=MNI_DIR / "MNI152_T1_2mm_brain_mask.nii.gz",
+    bold_ref=MNI_DIR / "tpl-MNI152NLin2009cAsym_res-02_desc-fMRIPrep_boldref.nii.gz",
+)
 
 # FSL
 FSL_DIR = RESOURCES_DIR / "fsl"
