@@ -18,6 +18,8 @@ from niwrap import fsl
 if TYPE_CHECKING:
     from pathlib import Path
 
+from rbc.core.resources import FSL_RESOURCES
+
 
 def coregister_bold_to_t1w(
     in_file: Path,
@@ -57,8 +59,8 @@ def coregister_bold_to_t1w(
         out_file="bbr_bold_to_t1w.nii.gz",
         out_matrix_file="bbr_bold_to_t1w.mat",
         cost="bbr",
-        wm_seg=wm_seg,  # CPAC uses different thresholding for WM seg
+        wm_seg=wm_seg,
         dof=6,
         in_matrix_file=linear_result.out_matrix_file,
-        schedule="src/rbc/core/resources/fsl/bbr.sch",
+        schedule=FSL_RESOURCES.bbr_schedule,
     )
