@@ -18,6 +18,8 @@ from niwrap import ants, fsl
 
 from rbc.core.resources import OASIS_TEMPLATES
 
+_SEG_PREFIX = "tissue_seg"
+
 
 class TissueMasks(NamedTuple):
     """Paths to tissue segmentation masks."""
@@ -57,31 +59,40 @@ def ants_brain_extraction(
     )
 
 
-def fsl_tissue_segmentation(in_file: Path) -> TissueMasks:
-    """Segment a brain into CSF, gray matter, and white matter with FSL FAST.
-
-    Runs three-class tissue classification on a skull-stripped brain image,
-    then thresholds each partial-volume estimate at 0.95 to produce binary
-    tissue masks. These masks are used later for nuisance regression (mean
-    CSF/WM signals) and boundary-based coregistration (WM boundary).
+def fsl_segmentation(in_file: Path) -> fsl.FastOutputs:
+    """Run FSL FAST tissue segmentation on a skull-stripped brain.
 
     Args:
-        in_file: Skull-stripped brain image (output of brain extraction).
+        in_file: Skull-stripped brain image.
 
     Returns:
-        Paths to binary CSF, GM, and WM masks (thresholded at 0.95).
+        FSL FAST outputs (pve, probability maps, etc.).
     """
-    prefix = "tissue_seg"
-    tissues = fsl.fast(
+    return fsl.fast(
         in_files=[in_file],
         img_type=1,
         number_classes=3,
         segments=True,
-        out_basename=prefix,
+        out_basename=_SEG_PREFIX,
     )
+
+
+def fsl_tissue_masks(fast_result: fsl.FastOutputs) -> TissueMasks:
+    """Derive binary CSF, GM, and WM masks from FSL FAST probability maps.
+
+    Thresholds each partial-volume estimate at 0.95 to produce binary
+    tissue masks. These masks are used later for nuisance regression (mean
+    CSF/WM signals).
+
+    Args:
+        fast_result: FSL FAST segmentation outputs.
+
+    Returns:
+        Paths to binary CSF, GM, and WM masks (thresholded at 0.95).
+    """
     masks = {
         tissue_type: fsl.fslmaths(
-            input_files=[tissues.root / f"{prefix}_pve_{idx}.nii.gz"],
+            input_files=[fast_result.root / f"{_SEG_PREFIX}_pve_{idx}.nii.gz"],
             operations=[
                 fsl.fslmaths_operation_thr(thr=0.95),
                 fsl.fslmaths_operation_bin(bin_=True),
@@ -91,3 +102,26 @@ def fsl_tissue_segmentation(in_file: Path) -> TissueMasks:
         for idx, tissue_type in enumerate(["csf", "gm", "wm"])
     }
     return TissueMasks(**masks)
+
+
+def fsl_wm_bbr_mask(fast_result: fsl.FastOutputs) -> Path:
+    """Derive a WM mask from the FAST pveseg for BBR coregistration.
+
+    Uses the hard-label pveseg output (WM label=3, isolated via -thr 2.5 -uthr 3.5)
+    to produce a more inclusive WM boundary suitable for boundary-based registration.
+
+    Args:
+        fast_result: FSL FAST segmentation outputs.
+
+    Returns:
+        Binary WM mask derived from pveseg.
+    """
+    return fsl.fslmaths(
+        input_files=[fast_result.root / f"{_SEG_PREFIX}_pveseg.nii.gz"],
+        operations=[
+            fsl.fslmaths_operation_thr(thr=2.5),
+            fsl.fslmaths_operation_uthr(uthr=3.5),
+            fsl.fslmaths_operation_bin(bin_=True),
+        ],
+        output="wm_bbr_mask.nii.gz",
+    ).output_file
