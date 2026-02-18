@@ -37,7 +37,7 @@ def coregister_bold_to_t1w(
 
     Returns:
         Affine transformation matrix from BOLD to T1w space
-        (use ``.out_matrix_file`` for the image)
+        (use ``.out_matrix_file`` for the matrix)
     """
     # Step 1: Initial linear registration with correlation ratio
     linear_result = fsl.flirt(
