@@ -109,7 +109,7 @@ def fsl_wm_bbr_mask(fast_result: fsl.FastOutputs) -> Path:
     """Derive a WM mask from the FAST segmentation for BBR coregistration.
 
     Uses the hard-label tissue segmentation to produce a binary mask covering the
-    white matter boundary. This mask will be used later for BBR coregegistration of
+    white matter boundary. This mask will be used later for BBR coregistration of
     functional to anatomical images.
 
     Args:
