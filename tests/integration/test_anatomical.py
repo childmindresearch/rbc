@@ -27,7 +27,8 @@ def test_brain_extraction(test_subject: TestSubjectData) -> None:
 @pytest.mark.slow
 def test_tissue_segmentation(test_subject: TestSubjectData) -> None:
     """Test tissue segmentation."""
-    tissue_mask = anatomical.fsl_tissue_segmentation(in_file=test_subject.t1w)
+    segmentation = anatomical.fsl_segmentation(in_file=test_subject.t1w)
+    tissue_mask = anatomical.fsl_tissue_masks(fast_result=segmentation)
     assert tissue_mask.csf.exists()
     assert tissue_mask.gm.exists()
     assert tissue_mask.wm.exists()

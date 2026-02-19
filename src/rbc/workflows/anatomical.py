@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING
 from rbc.core.anatomical import (
     ants_brain_extraction,
     ants_registration,
-    fsl_tissue_segmentation,
+    fsl_segmentation,
+    fsl_tissue_masks,
 )
 from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
@@ -53,7 +54,8 @@ def single_session_preprocess(in_t1w: Path, output_dir: Path) -> None:
 
     reoriented_t1w = deoblique_and_reorient(in_file=in_t1w)
     extracted_t1w = ants_brain_extraction(in_file=reoriented_t1w.out_file)
-    tissue_masks = fsl_tissue_segmentation(in_file=extracted_t1w.brain_extracted_image)
+    segmentation = fsl_segmentation(in_file=extracted_t1w.brain_extracted_image)
+    tissue_masks = fsl_tissue_masks(fast_result=segmentation)
     transforms = ants_registration(in_file=extracted_t1w.brain_extracted_image)
 
     # Rename outputs to BIDS-compliant names
