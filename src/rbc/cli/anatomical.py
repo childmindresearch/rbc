@@ -14,16 +14,18 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS
+from rbc.cli.__main__ import BaseArgs
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
 
 
-def main(args: argparse.Namespace) -> int:
+def main(cli_args: argparse.Namespace) -> int:
     """Main entrypoint of anatomical workflow."""
     group_entity = ("sub", "ses", "run")
 
     # Setup
+    args = BaseArgs.from_namespace(cli_args)
     ctx = setup_runner(runner=args.runner, verbose=args.verbose)
     ctx.runner.environ = _DEFAULT_ENV_VARS
 
@@ -37,10 +39,10 @@ def main(args: argparse.Namespace) -> int:
         pl.col("suffix") == "T1w",
         pl.col("ext").str.contains(".nii"),
     ]
-    if args.participant_label is not None:
-        filters.append(pl.col("sub").is_in(args.participant_label))
-    if args.session_label is not None:
-        filters.append(pl.col("ses").is_in(args.session_label))
+    if len(args.participant_labels) > 0:
+        filters.append(pl.col("sub").is_in(args.participant_labels))
+    if len(args.session_labels) > 0:
+        filters.append(pl.col("ses").is_in(args.session_labels))
     df = df.filter(pl.all_horizontal(filters))
 
     for _, group in tqdm(df.group_by(group_entity), disable=not ctx.verbose):
