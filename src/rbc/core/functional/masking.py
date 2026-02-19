@@ -10,12 +10,14 @@ The pipeline follows these primary stages:
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from niwrap import afni, ants, fsl
 
 from rbc.core import CPAC_ANTS_SEED
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class MaskingOutputs(NamedTuple):
@@ -28,6 +30,41 @@ class MaskingOutputs(NamedTuple):
 
     final_mask: Path
     skull_stripped_bold: Path
+
+
+def parse_direction_matrix_from_header(img_path: Path) -> list[float]:
+    """Extract and parse the direction matrix from an image header.
+
+    ANTs print_header with what_information=4 returns the direction cosines
+    as an 'x' delimited string of 9 values representing a 3x3 matrix in
+    row-major order (e.g., "1.0x0.0x0.0x0.0x-1.0x0.0x0.0x0.0x1.0"). Each
+    value should be in the range [-1.0, 1.0] as they are unit vector components.
+
+    Args:
+        img_path: Path to the 3D NIfTI image to parse.
+
+    Returns:
+        A list of 9 floats representing the 3x3 direction cosine matrix.
+    """
+    direction_header = ants.print_header(image=img_path, what_information=4)
+
+    if not direction_header.output:
+        raise ValueError(f"print_header returned no output for image: {img_path}")
+
+    direction_string = direction_header.output[0]
+    direction_matrix = [float(x) for x in direction_string.replace("x", " ").split()]
+
+    # Validate the length and value range of the direction matrix
+    if len(direction_matrix) != 9:
+        raise ValueError(
+            f"Expected 9 elements in direction matrix, got {len(direction_matrix)}"
+        )
+    if not all(-1.0 <= val <= 1.0 for val in direction_matrix):
+        raise ValueError(
+            f"Direction matrix contains values outside [-1.0, 1.0]: {direction_matrix}"
+        )
+
+    return direction_matrix
 
 
 def bold_masking(
@@ -172,18 +209,13 @@ def bold_masking(
 
     # --- Phase 3: Fix Headers and N4 Correction ---
 
-    direction_header = ants.print_header(
-        image=dilated_binary_mask.output_file, what_information=4
-    )
-
-    direction_string = direction_header.output[0]
-    direction_matrix = [float(x) for x in direction_string.replace("x", " ").split()]
-
     # Set direction on BOLD reference
     bold_ref_dir_corrected = ants.set_direction_by_matrix(
         infile=bold_ref,
         outfile="bold_ref_dir_corrected.nii.gz",
-        direction_matrix=direction_matrix,
+        direction_matrix=parse_direction_matrix_from_header(
+            dilated_binary_mask.output_file
+        ),
     )
 
     # N4 bias field correction
@@ -275,6 +307,6 @@ def bold_masking(
     )
 
     return MaskingOutputs(
-        final_mask=Path(final_mask.output_file),
-        skull_stripped_bold=Path(skull_stripped_bold.output_file),
+        final_mask=final_mask.output_file,
+        skull_stripped_bold=skull_stripped_bold.output_file,
     )
