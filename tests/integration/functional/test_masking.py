@@ -47,4 +47,4 @@ def test_bold_masking_final_mask_is_binary(test_subject: TestSubjectData) -> Non
     mask_img = nib.load(result.final_mask)
     mask_data = mask_img.get_fdata()
     unique_vals = np.unique(np.round(mask_data))
-    assert set(unique_vals).issubset({0, 1})
+    assert set(unique_vals) == {0, 1}
