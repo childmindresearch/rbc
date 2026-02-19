@@ -66,7 +66,8 @@ def fsl_segmentation(in_file: Path) -> fsl.FastOutputs:
         in_file: Skull-stripped brain image.
 
     Returns:
-        FSL FAST outputs (pve, probability maps, etc.).
+        FSL FAST outputs containing partial volume estimates, tissue probability
+        maps, and hard-label segmentation for GM, WM, and CSF.
     """
     return fsl.fast(
         in_files=[in_file],
@@ -105,10 +106,11 @@ def fsl_tissue_masks(fast_result: fsl.FastOutputs) -> TissueMasks:
 
 
 def fsl_wm_bbr_mask(fast_result: fsl.FastOutputs) -> Path:
-    """Derive a WM mask from the FAST pveseg for BBR coregistration.
+    """Derive a WM mask from the FAST segmentation for BBR coregistration.
 
-    Uses the hard-label pveseg output (WM label=3, isolated via -thr 2.5 -uthr 3.5)
-    to produce a more inclusive WM boundary suitable for boundary-based registration.
+    Uses the hard-label tissue segmentation to produce a binary mask covering the
+    white matter boundary. This mask will be used later for BBR coregegistration of
+    functional to anatomical images.
 
     Args:
         fast_result: FSL FAST segmentation outputs.
