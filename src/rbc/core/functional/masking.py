@@ -37,31 +37,33 @@ def parse_direction_matrix_from_header(img_path: Path) -> list[float]:
 
     ANTs print_header with what_information=4 returns the direction cosines
     as an 'x' delimited string of 9 values representing a 3x3 matrix in
-    row-major order (e.g., "1.0x0.0x0.0x0.0x-1.0x0.0x0.0x0.0x1.0"). Each
-    value should be in the range [-1.0, 1.0] as they are unit vector components.
+    row-major order (e.g., "1.0x0.0x0.0x0.0x-1.0x0.0x0.0x0.0x1.0").
 
     Args:
         img_path: Path to the 3D NIfTI image to parse.
 
     Returns:
         A list of 9 floats representing the 3x3 direction cosine matrix.
+
+    Raises:
+        ValueError: If the header output is empty, if the string does not
+            contain exactly 9 elements, or if any element falls outside
+            the valid range of [-1.0, 1.0].
     """
     direction_header = ants.print_header(image=img_path, what_information=4)
 
     if not direction_header.output:
-        raise ValueError(f"print_header returned no output for image: {img_path}")
+        raise ValueError(f"No header output for: {img_path}")
 
     direction_string = direction_header.output[0]
-    direction_matrix = [float(x) for x in direction_string.replace("x", " ").split()]
+    direction_matrix = list(map(float, direction_string.split("x")))
 
     # Validate the length and value range of the direction matrix
     if len(direction_matrix) != 9:
-        raise ValueError(
-            f"Expected 9 elements in direction matrix, got {len(direction_matrix)}"
-        )
+        raise ValueError(f"Expected 9 elements, got {len(direction_matrix)}")
     if not all(-1.0 <= val <= 1.0 for val in direction_matrix):
         raise ValueError(
-            f"Direction matrix contains values outside [-1.0, 1.0]: {direction_matrix}"
+            f"Direction values out of range [-1.0, 1.0]: {direction_matrix}"
         )
 
     return direction_matrix
