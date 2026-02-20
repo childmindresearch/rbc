@@ -2,7 +2,7 @@
 # Regenerate with: uv run scripts/generate_bids_tools.py
 """BIDS schema constants and utilities.
 
-Auto-generated from BIDS schema v1.11.1.
+Auto-generated from BIDS schema v1.11.0.
 Regenerate with: ``uv run scripts/generate_bids_tools.py``
 """
 
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import PurePath
 from typing import Literal
 
-BIDS_VERSION = "1.11.1"
+BIDS_VERSION = "1.11.0"
 
 _LABEL_RE = re.compile(r"^[0-9a-zA-Z+]+$")
 
