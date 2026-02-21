@@ -13,11 +13,14 @@ from .despiking import despike_bold
 from .initialization import scale_bold, truncate_trs
 from .motion import extract_motion_reference, fsl_motion_correction
 from .timing import slice_timing_correction
+from .resampling import fsl_mat_to_itk, resample_bold_to_template
 
 __all__ = [
     "despike_bold",
     "extract_motion_reference",
+    "fsl_mat_to_itk",
     "fsl_motion_correction",
+    "resample_bold_to_template",
     "scale_bold",
     "slice_timing_correction",
     "truncate_trs",
