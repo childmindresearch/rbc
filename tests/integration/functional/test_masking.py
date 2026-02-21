@@ -23,7 +23,7 @@ def test_bold_masking_outputs_exist(test_subject: TestSubjectData) -> None:
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     bold_ref = extract_motion_reference(in_file=reoriented.out_file)
     result = bold_masking(
-        bold_ref=bold_ref.output_file,
+        bold_ref=bold_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
         template_ref=MNI_TEMPLATES.bold_ref,
     )
@@ -39,7 +39,7 @@ def test_bold_masking_final_mask_is_binary(test_subject: TestSubjectData) -> Non
     bold_ref = extract_motion_reference(in_file=reoriented.out_file)
 
     result = bold_masking(
-        bold_ref=bold_ref.output_file,
+        bold_ref=bold_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
         template_ref=MNI_TEMPLATES.bold_ref,
     )
