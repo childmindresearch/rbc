@@ -36,8 +36,9 @@ def coregister_bold_to_t1w(
         wm_seg: White matter segmentation mask for BBR.
 
     Returns:
-        Affine transformation matrix from BOLD to T1w space
-        (use ``.out_matrix_file`` for the matrix)
+        fsl.FlirtOutputs object containing registration results
+        - ``.out_file``: Registered BOLD reference in T1w space.
+        - ``.out_matrix_file``: Affine transformation matrix from BOLD to T1w space.
     """
     # Step 1: Initial linear registration with correlation ratio
     linear_result = fsl.flirt(
