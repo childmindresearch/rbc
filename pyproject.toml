@@ -9,10 +9,22 @@ requires-python = ">=3.12"
 dependencies = [
   "bids2table>=2.1.2",
   "nibabel>=5.3.3",
-  "niwrap>=0.8.7",
+  "niwrap==0.8.12",
+  "niwrap-afni==0.8.12",
+  "niwrap-ants==0.8.12",
+  "niwrap-c3d==0.8.12",
+  "niwrap-dcm2niix==0.8.12",
+  "niwrap-fastsurfer==0.8.12",
+  "niwrap-freesurfer==0.8.12",
+  "niwrap-fsl==0.8.12",
+  "niwrap-greedy==0.8.12",
+  "niwrap-mrtrix==0.8.12",
+  "niwrap-mrtrix3tissue==0.8.12",
+  "niwrap-niftyreg==0.8.12",
+  "niwrap-workbench==0.8.12",
   "numpy>=2.4.2",
   "polars>=1.38.1",
-  "scipy>=1.17.0"
+  "scipy>=1.17.0",
 ]
 
 [dependency-groups]
