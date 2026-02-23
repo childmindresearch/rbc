@@ -85,7 +85,9 @@ def bold_masking(
     """
     # --- Phase 1: Template to BOLD Registration ---
 
-    # Initialize affine transformation
+    # Coarsely initialize affine alignment between template and BOLD reference
+    # space using Mattes mutual information. Used as seed for the subsequent
+    # full affine registration.
     affine_transformation = ants.ants_ai(
         metric=ants.ants_ai_metric_mattes(
             fixed_image=template_ref,
@@ -125,7 +127,10 @@ def bold_masking(
         masks=ants.ants_ai_masks(fixed_image_mask=template_mask),
     )
 
-    # Refine registration with ANTs
+    # Refine the initial alignment with a full affine registration using Mattes
+    # mutual information. Runs at 2x downsampled resolution with 2mm smoothing for
+    # speed. Winsorizes intensities (5th to 98th percentile) to reduce
+    # outlier influence.
     registration = ants.ants_registration(
         stages=[
             ants.ants_registration_stage(
@@ -173,7 +178,8 @@ def bold_masking(
 
     # --- Phase 2: Warp Template Mask to BOLD Space ---
 
-    # Apply transforms to probability mask
+    # Warps the template-space brain mask into BOLD native space using the inverse
+    # affine transform. Uses B-spline interpolation (order=3) for smooth warping.
     warped_probseg = ants.ants_apply_transforms(
         reference_image=bold_ref,
         output=ants.ants_apply_transforms_warped_output(
@@ -186,7 +192,8 @@ def bold_masking(
         transform=[ants.ants_apply_transforms_use_inverse(registration.generic_affine)],
     )
 
-    # Binarize warped mask
+    # Threshold warped probabilistic mask at 0.85 and binarize to produce a
+    # conservative binary mask.
     binarized_mask = fsl.fslmaths(
         input_files=[warped_probseg.output.output_image_outfile],
         operations=[
@@ -197,7 +204,7 @@ def bold_masking(
         output="binary_mask.nii.gz",
     )
 
-    # Dilate binary mask (3mm sphere)
+    # Dilate binary mask by 3mm sphere to cover regions excluded by threshold.
     dilated_binary_mask = fsl.fslmaths(
         input_files=[binarized_mask.output_file],
         operations=[
@@ -211,7 +218,8 @@ def bold_masking(
 
     # --- Phase 3: Fix Headers and N4 Correction ---
 
-    # Set direction on BOLD reference
+    # Align the BOLD reference direction to the mask header to address any header
+    # mismatches before N4 correction.
     bold_ref_dir_corrected = ants.set_direction_by_matrix(
         infile=bold_ref,
         outfile="bold_ref_dir_corrected.nii.gz",
@@ -220,7 +228,8 @@ def bold_masking(
         ),
     )
 
-    # N4 bias field correction
+    # Corrects low-frequency intensity non-uniformity (RF bias field). Spline
+    # distance of 200mm targets broad gradients without fitting anatomical structure.
     n4_bias_correction = ants.n4_bias_field_correction(
         input_image=bold_ref_dir_corrected.outfile,
         output=ants.n4_bias_field_correction_corrected_output(
@@ -230,12 +239,13 @@ def bold_masking(
         bspline_fitting=ants.n4_bias_field_correction_bspline_fitting(
             spline_distance=[200], spline_order=3
         ),
-        mask_image=bold_ref_dir_corrected.outfile,
+        mask_image=dilated_binary_mask.output_file,
     )
 
     # --- Phase 4: First-Pass Skull Stripping ---
 
-    # BET skull strip
+    # BET with a low fractional intensity threshold of 0.2 to create an initial
+    # brain mask.
     skull_strip = fsl.bet(
         infile=n4_bias_correction.output.output_image_outfile,
         fractional_intensity=0.2,
@@ -243,7 +253,8 @@ def bold_masking(
         maskfile="ref_bold_corrected_brain",
     )
 
-    # Dilate BET mask (6mm sphere)
+    # Dilate by a 6mm sphere to compensate for BET under-segmentation and ensure
+    # full coverage.
     dilated_bet_mask = fsl.fslmaths(
         input_files=[skull_strip.binary_mask],
         operations=[
@@ -255,7 +266,8 @@ def bold_masking(
         datatype_internal="char",
     )
 
-    # Apply dilated BET mask
+    # Apply the dilated BET mask to skull-strip the bias-corrected BOLD reference.
+    # Prevents background artifacts from skewing the second-pass automask.
     masked_bold = fsl.fslmaths(
         input_files=[skull_strip.outfile],
         operations=[
@@ -267,7 +279,9 @@ def bold_masking(
 
     # --- Phase 5: Intensity Uniformization & Second-Pass ---
 
-    # AFNI Unifize
+    # Normalize intensity of the masked BOLD reference.
+    # t2=True selects contrast mode optimized for EPI data
+    # cl_frac and rbt control histogram clipping.
     unifized = afni.v_3d_unifize(
         in_file=masked_bold.output_file,
         cl_frac=0.2,
@@ -276,7 +290,9 @@ def bold_masking(
         t2=True,
     )
 
-    # AFNI Automask
+    # Compute an intensity-driven brain mask from unifized image and apply it.
+    # Unifized contrast makes automask more effective than on the original
+    # BOLD reference.
     automask = afni.v_3d_automask(
         in_file=unifized.out_file,
         apply_prefix="uni_masked.nii.gz",
@@ -286,7 +302,7 @@ def bold_masking(
 
     # --- Phase 6: Combine Masks ---
 
-    # Intersect both masks
+    # Intersect the BET mask and AFNI automask, reducing false positives.
     final_mask = fsl.fslmaths(
         input_files=[skull_strip.binary_mask],
         operations=[
@@ -298,7 +314,8 @@ def bold_masking(
         output="final_mask.nii.gz",
     )
 
-    # Apply final mask to unifized image
+    # Apply the final mask to the unifized image. Using the unifized base ensures
+    # intensity uniformity in the final skull-stripped reference.
     skull_stripped_bold = fsl.fslmaths(
         input_files=[unifized.out_file],
         operations=[
