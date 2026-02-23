@@ -12,13 +12,12 @@ from __future__ import annotations
 from .despiking import despike_bold
 from .initialization import scale_bold, truncate_trs
 from .motion import extract_motion_reference, fsl_motion_correction
-from .resampling import fsl_mat_to_itk, resample_bold_to_template
+from .resampling import resample_bold_to_template
 from .timing import slice_timing_correction
 
 __all__ = [
     "despike_bold",
     "extract_motion_reference",
-    "fsl_mat_to_itk",
     "fsl_motion_correction",
     "resample_bold_to_template",
     "scale_bold",

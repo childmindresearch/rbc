@@ -12,19 +12,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-from niwrap import ants, c3d, fsl
+from niwrap import ants, fsl
 
-
-def fsl_mat_to_itk(mat: Path, reference: Path, source: Path, output: str) -> Path:
-    """Convert .mat affine to ITK .txt format using c3d_affine_tool."""
-    result = c3d.c3d_affine_tool(
-        reference_file=reference,
-        source_file=source,
-        transform_file=mat,
-        out_itk_transform=output,
-        fsl2ras=True,
-    )
-    return result.itk_transform_outfile
+from rbc.core.common import mat_to_itk
 
 
 def resample_bold_to_template(
@@ -51,18 +41,28 @@ def resample_bold_to_template(
 
     Returns:
         Resampled 4D BOLD in template space.
+
+    Raises:
+        FileNotFoundError: No motion .mat files are found in the specified directory.
+        ValueError: Number of motion matrix files found does not match the number
+            of slice-timing corrected volumes.
     """
     motion_mats = sorted(motion_mat_dir.glob("MAT_*"))
     if not motion_mats:
         raise FileNotFoundError(f"No motion .mat files found in {motion_mat_dir}")
 
-    bold2anat_itk = fsl_mat_to_itk(bold_to_anat, t1w_brain, bold_ref, "bold2anat.txt")
+    bold2anat_itk = mat_to_itk(bold_to_anat, t1w_brain, bold_ref, "bold2anat.txt")
 
     # Split slice time corrected 4D into volumes
     split_stc = fsl.fslsplit(
         infile=stc_img, separation_time=True, output_basename="vol_"
     )
     stc_vols = sorted(split_stc.out_files.parent.glob("vol_*.nii.gz"))
+
+    if len(motion_mats) != len(stc_vols):
+        raise ValueError(
+            f"Count mismatch: ({len(motion_mats)}) mats, ({len(stc_vols)}) volumes"
+        )
 
     base_transforms = [anat_to_template, bold2anat_itk]
     if distortion_warp:
@@ -71,16 +71,16 @@ def resample_bold_to_template(
     # Convert motion .mat to ITK & apply all transforms per volume
     # Order: motion -> distortion -> bold2anat -> anat2template
     transformed_vols = []
-    for idx in range(len(stc_vols)):
-        motion_itk = fsl_mat_to_itk(
-            motion_mats[idx], bold_ref, bold_ref, f"motion_{idx:04d}.txt"
-        )
+    for idx, (motion_mat, stc_vol) in enumerate(
+        zip(motion_mats, stc_vols, strict=True)
+    ):
+        motion_itk = mat_to_itk(motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt")
         transforms = [
             ants.ants_apply_transforms_transform_file_name(t)
             for t in [*base_transforms, motion_itk]
         ]
         result = ants.ants_apply_transforms(
-            input_image=stc_vols[idx],
+            input_image=stc_vol,
             reference_image=template,
             transform=transforms,
             interpolation=ants.ants_apply_transforms_lanczos_windowed_sinc(),
