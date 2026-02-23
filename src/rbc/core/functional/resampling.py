@@ -57,7 +57,9 @@ def resample_bold_to_template(
     split_stc = fsl.fslsplit(
         infile=stc_img, separation_time=True, output_basename="vol_"
     )
-    stc_vols = sorted(split_stc.out_files.parent.glob("vol_*.nii.gz"))
+    out_files = split_stc.out_files
+    out_dir = out_files[0].parent if isinstance(out_files, list) else out_files.parent
+    stc_vols = sorted(out_dir.glob("vol_*.nii.gz"))
 
     if len(motion_mats) != len(stc_vols):
         raise ValueError(

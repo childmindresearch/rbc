@@ -1,4 +1,4 @@
-"""Unit tests for Niwrap helpers."""
+"""Unit tests for bids2table helpers."""
 
 from __future__ import annotations
 

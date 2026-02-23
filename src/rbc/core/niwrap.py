@@ -64,7 +64,7 @@ def setup_runner(
         case _:
             raise NotImplementedError(
                 f"Unknown runner selection '{runner}' - please select one of "
-                "'local', 'docker', or 'singularity"
+                "'local', 'docker', or 'singularity'"
             )
 
     styx_runner = niwrap.get_global_runner()
