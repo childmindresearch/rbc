@@ -69,9 +69,7 @@ def _prepare_bold_and_masks(
         prefix="test_bold.nii.gz",
     )
     motion_ref = extract_motion_reference(in_file=truncated.output_file)
-    mc = fsl_motion_correction(
-        in_file=truncated.output_file, ref_file=motion_ref.output_file
-    )
+    mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=motion_ref)
     bold_file = mc.bold.with_suffix(".nii.gz")
 
     # Resample anat-space masks to BOLD grid
