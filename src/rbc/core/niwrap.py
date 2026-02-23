@@ -51,6 +51,7 @@ def setup_runner(
             niwrap.use_docker(
                 docker_executable=runner_exec,
                 image_overrides=image_overrides,
+                docker_user_id=0,
                 **kwargs,
             )
         case "singularity":
