@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from niwrap import afni
-from niwrap_c3d import c3d
+from niwrap import afni, c3d
 
 if TYPE_CHECKING:
     from pathlib import Path
