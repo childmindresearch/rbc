@@ -19,6 +19,7 @@ class StyxContext(NamedTuple):
 
     logger: logging.Logger
     runner: niwrap.Runner
+    verbose: bool
 
 
 def setup_runner(
@@ -51,6 +52,7 @@ def setup_runner(
             niwrap.use_docker(
                 docker_executable=runner_exec,
                 image_overrides=image_overrides,
+                docker_user_id=0,
                 **kwargs,
             )
         case "singularity":
@@ -70,7 +72,7 @@ def setup_runner(
     logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
     logger.setLevel(_LOG_LEVELS[log_level])
-    return StyxContext(logger=logger, runner=styx_runner)
+    return StyxContext(logger=logger, runner=styx_runner, verbose=verbose > 0)
 
 
 def generate_exec_folder(suffix: str = "python") -> Path:

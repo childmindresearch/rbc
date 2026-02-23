@@ -7,3 +7,10 @@ under ``rbc.cli``.
 """
 
 from __future__ import annotations
+
+from rbc.core import CPAC_ANTS_SEED
+
+_DEFAULT_ENV_VARS = {
+    "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
+    "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
+}
