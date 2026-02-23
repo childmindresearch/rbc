@@ -15,7 +15,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS
-from rbc.cli.__main__ import BaseArgs
+from rbc.cli.main import BaseArgs
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess

@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from rbc.cli import __main__ as cli
+from rbc.cli import main as cli
 
 
 class TestGlobalOpts:
@@ -194,7 +194,7 @@ class TestValidation:
 class TestMain:
     """Test main entry point."""
 
-    @patch("rbc.cli.__main__.cli")
+    @patch("rbc.cli.main.cli")
     @patch.object(sys, "exit")
     def test_main_successful(self, mock_exit: Mock, mock_cli: Mock) -> None:
         """Test cli successfully called."""
@@ -203,7 +203,7 @@ class TestMain:
         mock_cli.assert_called_once()
         mock_exit.assert_called_once_with(0)
 
-    @patch("rbc.cli.__main__.cli")
+    @patch("rbc.cli.main.cli")
     @patch.object(sys, "exit")
     def test_main_error(self, mock_exit: Mock, mock_cli: Mock) -> None:
         """Test cli unsuccessfully called."""

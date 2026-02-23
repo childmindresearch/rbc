@@ -157,7 +157,3 @@ def cli(argv: Sequence[str] | None = None) -> str | int:
 def main() -> None:
     """Main entry point for console."""
     sys.exit(cli())
-
-
-if __name__ == "__main__":
-    main()
