@@ -19,6 +19,7 @@ from .mask_utils import (
     erode_csf_mask,
     erode_wm_mask,
 )
+from .masking import bold_masking
 from .motion import extract_motion_reference, fsl_motion_correction
 from .nuisance import nuisance_regression
 from .regressors import (
@@ -36,6 +37,7 @@ from .timing import slice_timing_correction
 __all__ = [
     "assemble_36param_regressors",
     "assemble_acompcor_regressors",
+    "bold_masking",
     "check_regressor_rank",
     "compute_acompcor",
     "compute_eroded_masks",
