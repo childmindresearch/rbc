@@ -9,6 +9,7 @@ must be corrected before analysis.
 
 from __future__ import annotations
 
+from .coregistration import coregister_bold_to_t1w
 from .despiking import despike_bold
 from .initialization import scale_bold, truncate_trs
 from .motion import extract_motion_reference, fsl_motion_correction
@@ -16,6 +17,7 @@ from .resampling import resample_bold_to_template
 from .timing import slice_timing_correction
 
 __all__ = [
+    "coregister_bold_to_t1w",
     "despike_bold",
     "extract_motion_reference",
     "fsl_motion_correction",
