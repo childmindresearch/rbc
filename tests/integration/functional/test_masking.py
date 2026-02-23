@@ -44,7 +44,7 @@ def test_bold_masking_final_mask_is_binary(test_subject: TestSubjectData) -> Non
         template_ref=MNI_TEMPLATES.bold_ref,
     )
 
-    mask_img = nib.load(result.final_mask)
+    mask_img = nib.nifti1.load(result.final_mask)
     mask_data = mask_img.get_fdata()
     unique_vals = np.unique(np.round(mask_data))
     assert set(unique_vals) == {0, 1}

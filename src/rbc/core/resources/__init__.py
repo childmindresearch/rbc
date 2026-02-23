@@ -59,7 +59,8 @@ OASIS_TEMPLATES = OasisTemplates(
     registration_mask=OASIS_DIR / "T_template0_BrainCerebellumRegistrationMask.nii.gz",
 )
 # MNI152
-# FSL 6.0 via C-PAC (ghcr.io/fcp-indi/c-pac:many_pipes & cpindi/c-pac:release-v1.8.5.dev1)
+# FSL 6.0 via C-PAC (ghcr.io/fcp-indi/c-pac:many_pipes
+# & cpindi/c-pac:release-v1.8.5.dev1)
 MNI_DIR = RESOURCES_DIR / "mni"
 MNI_TEMPLATES = MniTemplates(
     brain_1mm=MNI_DIR / "MNI152_T1_1mm_brain.nii.gz",
