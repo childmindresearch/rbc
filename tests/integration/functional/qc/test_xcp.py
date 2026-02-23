@@ -4,17 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import nibabel as nib
 import numpy as np
 import polars as pl
 import pytest
-from niwrap import afni
 
-from rbc.core.common import deoblique_and_reorient
-from rbc.core.functional import (
-    extract_motion_reference,
-    fsl_motion_correction,
-)
 from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics
@@ -29,39 +22,24 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from conftest import TestSubjectData
+    from tests.integration.functional.qc.conftest import MotionCorrectedBOLD
 
 
 @pytest.mark.slow
 def test_xcp_qc_from_bold(
     test_subject: TestSubjectData,
+    motion_corrected_bold: MotionCorrectedBOLD,
     tmp_path: Path,
 ) -> None:
     """Compute all sub-metrics from real data, generate XCP TSV, and verify."""
-    # Preprocess: deoblique, truncate to 10 volumes, motion correct
-    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
-    truncated = afni.v_3dcalc(
-        dataset_a=afni.v_3dcalc_dataset_a_file(
-            file=reoriented.out_file, selectors_="[0..9]"
-        ),
-        expression="a",
-        prefix="xcp_qc_test_10vols.nii.gz",
-    )
-
-    ref = extract_motion_reference(in_file=truncated.output_file)
-    mc = fsl_motion_correction(
-        in_file=truncated.output_file,
-        ref_file=ref.output_file,
-    )
+    mc = motion_corrected_bold.mc
+    bold_data = motion_corrected_bold.bold_data
+    mask = motion_corrected_bold.mask
 
     # Load MCFLIRT outputs
     rms_values = np.loadtxt(mc.rms_rel)
     motion_params = np.loadtxt(mc.par)
     fd = framewise_displacement_jenkinson(rms_values)
-
-    # Load motion-corrected BOLD and create a brain mask
-    bold_img = nib.nifti1.load(mc.bold.with_suffix(".nii.gz"))
-    bold_data = bold_img.get_fdata()
-    mask = np.mean(bold_data, axis=3) > 0
 
     # Compute sub-metrics
     motion = motion_qc_metrics(rms_values, motion_params)

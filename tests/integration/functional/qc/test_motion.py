@@ -6,13 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-from niwrap import afni
 
-from rbc.core.common import deoblique_and_reorient
-from rbc.core.functional import (
-    extract_motion_reference,
-    fsl_motion_correction,
-)
 from rbc.core.qc.motion import (
     framewise_displacement_jenkinson,
     framewise_displacement_power,
@@ -21,26 +15,13 @@ from rbc.core.qc.motion import (
 )
 
 if TYPE_CHECKING:
-    from conftest import TestSubjectData
+    from tests.integration.functional.qc.conftest import MotionCorrectedBOLD
 
 
 @pytest.mark.slow
-def test_motion_qc_from_mcflirt(test_subject: TestSubjectData) -> None:
+def test_motion_qc_from_mcflirt(motion_corrected_bold: MotionCorrectedBOLD) -> None:
     """Compute motion QC metrics from real MCFLIRT outputs and sanity-check."""
-    reoriented = deoblique_and_reorient(in_file=test_subject.bold)
-    truncated = afni.v_3dcalc(
-        dataset_a=afni.v_3dcalc_dataset_a_file(
-            file=reoriented.out_file, selectors_="[0..9]"
-        ),
-        expression="a",
-        prefix="qc_test_10vols.nii.gz",
-    )
-
-    ref = extract_motion_reference(in_file=truncated.output_file)
-    mc = fsl_motion_correction(
-        in_file=truncated.output_file,
-        ref_file=ref.output_file,
-    )
+    mc = motion_corrected_bold.mc
 
     # Read MCFLIRT outputs
     rms_values = np.loadtxt(mc.rms_rel)

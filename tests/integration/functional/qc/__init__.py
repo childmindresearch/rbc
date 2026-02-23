@@ -1,1 +1,1 @@
-"""QC module integration tests."""
+"""Functional data QC module integration tests."""
