@@ -40,6 +40,12 @@ class MniTemplates(NamedTuple):
     brain_1mm: Path
 
 
+class FSL(NamedTuple):
+    """Paths to FSL resources."""
+
+    bbr_schedule: Path
+
+
 # OASIS
 # (sourced from C-PAC container ghcr.io/fcp-indi/c-pac:many_pipes)
 OASIS_DIR = RESOURCES_DIR / "oasis"
@@ -53,4 +59,8 @@ OASIS_TEMPLATES = OasisTemplates(
 MNI_DIR = RESOURCES_DIR / "mni"
 MNI_TEMPLATES = MniTemplates(brain_1mm=MNI_DIR / "MNI152_T1_1mm_brain.nii.gz")
 
-__all__ = ["MNI_TEMPLATES", "OASIS_TEMPLATES"]
+# FSL
+FSL_DIR = RESOURCES_DIR / "fsl"
+FSL_RESOURCES = FSL(bbr_schedule=FSL_DIR / "bbr.sch")
+
+__all__ = ["FSL_RESOURCES", "MNI_TEMPLATES", "OASIS_TEMPLATES"]
