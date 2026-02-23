@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from conftest import TestSubjectData
+
     from tests.integration.functional.qc.conftest import MotionCorrectedBOLD
 
 

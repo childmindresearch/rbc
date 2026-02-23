@@ -44,7 +44,7 @@ def motion_corrected_bold(test_subject: TestSubjectData) -> MotionCorrectedBOLD:
     ref = extract_motion_reference(in_file=truncated.output_file)
     mc = fsl_motion_correction(
         in_file=truncated.output_file,
-        ref_file=ref.output_file,
+        ref_file=ref,
     )
 
     bold_img = nib.nifti1.load(mc.bold.with_suffix(".nii.gz"))
