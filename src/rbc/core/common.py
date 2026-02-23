@@ -1,21 +1,22 @@
 """Processing steps shared across anatomical and functional streams.
 
-Currently provides deobliquing and RPI reorientation, which is the first
-step applied to both T1w and BOLD images.
+Currently provides:
+- Deobliquing and RPI reorientation (initial preprocessing for T1w and BOLD).
+- Transformation conversion between FSL (.mat) and ITK (.txt) formats.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from niwrap import afni
+from niwrap import afni, c3d
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 from rbc.core.fileops import file_tmp_copy
 
-__all__ = ["deoblique_and_reorient"]
+__all__ = ["deoblique_and_reorient", "mat_to_itk"]
 
 
 def deoblique_and_reorient(
@@ -41,3 +42,25 @@ def deoblique_and_reorient(
         return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"
         )
+
+
+def mat_to_itk(mat: Path, reference: Path, source: Path, output: str) -> Path:
+    """Convert a .mat affine to ITK compatible .txt format.
+
+    Args:
+        mat: Path to the input FSL-style affine matrix (.mat).
+        reference: Path to the reference (fixed) image volume.
+        source: Path to the source (moving) image volume.
+        output: Filename or path for the resulting ITK transformation file (.txt).
+
+    Returns:
+        ITK-compatible transformation file.
+    """
+    result = c3d.c3d_affine_tool(
+        reference_file=reference,
+        source_file=source,
+        transform_file=mat,
+        out_itk_transform=output,
+        fsl2ras=True,
+    )
+    return result.itk_transform_outfile
