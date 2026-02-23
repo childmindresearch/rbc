@@ -12,7 +12,8 @@ dependencies = [
   "niwrap>=0.8.12",
   "numpy>=2.4.2",
   "polars>=1.38.1",
-  "scipy>=1.17.0"
+  "scipy>=1.17.0",
+  "tqdm>=4.67.3",
 ]
 
 [project.scripts]
@@ -100,7 +101,9 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101"]
-"src/rbc/core/qc/xcp.py" = ["N815"]  # camelCase field names required by XCP-D TSV spec
+"src/rbc/core/qc/xcp.py" = [
+  "N815",
+] # camelCase field names required by XCP-D TSV spec
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
