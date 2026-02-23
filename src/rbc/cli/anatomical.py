@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,12 +21,21 @@ from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
 
 
-def main(cli_args: argparse.Namespace) -> int:
+@dataclass(frozen=True)
+class AnatomicalArgs(BaseArgs):
+    """Arguments for single-session anatomical CLI."""
+
+    @classmethod
+    def validate_namespace(cls, ns: argparse.Namespace) -> AnatomicalArgs:
+        """Validation of anatomical workflow specific arguments to NamedTuple."""
+        return cls(**BaseArgs.validate_namespace(ns).__dict__)
+
+
+def main(args: AnatomicalArgs) -> int:
     """Main entrypoint of anatomical workflow."""
     group_entity = ("sub", "ses", "run")
 
     # Setup
-    args = BaseArgs.from_namespace(cli_args)
     ctx = setup_runner(runner=args.runner, verbose=args.verbose)
     ctx.runner.environ = _DEFAULT_ENV_VARS
 

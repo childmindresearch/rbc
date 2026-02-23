@@ -163,32 +163,32 @@ class TestValidation:
 
     def test_valid(self, base_args: argparse.Namespace) -> None:
         """Test validation succeeds."""
-        args = cli.BaseArgs.from_namespace(base_args)
+        args = cli.BaseArgs.validate_namespace(base_args)
         assert isinstance(args, cli.BaseArgs)
 
     def test_no_input_dir(self, base_args: argparse.Namespace) -> None:
         """Test error raised if input path doesn't exist."""
         base_args.input_dir = Path("invalid")
         with pytest.raises(ValueError, match="Input path does not exist"):
-            cli.BaseArgs.from_namespace(base_args)
+            cli.BaseArgs.validate_namespace(base_args)
 
     def test_invalid_runner(self, base_args: argparse.Namespace) -> None:
         """Test error raised if runner not valid."""
         base_args.runner = "invalid"
         with pytest.raises(ValueError, match="Expected one of"):
-            cli.BaseArgs.from_namespace(base_args)
+            cli.BaseArgs.validate_namespace(base_args)
 
     def test_invalid_participant_label(self, base_args: argparse.Namespace) -> None:
         """Test error raised if participant prefix is incorrect."""
         base_args.participant_labels = ["sub-01"]
         with pytest.raises(ValueError, match="Label must not start with"):
-            cli.BaseArgs.from_namespace(base_args)
+            cli.BaseArgs.validate_namespace(base_args)
 
     def test_invalid_session_label(self, base_args: argparse.Namespace) -> None:
         """Test error raised if session prefix is incorrect."""
         base_args.session_labels = ["ses-01"]
         with pytest.raises(ValueError, match="Label must not start with"):
-            cli.BaseArgs.from_namespace(base_args)
+            cli.BaseArgs.validate_namespace(base_args)
 
 
 class TestMain:

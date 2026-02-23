@@ -66,6 +66,14 @@ def sample_dataframe() -> pl.DataFrame:
 class TestAnatomical:
     """Testing suite for anatomical processing."""
 
+    def test_parser_from_namespace(self, base_args: argparse.Namespace) -> None:
+        """Tests parser successfully validates namespace."""
+        args = anatomical.AnatomicalArgs.validate_namespace(base_args)
+        assert isinstance(args, anatomical.AnatomicalArgs)
+
+    def test_namespace_validation(self, base_args: argparse.Namespace) -> None:
+        """Tests parser successfully validates namespace."""
+
     @pytest.mark.parametrize(
         ("participant", "session", "expected_count"),
         [
@@ -99,12 +107,12 @@ class TestAnatomical:
         """Test various filtering scenarios using parametrization."""
         base_args.participant_labels = participant
         base_args.session_labels = session
-
+        args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
             patch("rbc.cli.anatomical.single_session_preprocess") as mock_preprocess,
         ):
-            result = anatomical.main(base_args)
+            result = anatomical.main(args)
             assert result == 0
             assert mock_preprocess.call_count == expected_count
 
@@ -117,12 +125,12 @@ class TestAnatomical:
         """Test that correct files are processed after filtering."""
         base_args.participant_labels = ["01"]
         base_args.session_labels = ["baseline"]
-
+        args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
             patch("rbc.cli.anatomical.single_session_preprocess") as mock_preprocess,
         ):
-            anatomical.main(base_args)
+            anatomical.main(args)
             assert mock_preprocess.call_count == 1
             processed_path = mock_preprocess.call_args[1]["in_t1w"]
             assert "sub-01" in str(processed_path)
@@ -138,6 +146,7 @@ class TestRunnerSetup:
         """Test runner environment variables are configured correctly."""
         from rbc.core import CPAC_ANTS_SEED
 
+        args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.setup_runner") as mock_setup,
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
@@ -150,7 +159,7 @@ class TestRunnerSetup:
             ctx.verbose = False
             mock_setup.return_value = ctx
 
-            anatomical.main(base_args)
+            anatomical.main(args)
             assert ctx.runner.environ == {
                 "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
                 "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
