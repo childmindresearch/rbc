@@ -113,6 +113,35 @@ def erode_brain_mask(
     return erode_mask_by_distance(mask, voxel_sizes, distance_mm=30.0)
 
 
+def create_union_mask(
+    mask_a_file: str | Path,
+    mask_b_file: str | Path,
+) -> Path:
+    """Create the logical OR (union) of two binary masks.
+
+    Args:
+        mask_a_file: Path to first 3-D binary mask.
+        mask_b_file: Path to second 3-D binary mask.
+
+    Returns:
+        Path to the union mask NIfTI file.
+    """
+    import nibabel as nib
+
+    from rbc.core.niwrap import generate_exec_folder
+
+    out_dir = generate_exec_folder("union_mask")
+
+    img_a = nib.nifti1.load(mask_a_file)
+    data_a = img_a.get_fdata() > 0
+    data_b = nib.nifti1.load(mask_b_file).get_fdata() > 0
+
+    union = (data_a | data_b).astype(np.uint8)
+    out_path = out_dir / "union_mask.nii.gz"
+    nib.nifti1.Nifti1Image(union, img_a.affine, img_a.header).to_filename(str(out_path))
+    return out_path
+
+
 class ErodedMasks(NamedTuple):
     """Paths to eroded tissue masks."""
 

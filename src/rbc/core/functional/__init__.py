@@ -14,12 +14,13 @@ from .despiking import despike_bold
 from .initialization import scale_bold, truncate_trs
 from .mask_utils import (
     compute_eroded_masks,
+    create_union_mask,
     erode_brain_mask,
     erode_csf_mask,
     erode_wm_mask,
 )
 from .motion import extract_motion_reference, fsl_motion_correction
-from .nuisance import create_union_mask, nuisance_regression
+from .nuisance import nuisance_regression
 from .regressors import (
     assemble_36param_regressors,
     assemble_acompcor_regressors,
