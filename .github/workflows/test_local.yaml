@@ -14,14 +14,33 @@ jobs:
     - name: Setup venv
       uses: ./.github/actions/setup-venv
 
+    - name: Setup temp directory
+      shell: bash
+      run: |
+        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
+        mkdir -p $JOB_TMP
+        echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
+        echo "Job temp directory: $JOB_TMP"
+
     - name: Run all tests
       shell: bash
-      run: >
+      run: |
+        export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
+        export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
+
         uv run pytest \
           -n auto \
           --runner=docker \
-          --junitxml=rbc-pytest-all.xml \
-          --cov-report=xml:rbc-coverage-all.xml \
+          --work-dir=$JOB_TMP \
+          --junitxml="$JOB_TMP/rbc-pytest-all.xml" \
+          --cov-report=xml:"JOB_TMP/rbc-coverage-all.xml" \
           --cov=src tests \
           --cov-append \
           --verbose
+
+    - name: Cleanup
+      if: always()
+      shell: bash
+      run: |
+        echo "Cleaning up job temp directory: $JOB_TMP"
+        rm -rf $JOB_TMP
