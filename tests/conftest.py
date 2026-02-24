@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -46,11 +47,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
-def niwrap_runner(
-    request: pytest.FixtureRequest,
-    tmp_path_factory: pytest.TempPathFactory,
-) -> niwrap.Runner:
+@pytest.fixture(autouse=True)
+def niwrap_runner(request: pytest.FixtureRequest, tmp_path: Path) -> niwrap.Runner:
     """Globally set test niwrap runner."""
     # Set up niwrap runner
     match request.config.getoption("--runner").lower():
@@ -62,7 +60,9 @@ def niwrap_runner(
             niwrap.use_local()
     runner = niwrap.get_global_runner()
     runner.environ = _DEFAULT_ENV_VARS
-    runner.data_dir = tmp_path_factory.mktemp("styx_tmp")
+    data_dir = tmp_path / os.urandom(8).hex()
+    data_dir.mkdir(parents=True, exist_ok=False)
+    runner.data_dir = data_dir
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)
