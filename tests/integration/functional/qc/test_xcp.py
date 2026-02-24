@@ -76,7 +76,11 @@ def test_xcp_qc_from_bold(
     write_xcp_qc(metrics, out_path)
     assert out_path.exists()
 
-    df = pl.read_csv(out_path, separator="\t")
+    df = pl.read_csv(
+        out_path,
+        separator="\t",
+        schema_overrides={"sub": pl.Utf8, "ses": pl.Utf8},
+    )
     assert df.shape == (1, 24)
     assert df["sub"][0] == test_subject.subject_id
     assert df["meanFD"][0] == metrics.meanFD
