@@ -1,0 +1,27 @@
+name: Full Testing Suite
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: arcana
+    steps:
+    - uses: actions/checkout@v6
+    - name: Setup venv
+      uses: ./.github/actions/setup-venv
+
+    - name: Run all tests
+      shell: bash
+      run: >
+        uv run pytest \
+          -n auto \
+          --runner=docker \
+          --junitxml=rbc-pytest-all.xml \
+          --cov-report=xml:rbc-coverage-all.xml \
+          --cov=src tests \
+          --cov-append \
+          --verbose
