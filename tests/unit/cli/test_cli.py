@@ -19,14 +19,14 @@ class TestGlobalOpts:
         """Tests participant label correctly grabbed and strips prefix if needed."""
         parser = cli._global_opts()
         args = parser.parse_args(["--participant-label", subject])
-        assert args.participant_labels == ["01"]
+        assert args.participant_label == ["01"]
 
     @pytest.mark.parametrize("session", ["ses-baseline", "baseline"])
     def test_session_label(self, session: str) -> None:
         """Tests session label correctly grabbed and strips prefix if needed."""
         parser = cli._global_opts()
         args = parser.parse_args(["--session-label", session])
-        assert args.session_labels == ["baseline"]
+        assert args.session_label == ["baseline"]
 
     def test_default_runner(self) -> None:
         """Tests runner default to 'local'."""
@@ -67,8 +67,8 @@ class TestParser:
         """Test parser inherits global options."""
         parser = cli.create_parser()
         dest_names = {action.dest for action in parser._actions}
-        assert "participant_labels" in dest_names
-        assert "session_labels" in dest_names
+        assert "participant_label" in dest_names
+        assert "session_label" in dest_names
         assert "runner" in dest_names
 
 
@@ -120,7 +120,7 @@ class TestCLI:
 
         cli.cli(["input", "output", "anatomical", "--participant-label", "01"])
         assert received_args is not None
-        assert received_args.participant_labels == ["01"]
+        assert received_args.participant_label == ["01"]
 
     @patch("rbc.cli.anatomical.register_command")
     def test_cli_prints_help_without_func(
@@ -157,8 +157,8 @@ class TestValidation:
             verbose=False,
             input_dir=input_dir,
             output_dir=output_dir,
-            participant_labels=[],
-            session_labels=[],
+            participant_label=[],
+            session_label=[],
         )
 
     def test_valid(self, base_args: argparse.Namespace) -> None:
@@ -180,13 +180,13 @@ class TestValidation:
 
     def test_invalid_participant_label(self, base_args: argparse.Namespace) -> None:
         """Test error raised if participant prefix is incorrect."""
-        base_args.participant_labels = ["sub-01"]
+        base_args.participant_label = ["sub-01"]
         with pytest.raises(ValueError, match="Label must not start with"):
             cli.BaseArgs.validate_namespace(base_args)
 
     def test_invalid_session_label(self, base_args: argparse.Namespace) -> None:
         """Test error raised if session prefix is incorrect."""
-        base_args.session_labels = ["ses-01"]
+        base_args.session_label = ["ses-01"]
         with pytest.raises(ValueError, match="Label must not start with"):
             cli.BaseArgs.validate_namespace(base_args)
 

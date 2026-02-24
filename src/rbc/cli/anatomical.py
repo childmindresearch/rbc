@@ -49,10 +49,10 @@ def main(args: AnatomicalArgs) -> int:
         pl.col("suffix") == "T1w",
         pl.col("ext").str.contains(".nii"),
     ]
-    if len(args.participant_labels) > 0:
-        filters.append(pl.col("sub").is_in(args.participant_labels))
-    if len(args.session_labels) > 0:
-        filters.append(pl.col("ses").is_in(args.session_labels))
+    if len(args.participant_label) > 0:
+        filters.append(pl.col("sub").is_in(args.participant_label))
+    if len(args.session_label) > 0:
+        filters.append(pl.col("ses").is_in(args.session_label))
     df = df.filter(pl.all_horizontal(filters))
 
     for _, group in tqdm(df.group_by(group_entity), disable=not ctx.verbose):
