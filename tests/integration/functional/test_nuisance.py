@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
+import numpy as np
 import pytest
 from niwrap import afni
+from scipy.ndimage import binary_erosion
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
@@ -15,21 +16,12 @@ from rbc.core.functional import (
     nuisance_regression,
 )
 from rbc.core.nifti import nifti_num_volumes
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
-    from conftest import TestSubjectData
+    from pathlib import Path
 
-CPAC_ANAT_DIR = (
-    Path(__file__).parents[2]
-    / "data"
-    / "cpac_outputs"
-    / "ds000001"
-    / "output"
-    / "pipeline_RBCv0"
-    / "sub-01"
-    / "ses-1"
-    / "anat"
-)
+    from conftest import TestSubjectData
 
 
 class _PreparedData(NamedTuple):
@@ -40,25 +32,51 @@ class _PreparedData(NamedTuple):
     wm_mask: Path
 
 
-def _resample_mask_to_bold(mask_file: Path, bold_file: Path, prefix: str) -> Path:
-    """Resample an anat-space mask to the BOLD grid (NN interpolation)."""
-    result = afni.v_3dresample(
-        in_file=mask_file,
-        prefix=prefix,
-        master=bold_file,
-        resample_mode="NN",
-    )
-    return result.out_file
+def _create_synthetic_masks(brain_mask_file: Path) -> tuple[Path, Path, Path]:
+    """Create synthetic CSF and WM masks from a brain mask for testing.
+
+    Generates tissue masks by subdividing the brain mask into shells:
+    - CSF: outer rim of the brain mask (1-voxel thick shell)
+    - WM: inner core of the brain mask (eroded by 3 voxels)
+
+    These are not anatomically accurate but provide valid masks for
+    testing the nuisance regression pipeline.
+    """
+    import nibabel as nib
+
+    out_dir = generate_exec_folder("synthetic_masks")
+
+    brain_img = nib.nifti1.load(brain_mask_file)
+    brain_data = brain_img.get_fdata() > 0
+
+    # CSF: outer rim (brain minus brain eroded by 1 voxel)
+    eroded_1 = binary_erosion(brain_data, iterations=1)
+    csf_data = brain_data & ~eroded_1
+
+    # WM: deep interior (brain eroded by 3 voxels)
+    wm_data = binary_erosion(brain_data, iterations=3)
+
+    csf_file = out_dir / "csf_mask.nii.gz"
+    wm_file = out_dir / "wm_mask.nii.gz"
+
+    nib.nifti1.Nifti1Image(
+        csf_data.astype(np.uint8), brain_img.affine, brain_img.header
+    ).to_filename(str(csf_file))
+    nib.nifti1.Nifti1Image(
+        wm_data.astype(np.uint8), brain_img.affine, brain_img.header
+    ).to_filename(str(wm_file))
+
+    return brain_mask_file, csf_file, wm_file
 
 
 def _prepare_bold_and_masks(
     test_subject: TestSubjectData,
     n_vols: int = 50,
 ) -> _PreparedData:
-    """Prepare a short BOLD series, motion params, and resampled masks.
+    """Prepare a short BOLD series, motion params, and masks.
 
-    The anat-space masks are resampled to the BOLD grid so that spatial
-    dimensions match for nuisance regression.
+    Creates a brain mask from the BOLD data using AFNI 3dAutomask, then
+    derives synthetic CSF/WM masks from it.
     """
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     truncated = afni.v_3dcalc(
@@ -72,22 +90,14 @@ def _prepare_bold_and_masks(
     mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=motion_ref)
     bold_file = mc.bold.with_suffix(".nii.gz")
 
-    # Resample anat-space masks to BOLD grid
-    brain_mask = _resample_mask_to_bold(
-        CPAC_ANAT_DIR / "sub-01_ses-1_desc-brain_mask.nii.gz",
-        bold_file,
-        "brain_mask_bold.nii.gz",
+    # Create brain mask from BOLD using 3dAutomask
+    automask = afni.v_3d_automask(
+        in_file=bold_file,
+        prefix="brain_mask.nii.gz",
     )
-    csf_mask = _resample_mask_to_bold(
-        CPAC_ANAT_DIR / "sub-01_ses-1_label-CSF_mask.nii.gz",
-        bold_file,
-        "csf_mask_bold.nii.gz",
-    )
-    wm_mask = _resample_mask_to_bold(
-        CPAC_ANAT_DIR / "sub-01_ses-1_label-WM_mask.nii.gz",
-        bold_file,
-        "wm_mask_bold.nii.gz",
-    )
+
+    # Create synthetic tissue masks from brain mask
+    brain_mask, csf_mask, wm_mask = _create_synthetic_masks(automask.mask_file)
 
     return _PreparedData(
         bold=bold_file,
