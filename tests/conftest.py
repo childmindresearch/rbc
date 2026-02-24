@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 import niwrap
 import pytest
 
+from rbc.cli import _DEFAULT_ENV_VARS
+
 
 class TestSubjectData(NamedTuple):
     """Test subject file paths."""
@@ -59,6 +61,7 @@ def niwrap_runner(
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()
+    runner.environ = _DEFAULT_ENV_VARS
     runner.data_dir = tmp_path_factory.mktemp("styx_tmp")
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)
