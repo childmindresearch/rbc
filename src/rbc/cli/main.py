@@ -34,8 +34,8 @@ class BaseArgs:
     input_dir: Path
     output_dir: Path
     runner: Literal["local", "docker", "singularity"]
-    participant_labels: list[str]
-    session_labels: list[str]
+    participant_label: list[str]
+    session_label: list[str]
     verbose: int
 
     @classmethod
@@ -49,8 +49,8 @@ class BaseArgs:
             )
 
         for labels, prefix in (
-            (ns.participant_labels, "sub-"),
-            (ns.session_labels, "ses-"),
+            (ns.participant_label, "sub-"),
+            (ns.session_label, "ses-"),
         ):
             if bad := next(
                 (label for label in labels if label.startswith(prefix)), None
@@ -61,8 +61,8 @@ class BaseArgs:
             input_dir=ns.input_dir,
             output_dir=ns.output_dir,
             runner=ns.runner,
-            participant_labels=ns.participant_labels,
-            session_labels=ns.session_labels,
+            participant_label=ns.participant_label,
+            session_label=ns.session_label,
             verbose=ns.verbose,
         )
 
@@ -78,14 +78,14 @@ def _global_opts() -> argparse.ArgumentParser:
         help="Increase verbosity (can be repeated: -v, -vv, -vvv)",
     )
     global_opts.add_argument(
-        "--participant-labels",
+        "--participant-label",
         nargs="+",
         default=[],
         type=lambda x: x.removeprefix("sub-"),
         help="Space-delimited participant identifier ('sub-' prefix can be removed)",
     )
     global_opts.add_argument(
-        "--session-labels",
+        "--session-label",
         nargs="+",
         default=[],
         type=lambda x: x.removeprefix("ses-"),

@@ -34,8 +34,8 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         verbose=False,
         input_dir=input_dir,
         output_dir=output_dir,
-        participant_labels=[],
-        session_labels=[],
+        participant_label=[],
+        session_label=[],
     )
 
 
@@ -105,8 +105,8 @@ class TestAnatomical:
         expected_count: int,
     ) -> None:
         """Test various filtering scenarios using parametrization."""
-        base_args.participant_labels = participant
-        base_args.session_labels = session
+        base_args.participant_label = participant
+        base_args.session_label = session
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
@@ -123,8 +123,8 @@ class TestAnatomical:
         sample_dataframe: pl.DataFrame,
     ) -> None:
         """Test that correct files are processed after filtering."""
-        base_args.participant_labels = ["01"]
-        base_args.session_labels = ["baseline"]
+        base_args.participant_label = ["01"]
+        base_args.session_label = ["baseline"]
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
