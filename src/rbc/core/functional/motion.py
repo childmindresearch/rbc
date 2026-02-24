@@ -137,9 +137,9 @@ def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutpu
         raise FileNotFoundError(f"Missing .mat directory at {motion_mat_dir}")
 
     return MotionCorrectedOutputs(
-        bold=Path(mc_result.out_file),
-        par=Path(mc_result.par_file),
-        rms_rel=Path(mc_result.rmsrel_files),
-        rms_abs=Path(mc_result.rmsabs_files),
+        bold=mc_result.out_file,
+        par=mc_result.par_file,
+        rms_rel=mc_result.rmsrel_files,
+        rms_abs=mc_result.rmsabs_files,
         mat_dir=motion_mat_dir,
     )
