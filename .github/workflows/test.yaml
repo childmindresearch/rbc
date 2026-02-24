@@ -58,7 +58,6 @@ jobs:
       shell: bash
       run: >
         uv run pytest \
-          -n auto \
           -m "full_pipeline" \
           --runner=docker \
           --junitxml=pytest-full.xml \
