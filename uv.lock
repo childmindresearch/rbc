@@ -1129,7 +1129,7 @@ wheels = [
 [[package]]
 name = "styxpodman"
 version = "0.7.1"
-source = { git = "https://github.com/styx-api/styxpodman.git#a1829a80c0a1e7de9b60a78f5dddcbf4a3853815" }
+source = { git = "https://github.com/styx-api/styxpodman.git#84eed1f6a18b07b225fb158eb6cd6b4a3b7ce75b" }
 dependencies = [
     { name = "styxdefs" },
 ]
