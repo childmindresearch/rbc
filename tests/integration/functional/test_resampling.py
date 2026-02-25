@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import nibabel as nib
 import numpy as np
 import pytest
-from niwrap_afni import afni
+from niwrap import afni
 from scipy.ndimage import binary_erosion
 
 from rbc.core.common import deoblique_and_reorient
