@@ -46,7 +46,6 @@ jobs:
           --cov-append \
           --verbose
     - name: Update test results
-      id: results
       uses: MishaKav/pytest-coverage-comment@main
       if: always()
       with:
@@ -56,7 +55,7 @@ jobs:
 
     - name: Update test date
       uses: actions/github-script@v7
-      if: steps.results.outcome == 'success'
+      if: always()
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
