@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     from full_pipeline.conftest import PipelineData
 
 
-def test_single_session_metrics(pipeline_data: PipelineData) -> None:
+def test_single_session_metrics(
+    pipeline_data: PipelineData, manifest: dict[str, object]
+) -> None:
     """All 11 MetricsOutputs paths must exist on disk."""
     result = metrics_pipeline(
         cleaned_bold=pipeline_data.func.cleaned_bold,
@@ -19,3 +21,5 @@ def test_single_session_metrics(pipeline_data: PipelineData) -> None:
     )
     for path in result:
         assert Path(path).exists()
+
+    manifest["metrics"] = {k: str(v) for k, v in result._asdict().items()}

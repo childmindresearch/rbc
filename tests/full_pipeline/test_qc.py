@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 
 
 def test_single_session_qc(
-    pipeline_data: PipelineData, test_subject: TestSubjectData
+    pipeline_data: PipelineData,
+    test_subject: TestSubjectData,
+    manifest: dict[str, object],
 ) -> None:
     """QC pipeline returns metrics, a TSV file, and a pass/fail flag."""
     result = qc_pipeline(
@@ -32,3 +34,9 @@ def test_single_session_qc(
     assert isinstance(result.metrics, XCPQCMetrics)
     assert result.qc_file.exists()
     assert isinstance(result.passed, bool)
+
+    manifest["qc"] = {
+        "qc_file": str(result.qc_file),
+        "passed": result.passed,
+        "metrics": result.metrics._asdict(),
+    }
