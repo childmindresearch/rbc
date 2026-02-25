@@ -45,9 +45,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default="docker",
         help="Styx runner type to use: ['local', 'docker', 'singularity']",
     )
-    parser.addoption(
-        "--work-dir", default="styx_tmp", help="Temporary working directory for tests"
-    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -65,7 +62,7 @@ def niwrap_runner(
             niwrap.use_local()
     runner = niwrap.get_global_runner()
     runner.environ = _DEFAULT_ENV_VARS
-    runner.data_dir = tmp_path_factory.mktemp(request.config.getoption("--work-dir"))
+    runner.data_dir = tmp_path_factory.mktemp(f"{os.urandom(8).hex()}")
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)
