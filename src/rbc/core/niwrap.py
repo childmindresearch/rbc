@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal, NamedTuple
 
 import niwrap
+from styxpodman import PodmanRunner
 
 _LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
@@ -23,7 +24,7 @@ class StyxContext(NamedTuple):
 
 
 def setup_runner(
-    runner: Literal["local", "docker", "singularity"] = "local",
+    runner: Literal["local", "docker", "podman", "singularity"] = "local",
     tmp_dir: str | Path | None = None,
     image_overrides: dict[str, str] | None = None,
     verbose: int = 0,
@@ -33,7 +34,7 @@ def setup_runner(
 
     Args:
         runner: Type of runner to use - choices include
-            ['local', 'docker', 'singularity']
+            ['local', 'docker', 'podman', 'singularity']
         tmp_dir: Working directory to output to
         image_overrides: Dictionary containing overrides for container tags.
         verbose: Verbosity level (0=WARNING, 1=INFO, 2+=DEBUG)
@@ -51,6 +52,15 @@ def setup_runner(
                 image_overrides=image_overrides,
                 docker_user_id=0,
                 **kwargs,
+            )
+        case "podman":
+            niwrap.set_global_runner(
+                runner=PodmanRunner(
+                    podman_executable=runner_exec,
+                    image_overrides=image_overrides,
+                    podman_user_id=0,
+                    **kwargs,
+                )
             )
         case "singularity":
             niwrap.use_singularity(
