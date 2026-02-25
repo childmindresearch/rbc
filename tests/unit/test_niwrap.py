@@ -15,6 +15,7 @@ from niwrap import (
     SingularityRunner,
     get_global_runner,
 )
+from styxpodman import PodmanRunner
 
 from rbc.core.niwrap import generate_exec_folder, setup_runner
 
@@ -38,6 +39,7 @@ class TestSetupRunner:
         [
             ("local", LocalRunner),
             ("docker", DockerRunner),
+            ("podman", PodmanRunner),
             pytest.param(
                 "singularity",
                 SingularityRunner,
