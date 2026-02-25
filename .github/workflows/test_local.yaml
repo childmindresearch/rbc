@@ -2,9 +2,12 @@ name: Full Testing Suite
 
 permissions:
   contents: read
+  issues: write
 
 on:
   workflow_dispatch:
+env:
+  ISSUE_NUMBER: 110
 
 jobs:
   test:
@@ -31,12 +34,64 @@ jobs:
         uv run pytest \
           -n auto \
           --runner=docker \
-          --work-dir=$JOB_TMP \
+          --basetemp=$JOB_TMP/pytest-tmp \
           --junitxml="$JOB_TMP/rbc-pytest-all.xml" \
           --cov-report=xml:"JOB_TMP/rbc-coverage-all.xml" \
           --cov=src tests \
           --cov-append \
           --verbose
+
+    - name: Update test date
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issue_number = parseInt(process.env.ISSUE_NUMBER, 10);
+          const now = new Date()
+          const options = {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+            timeZone: "UTC"
+          };
+          const formattedDate = now.toLocaleString("en-US", options) + " UTC";
+          const branch = process.env.GITHUB_REF?.replace('refs/heads/', '') || 'unknown';
+          const commit = process.env.GITHUB_SHA?.substring(0, 7) || 'unknown';
+          const run_url = process.env.GITHUB_RUN_ID
+            ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            : '#';
+          const new_body = `
+          ## Full Test Results
+          Last updated: ${formattedDate}
+
+          ### Build Details
+          | Category | Detail |
+          |----------|--------|
+          | Branch   | \`${branch}\` |
+          | Commit   | ${commit} |
+          | Action   | [View Run](${run_url}) |
+
+          🤖 _Auto-generated | [View Test Configuration](${run_url})_
+          `;
+
+          await github.rest.issues.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue_number,
+            body: new_body
+          });
+
+    - name: Update test results
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-xml-coverage-path: ${{ env.JOB_TMP }}/rbc-coverage-all.xml
+        junitxml-path: ${{ env.JOB_TMP }}/rbc-pytest-all.xml
+        issue-number: ${{ env.ISSUE_NUMBER }}
 
     - name: Cleanup
       if: always()
