@@ -63,7 +63,8 @@ class TestSetupRunner:
     def test_set_tmp_dir(self, tmp_path: Path) -> None:
         """Test setting of data directory works."""
         ctx = setup_runner(tmp_dir=tmp_path)
-        assert ctx.runner.data_dir == tmp_path
+        assert ctx.runner.data_dir.is_relative_to(tmp_path)
+        assert ctx.runner.data_dir.exists()
 
     @pytest.mark.parametrize(
         ("verbose", "log_level"),

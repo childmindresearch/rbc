@@ -42,9 +42,6 @@ def setup_runner(
     Returns:
         Configured logger instance and initialized runner
     """
-    if tmp_dir is None:
-        tmp_dir = tempfile.mkdtemp(dir=tmp_dir)
-
     match runner_exec := runner.lower():
         case "local":
             niwrap.use_local()
@@ -68,7 +65,7 @@ def setup_runner(
             )
 
     styx_runner = niwrap.get_global_runner()
-    styx_runner.data_dir = Path(tmp_dir)
+    styx_runner.data_dir = Path(tempfile.mkdtemp(dir=tmp_dir))
     logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
     logger.setLevel(_LOG_LEVELS[log_level])
