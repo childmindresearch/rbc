@@ -41,7 +41,7 @@ jobs:
           --runner=podman \
           --basetemp=$JOB_TMP/pytest-tmp \
           --junitxml="$JOB_TMP/rbc-pytest-all.xml" \
-          --cov-report=xml:"JOB_TMP/rbc-coverage-all.xml" \
+          --cov-report=xml:"$JOB_TMP/rbc-coverage-all.xml" \
           --cov=src tests \
           --cov-append \
           --verbose
