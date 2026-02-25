@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+import nibabel as nib
 from niwrap import ants, fsl
 
 from rbc.core.common import mat_to_itk
@@ -96,8 +97,8 @@ def resample_bold_to_template(
         transformed_vols.append(result.output.output_image_outfile)
 
     # Merge transformed volumes back to 4D timeseries
-    return fsl.fslmerge(
-        output_file="bold_to_template_resampled.nii.gz",
-        input_files=transformed_vols,
-        merge_time=True,
-    )
+    imgs = [nib.nifti1.load(v) for v in transformed_vols]
+    merged = nib.funcs.concat_images(imgs, axis=3)
+    out_path = transformed_vols[0].parent / "bold_to_template_resampled.nii.gz"
+    nib.save(merged, out_path)
+    return out_path
