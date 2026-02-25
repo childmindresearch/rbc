@@ -38,7 +38,7 @@ jobs:
 
         uv run pytest \
           -n auto \
-          --runner=docker \
+          --runner=podman \
           --basetemp=$JOB_TMP/pytest-tmp \
           --junitxml="$JOB_TMP/rbc-pytest-all.xml" \
           --cov-report=xml:"JOB_TMP/rbc-coverage-all.xml" \
