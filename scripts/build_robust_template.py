@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -48,9 +48,16 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def generate_template(
+class RobustTemplateOutputs(NamedTuple):
+    """Outputs from template generation - template + transforms."""
+
+    template: Path
+    transforms: list[Path]
+
+
+def generate_robust_template(
     in_files: Sequence[Path], output_file: str
-) -> freesurfer.MriRobustTemplateOutputs:
+) -> RobustTemplateOutputs:
     """Construct unbiased, robust template for longitudinal volumes with FreeSurfer.
 
     Uses an iterative method construct a mean volume and robust rigid registration
@@ -60,21 +67,27 @@ def generate_template(
         M. Reuter, N.J. Schmansky, H.D. Rosas, B. Fischl.
         NeuroImage 61(4):1402-1418, 2012.
     """
-    for in_file in in_files:
+    lta_files = []
+    for idx, in_file in enumerate(in_files):
         if not Path(in_file).exists():
             raise FileNotFoundError(f"{in_file} not found.")
+        lta_files.append(f"in_file{idx + 1}_to_template.lta")
 
     # Initialize with same defaults as fmriprep
-    return freesurfer.mri_robust_template(
-        mov_files=in_files,
-        template_file=output_file,
-        lta_files=[f"in_file{i + 1}_to_template.lta" for i in range(len(in_files))],
+    robust_template = freesurfer.mri_robust_template(
+        mov=in_files,
+        template=output_file,
+        lta=lta_files,
         inittp=1,  # map everything to first time point
-        fixtp_flag=True,
-        iscale_flag=True,  # intensity scale (7-DOF - rigid + intensity)
-        noit_flag=True,  # no iteration; fmriprep turns this on -> why?
-        satit_flag=True,  # autodetect sensitivity
+        fixtp=True,
+        iscale=True,  # intensity scale (7-DOF - rigid + intensity)
+        noit=True,  # no iteration; fmriprep turns this on -> why?
+        satit=True,  # autodetect sensitivity
         subsample=200,  # subsample if any dimension has over this many volumes
+    )
+
+    return RobustTemplateOutputs(
+        template=robust_template.template, transforms=lta_files
     )
 
 
@@ -101,7 +114,9 @@ if __name__ == "__main__":
     in_files = args.in_files
     # if len(in_files) == 1:
     #     raise ValueError("Only a single volume found")
-    long_template = generate_template(in_files=in_files, output_file="template.nii.gz")
+    robust_template = generate_robust_template(
+        in_files=in_files, output_file="template.nii.gz"
+    )
 
     # 2. Convert transformations to ANTs compatible format
-    subj_to_temp = fs_to_ants_xfm(long_template.output_lta_transform)
+    subj_to_temp = fs_to_ants_xfm(robust_template.transforms)
