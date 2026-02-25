@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pathlib as pl
-import tempfile
 
 import pytest
 
@@ -29,7 +28,7 @@ class TestFileTmpCopy:
     def test_copy_in_temp_dir(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test copy was created in temporary directory."""
         with fileops.file_tmp_copy(test_file, base_dir=tmp_path) as tmp_file:
-            assert str(tmp_file.parent).startswith(tempfile.gettempdir())
+            assert tmp_file.parent.is_relative_to(tmp_path)
 
     def test_cleanup(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test successful cleanup after normal exit."""
