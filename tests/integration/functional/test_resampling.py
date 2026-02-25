@@ -18,7 +18,6 @@ from rbc.core.functional import (
     fsl_motion_correction,
     resample_bold_to_template,
     slice_timing_correction,
-    truncate_trs,
 )
 from rbc.core.niwrap import generate_exec_folder
 from rbc.core.resources import MNI_TEMPLATES
@@ -73,14 +72,20 @@ def _create_identity_affine() -> Path:
 
 @pytest.mark.slow
 def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
-    """Test resampling produces output files."""
+    """Test resampling on short BOLD timeseries produces output files."""
     # Anatomical
     synthetic_wm = _create_synthetic_wm(test_subject.t1w)
     anat_to_template = _create_identity_affine()
 
     # Functional
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
-    truncated = truncate_trs(in_file=reoriented.out_file, start_tr=2)
+    truncated = afni.v_3dcalc(
+        dataset_a=afni.v_3dcalc_dataset_a_file(
+            file=reoriented.out_file, selectors_="[0..49]"
+        ),
+        expression="a",
+        prefix="test_bold.nii.gz",
+    )
     stc = slice_timing_correction(in_file=truncated.output_file)
     bold_ref = extract_motion_reference(in_file=stc.out_file)
     motion_corrected = fsl_motion_correction(
