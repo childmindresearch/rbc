@@ -953,6 +953,7 @@ dependencies = [
     { name = "numpy" },
     { name = "polars" },
     { name = "scipy" },
+    { name = "styxpodman" },
     { name = "tqdm" },
 ]
 
@@ -978,6 +979,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "polars", specifier = ">=1.38.1" },
     { name = "scipy", specifier = ">=1.17.0" },
+    { name = "styxpodman", git = "https://github.com/styx-api/styxpodman.git" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
 
@@ -1122,6 +1124,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4e/b1/2f6bb1c3deeb0990adbdb860727e718feee5c3440e77ed76849191e4cf4a/styxgraph-0.6.0.tar.gz", hash = "sha256:c8cd73debff95d18ff8116ee6a52c6fbd714350f75091641444e67e4527e517c", size = 3146, upload-time = "2025-11-18T19:15:48.258Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/6b/624417c87db757c0b055436283932e73379cb54a544509544b4f7fb3cf25/styxgraph-0.6.0-py3-none-any.whl", hash = "sha256:87022da2954b06779a26a74c1a080be616810e5fa3605937b39577af03067896", size = 3588, upload-time = "2025-11-18T19:15:47.556Z" },
+]
+
+[[package]]
+name = "styxpodman"
+version = "0.7.1"
+source = { git = "https://github.com/styx-api/styxpodman.git#a1829a80c0a1e7de9b60a78f5dddcbf4a3853815" }
+dependencies = [
+    { name = "styxdefs" },
 ]
 
 [[package]]
