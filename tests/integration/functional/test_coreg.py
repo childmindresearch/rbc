@@ -35,10 +35,7 @@ def _create_synthetic_wm(t1w: Path) -> Path:
     """
     out_dir = generate_exec_folder("synthetic_wm")
 
-    automask = afni.v_3d_automask(
-        in_file=t1w,
-        prefix="t1w_brain_mask.nii.gz",
-    )
+    automask = afni.v_3d_automask(in_file=t1w, prefix="t1w_brain_mask.nii.gz")
 
     mask_img = nib.nifti1.load(automask.mask_file)
     mask_data = mask_img.get_fdata() > 0
@@ -77,3 +74,8 @@ def test_coregistration(test_subject: TestSubjectData) -> None:
     )
     assert coregistration.out_matrix_file.exists()
     assert coregistration.out_file.exists()
+
+    bold_ref_data = nib.nifti1.load(masking.skull_stripped_bold).get_fdata()
+    coreg_data = nib.nifti1.load(coregistration.out_file).get_fdata()
+    # Check that input and output are not equal (that some transformation has occurred)
+    assert not np.array_equal(bold_ref_data, coreg_data)

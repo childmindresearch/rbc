@@ -112,3 +112,16 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         t1w_brain=test_subject.t1w,
     )
     assert template_bold.exists()
+
+    out_img = nib.nifti1.load(template_bold)
+    in_img = nib.nifti1.load(stc.out_file)
+    template_img = nib.nifti1.load(MNI_TEMPLATES.brain_2mm)
+
+    in_voxel_size = in_img.header.get_zooms()[:3]
+    out_voxel_size = out_img.header.get_zooms()[:3]
+    template_voxel_size = template_img.header.get_zooms()[:3]
+
+    # Check that voxel sizes differ between input and output
+    assert in_voxel_size != out_voxel_size
+    # Check that output voxel size matches template voxel size
+    assert out_voxel_size == template_voxel_size
