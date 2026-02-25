@@ -18,10 +18,26 @@ from .functional import (
 from .functional import (
     single_session_preprocess as functional_preprocess,
 )
+from .metrics import (
+    MetricsOutputs,
+)
+from .metrics import (
+    single_session_metrics as metrics_pipeline,
+)
+from .qc import (
+    QCOutputs,
+)
+from .qc import (
+    single_session_qc as qc_pipeline,
+)
 
 __all__ = [
     "AnatomicalOutputs",
     "FunctionalOutputs",
+    "MetricsOutputs",
+    "QCOutputs",
     "anatomical_preprocess",
     "functional_preprocess",
+    "metrics_pipeline",
+    "qc_pipeline",
 ]
