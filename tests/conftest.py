@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 import niwrap
 import pytest
+from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
 
@@ -58,6 +59,8 @@ def niwrap_runner(
             niwrap.use_docker()
         case "singularity":
             niwrap.use_singularity()
+        case "podman":
+            niwrap.set_global_runner(runner=PodmanRunner(podman_user_id=0))
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()
