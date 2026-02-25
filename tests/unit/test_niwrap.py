@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 from typing import TYPE_CHECKING
 
 import pytest
@@ -30,6 +31,7 @@ class TestSetupRunner:
         assert isinstance(ctx.logger, logging.Logger)
         assert isinstance(ctx.runner, LocalRunner)
         assert ctx.runner.data_dir != tmp_path
+        shutil.rmtree(ctx.runner.data_dir)  # Clean up test dir for local runner
 
     @pytest.mark.parametrize(
         ("runner", "runner_type"),
@@ -46,15 +48,17 @@ class TestSetupRunner:
             ),
         ],
     )
-    def test_set_runner(self, runner: str, runner_type: type[Runner]) -> None:
+    def test_set_runner(
+        self, runner: str, runner_type: type[Runner], tmp_path: Path
+    ) -> None:
         """Test explicit setting of runner."""
-        ctx = setup_runner(runner=runner)  # type: ignore [arg-type]
+        ctx = setup_runner(runner=runner, tmp_dir=tmp_path)  # type: ignore [arg-type]
         assert isinstance(ctx.runner, runner_type)
 
-    def test_invalid_runner(self) -> None:
+    def test_invalid_runner(self, tmp_path: Path) -> None:
         """Test error raised if invalid runner selected."""
         with pytest.raises(NotImplementedError, match="Unknown runner"):
-            setup_runner(runner="invalid")  # type: ignore [arg-type]
+            setup_runner(runner="invalid", tmp_dir=tmp_path)  # type: ignore [arg-type]
 
     def test_set_tmp_dir(self, tmp_path: Path) -> None:
         """Test setting of data directory works."""
@@ -70,9 +74,9 @@ class TestSetupRunner:
             (5, logging.DEBUG),
         ],
     )
-    def test_set_log_level(self, verbose: int, log_level: int) -> None:
+    def test_set_log_level(self, verbose: int, log_level: int, tmp_path: Path) -> None:
         """Test setting of log levels."""
-        ctx = setup_runner(verbose=verbose)
+        ctx = setup_runner(verbose=verbose, tmp_dir=tmp_path)
         assert ctx.logger.level == log_level
 
 

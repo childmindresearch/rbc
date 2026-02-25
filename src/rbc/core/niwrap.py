@@ -43,7 +43,7 @@ def setup_runner(
         Configured logger instance and initialized runner
     """
     if tmp_dir is None:
-        tmp_dir = tempfile.mkdtemp()
+        tmp_dir = tempfile.mkdtemp(dir=tmp_dir)
 
     match runner_exec := runner.lower():
         case "local":
