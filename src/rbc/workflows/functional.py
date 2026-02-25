@@ -1,129 +1,218 @@
 """Functional preprocessing workflow.
 
-Chains the functional stream -- reorientation, TR truncation, slice timing,
-motion-reference extraction, and motion correction -- and writes BIDS-named
-outputs to disk.
+Chains the full functional stream and returns all output paths as a
+:class:`FunctionalOutputs` named tuple.  No BIDS naming or file copying
+is performed here -- that responsibility belongs to the CLI layer via
+:class:`~rbc.context.PipelineContext`.
 """
 
 from __future__ import annotations
 
-import shutil
-from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from bids2table import load_bids_metadata
+from niwrap import ants
 
-from rbc.core.bids import bids_path, parse_bids_name
 from rbc.core.common import deoblique_and_reorient
-from rbc.core.fileops import file_copy_many, file_rename
 from rbc.core.functional import (
+    bold_masking,
+    coregister_bold_to_t1w,
+    despike_bold,
     extract_motion_reference,
     fsl_motion_correction,
+    nuisance_regression,
+    resample_bold_to_template,
     slice_timing_correction,
     truncate_trs,
 )
+from rbc.core.resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Literal
+
+
+class FunctionalOutputs(NamedTuple):
+    """Outputs from the functional preprocessing pipeline.
+
+    Attributes:
+        reoriented_bold: Deobliqued and RPI-reoriented BOLD.
+        truncated_bold: BOLD after discarding initial TRs.
+        stc_bold: Slice-timing corrected BOLD.
+        despiked_bold: Despiked BOLD timeseries.
+        sbref: Motion reference (single-band reference) volume.
+        motion_corrected_bold: Motion-corrected BOLD.
+        motion_params: Six-column motion parameter file.
+        rms_rel: Frame-to-frame relative RMS displacement.
+        rms_abs: Volume-to-reference absolute RMS displacement.
+        mat_dir: Directory of per-volume motion matrices.
+        bold_mask: Final binary BOLD brain mask.
+        skull_stripped_bold: Skull-stripped BOLD reference.
+        bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
+        template_bold: BOLD resampled to template space.
+        cleaned_bold: Nuisance-regressed BOLD.
+        regressor_file: Nuisance regressor ``.1D`` file.
+    """
+
+    reoriented_bold: Path
+    truncated_bold: Path
+    stc_bold: Path
+    despiked_bold: Path
+    sbref: Path
+    motion_corrected_bold: Path
+    motion_params: Path
+    rms_rel: Path
+    rms_abs: Path
+    mat_dir: Path
+    bold_mask: Path
+    skull_stripped_bold: Path
+    bold_to_anat_matrix: Path
+    template_bold: Path
+    cleaned_bold: Path
+    regressor_file: Path
+
+
+def _warp_mask_to_template(mask: Path, reference: Path, transform: Path) -> Path:
+    """Warp a single tissue mask to template space."""
+    out_name = f"{mask.stem.split('.')[0]}_template.nii.gz"
+    result = ants.ants_apply_transforms(
+        input_image=mask,
+        reference_image=reference,
+        transform=[ants.ants_apply_transforms_transform_file_name(transform)],
+        interpolation="NearestNeighbor",
+        dimensionality=3,
+        output=ants.ants_apply_transforms_warped_output(out_name),
+    )
+    return result.output.output_image_outfile
 
 
 def single_session_preprocess(
     in_bold: Path,
-    output_dir: Path,
+    t1w_brain: Path,
+    wm_bbr_mask: Path,
+    brain_mask: Path,
+    csf_mask: Path,
+    wm_mask: Path,
+    anat_to_template: Path,
     start_tr: int = 2,
-) -> None:
-    """Run the functional preprocessing pipeline for one session.
+    regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
+    bandpass: tuple[float, float] | None = (0.01, 0.1),
+) -> FunctionalOutputs:
+    """Run the full functional preprocessing pipeline for one session.
 
     Pipeline steps:
 
-    1. Deoblique and reorient BOLD to RPI.
-    2. Truncate first *start_tr* volumes (steady-state equilibration).
-    3. Slice timing correction.
-    4. Extract middle-volume motion reference.
-    5. Motion correction via FSL mcflirt (6-DOF rigid-body).
-
-    All outputs (reoriented BOLD, truncated BOLD, sbref, motion-corrected
-    BOLD, motion parameters, displacement metrics, and per-volume transform
-    matrices) are renamed to BIDS convention and saved into
-    ``<output_dir>/sub-<label>/[ses-<label>/]func/``.
+    1.  Deoblique & reorient BOLD to RPI.
+    2.  Truncate initial TRs.
+    3.  Slice timing correction.
+    4.  Despike the STC BOLD.
+    5.  Extract motion reference from despiked STC.
+    6.  Motion correction (despiked STC -> motion ref).
+    7.  BOLD brain masking.
+    8.  BBR coregistration (BOLD -> T1w).
+    9.  Single-step resampling (despiked STC -> template).
+    10. Warp tissue masks to template space.
+    11. Nuisance regression in template space.
 
     Args:
-        in_bold: Raw BOLD timeseries (BIDS-named) to preprocess.
-        output_dir: Root output directory (e.g. ``derivatives/rbc``).
-        tr: Repetition time in seconds (e.g., 2.0).
-        start_tr: Number of initial TRs to discard (default: 2).
+        in_bold: Raw BOLD timeseries to preprocess.
+        t1w_brain: Skull-stripped T1w brain from anatomical pipeline.
+        wm_bbr_mask: WM boundary mask for BBR coregistration.
+        brain_mask: Binary brain mask from anatomical pipeline.
+        csf_mask: CSF tissue mask from anatomical pipeline.
+        wm_mask: WM tissue mask from anatomical pipeline.
+        anat_to_template: T1w -> template composite warp.
+        start_tr: Number of initial TRs to discard.
+        regressor_set: Nuisance regressor strategy.
+        bandpass: Frequency band to retain, or *None* to skip.
+
+    Returns:
+        All output paths bundled in a :class:`FunctionalOutputs` tuple.
     """
-    entities = parse_bids_name(in_bold.name).entities
-    sub = entities.get("sub")
-    ses = entities.get("ses")
-    task = entities.get("task")
-    run = int(entities["run"]) if "run" in entities else None
-    name = partial(bids_path, sub=sub, ses=ses, task=task, run=run, datatype="func")
     metadata = load_bids_metadata(in_bold)
 
+    # 1. Deoblique & reorient
     reoriented = deoblique_and_reorient(in_file=in_bold)
+
+    # 2. Truncate TRs
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
+
+    # 3. Slice timing correction
     st_corrected = slice_timing_correction(
         in_file=truncated.output_file,
         tr=metadata.get("RepetitionTime"),
         tpattern=metadata.get("SliceTiming"),
     )
-    motion_ref = extract_motion_reference(in_file=st_corrected.out_file)
-    motion_corrected = fsl_motion_correction(
-        in_file=st_corrected.out_file,
-        ref_file=motion_ref,
+
+    # 4. Despike STC
+    despiked = despike_bold(in_file=st_corrected.out_file)
+
+    # 5. Extract motion reference from despiked STC
+    motion_ref = extract_motion_reference(in_file=despiked.out_file)
+
+    # 6. Motion correction on despiked STC
+    mc = fsl_motion_correction(in_file=despiked.out_file, ref_file=motion_ref)
+
+    # 7. BOLD brain masking
+    masking = bold_masking(
+        bold_ref=motion_ref,
+        template_mask=MNI_TEMPLATES.brain_mask_2mm,
+        template_ref=MNI_TEMPLATES.bold_ref,
     )
 
-    # Rename outputs to BIDS-compliant names
-    reoriented_bold = file_rename(
-        reoriented.out_file,
-        name(desc="reorient", suffix="bold", extension=".nii.gz").name,
-    )
-    truncated_bold = file_rename(
-        truncated.output_file,
-        name(desc="truncated", suffix="bold", extension=".nii.gz").name,
-    )
-    stc_bold = file_rename(
-        st_corrected.out_file,
-        name(desc="stc", suffix="bold", extension=".nii.gz").name,
-    )
-    sbref = file_rename(
-        motion_ref,
-        name(suffix="sbref", extension=".nii.gz").name,
-    )
-    mc_bold = file_rename(
-        motion_corrected.bold.with_suffix(".nii.gz"),
-        name(desc="motion", suffix="bold", extension=".nii.gz").name,
-    )
-    mc_par = file_rename(
-        motion_corrected.par,
-        name(desc="motionParams", suffix="motion", extension=".txt").name,
-    )
-    mc_rms_rel = file_rename(
-        motion_corrected.rms_rel,
-        name(desc="relsDisplacement", suffix="motion", extension=".rms").name,
-    )
-    mc_rms_abs = file_rename(
-        motion_corrected.rms_abs,
-        name(desc="maxDisplacement", suffix="motion", extension=".rms").name,
+    # 8. BBR coregistration
+    bbr = coregister_bold_to_t1w(
+        in_file=masking.skull_stripped_bold,
+        reference=t1w_brain,
+        wm_seg=wm_bbr_mask,
     )
 
-    func_out_dir = output_dir / name(suffix="bold", extension=".nii.gz").parent
-
-    file_copy_many(
-        [
-            reoriented_bold,
-            truncated_bold,
-            stc_bold,
-            sbref,
-            mc_bold,
-            mc_par,
-            mc_rms_rel,
-            mc_rms_abs,
-        ],
-        out_dir=func_out_dir,
+    # 9. Single-step resampling (despiked STC -> template)
+    template_bold = resample_bold_to_template(
+        stc_img=despiked.out_file,
+        motion_mat_dir=mc.mat_dir,
+        bold_to_anat=bbr.out_matrix_file,
+        anat_to_template=anat_to_template,
+        bold_ref=masking.skull_stripped_bold,
+        template=MNI_TEMPLATES.bold_ref,
+        t1w_brain=t1w_brain,
     )
 
-    # Save transform .mat directory
-    mat_target = func_out_dir / name(desc="motion", suffix="mat", extension="").name
-    shutil.copytree(motion_corrected.mat_dir, mat_target, dirs_exist_ok=True)
+    # 10. Warp tissue masks to template space
+    tmpl_brain = _warp_mask_to_template(
+        brain_mask, MNI_TEMPLATES.brain_1mm, anat_to_template
+    )
+    tmpl_csf = _warp_mask_to_template(
+        csf_mask, MNI_TEMPLATES.brain_1mm, anat_to_template
+    )
+    tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_1mm, anat_to_template)
+
+    # 11. Nuisance regression in template space
+    nuisance = nuisance_regression(
+        bold_file=template_bold,
+        brain_mask_file=tmpl_brain,
+        csf_mask_file=tmpl_csf,
+        wm_mask_file=tmpl_wm,
+        motion_par_file=mc.par,
+        regressor_set=regressor_set,
+        bandpass=bandpass,
+    )
+
+    return FunctionalOutputs(
+        reoriented_bold=reoriented.out_file,
+        truncated_bold=truncated.output_file,
+        stc_bold=st_corrected.out_file,
+        despiked_bold=despiked.out_file,
+        sbref=motion_ref,
+        motion_corrected_bold=mc.bold,
+        motion_params=mc.par,
+        rms_rel=mc.rms_rel,
+        rms_abs=mc.rms_abs,
+        mat_dir=mc.mat_dir,
+        bold_mask=masking.final_mask,
+        skull_stripped_bold=masking.skull_stripped_bold,
+        bold_to_anat_matrix=bbr.out_matrix_file,
+        template_bold=template_bold,
+        cleaned_bold=nuisance.cleaned_bold,
+        regressor_file=nuisance.regressor_file,
+    )
