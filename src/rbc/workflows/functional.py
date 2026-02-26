@@ -79,7 +79,7 @@ def _warp_mask_to_template(mask: Path, reference: Path, transform: Path) -> Path
         input_image=mask,
         reference_image=reference,
         transform=[ants.ants_apply_transforms_transform_file_name(transform)],
-        interpolation="NearestNeighbor",
+        interpolation=ants.ants_apply_transforms_nearest_neighbor(),
         dimensionality=3,
         output=ants.ants_apply_transforms_warped_output(out_name),
     )
