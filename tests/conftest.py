@@ -61,7 +61,7 @@ def niwrap_runner(
             niwrap.use_singularity()
         case "podman":
             niwrap.set_global_runner(  # using docker executable to fix mounting
-                runner=PodmanRunner(podman_executable="docker", podman_user_id=0)
+                runner=PodmanRunner(podman_user_id=0)
             )
         case _:
             niwrap.use_local()
