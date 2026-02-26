@@ -38,6 +38,7 @@ def test_motion_reference_short_series_fallback(test_subject: TestSubjectData) -
         expression="a",
         prefix="test_5vols.nii.gz",
     )
+    assert truncated_5.output_file is not None
     motion_reference = extract_motion_reference(in_file=truncated_5.output_file)
     assert nifti_num_volumes(motion_reference) == 1
 
@@ -53,6 +54,7 @@ def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
         expression="a",
         prefix="test_10vols.nii.gz",
     )
+    assert truncated_10.output_file is not None
     motion_reference = extract_motion_reference(in_file=truncated_10.output_file)
     motion_corrected = fsl_motion_correction(
         in_file=truncated_10.output_file,
