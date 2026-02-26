@@ -44,7 +44,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--runner",
         action="store",
         default="docker",
-        help="Styx runner type to use: ['local', 'docker', 'singularity']",
+        help="Styx runner type to use: ['local', 'docker', 'podman', 'singularity']",
     )
 
 
