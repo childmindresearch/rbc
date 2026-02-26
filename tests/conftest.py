@@ -57,16 +57,22 @@ def niwrap_runner(
     match request.config.getoption("--runner").lower():
         case "docker":
             niwrap.use_docker()
-        case "singularity":
-            niwrap.use_singularity()
         case "podman":
-            niwrap.set_global_runner(  # using docker executable to fix mounting
+            niwrap.set_global_runner(
+                # UserID = 0 currently necessary for some containers used
                 runner=PodmanRunner(podman_user_id=0)
             )
+        case "singularity":
+            niwrap.use_singularity()
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()
-    runner.environ = _DEFAULT_ENV_VARS
+    # Override single-threaded ANTs for testing — deterministic results
+    # aren't needed here, and multi-threading cuts registration time ~3-5x.
+    runner.environ = {
+        **_DEFAULT_ENV_VARS,
+        "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": str(min(os.cpu_count() or 1, 4)),
+    }
     runner.data_dir = tmp_path_factory.mktemp(f"{os.urandom(8).hex()}")
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)

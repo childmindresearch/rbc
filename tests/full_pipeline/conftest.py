@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import niwrap
 import pytest
+from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.core.resources import MNI_TEMPLATES
@@ -42,6 +43,11 @@ def _niwrap_session_runner(
     match request.config.getoption("--runner").lower():
         case "docker":
             niwrap.use_docker()
+        case "podman":
+            niwrap.set_global_runner(
+                # UserID = 0 currently necessary for some containers used
+                runner=PodmanRunner(podman_user_id=0)
+            )
         case "singularity":
             niwrap.use_singularity()
         case _:

@@ -22,14 +22,14 @@ jobs:
     - name: Run all tests
       shell: bash
       run: |
-        export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
-        export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
-        export COVERAGE_FILE="$JOB_TMP/.coverage"
         export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
-
         mkdir -p $JOB_TMP
         echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
         echo "Job temp directory: $JOB_TMP"
+
+        export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
+        export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
+        export COVERAGE_FILE="$JOB_TMP/.coverage"
 
         uv run pytest \
           -n auto \
