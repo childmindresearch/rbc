@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 import niwrap
 import pytest
+from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
 
@@ -43,26 +44,36 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--runner",
         action="store",
         default="docker",
-        help="Styx runner type to use: ['local', 'docker', 'singularity']",
+        help="Styx runner type to use: ['local', 'docker', 'podman', 'singularity']",
     )
 
 
-@pytest.fixture(autouse=True)
-def niwrap_runner(request: pytest.FixtureRequest, tmp_path: Path) -> niwrap.Runner:
+@pytest.fixture(scope="session", autouse=True)
+def niwrap_runner(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+) -> niwrap.Runner:
     """Globally set test niwrap runner."""
     # Set up niwrap runner
     match request.config.getoption("--runner").lower():
         case "docker":
             niwrap.use_docker()
+        case "podman":
+            niwrap.set_global_runner(
+                # UserID = 0 currently necessary for some containers used
+                runner=PodmanRunner(podman_user_id=0)
+            )
         case "singularity":
             niwrap.use_singularity()
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()
-    runner.environ = _DEFAULT_ENV_VARS
-    data_dir = tmp_path / os.urandom(8).hex()
-    data_dir.mkdir(parents=True, exist_ok=False)
-    runner.data_dir = data_dir
+    # Override single-threaded ANTs for testing — deterministic results
+    # aren't needed here, and multi-threading cuts registration time ~3-5x.
+    runner.environ = {
+        **_DEFAULT_ENV_VARS,
+        "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": str(min(os.cpu_count() or 1, 4)),
+    }
+    runner.data_dir = tmp_path_factory.mktemp(f"{os.urandom(8).hex()}")
     # Set up logging for debugging
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)

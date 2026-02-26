@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pathlib as pl
-import tempfile
 
 import pytest
 
@@ -13,27 +12,27 @@ from rbc.core import fileops
 class TestFileTmpCopy:
     """Test suite for fileops.file_tmp_copy."""
 
-    def test_copy_successful(self, test_file: pl.Path) -> None:
+    def test_copy_successful(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test copy created successfully."""
-        with fileops.file_tmp_copy(test_file) as tmp_file:
+        with fileops.file_tmp_copy(test_file, base_dir=tmp_path) as tmp_file:
             assert isinstance(tmp_file, pl.Path)
             assert tmp_file.exists()
             assert tmp_file.is_file()
             assert tmp_file.read_text() == "Sample content"
 
-    def test_copy_correct_name(self, test_file: pl.Path) -> None:
+    def test_copy_correct_name(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test copy has same name as original."""
-        with fileops.file_tmp_copy(test_file) as tmp_file:
+        with fileops.file_tmp_copy(test_file, base_dir=tmp_path) as tmp_file:
             assert tmp_file.name == test_file.name
 
-    def test_copy_in_temp_dir(self, test_file: pl.Path) -> None:
+    def test_copy_in_temp_dir(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test copy was created in temporary directory."""
-        with fileops.file_tmp_copy(test_file) as tmp_file:
-            assert str(tmp_file.parent).startswith(tempfile.gettempdir())
+        with fileops.file_tmp_copy(test_file, base_dir=tmp_path) as tmp_file:
+            assert tmp_file.parent.is_relative_to(tmp_path)
 
-    def test_cleanup(self, test_file: pl.Path) -> None:
+    def test_cleanup(self, tmp_path: pl.Path, test_file: pl.Path) -> None:
         """Test successful cleanup after normal exit."""
-        with fileops.file_tmp_copy(test_file) as tmp_file:
+        with fileops.file_tmp_copy(test_file, base_dir=tmp_path) as tmp_file:
             tmp_dir = tmp_file.parent
             assert tmp_dir.exists()
         assert not tmp_file.exists()

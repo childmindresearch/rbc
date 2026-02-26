@@ -1,10 +1,17 @@
 name: Full Testing Suite
 
-permissions:
-  contents: read
-
 on:
+  push:
   workflow_dispatch:
+    inputs:
+      cleanup:
+        description: Clean up job folder after running tests
+        default: true
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -16,12 +23,39 @@ jobs:
 
     - name: Run all tests
       shell: bash
-      run: >
+      run: |
+        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
+        mkdir -p $JOB_TMP
+        echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
+        echo "Job temp directory: $JOB_TMP"
+
+        export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
+        export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
+        export COVERAGE_FILE="$JOB_TMP/.coverage"
+
         uv run pytest \
           -n auto \
-          --runner=docker \
-          --junitxml=rbc-pytest-all.xml \
-          --cov-report=xml:rbc-coverage-all.xml \
+          --runner=podman \
+          --basetemp=$JOB_TMP/pytest-tmp \
+          --cov-report= \
           --cov=src tests \
-          --cov-append \
           --verbose
+
+    - name: Coverage summary
+      if: always()
+      env:
+        COVERAGE_FAIL: 75
+      shell: bash
+      run: |
+        uv run coverage report \
+          --data-file=$JOB_TMP/.coverage \
+          --fail-under=$COVERAGE_FAIL \
+          --show-missing \
+          --format=markdown >> $GITHUB_STEP_SUMMARY
+
+    - name: Cleanup
+      if: ${{ always() && github.event.inputs.cleanup == 'true' }}
+      shell: bash
+      run: |
+        echo "Cleaning up job temp directory: $JOB_TMP"
+        rm -rf $JOB_TMP

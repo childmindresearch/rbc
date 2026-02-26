@@ -36,7 +36,17 @@ class TestGlobalOpts:
         assert args.verbose == 0
 
     @pytest.mark.parametrize(
-        "runner", ["local", "LOCAL", "docker", "dOcKeR", "Singularity", "singularity"]
+        "runner",
+        [
+            "local",
+            "LOCAL",
+            "docker",
+            "dOcKeR",
+            "podman",
+            "PODMAN",
+            "Singularity",
+            "singularity",
+        ],
     )
     def test_valid_runner(self, runner: str) -> None:
         """Tests runner argument accepts valid choices."""

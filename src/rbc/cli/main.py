@@ -93,7 +93,7 @@ def _global_opts() -> argparse.ArgumentParser:
     )
     global_opts.add_argument(
         "--runner",
-        choices=["local", "docker", "singularity"],
+        choices=["local", "docker", "podman", "singularity"],
         default="local",
         type=lambda x: x.lower(),
         help="NiWrap runner to use for executing workflow",
