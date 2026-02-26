@@ -1,4 +1,4 @@
-"""Full e2e test for the anatomical preprocessing workflow."""
+"""Full e2e test for the functional preprocessing workflow."""
 
 from __future__ import annotations
 
@@ -10,6 +10,6 @@ if TYPE_CHECKING:
 
 
 def test_single_session_preprocess(pipeline_data: PipelineData) -> None:
-    """All 8 AnatomicalOutputs paths must exist on disk."""
-    for path in pipeline_data.anat:
+    """All 16 FunctionalOutputs paths must exist on disk."""
+    for path in pipeline_data.func:
         assert Path(path).exists()

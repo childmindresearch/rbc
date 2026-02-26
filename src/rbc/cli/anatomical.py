@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.main import BaseArgs
+from rbc.context import PipelineContext
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
@@ -59,7 +60,36 @@ def main(args: AnatomicalArgs) -> int:
         for row in group.iter_rows(named=True):
             t1w_fpath = Path(row["root"]) / row["path"]
             ctx.logger.info(f"Processing {t1w_fpath}")
-            single_session_preprocess(in_t1w=t1w_fpath, output_dir=args.output_dir)
+
+            outputs = single_session_preprocess(in_t1w=t1w_fpath)
+
+            pipe_ctx = PipelineContext(
+                sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
+            )
+            pipe_ctx.export(outputs.brain, datatype="anat", suffix="T1w", desc="brain")
+            pipe_ctx.export(
+                outputs.brain_mask, datatype="anat", suffix="mask", desc="T1w"
+            )
+            pipe_ctx.export(
+                outputs.csf_mask, datatype="anat", suffix="mask", desc="csf"
+            )
+            pipe_ctx.export(outputs.gm_mask, datatype="anat", suffix="mask", desc="gm")
+            pipe_ctx.export(outputs.wm_mask, datatype="anat", suffix="mask", desc="wm")
+            pipe_ctx.export(
+                outputs.wm_bbr_mask, datatype="anat", suffix="mask", desc="wmBBR"
+            )
+            pipe_ctx.export(
+                outputs.forward_xfm,
+                datatype="anat",
+                suffix="xfm",
+                extra={"from": "T1w", "to": "template", "mode": "image"},
+            )
+            pipe_ctx.export(
+                outputs.inverse_xfm,
+                datatype="anat",
+                suffix="xfm",
+                extra={"from": "template", "to": "T1w", "mode": "image"},
+            )
 
     ctx.logger.info("RBC anatomical workflow complete")
     return 0

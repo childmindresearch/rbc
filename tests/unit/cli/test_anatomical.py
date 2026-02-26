@@ -63,6 +63,21 @@ def sample_dataframe() -> pl.DataFrame:
     )
 
 
+def _mock_anatomical_outputs() -> Mock:
+    """Create a mock AnatomicalOutputs with fake paths."""
+    fake = Path("fake_workdir")
+    outputs = Mock()
+    outputs.brain = fake / "brain.nii.gz"
+    outputs.brain_mask = fake / "brain_mask.nii.gz"
+    outputs.csf_mask = fake / "csf_mask.nii.gz"
+    outputs.gm_mask = fake / "gm_mask.nii.gz"
+    outputs.wm_mask = fake / "wm_mask.nii.gz"
+    outputs.wm_bbr_mask = fake / "wm_bbr_mask.nii.gz"
+    outputs.forward_xfm = fake / "forward_xfm.nii.gz"
+    outputs.inverse_xfm = fake / "inverse_xfm.nii.gz"
+    return outputs
+
+
 class TestAnatomical:
     """Testing suite for anatomical processing."""
 
@@ -110,8 +125,13 @@ class TestAnatomical:
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
-            patch("rbc.cli.anatomical.single_session_preprocess") as mock_preprocess,
+            patch(
+                "rbc.cli.anatomical.single_session_preprocess",
+                return_value=_mock_anatomical_outputs(),
+            ) as mock_preprocess,
+            patch("rbc.cli.anatomical.PipelineContext") as mock_ctx_cls,
         ):
+            mock_ctx_cls.return_value = Mock()
             result = anatomical.main(args)
             assert result == 0
             assert mock_preprocess.call_count == expected_count
@@ -128,8 +148,13 @@ class TestAnatomical:
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
         with (
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
-            patch("rbc.cli.anatomical.single_session_preprocess") as mock_preprocess,
+            patch(
+                "rbc.cli.anatomical.single_session_preprocess",
+                return_value=_mock_anatomical_outputs(),
+            ) as mock_preprocess,
+            patch("rbc.cli.anatomical.PipelineContext") as mock_ctx_cls,
         ):
+            mock_ctx_cls.return_value = Mock()
             anatomical.main(args)
             assert mock_preprocess.call_count == 1
             processed_path = mock_preprocess.call_args[1]["in_t1w"]
@@ -150,8 +175,13 @@ class TestRunnerSetup:
         with (
             patch("rbc.cli.anatomical.setup_runner") as mock_setup,
             patch("rbc.cli.anatomical.load_table", return_value=sample_dataframe),
-            patch("rbc.cli.anatomical.single_session_preprocess"),
+            patch(
+                "rbc.cli.anatomical.single_session_preprocess",
+                return_value=_mock_anatomical_outputs(),
+            ),
+            patch("rbc.cli.anatomical.PipelineContext") as mock_ctx_cls,
         ):
+            mock_ctx_cls.return_value = Mock()
             ctx = Mock()
             ctx.runner = Mock()
             ctx.runner.environ = {}

@@ -1,0 +1,3 @@
+# Force LF for files mounted into Linux containers
+*.sch text eol=lf
+*.sh  text eol=lf

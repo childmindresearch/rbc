@@ -136,8 +136,11 @@ def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutpu
     if not motion_mat_dir.exists():
         raise FileNotFoundError(f"Missing .mat directory at {motion_mat_dir}")
 
+    # niwrap returns the user-supplied prefix; FSL appends ".nii.gz" itself.
+    bold_path = Path(f"{mc_result.out_file}.nii.gz")
+
     return MotionCorrectedOutputs(
-        bold=mc_result.out_file,
+        bold=bold_path,
         par=mc_result.par_file,
         rms_rel=mc_result.rmsrel_files,
         rms_abs=mc_result.rmsabs_files,

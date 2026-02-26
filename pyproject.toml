@@ -54,7 +54,7 @@ line-length = 88
 indent-width = 4
 src = ["src"]
 target-version = "py312"
-extend-exclude = ["src/rbc/core/bids.py", "tests/unit/test_bids.py"]
+extend-exclude = ["src/rbc/core/bids.py", "tests/unit/test_bids.py", "scripts/visualize_pipeline.py"]
 
 [tool.ruff.lint]
 select = [

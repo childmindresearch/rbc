@@ -10,11 +10,46 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
+import nibabel as nib
 from niwrap import ants, fsl
 
 from rbc.core.common import mat_to_itk
+
+
+def split_4d(img_4d: Path) -> list[Path]:
+    """Split a 4D NIfTI timeseries into individual 3D volumes.
+
+    Args:
+        img_4d: Path to a 4D NIfTI image.
+
+    Returns:
+        Sorted list of paths to the individual 3D volume files.
+    """
+    split_result = fsl.fslsplit(
+        infile=img_4d, separation_time=True, output_basename="vol_"
+    )
+    out_files = split_result.out_files
+    out_dir = out_files[0].parent if isinstance(out_files, list) else out_files.parent
+    return sorted(out_dir.glob("vol_*.nii.gz"))
+
+
+def merge_3d_to_4d(volumes: Sequence[Path], output: Path) -> Path:
+    """Merge a sequence of 3D NIfTI volumes into a single 4D timeseries.
+
+    Args:
+        volumes: Ordered sequence of paths to 3D NIfTI images.
+        output: Path to write the merged 4D image.
+
+    Returns:
+        Path to the merged 4D NIfTI image.
+    """
+    imgs = [nib.nifti1.load(v) for v in volumes]
+    merged = nib.funcs.concat_images(imgs, axis=None)
+    nib.save(merged, output)
+    return output
 
 
 def resample_bold_to_template(
@@ -54,12 +89,7 @@ def resample_bold_to_template(
     bold2anat_itk = mat_to_itk(bold_to_anat, t1w_brain, bold_ref, "bold2anat.txt")
 
     # Split slice time corrected 4D into volumes
-    split_stc = fsl.fslsplit(
-        infile=stc_img, separation_time=True, output_basename="vol_"
-    )
-    out_files = split_stc.out_files
-    out_dir = out_files[0].parent if isinstance(out_files, list) else out_files.parent
-    stc_vols = sorted(out_dir.glob("vol_*.nii.gz"))
+    stc_vols = split_4d(stc_img)
 
     if len(motion_mats) != len(stc_vols):
         raise ValueError(
@@ -96,8 +126,5 @@ def resample_bold_to_template(
         transformed_vols.append(result.output.output_image_outfile)
 
     # Merge transformed volumes back to 4D timeseries
-    return fsl.fslmerge(
-        output_file="bold_to_template_resampled.nii.gz",
-        input_files=transformed_vols,
-        merge_time=True,
-    )
+    out_path = transformed_vols[0].parent / "bold_to_template_resampled.nii.gz"
+    return merge_3d_to_4d(transformed_vols, out_path)
