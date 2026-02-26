@@ -48,7 +48,7 @@ def motion_corrected_bold(test_subject: TestSubjectData) -> MotionCorrectedBOLD:
         ref_file=ref,
     )
 
-    bold_img = nib.nifti1.load(mc.bold.with_suffix(".nii.gz"))
+    bold_img = nib.nifti1.load(mc.bold)
     bold_data = bold_img.get_fdata()
     mask = np.mean(bold_data, axis=3) > 0
 

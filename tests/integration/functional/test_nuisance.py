@@ -89,7 +89,7 @@ def _prepare_bold_and_masks(
     assert truncated.output_file is not None
     motion_ref = extract_motion_reference(in_file=truncated.output_file)
     mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=motion_ref)
-    bold_file = mc.bold.with_suffix(".nii.gz")
+    bold_file = mc.bold
 
     # Create brain mask from BOLD using 3dAutomask
     automask = afni.v_3d_automask(
