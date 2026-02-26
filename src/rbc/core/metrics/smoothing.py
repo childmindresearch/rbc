@@ -19,7 +19,7 @@ def smooth(
     in_file: Path,
     mask_file: Path,
     fwhm: float = 6.0,
-) -> afni.V3dBlurToFwhmOutputs:
+) -> Path:
     """Spatially smooth a 3D map to a target FWHM within a brain mask.
 
     Uses AFNI 3dBlurToFWHM to iteratively blur the input until the
@@ -31,11 +31,13 @@ def smooth(
         fwhm: Target full-width at half-maximum in mm.
 
     Returns:
-        AFNI 3dBlurToFWHM outputs (use ``.out_file`` for the smoothed map).
+        Path to the smoothed map.
     """
-    return afni.v_3d_blur_to_fwhm(
+    result = afni.v_3d_blur_to_fwhm(
         in_file=in_file,
         mask=mask_file,
         fwhm=fwhm,
         prefix="smoothed.nii.gz",
     )
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file

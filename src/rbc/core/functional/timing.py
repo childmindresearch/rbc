@@ -23,7 +23,7 @@ def slice_timing_correction(
     in_file: Path,
     tr: float | None = None,
     tpattern: str | list[float] | None = None,
-) -> afni.V3dTshiftOutputs:
+) -> Path:
     """Apply slice timing correction to a BOLD timeseries.
 
     Temporally interpolates slices to align them to a common reference time,
@@ -35,10 +35,16 @@ def slice_timing_correction(
         tpattern: Slice acquisition pattern.
 
     Returns:
-        AFNI 3dTshift outputs (use ``.out_file`` for corrected timeseries).
+        Path to the slice-timing corrected BOLD timeseries.
     """
+    tpattern_arg: (
+        afni.V3dTshiftTpatternModeStringParamsDictTagged
+        | afni.V3dTshiftTpatternModeFileParamsDictTagged
+        | None
+    )
+
     if isinstance(tpattern, str):
-        tpattern_arg = afni.v_3d_tshift_tpattern_mode_string(tpattern_string=tpattern)
+        tpattern_arg = afni.v_3d_tshift_tpattern_mode_string(tpattern_string=tpattern)  # type: ignore[arg-type]
 
     elif isinstance(tpattern, list):
         exec_dir = generate_exec_folder()
@@ -51,9 +57,11 @@ def slice_timing_correction(
     else:
         tpattern_arg = None
 
-    return afni.v_3d_tshift(
+    result = afni.v_3d_tshift(
         in_file=in_file,
         prefix="stc.nii.gz",
         tr=afni.v_3d_tshift_tr_microsyntax(value=tr, unit="s") if tr else None,
         tpattern=tpattern_arg if tpattern else None,
     )
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file

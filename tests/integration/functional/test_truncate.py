@@ -23,8 +23,8 @@ def test_truncate_trs(test_subject: TestSubjectData) -> None:
         start_tr=start_tr,
     )
     # Test truncated BOLD file exists & volume count is reduced
-    assert truncated_bold.output_file.exists()
-    assert nifti_num_volumes(truncated_bold.output_file) == original_count - start_tr
+    assert truncated_bold.exists()
+    assert nifti_num_volumes(truncated_bold) == original_count - start_tr
 
 
 def test_truncate_to_min_volume(test_subject: TestSubjectData) -> None:
@@ -37,4 +37,4 @@ def test_truncate_to_min_volume(test_subject: TestSubjectData) -> None:
         start_tr=start_tr,
     )
     # Test truncated BOLD file volume count is 1
-    assert nifti_num_volumes(truncated_bold.output_file) == 1
+    assert nifti_num_volumes(truncated_bold) == 1

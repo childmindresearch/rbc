@@ -71,9 +71,9 @@ def test_motion_correction(test_subject: TestSubjectData) -> None:
     """Test motion correction on full BOLD timeseries."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=2)
-    motion_reference = extract_motion_reference(in_file=truncated.output_file)
+    motion_reference = extract_motion_reference(in_file=truncated)
     motion_corrected = fsl_motion_correction(
-        in_file=truncated.output_file,
+        in_file=truncated,
         ref_file=motion_reference,
     )
     # Test motion corrected BOLD files exists

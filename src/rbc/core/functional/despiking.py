@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def despike_bold(in_file: Path) -> afni.V3dDespikeOutputs:
+def despike_bold(in_file: Path) -> Path:
     """Remove temporal outliers (spikes) from a BOLD timeseries.
 
     Identifies voxel timeseries values that deviate substantially from
@@ -27,9 +27,11 @@ def despike_bold(in_file: Path) -> afni.V3dDespikeOutputs:
         in_file: BOLD timeseries.
 
     Returns:
-        AFNI 3dDespike outputs (use ``.out_file`` for the despiked series).
+        Path to the despiked BOLD timeseries.
     """
-    return afni.v_3d_despike(
+    result = afni.v_3d_despike(
         in_file=in_file,
         prefix="despiked.nii.gz",
     )
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file

@@ -63,4 +63,5 @@ def mat_to_itk(mat: Path, reference: Path, source: Path, output: str) -> Path:
         out_itk_transform=output,
         fsl2ras=True,
     )
+    assert result.itk_transform_outfile is not None  # noqa: S101
     return result.itk_transform_outfile

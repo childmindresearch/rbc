@@ -21,6 +21,18 @@ from rbc.core.resources import OASIS_TEMPLATES
 _SEG_PREFIX = "tissue_seg"
 
 
+class BrainExtractionOutputs(NamedTuple):
+    """Outputs from ANTs brain extraction.
+
+    Attributes:
+        brain: Skull-stripped, bias-corrected brain image.
+        brain_mask: Binary brain mask.
+    """
+
+    brain: Path
+    brain_mask: Path
+
+
 class TissueMasks(NamedTuple):
     """Paths to tissue segmentation masks."""
 
@@ -31,7 +43,7 @@ class TissueMasks(NamedTuple):
 
 def ants_brain_extraction(
     in_file: Path,
-) -> ants.AntsBrainExtractionShOutputs:
+) -> BrainExtractionOutputs:
     """Skull-strip a T1w image using ANTs ``antsBrainExtraction.sh``.
 
     Internally performs N4 bias-field correction, registers the input to
@@ -44,10 +56,9 @@ def ants_brain_extraction(
             In RBC this is the reoriented (RPI) T1w.
 
     Returns:
-        ANTs brain extraction outputs (brain image, brain mask, N4-corrected
-        full-head image, etc.).
+        Brain extraction outputs (brain image and brain mask).
     """
-    return ants.ants_brain_extraction_sh(
+    result = ants.ants_brain_extraction_sh(
         image_dimension=3,
         anatomical_image=in_file,
         template=OASIS_TEMPLATES.template,
@@ -56,6 +67,12 @@ def ants_brain_extraction(
         output_prefix="ants_be",
         image_file_suffix="nii.gz",
         random_seeding=False,
+    )
+    assert result.brain_extracted_image is not None  # noqa: S101
+    assert result.brain_mask is not None  # noqa: S101
+    return BrainExtractionOutputs(
+        brain=result.brain_extracted_image,
+        brain_mask=result.brain_mask,
     )
 
 

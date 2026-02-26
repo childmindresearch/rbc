@@ -19,7 +19,7 @@ def test_despike(test_subject: TestSubjectData) -> None:
     """Test that despike runs successfully and produces output."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     despiked = despike_bold(in_file=reoriented.out_file)
-    assert despiked.out_file.exists()
+    assert despiked.exists()
 
 
 def test_despike_reduces_single_outlier(
@@ -44,7 +44,7 @@ def test_despike_reduces_single_outlier(
 
     despiked = despike_bold(in_file=spiked_path)
 
-    despiked_data = nib.nifti1.load(despiked.out_file).get_fdata()
+    despiked_data = nib.nifti1.load(despiked).get_fdata()
     despiked_val = despiked_data[center_x, center_y, center_z, 5]
 
     assert despiked_val < spiked_val, (
@@ -78,7 +78,7 @@ def test_despike_multiple_spikes(test_subject: TestSubjectData, tmp_path: Path) 
     nib.save(spiked_img, spiked_path)
 
     despiked = despike_bold(in_file=spiked_path)
-    despiked_data = nib.nifti1.load(despiked.out_file).get_fdata()
+    despiked_data = nib.nifti1.load(despiked).get_fdata()
 
     for coord in spike_coords:
         spiked_val = data[coord]

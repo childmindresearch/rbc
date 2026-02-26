@@ -65,13 +65,13 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     """
     reoriented_t1w = deoblique_and_reorient(in_file=in_t1w)
     extracted_t1w = ants_brain_extraction(in_file=reoriented_t1w.out_file)
-    segmentation = fsl_segmentation(in_file=extracted_t1w.brain_extracted_image)
+    segmentation = fsl_segmentation(in_file=extracted_t1w.brain)
     tissue_masks = fsl_tissue_masks(fast_result=segmentation)
     wm_bbr = fsl_wm_bbr_mask(fast_result=segmentation)
-    transforms = ants_registration(in_file=extracted_t1w.brain_extracted_image)
+    transforms = ants_registration(in_file=extracted_t1w.brain)
 
     return AnatomicalOutputs(
-        brain=extracted_t1w.brain_extracted_image,
+        brain=extracted_t1w.brain,
         brain_mask=extracted_t1w.brain_mask,
         csf_mask=tissue_masks.csf,
         gm_mask=tissue_masks.gm,
