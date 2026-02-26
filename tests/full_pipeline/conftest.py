@@ -45,7 +45,7 @@ def _niwrap_session_runner(
             niwrap.use_docker()
         case "podman":
             niwrap.set_global_runner(
-                # UserID = 0 currently necessary for some containers used
+                # UserID = 0 currently necessary for user mapping
                 runner=PodmanRunner(podman_user_id=0)
             )
         case "singularity":

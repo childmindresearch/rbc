@@ -1,8 +1,5 @@
 name: Full Testing Suite
 
-permissions:
-  contents: write
-
 on:
   push:
   workflow_dispatch:

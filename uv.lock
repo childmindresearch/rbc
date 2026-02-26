@@ -979,7 +979,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "polars", specifier = ">=1.38.1" },
     { name = "scipy", specifier = ">=1.17.0" },
-    { name = "styxpodman", git = "https://github.com/styx-api/styxpodman.git" },
+    { name = "styxpodman", git = "https://github.com/styx-api/styxpodman.git?rev=1382977" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
 
@@ -1129,7 +1129,7 @@ wheels = [
 [[package]]
 name = "styxpodman"
 version = "0.1.0"
-source = { git = "https://github.com/styx-api/styxpodman.git#13829772af54f268d5b96ccbea2cbfda45efdcb4" }
+source = { git = "https://github.com/styx-api/styxpodman.git?rev=1382977#13829772af54f268d5b96ccbea2cbfda45efdcb4" }
 dependencies = [
     { name = "styxdefs" },
 ]
