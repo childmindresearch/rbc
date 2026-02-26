@@ -31,6 +31,7 @@ def split_4d(img_4d: Path) -> list[Path]:
     split_result = fsl.fslsplit(
         infile=img_4d, separation_time=True, output_basename="vol_"
     )
+    assert split_result.out_files is not None  # noqa: S101
     out_files = split_result.out_files
     out_dir = out_files[0].parent if isinstance(out_files, list) else out_files.parent
     return sorted(out_dir.glob("vol_*.nii.gz"))
@@ -107,7 +108,10 @@ def resample_bold_to_template(
         zip(motion_mats, stc_vols, strict=True)
     ):
         motion_itk = mat_to_itk(motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt")
-        transforms = [
+        transforms: list[
+            ants.AntsApplyTransformsTransformFileNameParamsDictTagged
+            | ants.AntsApplyTransformsUseInverseParamsDictTagged
+        ] = [
             ants.ants_apply_transforms_transform_file_name(t)
             for t in [*base_transforms, motion_itk]
         ]

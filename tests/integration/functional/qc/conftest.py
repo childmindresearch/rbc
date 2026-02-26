@@ -41,6 +41,7 @@ def motion_corrected_bold(test_subject: TestSubjectData) -> MotionCorrectedBOLD:
         prefix="qc_shared_10vols.nii.gz",
     )
 
+    assert truncated.output_file is not None
     ref = extract_motion_reference(in_file=truncated.output_file)
     mc = fsl_motion_correction(
         in_file=truncated.output_file,

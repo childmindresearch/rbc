@@ -86,6 +86,7 @@ def _prepare_bold_and_masks(
         expression="a",
         prefix="test_bold.nii.gz",
     )
+    assert truncated.output_file is not None
     motion_ref = extract_motion_reference(in_file=truncated.output_file)
     mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=motion_ref)
     bold_file = mc.bold.with_suffix(".nii.gz")
@@ -97,6 +98,7 @@ def _prepare_bold_and_masks(
     )
 
     # Create synthetic tissue masks from brain mask
+    assert automask.mask_file is not None
     brain_mask, csf_mask, wm_mask = _create_synthetic_masks(automask.mask_file)
 
     return _PreparedData(

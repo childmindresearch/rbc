@@ -83,9 +83,9 @@ def single_session_metrics(
     reho_path = compute_reho(cleaned_bold, template_brain_mask)
 
     # 3. Smooth raw maps
-    alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm).out_file
-    falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm).out_file
-    reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm).out_file
+    alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm)
+    falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm)
+    reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm)
 
     # 4. Z-score smoothed maps
     alff_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)

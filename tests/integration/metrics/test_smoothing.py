@@ -19,8 +19,7 @@ def test_smooth_runs(test_subject: TestSubjectData) -> None:
     """Test that smooth runs successfully and produces output."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     result = smooth(in_file=reoriented.out_file, mask_file=reoriented.out_file)
-    assert result.out_file is not None
-    assert result.out_file.exists()
+    assert result.exists()
 
 
 @pytest.mark.slow
@@ -31,5 +30,5 @@ def test_smooth_preserves_shape(test_subject: TestSubjectData) -> None:
 
     result = smooth(in_file=reoriented.out_file, mask_file=reoriented.out_file)
 
-    out_img = nib.nifti1.load(result.out_file)
+    out_img = nib.nifti1.load(result)
     assert out_img.shape == in_img.shape

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 def test_slice_timing_correction(test_subject: TestSubjectData) -> None:
     """Test that slice timing correction runs successfully and produces output."""
     corrected = slice_timing_correction(in_file=test_subject.bold, tr=2)
-    assert corrected.out_file.exists()
+    assert corrected.exists()
 
 
 def test_slice_timing_tpattern_list(test_subject: TestSubjectData) -> None:
@@ -26,7 +26,7 @@ def test_slice_timing_tpattern_list(test_subject: TestSubjectData) -> None:
     corrected = slice_timing_correction(
         in_file=test_subject.bold, tr=2.0, tpattern=tpattern
     )
-    assert corrected.out_file.exists()
+    assert corrected.exists()
 
 
 def test_slice_timing_tpattern_string(test_subject: TestSubjectData) -> None:
@@ -34,4 +34,4 @@ def test_slice_timing_tpattern_string(test_subject: TestSubjectData) -> None:
     corrected = slice_timing_correction(
         in_file=test_subject.bold, tr=2.0, tpattern="alt+z"
     )
-    assert corrected.out_file.exists()
+    assert corrected.exists()

@@ -139,19 +139,19 @@ def single_session_preprocess(
 
     # 3. Slice timing correction
     st_corrected = slice_timing_correction(
-        in_file=truncated.output_file,
+        in_file=truncated,
         tr=metadata.get("RepetitionTime"),
         tpattern=metadata.get("SliceTiming"),
     )
 
     # 4. Despike STC
-    despiked = despike_bold(in_file=st_corrected.out_file)
+    despiked = despike_bold(in_file=st_corrected)
 
     # 5. Extract motion reference from despiked STC
-    motion_ref = extract_motion_reference(in_file=despiked.out_file)
+    motion_ref = extract_motion_reference(in_file=despiked)
 
     # 6. Motion correction on despiked STC
-    mc = fsl_motion_correction(in_file=despiked.out_file, ref_file=motion_ref)
+    mc = fsl_motion_correction(in_file=despiked, ref_file=motion_ref)
 
     # 7. BOLD brain masking
     masking = bold_masking(
@@ -169,7 +169,7 @@ def single_session_preprocess(
 
     # 9. Single-step resampling (despiked STC -> template)
     template_bold = resample_bold_to_template(
-        stc_img=despiked.out_file,
+        stc_img=despiked,
         motion_mat_dir=mc.mat_dir,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
@@ -200,9 +200,9 @@ def single_session_preprocess(
 
     return FunctionalOutputs(
         reoriented_bold=reoriented.out_file,
-        truncated_bold=truncated.output_file,
-        stc_bold=st_corrected.out_file,
-        despiked_bold=despiked.out_file,
+        truncated_bold=truncated,
+        stc_bold=st_corrected,
+        despiked_bold=despiked,
         sbref=motion_ref,
         motion_corrected_bold=mc.bold,
         motion_params=mc.par,

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def truncate_trs(in_file: Path, start_tr: int) -> afni.V3dcalcOutputs:
+def truncate_trs(in_file: Path, start_tr: int) -> Path:
     """Discard the first *N* TRs from a BOLD timeseries.
 
     Early volumes are typically discarded because the MR signal has not yet
@@ -30,15 +30,17 @@ def truncate_trs(in_file: Path, start_tr: int) -> afni.V3dcalcOutputs:
         start_tr: Number of initial TRs to drop (e.g. 2).
 
     Returns:
-        AFNI 3dcalc outputs (use ``.output_file`` for the truncated series).
+        Path to the truncated BOLD timeseries.
     """
-    return afni.v_3dcalc(
+    result = afni.v_3dcalc(
         dataset_a=afni.v_3dcalc_dataset_a_file(
             file=in_file, selectors_=f"[{start_tr}..$]"
         ),
         expression="a",
         prefix="truncated.nii.gz",
     )
+    assert result.output_file is not None  # noqa: S101
+    return result.output_file
 
 
 def scale_bold(in_file: Path, scale_factor: float = 0.1) -> afni.V3drefitOutputs:

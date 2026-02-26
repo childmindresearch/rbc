@@ -139,6 +139,10 @@ def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutpu
     # niwrap returns the user-supplied prefix; FSL appends ".nii.gz" itself.
     bold_path = Path(f"{mc_result.out_file}.nii.gz")
 
+    assert mc_result.par_file is not None  # noqa: S101
+    assert mc_result.rmsrel_files is not None  # noqa: S101
+    assert mc_result.rmsabs_files is not None  # noqa: S101
+
     return MotionCorrectedOutputs(
         bold=bold_path,
         par=mc_result.par_file,

@@ -17,10 +17,8 @@ def test_brain_extraction(test_subject: TestSubjectData) -> None:
     """Test brain extraction."""
     ants_bet_output = anatomical.ants_brain_extraction(in_file=test_subject.t1w)
     # Test extracted brain image exists
-    assert ants_bet_output.brain_extracted_image is not None
-    assert ants_bet_output.brain_extracted_image.exists()
+    assert ants_bet_output.brain.exists()
     # Test brain mask exists
-    assert ants_bet_output.brain_mask is not None
     assert ants_bet_output.brain_mask.exists()
 
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from .registration import ants_registration
 from .segmentation import (
+    BrainExtractionOutputs,
     ants_brain_extraction,
     fsl_segmentation,
     fsl_tissue_masks,
@@ -19,6 +20,7 @@ from .segmentation import (
 )
 
 __all__ = [
+    "BrainExtractionOutputs",
     "ants_brain_extraction",
     "ants_registration",
     "fsl_segmentation",
