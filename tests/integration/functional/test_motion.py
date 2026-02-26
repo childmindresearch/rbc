@@ -60,8 +60,8 @@ def test_motion_correction_10vols(test_subject: TestSubjectData) -> None:
         in_file=truncated_10.output_file,
         ref_file=motion_reference,
     )
-    assert motion_corrected.bold.with_suffix(".nii.gz").exists()
-    assert nifti_num_volumes(motion_corrected.bold.with_suffix(".nii.gz")) == 10
+    assert motion_corrected.bold.exists()
+    assert nifti_num_volumes(motion_corrected.bold) == 10
 
     assert motion_corrected.par.exists()
     par_data = motion_corrected.par.read_text().splitlines()
@@ -79,6 +79,6 @@ def test_motion_correction(test_subject: TestSubjectData) -> None:
         ref_file=motion_reference,
     )
     # Test motion corrected BOLD files exists
-    assert motion_corrected.bold.with_suffix(".nii.gz").exists()
+    assert motion_corrected.bold.exists()
     assert motion_corrected.par.exists()
     assert motion_corrected.rms_rel.exists()
