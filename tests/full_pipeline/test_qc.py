@@ -25,6 +25,7 @@ def test_single_session_qc(
         rms_rel=pipeline_data.func.rms_rel,
         bold_mask=pipeline_data.func.bold_mask,
         brain_mask=pipeline_data.anat.brain_mask,
+        bold_to_anat_matrix=pipeline_data.func.bold_to_anat_matrix,
         template_brain_mask=pipeline_data.template_brain_mask,
         sub=test_subject.subject_id,
         ses="001",

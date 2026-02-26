@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import nibabel as nib
 import numpy as np
+from niwrap import fsl
 
 from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
@@ -44,6 +45,7 @@ def single_session_qc(
     rms_rel: Path,
     bold_mask: Path,
     brain_mask: Path,
+    bold_to_anat_matrix: Path,
     template_brain_mask: Path,
     sub: str,
     ses: str,
@@ -61,6 +63,7 @@ def single_session_qc(
         rms_rel: ``_rel.rms`` file from MCFLIRT.
         bold_mask: Native BOLD brain mask.
         brain_mask: Anatomical brain mask (native space).
+        bold_to_anat_matrix: BOLD-to-T1w affine matrix (from BBR).
         template_brain_mask: Brain mask warped to template space.
         sub: Subject ID.
         ses: Session label.
@@ -94,14 +97,30 @@ def single_session_qc(
     post_data = post_img.get_fdata()
     dvars_final = dvars_qc_metrics(post_data, tmpl_mask, fd)
 
-    # 6. Coregistration overlap (BOLD mask vs anat brain mask)
-    bold_mask_arr = nib.nifti1.load(bold_mask).get_fdata()
+    # 6. Coregistration overlap (BOLD mask warped to anat space vs anat brain mask)
+    bold_mask_in_anat = fsl.flirt(
+        in_file=bold_mask,
+        reference=brain_mask,
+        out_file="bold_mask_in_anat.nii.gz",
+        out_matrix_file="identity.mat",
+        in_matrix_file=bold_to_anat_matrix,
+        apply_xfm=True,
+        interp="nearestneighbour",
+    )
+    bold_mask_arr = nib.nifti1.load(bold_mask_in_anat.out_file).get_fdata()
     brain_mask_arr = nib.nifti1.load(brain_mask).get_fdata()
     coreg = registration_qc_metrics(bold_mask_arr, brain_mask_arr)
 
     # 7. Normalization overlap (template brain mask vs MNI brain mask)
-    mni_mask_arr = nib.nifti1.load(MNI_TEMPLATES.brain_mask_2mm).get_fdata()
-    tmpl_brain_arr = nib.nifti1.load(template_brain_mask).get_fdata()
+    #    Resample MNI mask to template grid if shapes differ.
+    tmpl_brain_img = nib.nifti1.load(template_brain_mask)
+    mni_mask_img = nib.nifti1.load(MNI_TEMPLATES.brain_mask_2mm)
+    if mni_mask_img.shape[:3] != tmpl_brain_img.shape[:3]:
+        from nibabel.processing import resample_from_to
+
+        mni_mask_img = resample_from_to(mni_mask_img, tmpl_brain_img, order=0)
+    mni_mask_arr = mni_mask_img.get_fdata()
+    tmpl_brain_arr = tmpl_brain_img.get_fdata()
     norm = registration_qc_metrics(tmpl_brain_arr, mni_mask_arr)
 
     # 8. Assemble XCP QC row

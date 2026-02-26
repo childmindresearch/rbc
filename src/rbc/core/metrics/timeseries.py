@@ -109,10 +109,17 @@ def compute_timeseries(
         the ROI labels array.
     """
     import nibabel as nib
+    from nibabel.processing import resample_from_to
 
     in_file = Path(in_file)
     img = nib.nifti1.load(in_file)
-    atlas_data = nib.nifti1.load(atlas_file).get_fdata().astype(int)
+    atlas_img = nib.nifti1.load(atlas_file)
+
+    # Resample atlas to BOLD grid if shapes differ (nearest-neighbor for labels)
+    if atlas_img.shape[:3] != img.shape[:3]:
+        atlas_img = resample_from_to(atlas_img, (img.shape[:3], img.affine), order=0)
+
+    atlas_data = atlas_img.get_fdata().astype(int)
 
     data = img.get_fdata()
     labels = np.unique(atlas_data)

@@ -74,6 +74,9 @@ def single_session_metrics(
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
     """
     # 1. ALFF / fALFF
+    # TODO: fALFF is meaningless when computed on bandpass-filtered data (all
+    #  power is already in-band, so fALFF ≈ 1.0 everywhere).  Either compute
+    #  fALFF from the pre-bandpass BOLD or move bandpass filtering after fALFF.
     alff_path, falff_path = compute_alff(cleaned_bold, template_brain_mask, tr=tr)
 
     # 2. ReHo
