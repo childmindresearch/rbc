@@ -31,8 +31,7 @@ class TestMerge3dTo4d:
         n_vols = 5
         shape = (4, 5, 6)
         vols = [
-            _make_3d_nifti(tmp_path / f"vol_{i}.nii.gz", shape)
-            for i in range(n_vols)
+            _make_3d_nifti(tmp_path / f"vol_{i}.nii.gz", shape) for i in range(n_vols)
         ]
         out = merge_3d_to_4d(vols, tmp_path / "merged.nii.gz")
         merged = nib.nifti1.load(out)

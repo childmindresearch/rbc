@@ -27,6 +27,13 @@ import numpy as np
 from nilearn import image, plotting
 
 
+def _robust_vmax(img) -> float:
+    """Return a robust upper intensity for display (98th percentile of brain)."""
+    data = img.get_fdata()
+    values = data[data > 0]
+    return float(np.percentile(values, 98)) if len(values) > 0 else 1.0
+
+
 def load_manifest(path: Path) -> dict:
     """Load the JSON manifest from a full-pipeline test run."""
     if not path.exists():
@@ -77,16 +84,21 @@ def plot_functional(manifest: dict, axes: list) -> None:
     """Plot template BOLD, cleaned BOLD, and motion parameters."""
     func = manifest["func"]
 
+    tmpl_mean = image.mean_img(func["template_bold"])
     plotting.plot_epi(
-        image.mean_img(func["template_bold"]),
+        tmpl_mean,
         title="Template BOLD (mean)",
         display_mode="ortho",
+        vmax=_robust_vmax(tmpl_mean),
         axes=axes[0],
     )
+    # Cleaned BOLD is demeaned — show temporal std instead
+    clean_std = image.math_img("np.std(img, axis=-1)", img=func["cleaned_bold"])
     plotting.plot_epi(
-        image.mean_img(func["cleaned_bold"]),
-        title="Cleaned BOLD (mean)",
+        clean_std,
+        title="Cleaned BOLD (temporal std)",
         display_mode="ortho",
+        vmax=_robust_vmax(clean_std),
         axes=axes[1],
     )
 
@@ -127,18 +139,20 @@ def plot_registration(manifest: dict, axes: list) -> None:
 
     plotting.plot_roi(
         func["bold_mask"],
-        bg_img=image.mean_img(func["template_bold"]),
-        title="BOLD mask on template BOLD",
+        bg_img=func["skull_stripped_bold"],
+        title="BOLD mask on native BOLD ref",
         display_mode="ortho",
         alpha=0.3,
         axes=axes[0],
     )
+    tmpl_mean = image.mean_img(func["template_bold"])
     plotting.plot_roi(
         template_brain_mask,
-        bg_img=image.mean_img(func["cleaned_bold"]),
-        title="Template brain mask on cleaned BOLD",
+        bg_img=tmpl_mean,
+        title="Template brain mask on template BOLD",
         display_mode="ortho",
         alpha=0.3,
+        vmax=_robust_vmax(tmpl_mean),
         axes=axes[1],
     )
 
