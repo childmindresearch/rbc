@@ -87,7 +87,7 @@ def pipeline_data(
         anat_to_template=anat.forward_xfm,
     )
     template_brain_mask = _warp_mask_to_template(
-        anat.brain_mask, MNI_TEMPLATES.brain_1mm, anat.forward_xfm
+        anat.brain_mask, MNI_TEMPLATES.bold_ref, anat.forward_xfm
     )
     manifest["anat"] = {k: str(v) for k, v in anat._asdict().items()}
     manifest["func"] = {k: str(v) for k, v in func._asdict().items()}
