@@ -13,6 +13,7 @@ Usage::
     uv run scripts/visualize_cpac.py tests/data/cpac_outputs/ds000001   # explicit dir
     uv run scripts/visualize_cpac.py --reg aCompCor --output report.png # options
 """
+# ruff: noqa: T201
 
 from __future__ import annotations
 
@@ -23,14 +24,17 @@ from pathlib import Path
 
 # Allow importing the sibling script.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from visualize_pipeline import build_report  # noqa: E402
+from visualize_pipeline import build_report
 
 
 def _find_sub_ses(cpac_dir: Path) -> tuple[str, str]:
     """Auto-detect the first subject/session under output/pipeline_*/."""
     pipelines = list((cpac_dir / "output").glob("pipeline_*"))
     if not pipelines:
-        print(f"No pipeline_* directory found under {cpac_dir / 'output'}", file=sys.stderr)
+        print(
+            f"No pipeline_* directory found under {cpac_dir / 'output'}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     pipeline = pipelines[0]
     subs = [d for d in pipeline.iterdir() if d.is_dir() and d.name.startswith("sub-")]
@@ -60,7 +64,7 @@ def _find_task_run(func_dir: Path) -> tuple[str, str]:
 
 def _parse_qc_tsv(tsv_path: Path) -> dict:
     """Parse the XCP-D quality TSV into a QC manifest entry."""
-    with open(tsv_path) as fh:
+    with tsv_path.open() as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         row = next(reader)
 
@@ -118,12 +122,11 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
             ),
             "bold_mask": str(func_dir / f"{prefix_func}_desc-brain_mask.nii.gz"),
             "template_bold": str(
-                func_dir
-                / f"{prefix_func}_space-MNI152NLin6ASym_desc-head_bold.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_desc-head_bold.nii.gz"
             ),
             "cleaned_bold": str(
-                func_dir
-                / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-preproc_bold.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                "desc-preproc_bold.nii.gz"
             ),
             "motion_params": str(
                 func_dir / f"{prefix_func}_desc-movementParameters_motion.1D"
@@ -131,33 +134,32 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
             "rms_rel": str(func_dir / f"{prefix_func}_desc-FDPower_motion.1D"),
         },
         "template_brain_mask": str(
-            func_dir
-            / f"{prefix_func}_space-MNI152NLin6ASym_desc-bold_mask.nii.gz"
+            func_dir / f"{prefix_func}_space-MNI152NLin6ASym_desc-bold_mask.nii.gz"
         ),
         "metrics": {
             "alff_zscored": str(
-                func_dir
-                / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-smZstd_alff.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                "desc-smZstd_alff.nii.gz"
             ),
             "falff_zscored": str(
-                func_dir
-                / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-smZstd_falff.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                "desc-smZstd_falff.nii.gz"
             ),
             "reho_zscored": str(
-                func_dir
-                / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-smZstd_reho.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                "desc-smZstd_reho.nii.gz"
             ),
             "correlation_matrix": str(
                 func_dir
-                / f"{prefix_func}_atlas-{atlas}_space-MNI152NLin6ASym_reg-{reg}_desc-PearsonNilearn_correlations.tsv"
+                / f"{prefix_func}_atlas-{atlas}_space-MNI152NLin6ASym_reg-{reg}_"
+                "desc-PearsonNilearn_correlations.tsv"
             ),
         },
     }
 
     # QC
     qc_tsv = (
-        func_dir
-        / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-xcp_quality.tsv"
+        func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-xcp_quality.tsv"
     )
     if qc_tsv.exists():
         manifest["qc"] = _parse_qc_tsv(qc_tsv)
@@ -168,7 +170,13 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
 def main() -> None:
     """Entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
-    default_dir = Path(__file__).resolve().parent.parent / "tests" / "data" / "cpac_outputs" / "ds000001"
+    default_dir = (
+        Path(__file__).resolve().parent.parent
+        / "tests"
+        / "data"
+        / "cpac_outputs"
+        / "ds000001"
+    )
     parser.add_argument(
         "cpac_dir",
         nargs="?",
