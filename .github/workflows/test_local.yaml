@@ -1,8 +1,7 @@
 name: Full Testing Suite
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
 
 on:
   workflow_dispatch:
@@ -11,8 +10,6 @@ on:
         description: Clean up job folder after running tests
         default: true
         type: boolean
-env:
-  ISSUE_NUMBER: 110
 
 jobs:
   test:
@@ -22,82 +19,32 @@ jobs:
     - name: Setup venv
       uses: ./.github/actions/setup-venv
 
-    - name: Setup temp directory
-      shell: bash
-      run: |
-        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
-        mkdir -p $JOB_TMP
-        echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
-        echo "Job temp directory: $JOB_TMP"
-
     - name: Run all tests
       shell: bash
       run: |
         export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
         export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
+        export COVERAGE_FILE="$JOB_TMP/.coverage"
+        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
+
+        mkdir -p $JOB_TMP
+        echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
+        echo "Job temp directory: $JOB_TMP"
 
         uv run pytest \
           -n auto \
           --runner=podman \
           --basetemp=$JOB_TMP/pytest-tmp \
-          --junitxml="$JOB_TMP/rbc-pytest-all.xml" \
-          --cov-report=xml:"$JOB_TMP/rbc-coverage-all.xml" \
+          --cov-report= \
           --cov=src tests \
-          --cov-append \
           --verbose
-    - name: Update test results
-      uses: MishaKav/pytest-coverage-comment@main
+
+    - name: Coverage summary
+      uses: py-cov-action/python-coverage-comment-action@v3
       if: always()
       with:
-        pytest-xml-coverage-path: ${{ env.JOB_TMP }}/rbc-coverage-all.xml
-        junitxml-path: ${{ env.JOB_TMP }}/rbc-pytest-all.xml
-        issue-number: ${{ env.ISSUE_NUMBER }}
-
-    - name: Update test date
-      uses: actions/github-script@v7
-      if: always()
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const issue_number = parseInt(process.env.ISSUE_NUMBER, 10);
-          const now = new Date()
-          const options = {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-            timeZone: "UTC"
-          };
-          const formattedDate = now.toLocaleString("en-US", options) + " UTC";
-          const branch = process.env.GITHUB_REF?.replace('refs/heads/', '') || 'unknown';
-          const commit = process.env.GITHUB_SHA?.substring(0, 7) || 'unknown';
-          const run_url = process.env.GITHUB_RUN_ID
-            ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            : '#';
-          const new_body = `
-          ## Full Test Results
-          Last updated: ${formattedDate}
-
-          ### Build Details
-          | Category | Detail |
-          |----------|--------|
-          | Branch   | \`${branch}\` |
-          | Commit   | ${commit} |
-          | Action   | [View Run](${run_url}) |
-
-          🤖 _Auto-generated | [View Test Configuration](${run_url})_
-          `;
-
-          await github.rest.issues.update({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: issue_number,
-            body: new_body
-          });
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERAGE_PATH: ${{ env.JOB_TMP }}
 
     - name: Cleanup
       if: ${{ always() && github.event.inputs.cleanup == 'true' }}
