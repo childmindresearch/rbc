@@ -16,7 +16,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
 from rbc.core.bids2table import load_table
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
 
-    from rbc.core.metrics.atlases import AtlasName
+    from rbc_resources import AtlasName
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,10 @@ class AllArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
         """Validate all-workflow arguments."""
+        _validate_task(ns.task)
+        _validate_atlas(ns.atlas)
+        _validate_positive(ns.fwhm, "FWHM")
+        _validate_positive(ns.start_tr, "Start TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,
