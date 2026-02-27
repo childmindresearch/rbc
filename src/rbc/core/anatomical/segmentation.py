@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from niwrap import ants, fsl
 
-from rbc.core.resources import OASIS_TEMPLATES
+from rbc_resources import OASIS_TEMPLATES
 
 _SEG_PREFIX = "tissue_seg"
 

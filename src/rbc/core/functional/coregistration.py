@@ -16,7 +16,7 @@ from niwrap import fsl
 if TYPE_CHECKING:
     from pathlib import Path
 
-from rbc.core.resources import FSL_RESOURCES
+from rbc_resources import FSL_RESOURCES
 
 
 def coregister_bold_to_t1w(

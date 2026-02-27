@@ -13,9 +13,9 @@ import pytest
 from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
-from rbc.core.resources import MNI_TEMPLATES
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
+from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Generator

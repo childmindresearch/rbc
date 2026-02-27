@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rbc.core.metrics.atlases import ATLAS_REGISTRY, get_atlas
+from rbc_resources import ATLAS_REGISTRY, get_atlas
 
 
 class TestGetAtlas:

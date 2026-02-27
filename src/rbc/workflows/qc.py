@@ -18,7 +18,7 @@ from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics
 from rbc.core.qc.xcp import XCPQCMetrics, generate_xcp_qc, passes_rbc_qc, write_xcp_qc
-from rbc.core.resources import MNI_TEMPLATES
+from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
