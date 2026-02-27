@@ -125,11 +125,7 @@ def _build_cpac_manifest(cpac_dir: Path, reg: str) -> dict:
 # -- Metrics --
 
 
-def _load_mask(path: Path) -> np.ndarray:
-    return nib.nifti1.load(path).get_fdata().astype(bool)
-
-
-def _load_data(path: Path) -> np.ndarray:
+def _load_nifti(path: Path) -> np.ndarray:
     return nib.nifti1.load(path).get_fdata()
 
 
@@ -167,23 +163,20 @@ def compare_masks(rbc_manifest: dict, cpac_manifest: dict) -> dict:
     """Compare brain, CSF, WM, and GM masks using Dice coefficient."""
     results = {}
     for key in ["brain_mask", "csf_mask", "wm_mask", "gm_mask"]:
-        try:
-            rbc_mask = _load_mask(Path(rbc_manifest["anat"][key]))
-            cpac_mask = _load_mask(Path(cpac_manifest["anat"][key]))
-            d = _dice(rbc_mask, cpac_mask)
-            results[key] = {"dice": round(d, 6), "passed": d >= _THRESHOLD}
-        except Exception as e:
-            results[key] = {"error": str(e)}
+        rbc_mask = _load_nifti(Path(rbc_manifest["anat"][key]))
+        cpac_mask = _load_nifti(Path(cpac_manifest["anat"][key]))
+        d = _dice(rbc_mask, cpac_mask)
+        results[key] = {"dice": round(d, 6), "passed": d >= _THRESHOLD}
     return results
 
 
 def compare_bold(rbc_manifest: dict, cpac_manifest: dict) -> dict:
-    """Compare template and cleaned BOLD using voxelwise correlation."""
+    """Compare template and cleaned BOLD using voxelwise correlation.""" #same space?
     results = {}
-    mask = _load_mask(Path(rbc_manifest["template_brain_mask"]))
+    mask = _load_nifti(Path(rbc_manifest["template_brain_mask"]))
     for key in ["template_bold", "cleaned_bold"]:
-        rbc_data = _load_data(Path(rbc_manifest["func"][key]))
-        cpac_data = _load_data(Path(cpac_manifest["func"][key]))
+        rbc_data = _load_nifti(Path(rbc_manifest["func"][key]))
+        cpac_data = _load_nifti(Path(cpac_manifest["func"][key]))
         if rbc_data.shape != cpac_data.shape:
             raise ValueError(
                 f"Shape mismatch: {rbc_data.shape} vs {cpac_data.shape}"
@@ -200,10 +193,10 @@ def compare_bold(rbc_manifest: dict, cpac_manifest: dict) -> dict:
 def compare_maps(rbc_manifest: dict, cpac_manifest: dict, template_mask: Path) -> dict:
     """Compare ALFF, fALFF, and ReHo maps using spatial correlation within template mask."""
     results = {}
-    mask = _load_mask(template_mask)
+    mask = _load_nifti(template_mask)
     for key in ["alff_zscored", "falff_zscored", "reho_zscored"]:
-        rbc_data = _load_data(Path(rbc_manifest["metrics"][key]))
-        cpac_data = _load_data(Path(cpac_manifest["metrics"][key]))
+        rbc_data = _load_nifti(Path(rbc_manifest["metrics"][key]))
+        cpac_data = _load_nifti(Path(cpac_manifest["metrics"][key]))
         r = _spatial_correlation(rbc_data, cpac_data, mask)
         results[key] = {"r": round(r, 6), "passed": r >= _THRESHOLD}
     return results
