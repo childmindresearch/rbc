@@ -9,6 +9,7 @@ warping depend on the anatomical outputs.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -40,10 +41,16 @@ class FunctionalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
+        task = ns.task
+        if task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", task):
+            raise ValueError(
+                "Task must contain only alphanumeric characters and '+', got: "
+                f"{task!r}."
+            )
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
-            regressor=ns.regressor,
-            task=ns.task,
+            regressor=ns.regressor,  # Validated by argparse choices
+            task=task,
         )
 
 
