@@ -84,7 +84,7 @@ def main(args: FunctionalArgs) -> int:
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         for func_df, anat_df in iter_session_files(session, groupby=("run", "task")):
-            row = func_df.row(0, named=True)
+            row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
