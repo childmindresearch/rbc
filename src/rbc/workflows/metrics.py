@@ -12,16 +12,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple
 
 from rbc.core.metrics.alff import compute_alff
-from rbc.core.metrics.atlases import get_atlas
 from rbc.core.metrics.reho import compute_reho
 from rbc.core.metrics.smoothing import smooth
 from rbc.core.metrics.standardization import compute_zscore
 from rbc.core.metrics.timeseries import compute_timeseries
+from rbc_resources import get_atlas
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from rbc.core.metrics.atlases import AtlasName
+    from rbc_resources import AtlasName
 
 
 class MetricsOutputs(NamedTuple):

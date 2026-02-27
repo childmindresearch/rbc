@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 from niwrap import ants
 
 from rbc.core import CPAC_ANTS_SEED
-from rbc.core.resources import MNI_TEMPLATES
+from rbc_resources import MNI_TEMPLATES
 
 _PREFIX = "ants_reg"
 

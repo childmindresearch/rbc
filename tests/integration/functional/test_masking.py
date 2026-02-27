@@ -11,7 +11,7 @@ import pytest
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional.masking import bold_masking
 from rbc.core.functional.motion import extract_motion_reference
-from rbc.core.resources import MNI_TEMPLATES
+from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from conftest import TestSubjectData
