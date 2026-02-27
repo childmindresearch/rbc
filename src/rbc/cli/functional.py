@@ -9,7 +9,6 @@ warping depend on the anatomical outputs.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -19,7 +18,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
@@ -41,11 +40,7 @@ class FunctionalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
-        if ns.task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", ns.task):
-            raise ValueError(
-                "Task must contain only alphanumeric characters and '+', got: "
-                f"{ns.task!r}."
-            )
+        _validate_task(ns.task)
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,  # Validated by argparse choices

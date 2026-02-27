@@ -7,7 +7,6 @@ per-run XCP-D-format TSVs with pass/fail flags.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Literal
@@ -16,7 +15,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
@@ -38,15 +37,8 @@ class QCArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> QCArgs:
         """Validate QC-specific arguments."""
-        if ns.task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", ns.task):
-            raise ValueError(
-                "Task must contain only alphanumeric characters and '+', got: "
-                f"{ns.task!r}."
-            )
-        if ns.start_tr is not None and ns.start_tr <= 0:
-            raise ValueError(
-                f"Start TR should be greater than 0, got: {ns.start_tr!r}."
-            )
+        _validate_task(ns.task)
+        _validate_positive(ns.start_tr, "Start TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             task=ns.task,
