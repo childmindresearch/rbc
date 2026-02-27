@@ -180,6 +180,34 @@ def main(args: FunctionalArgs) -> int:
                 task=bold_task,
                 run=bold_run,
             )
+            pipe_ctx.export(
+                outputs.template_bold,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="preproc",
+                suffix="bold",
+                task=bold_task,
+                run=bold_run,
+            )
+            pipe_ctx.export(
+                outputs.cleaned_bold,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="preproc",
+                suffix="bold",
+                extra={"reg": args.regressor},
+                task=bold_task,
+                run=bold_run,
+            )
+            pipe_ctx.export(
+                outputs.template_brain_mask,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="bold",
+                suffix="mask",
+                task=bold_task,
+                run=bold_run,
+            )
 
     ctx.logger.info("RBC functional workflow complete")
     return 0

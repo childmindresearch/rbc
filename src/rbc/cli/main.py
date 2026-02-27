@@ -20,7 +20,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from rbc.cli import anatomical, functional
+from rbc.cli import all as all_
+from rbc.cli import anatomical, functional, metrics, qc
 from rbc.cli.base import BaseArgs
 
 __all__ = ["BaseArgs"]
@@ -91,6 +92,9 @@ def create_parser() -> argparse.ArgumentParser:
     )
     anatomical.register_command(subparsers, parents=[global_opts])
     functional.register_command(subparsers, parents=[global_opts])
+    metrics.register_command(subparsers, parents=[global_opts])
+    qc.register_command(subparsers, parents=[global_opts])
+    all_.register_command(subparsers, parents=[global_opts])
 
     for action in global_opts._actions:
         parser._add_action(action)

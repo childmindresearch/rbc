@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import polars as pl
 import pytest
 
-from rbc.cli import functional
+from rbc.cli.functional import FunctionalArgs, main
 
 
 def _make_groups(
@@ -146,10 +146,54 @@ def sample_dataframe() -> pl.DataFrame:
 class TestFunctionalArgs:
     """Tests for FunctionalArgs validation."""
 
+    @pytest.fixture
+    def func_namespace(self, tmp_path: Path) -> argparse.Namespace:
+        """Fixture for functional argument namespace."""
+        input_dir = tmp_path / "input"
+        input_dir.touch()
+        output_dir = tmp_path / "output"
+        return argparse.Namespace(
+            runner="local",
+            verbose=0,
+            input_dir=input_dir,
+            output_dir=output_dir,
+            participant_label=[],
+            session_label=[],
+            regressor="36-parameter",
+            task=None,
+        )
+
+    def test_validate_namespace(self, func_namespace: argparse.Namespace) -> None:
+        """Test FunctionalArgs validates successfully with valid args."""
+        args = FunctionalArgs.validate_namespace(func_namespace)
+        assert isinstance(args, FunctionalArgs)
+        assert args.regressor == "36-parameter"
+        assert args.task is None
+
+    def test_validate_with_regressor(self, func_namespace: argparse.Namespace) -> None:
+        """Test FunctionalArgs preserves regressor choice."""
+        func_namespace.regressor = "aCompCor"
+        args = FunctionalArgs.validate_namespace(func_namespace)
+        assert args.regressor == "aCompCor"
+
+    def test_validate_with_task(self, func_namespace: argparse.Namespace) -> None:
+        """Test FunctionalArgs preserves task filter."""
+        func_namespace.task = "rest"
+        args = FunctionalArgs.validate_namespace(func_namespace)
+        assert args.task == "rest"
+
+    def test_defaults(self, func_namespace: argparse.Namespace) -> None:
+        """Test default values for regressor and task."""
+        args = FunctionalArgs.validate_namespace(func_namespace)
+        assert args.regressor == "36-parameter"
+        assert args.task is None
+        assert args.participant_label == []
+        assert args.session_label == []
+
     def test_parser_from_namespace(self, base_args: argparse.Namespace) -> None:
         """Tests parser successfully validates namespace."""
-        args = functional.FunctionalArgs.validate_namespace(base_args)
-        assert isinstance(args, functional.FunctionalArgs)
+        args = FunctionalArgs.validate_namespace(base_args)
+        assert isinstance(args, FunctionalArgs)
 
     @pytest.mark.parametrize(
         "task",
@@ -161,7 +205,7 @@ class TestFunctionalArgs:
     ) -> None:
         """Tests valid task labels pass validation."""
         base_args.task = task
-        args = functional.FunctionalArgs.validate_namespace(base_args)
+        args = FunctionalArgs.validate_namespace(base_args)
         assert args.task == task
 
     @pytest.mark.parametrize(
@@ -175,7 +219,7 @@ class TestFunctionalArgs:
         """Tests invalid task labels raise ValueError."""
         base_args.task = task
         with pytest.raises(ValueError, match="Task must contain only alphanumeric"):
-            functional.FunctionalArgs.validate_namespace(base_args)
+            FunctionalArgs.validate_namespace(base_args)
 
 
 class TestFunctional:
@@ -218,12 +262,12 @@ class TestFunctional:
         base_args.participant_label = participant
         base_args.session_label = session
         base_args.task = task
-        args = functional.FunctionalArgs.validate_namespace(base_args)
+        args = FunctionalArgs.validate_namespace(base_args)
         filtered_df, groups = _make_groups(sample_dataframe, participant, session, task)
 
         with _patch_functional(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            result = functional.main(args)
+            result = main(args)
             assert result == 0
             assert mock_preprocess.call_count == expected_count
 
@@ -238,12 +282,12 @@ class TestFunctional:
         base_args.participant_label = participant
         base_args.session_label = session
         base_args.task = task
-        args = functional.FunctionalArgs.validate_namespace(base_args)
+        args = FunctionalArgs.validate_namespace(base_args)
         filtered_df, groups = _make_groups(sample_dataframe, participant, session, task)
 
         with _patch_functional(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            functional.main(args)
+            main(args)
             assert mock_preprocess.call_count == 1
             processed_path = mock_preprocess.call_args[1]["in_bold"]
             assert "sub-01" in str(processed_path)
@@ -260,7 +304,7 @@ class TestRunnerSetup:
         """Test runner environment variables are configured correctly."""
         from rbc.core import CPAC_ANTS_SEED
 
-        args = functional.FunctionalArgs.validate_namespace(base_args)
+        args = FunctionalArgs.validate_namespace(base_args)
         filtered_df, groups = _make_groups(sample_dataframe, [], [], None)
 
         with (
@@ -271,7 +315,7 @@ class TestRunnerSetup:
             ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
             mock_setup.return_value = ctx
 
-            functional.main(args)
+            main(args)
             assert ctx.runner.environ == {
                 "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
                 "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
