@@ -18,7 +18,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.main import BaseArgs
+from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
@@ -35,11 +35,16 @@ class FunctionalArgs(BaseArgs):
     """Arguments for single-session functional CLI."""
 
     regressor: Literal["36-parameter", "aCompCor"]
+    task: str | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
-        return cls(**BaseArgs.validate_namespace(ns).__dict__, regressor=ns.regressor)
+        return cls(
+            **BaseArgs.validate_namespace(ns).__dict__,
+            regressor=ns.regressor,
+            task=ns.task,
+        )
 
 
 def main(args: FunctionalArgs) -> int:
@@ -58,7 +63,10 @@ def main(args: FunctionalArgs) -> int:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
-    df = df.filter(pl.all_horizontal(filters))
+    if args.task is not None:
+        filters.append(pl.col("task") == args.task)
+    if filters:
+        df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
         pipe_ctx = PipelineContext(
@@ -71,6 +79,8 @@ def main(args: FunctionalArgs) -> int:
         for func_df, anat_df in iter_session_files(session, groupby=("run", "task")):
             row = func_df.row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
+            bold_task: str | None = row.get("task")
+            bold_run: int | None = row.get("run")
             ctx.logger.info(f"Processing {bold_fpath}")
 
             get_anat_file = partial(
@@ -94,12 +104,20 @@ def main(args: FunctionalArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            pipe_ctx.export(outputs.sbref, datatype="func", suffix="sbref")
+            pipe_ctx.export(
+                outputs.sbref,
+                datatype="func",
+                suffix="sbref",
+                task=bold_task,
+                run=bold_run,
+            )
             pipe_ctx.export(
                 outputs.motion_corrected_bold,
                 datatype="func",
                 desc="preproc",
                 suffix="bold",
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.motion_params,
@@ -107,6 +125,8 @@ def main(args: FunctionalArgs) -> int:
                 desc="motionParams",
                 suffix="motion",
                 extension=".1D",
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.rms_rel,
@@ -114,6 +134,8 @@ def main(args: FunctionalArgs) -> int:
                 desc="relsDisplacement",
                 suffix="motion",
                 extension=".rms",
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.rms_abs,
@@ -121,9 +143,16 @@ def main(args: FunctionalArgs) -> int:
                 desc="maxDisplacement",
                 suffix="motion",
                 extension=".rms",
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
-                outputs.bold_mask, datatype="func", suffix="mask", desc="brain"
+                outputs.bold_mask,
+                datatype="func",
+                suffix="mask",
+                desc="brain",
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.bold_to_anat_matrix,
@@ -132,6 +161,8 @@ def main(args: FunctionalArgs) -> int:
                 desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
+                task=bold_task,
+                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.regressor_file,
@@ -139,6 +170,8 @@ def main(args: FunctionalArgs) -> int:
                 desc=args.regressor,
                 suffix="regressors",
                 extension=".1D",
+                task=bold_task,
+                run=bold_run,
             )
 
     ctx.logger.info("RBC functional workflow complete")
@@ -162,5 +195,10 @@ def register_command(
         default="36-parameter",
         help="Nuisance regression method.",
     )
+    parser.add_argument(
+        "--task",
+        default=None,
+        help="Task label to filter BOLD runs (without 'task-' prefix).",
+    )
 
-    parser.set_defaults(func=lambda args: main(args))
+    parser.set_defaults(func=lambda args: main(FunctionalArgs.validate_namespace(args)))
