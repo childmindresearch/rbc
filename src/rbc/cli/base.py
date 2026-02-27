@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     import argparse
     from pathlib import Path
 
-_VALID_RUNNERS = frozenset({"local", "docker", "singularity"})
+_VALID_RUNNERS = frozenset({"local", "docker", "podman", "singularity"})
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class BaseArgs:
 
     input_dir: Path
     output_dir: Path
-    runner: Literal["local", "docker", "singularity"]
+    runner: Literal["local", "docker", "podman", "singularity"]
     participant_label: list[str]
     session_label: list[str]
     verbose: int
