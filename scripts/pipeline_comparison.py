@@ -2,15 +2,15 @@
 # dependencies = ["nibabel>=5.0", "numpy>=1.26", "scipy>=1.13"]
 # requires-python = ">=3.12"
 # ///
-"""Compare brain extraction, tissue segmentation, and functional maps between RBC and C-PAC.
+"""Compare intermediate steps between RBC and CPAC.
 
 Reads the RBC manifest from .last_run.json and walks the C-PAC output directory
 to find matching files for comparison.
 
 Usage::
 
-    uv run pipeline_comparison.py path/to/.last_run.json /path/to/cpac --mni-mask /path/to/MNI152_T1_2mm_brain_mask.nii.gz
-    uv run pipeline_comparison.py path/to/.last_run.json /path/to/cpac --mni-mask /path/to/MNI152_T1_2mm_brain_mask.nii.gz --output report.json
+    uv run pipeline_comparison.py path/to/.last_run.json /path/to/cpac --mni-mask
+    uv run pipeline_comparison.py path/to/.last_run.json /path/to/cpac --mni-mask --output
 """
 
 from __future__ import annotations
@@ -24,10 +24,12 @@ import nibabel as nib
 import numpy as np
 from scipy.stats import pearsonr
 
+_THRESHOLD=0.97  # adjust threshold
+
 # -- Manifest loading --
 
 
-def load_manifest(path: Path) -> dict:
+def _load_manifest(path: Path) -> dict:
     if not path.exists():
         print(f"Manifest not found: {path}", file=sys.stderr)
         print("Run the full-pipeline tests first:", file=sys.stderr)
@@ -68,7 +70,7 @@ def _find_task_run(func_dir: Path) -> tuple[str, str]:
     sys.exit(1)
 
 
-def build_cpac_manifest(cpac_dir: Path, reg: str) -> dict:
+def _build_cpac_manifest(cpac_dir: Path, reg: str) -> dict:
     """Walk C-PAC outputs and build a manifest dict mirroring the RBC manifest structure."""
     sub, ses = _find_sub_ses(cpac_dir)
     pipeline = next((cpac_dir / "output").glob("pipeline_*"))
@@ -123,25 +125,25 @@ def build_cpac_manifest(cpac_dir: Path, reg: str) -> dict:
 # -- Metrics --
 
 
-def load_mask(path: Path) -> np.ndarray:
+def _load_mask(path: Path) -> np.ndarray:
     return nib.nifti1.load(path).get_fdata().astype(bool)
 
 
-def load_data(path: Path) -> np.ndarray:
+def _load_data(path: Path) -> np.ndarray:
     return nib.nifti1.load(path).get_fdata()
 
 
-def dice(a: np.ndarray, b: np.ndarray) -> float:
+def _dice(a: np.ndarray, b: np.ndarray) -> float:
     a, b = a.astype(bool), b.astype(bool)
-    return float(2 * np.logical_and(a, b).sum() / (a.sum() + b.sum()))
+    return float(2 * (a & b).sum() / (a.sum() + b.sum()))
 
 
-def spatial_correlation(a: np.ndarray, b: np.ndarray, mask: np.ndarray) -> float:
+def _spatial_correlation(a: np.ndarray, b: np.ndarray, mask: np.ndarray) -> float:
     r, _ = pearsonr(a[mask.astype(bool)], b[mask.astype(bool)])
     return float(r)
 
 
-def voxelwise_correlation(
+def _voxelwise_correlation(
     a: np.ndarray, b: np.ndarray, mask: np.ndarray
 ) -> tuple[float, float]:
     mask = mask.astype(bool)
@@ -162,45 +164,74 @@ def voxelwise_correlation(
 
 
 def compare_masks(rbc_manifest: dict, cpac_manifest: dict) -> dict:
+    """Compare brain, CSF, WM, and GM masks using Dice coefficient."""
     results = {}
     for key in ["brain_mask", "csf_mask", "wm_mask", "gm_mask"]:
         try:
-            rbc_mask  = load_mask(Path(rbc_manifest["anat"][key]))
-            cpac_mask = load_mask(Path(cpac_manifest["anat"][key]))
-            d = dice(rbc_mask, cpac_mask)
-            results[key] = {"dice": round(d, 6), "passed": d >= 0.97}
+            rbc_mask = _load_mask(Path(rbc_manifest["anat"][key]))
+            cpac_mask = _load_mask(Path(cpac_manifest["anat"][key]))
+            d = _dice(rbc_mask, cpac_mask)
+            results[key] = {"dice": round(d, 6), "passed": d >= _THRESHOLD}
         except Exception as e:
             results[key] = {"error": str(e)}
     return results
 
 
 def compare_bold(rbc_manifest: dict, cpac_manifest: dict) -> dict:
+    """Compare template and cleaned BOLD using voxelwise correlation."""
     results = {}
-    mask = load_mask(Path(rbc_manifest["template_brain_mask"]))
+    mask = _load_mask(Path(rbc_manifest["template_brain_mask"]))
     for key in ["template_bold", "cleaned_bold"]:
-        try:
-            rbc_data  = load_data(Path(rbc_manifest["func"][key]))
-            cpac_data = load_data(Path(cpac_manifest["func"][key]))
-            if rbc_data.shape != cpac_data.shape:
-                raise ValueError(f"Shape mismatch: {rbc_data.shape} vs {cpac_data.shape}")
-            mean_r, median_r = voxelwise_correlation(rbc_data, cpac_data, mask)
-            results[key] = {"mean_r": round(mean_r, 6), "median_r": round(median_r, 6), "passed": mean_r >= 0.97}
-        except Exception as e:
-            results[key] = {"error": str(e)}
+        rbc_data = _load_data(Path(rbc_manifest["func"][key]))
+        cpac_data = _load_data(Path(cpac_manifest["func"][key]))
+        if rbc_data.shape != cpac_data.shape:
+            raise ValueError(
+                f"Shape mismatch: {rbc_data.shape} vs {cpac_data.shape}"
+            )
+        mean_r, median_r = _voxelwise_correlation(rbc_data, cpac_data, mask)
+        results[key] = {
+            "mean_r": round(mean_r, 6),
+            "median_r": round(median_r, 6),
+            "passed": mean_r >= _THRESHOLD,
+        }
     return results
 
 
-def compare_maps(rbc_manifest: dict, cpac_manifest: dict, mni_mask: Path) -> dict:
+def compare_maps(rbc_manifest: dict, cpac_manifest: dict, template_mask: Path) -> dict:
+    """Compare ALFF, fALFF, and ReHo maps using spatial correlation within template mask."""
     results = {}
-    mask = load_mask(mni_mask)
+    mask = _load_mask(template_mask)
     for key in ["alff_zscored", "falff_zscored", "reho_zscored"]:
-        try:
-            rbc_data  = load_data(Path(rbc_manifest["metrics"][key]))
-            cpac_data = load_data(Path(cpac_manifest["metrics"][key]))
-            r = spatial_correlation(rbc_data, cpac_data, mask)
-            results[key] = {"r": round(r, 6), "passed": r >= 0.97}
-        except Exception as e:
-            results[key] = {"error": str(e)}
+        rbc_data = _load_data(Path(rbc_manifest["metrics"][key]))
+        cpac_data = _load_data(Path(cpac_manifest["metrics"][key]))
+        r = _spatial_correlation(rbc_data, cpac_data, mask)
+        results[key] = {"r": round(r, 6), "passed": r >= _THRESHOLD}
+    return results
+
+
+def compare_motion(rbc_manifest: dict, cpac_manifest: dict) -> dict:
+    """Compare motion parameters using Pearson correlation."""
+    results = {}
+    labels = ["rot_x", "rot_y", "rot_z", "trans_x", "trans_y", "trans_z"]  # same order?
+    rbc_motion = np.loadtxt(rbc_manifest["func"]["motion_params"])
+    cpac_motion = np.loadtxt(cpac_manifest["func"]["motion_params"])
+
+    if rbc_motion.shape != cpac_motion.shape:
+        raise ValueError(
+            f"Shape mismatch: {rbc_motion.shape} vs {cpac_motion.shape}"
+        )
+
+    rs = {}
+    for i, label in enumerate(labels):
+        r, _ = pearsonr(rbc_motion[:, i], cpac_motion[:, i])
+        rs[label] = round(float(r), 6)
+
+    results["motion_params"] = {
+        "per_parameter": rs,
+        "mean_r": round(float(np.mean(list(rs.values()))), 6),
+        "min_r": round(float(np.min(list(rs.values()))), 6),
+        "passed": bool(np.mean(list(rs.values())) >= _THRESHOLD),
+    }
     return results
 
 
@@ -227,25 +258,26 @@ def main() -> None:
         help="C-PAC regression strategy (default: 36Parameter)",
     )
     parser.add_argument(
-        "--mni-mask",
+        "--template-mask",
         type=Path,
         required=True,
-        help="MNI152 2mm brain mask for functional map comparisons.",
-    )  # figure out where to get this from
+        help="Template brain mask for functional map comparisons.", # figure out what this is
+    )  
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
-    rbc_manifest = load_manifest(args.manifest)
-    cpac_manifest = build_cpac_manifest(args.cpac_dir, args.reg)
+    rbc_manifest = _load_manifest(args.manifest)
+    cpac_manifest = _build_cpac_manifest(args.cpac_dir, args.reg)
 
     results = {}
     results.update(compare_masks(rbc_manifest, cpac_manifest))
     results.update(compare_bold(rbc_manifest, cpac_manifest))
-    results.update(compare_maps(rbc_manifest, cpac_manifest, args.mni_mask))
+    results.update(compare_maps(rbc_manifest, cpac_manifest, args.template_mask))
+    results.update(compare_motion(rbc_manifest, cpac_manifest))
 
     if args.output:
         args.output.write_text(json.dumps(results, indent=2))
-        
+
     if any("error" in v or not v.get("passed") for v in results.values()):
         sys.exit(1)
 
