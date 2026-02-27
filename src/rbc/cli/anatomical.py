@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from rbc.cli.query import iter_session_files, load_session
+
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
@@ -14,7 +16,7 @@ from pathlib import Path
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS
+from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import PipelineContext
 from rbc.core.bids2table import load_table
@@ -34,8 +36,6 @@ class AnatomicalArgs(BaseArgs):
 
 def main(args: AnatomicalArgs) -> int:
     """Main entrypoint of anatomical workflow."""
-    group_entity = ("sub", "ses", "run")
-
     # Setup
     ctx = setup_runner(runner=args.runner, verbose=args.verbose)
     ctx.runner.environ = _DEFAULT_ENV_VARS
@@ -45,20 +45,26 @@ def main(args: AnatomicalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [
-        pl.col("datatype") == "anat",
-        pl.col("suffix") == "T1w",
-        pl.col("ext").str.contains(".nii"),
-    ]
+    filters = []
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
-    df = df.filter(pl.all_horizontal(filters))
+    if filters:
+        df = df.filter(pl.all_horizontal(filters))
 
-    for _, group in tqdm(df.group_by(group_entity), disable=not ctx.verbose):
-        for row in group.iter_rows(named=True):
+    for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+        pipe_ctx = PipelineContext(
+            sub=sub_ses_group["sub"][0],
+            ses=sub_ses_group["ses"][0] or None,
+            output_dir=args.output_dir,
+        )
+        session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
+
+        for _, anat_df in iter_session_files(session, groupby=("run")):
+            row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
+            t1w_run: int | None = row.get("run")
             ctx.logger.info(f"Processing {t1w_fpath}")
 
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
@@ -66,29 +72,61 @@ def main(args: AnatomicalArgs) -> int:
             pipe_ctx = PipelineContext(
                 sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
             )
-            pipe_ctx.export(outputs.brain, datatype="anat", suffix="T1w", desc="brain")
             pipe_ctx.export(
-                outputs.brain_mask, datatype="anat", suffix="mask", desc="T1w"
+                outputs.brain,
+                datatype="anat",
+                suffix="T1w",
+                desc="brain",
+                run=t1w_run,
             )
             pipe_ctx.export(
-                outputs.csf_mask, datatype="anat", suffix="mask", desc="csf"
+                outputs.brain_mask,
+                datatype="anat",
+                suffix="mask",
+                desc="T1w",
+                run=t1w_run,
             )
-            pipe_ctx.export(outputs.gm_mask, datatype="anat", suffix="mask", desc="gm")
-            pipe_ctx.export(outputs.wm_mask, datatype="anat", suffix="mask", desc="wm")
             pipe_ctx.export(
-                outputs.wm_bbr_mask, datatype="anat", suffix="mask", desc="wmBBR"
+                outputs.csf_mask,
+                datatype="anat",
+                suffix="mask",
+                desc="csf",
+                run=t1w_run,
+            )
+            pipe_ctx.export(
+                outputs.gm_mask,
+                datatype="anat",
+                suffix="mask",
+                desc="gm",
+                run=t1w_run,
+            )
+            pipe_ctx.export(
+                outputs.wm_mask,
+                datatype="anat",
+                suffix="mask",
+                desc="wm",
+                run=t1w_run,
+            )
+            pipe_ctx.export(
+                outputs.wm_bbr_mask,
+                datatype="anat",
+                suffix="mask",
+                desc="wmBBR",
+                run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.forward_xfm,
                 datatype="anat",
                 suffix="xfm",
                 extra={"from": "T1w", "to": "template", "mode": "image"},
+                run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.inverse_xfm,
                 datatype="anat",
                 suffix="xfm",
                 extra={"from": "template", "to": "T1w", "mode": "image"},
+                run=t1w_run,
             )
 
     ctx.logger.info("RBC anatomical workflow complete")
