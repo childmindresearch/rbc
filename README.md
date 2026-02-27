@@ -2,26 +2,14 @@
 
 [![Build](https://github.com/childmindresearch/rbc/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/rbc/actions/workflows/test.yaml?query=branch%3Amain)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-![stability-stable](https://img.shields.io/badge/stability-stable-green.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/childmindresearch/rbc/blob/main/LICENSE)
 [![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/rbc)
 
-Reference implementation of the Reproducible Brain Charts (RBC) preprocessing protocol for anatomical, functional, derivatives, and longitudinal neuroimaging data.
+Reference implementation of the [RBC](https://doi.org/10.1016/j.neuron.2024.08.026) preprocessing protocol for structural and functional MRI. Built on [NiWrap](https://github.com/styx-api/niwrap).
 
-## Overview
-
-This package provides a standalone implementation of the RBC preprocessing pipeline, originally developed in [C-PAC](https://fcp-indi.github.io/). This repository serves as the maintained reference implementation using [NiWrap](https://github.com/styx-api/niwrap) for neuroimaging tool integration.
-
-**Reference:** Shafiei et al. (2024). "Reproducible Brain Charts: An open data resource for mapping brain development and its associations with mental health." *Neuron*, 113(22):3758-3779.
-
-## Features
-
-- **Anatomical preprocessing**: Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152
-- **Functional preprocessing**: Motion correction, slice timing, coregistration, single-step resampling to template space
-- **Nuisance regression**: 36-parameter and aCompCor methods with bandpass filtering
-- **Quantitative metrics**: ALFF/fALFF, ReHo, network centrality, atlas-based timeseries extraction
-- **Quality control**: XCP-style QC metrics with RBC-recommended thresholds
-- **BIDS-compatible**: Follows BIDS conventions for inputs and outputs
+<p align="center">
+  <img src="docs/pipeline_flow.svg" alt="RBC pipeline flow" width="720">
+</p>
 
 ## Installation
 
@@ -29,58 +17,85 @@ This package provides a standalone implementation of the RBC preprocessing pipel
 pip install git+https://github.com/childmindresearch/rbc.git
 ```
 
-### Dependencies
+Requires Python 3.12+. Neuroimaging tools (AFNI, FSL, ANTs) are needed at runtime. Pass `--runner docker` to pull and run them automatically via containers. See the [NiWrap docs](https://github.com/styx-api/niwrap) for runner configuration.
 
-The pipeline requires the following neuroimaging tools:
-- **AFNI**: Motion correction, despiking, nuisance regression
-- **FSL**: Tissue segmentation, registration, brain masking
-- **ANTs**: Brain extraction, registration
+## Quick start
 
-## Usage
+```bash
+# Usage example
+# rbc <input_dir> <output_dir> <workflow> [options]
 
-```python
-from rbc.workflows import anatomical, functional
+# Run the full pipeline
+rbc /data /data/derivatives all --runner docker
 
-# Anatomical preprocessing
-anatomical.single_session_preprocess(
-    in_t1w="sub-01_T1w.nii.gz",
-    output_dir="derivatives/rbc"
-)
-
-# Functional preprocessing (in development)
-functional.single_session_preprocess(
-    in_bold="sub-01_task-rest_bold.nii.gz",
-    in_t1w="sub-01_T1w.nii.gz",
-    output_dir="derivatives/rbc"
-)
+# Or run a single stage for specific subjects
+rbc /data /data/derivatives functional --task rest --participant-label 01 02 --runner docker
 ```
 
-## Documentation
+Run any command with `--help` for full options.
 
-- **[API Documentation](https://childmindresearch.github.io/rbc)**: Full API reference
+## Workflows
 
-## Contributing
+| Command          | Description                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `rbc anatomical` | Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152                  |
+| `rbc functional` | Motion correction, slice timing, BBR coregistration, single-step resampling, nuisance regression |
+| `rbc metrics`    | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices          |
+| `rbc qc`         | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds            |
+| `rbc all`        | Runs all four stages in sequence, passing results in memory between stages                       |
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Workflows must be run in order: `anatomical` → `functional` → `metrics` / `qc`. The `all` command handles this automatically.
+
+## Outputs
+
+<details>
+<summary>Example BIDS derivative tree</summary>
+
+```
+derivatives/rbc/
+  sub-01/
+    ses-01/
+      anat/
+        sub-01_ses-01_desc-brain_T1w.nii.gz
+        sub-01_ses-01_desc-T1w_mask.nii.gz
+        sub-01_ses-01_desc-{csf,gm,wm}_mask.nii.gz
+        sub-01_ses-01_from-T1w_to-template_mode-image_xfm.nii.gz
+      func/
+        sub-01_ses-01_task-rest_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_desc-motionParams_motion.1D
+        sub-01_ses-01_task-rest_desc-xcp_quality.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-alff_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-reho_bold.nii.gz
+        sub-01_ses-01_task-rest_atlas-schaefer200_timeseries.tsv
+        sub-01_ses-01_task-rest_atlas-schaefer200_correlationmatrix.tsv
+```
+
+</details>
 
 ## Testing
 
 ```bash
-# Fast tests only (for development)
-pytest -m "not slow"
+# Unit tests (fast, no runner needed)
+uv run pytest -m unit
 
-# All tests including integration tests
-pytest
+# Integration tests (requires Docker)
+uv run pytest -m "integration and not slow" --runner docker
 
-# Full pipeline tests (slow, ~30+ min)
-pytest -m "full_pipeline"
+# Full pipeline (~30+ min)
+uv run pytest -m full_pipeline --runner docker
 ```
 
-See [tests/README.md](tests/README.md) for testing strategy and instructions.
+See [tests/README.md](tests/README.md) for the full testing strategy.
 
-## License
+## Contributing
 
-[MIT License](LICENSE)
+```bash
+uv sync && uv run pre-commit install
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Citation
 
@@ -110,6 +125,10 @@ Reproducible Brain Charts (RBC) is an open resource integrating data from 5 larg
 
 RBC facilitates large-scale, reproducible, and generalizable research in developmental and psychiatric neuroscience.
 
+## License
+
+[MIT License](LICENSE)
+
 ## Acknowledgments
 
-This implementation is based on the RBC protocol described in Shafiei et al. (2024) and originally implemented in C-PAC. Development is supported by the Child Mind Institute.
+This implementation is based on the RBC protocol described in Shafiei et al. (2024) and originally implemented in [C-PAC](https://fcp-indi.github.io/). Development is supported by the [Child Mind Institute](https://childmind.org).
