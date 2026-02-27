@@ -22,24 +22,27 @@ Requires Python 3.12+. Neuroimaging tools (AFNI, FSL, ANTs) are needed at runtim
 ## Quick start
 
 ```bash
+# Usage example
+# rbc <input_dir> <output_dir> <workflow> [options]
+
 # Run the full pipeline
-rbc /data/bids /data/derivatives all --runner docker
+rbc /data /data/derivatives all --runner docker
 
 # Or run a single stage for specific subjects
-rbc /data/bids /data/derivatives functional --task rest --participant-label 01 02 --runner docker
+rbc /data /data/derivatives functional --task rest --participant-label 01 02 --runner docker
 ```
 
 Run any command with `--help` for full options.
 
 ## Workflows
 
-| Command | Description |
-|---------|-------------|
-| `rbc anatomical` | Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152 |
+| Command          | Description                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `rbc anatomical` | Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152                  |
 | `rbc functional` | Motion correction, slice timing, BBR coregistration, single-step resampling, nuisance regression |
-| `rbc metrics` | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices |
-| `rbc qc` | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds |
-| `rbc all` | Runs all four stages in sequence, passing results in memory between stages |
+| `rbc metrics`    | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices          |
+| `rbc qc`         | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds            |
+| `rbc all`        | Runs all four stages in sequence, passing results in memory between stages                       |
 
 Workflows must be run in order: `anatomical` → `functional` → `metrics` / `qc`. The `all` command handles this automatically.
 
