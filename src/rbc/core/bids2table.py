@@ -76,3 +76,74 @@ def get_extra_entity(key: str) -> pl.Expr:
         )
         .list.first()
     )
+
+
+def get_file_path(  # noqa: C901 - handling multiple BIDS entities
+    df: pl.DataFrame,
+    *,
+    sub: str,
+    ses: str | None,
+    datatype: str | None = None,
+    suffix: str | None = None,
+    desc: str | None = None,
+    extension: str = "",
+    task: str | None = None,
+    run: int | None = None,
+    extra: dict[str, str | int] | None = None,
+) -> Path:
+    """Return existing BIDS-named path matching provided entities.
+
+    Args:
+        df: bids2table to filter
+        sub: ``sub-`` entity
+        ses: Optional ``ses-``entity
+        datatype: BIDS datatype directory.
+        suffix: BIDS suffix.
+        desc: Optional ``desc-`` entity.
+        extension: File extension (usually empty for directories).
+        task: Optional ``task-`` entity.
+        run: Optional ``run-`` index.
+        extra: Optional non-standard entities (e.g. ``{"from": "T1w"}``).
+
+    Returns:
+        Path to the BIDS named file.
+
+    Raises:
+        FileNotFoundError: If no matching rows with provided BIDS entities
+        ValueError: If multiple matches found with provided BIDS entities
+    """
+    expr = pl.col("sub") == sub
+    if ses is not None:
+        expr &= pl.col("ses") == ses
+    if datatype is not None:
+        expr &= pl.col("datatype") == datatype
+    if suffix is not None:
+        expr &= pl.col("suffix") == suffix
+    if desc is not None:
+        expr &= pl.col("desc") == desc
+    if extension:
+        expr &= pl.col("ext").str.contains(extension)
+    if task is not None:
+        expr &= pl.col("task") == task
+    if run is not None:
+        expr &= pl.col("run") == run
+    if extra:
+        for key, val in extra.items():
+            expr &= get_extra_entity(key) == val
+
+    result = df.filter(expr)
+
+    match len(result):
+        case 0:
+            raise FileNotFoundError(
+                f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
+                f"datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}"
+            )
+        case 1:
+            row = result.row(0, named=True)
+            return Path(row["root"]) / row["path"]
+        case _:
+            raise ValueError(
+                f"Expected 1 match but found {len(result)} for sub={sub!r}, "
+                f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}"
+            )
