@@ -14,7 +14,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
 
-    from rbc.core.metrics.atlases import AtlasName
+    from rbc_resources import AtlasName
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,9 @@ class MetricsArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
+        _validate_atlas(ns.atlas)
+        _validate_task(ns.task)
+        _validate_positive(ns.fwhm, "FWHM")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             atlas=ns.atlas,
