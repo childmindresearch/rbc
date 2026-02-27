@@ -87,7 +87,8 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         expression="a",
         prefix="test_bold.nii.gz",
     )
-    stc = slice_timing_correction(in_file=truncated)
+    assert truncated.output_file is not None
+    stc = slice_timing_correction(in_file=truncated.output_file)
     bold_ref = extract_motion_reference(in_file=stc)
     motion_corrected = fsl_motion_correction(
         in_file=stc,
