@@ -41,16 +41,15 @@ class FunctionalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
-        task = ns.task
-        if task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", task):
+        if ns.task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", ns.task):
             raise ValueError(
                 "Task must contain only alphanumeric characters and '+', got: "
-                f"{task!r}."
+                f"{ns.task!r}."
             )
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,  # Validated by argparse choices
-            task=task,
+            task=ns.task,
         )
 
 
