@@ -60,11 +60,13 @@ class MniTemplates(NamedTuple):
 
     Attributes:
         brain_1mm: MNI152 T1w brain at 1 mm resolution (registration target).
+        brain_2mm: MNI152 T1w brain at 2 mm resolution.
         brain_mask_2mm: MNI152 T1w brain mask at 2 mm resolution.
         bold_ref: MNI152 bold reference image.
     """
 
     brain_1mm: Path
+    brain_2mm: Path
     brain_mask_2mm: Path
     bold_ref: Path
 
@@ -85,6 +87,7 @@ OASIS_TEMPLATES = OasisTemplates(
 
 MNI_TEMPLATES = MniTemplates(
     brain_1mm=_TEMPLATES / "mni152_T1w_1mm_brain.nii.gz",
+    brain_2mm=_TEMPLATES / "mni152_T1w_2mm_brain.nii.gz",
     brain_mask_2mm=_TEMPLATES / "mni152_T1w_2mm_brain_mask.nii.gz",
     bold_ref=_TEMPLATES / "mni152_bold_ref_2mm.nii.gz",
 )

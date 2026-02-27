@@ -19,7 +19,7 @@ from rbc.core.functional import (
     truncate_trs,
 )
 from rbc.core.niwrap import generate_exec_folder
-from rbc.core.resources import MNI_TEMPLATES
+from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
