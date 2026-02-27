@@ -7,6 +7,7 @@ per-run XCP-D-format TSVs with pass/fail flags.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Literal
@@ -37,6 +38,15 @@ class QCArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> QCArgs:
         """Validate QC-specific arguments."""
+        if ns.task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", ns.task):
+            raise ValueError(
+                "Task must contain only alphanumeric characters and '+', got: "
+                f"{ns.task!r}."
+            )
+        if ns.start_tr is not None and ns.start_tr <= 0:
+            raise ValueError(
+                f"Start TR should be greater than 0, got: {ns.start_tr!r}."
+            )
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             task=ns.task,
