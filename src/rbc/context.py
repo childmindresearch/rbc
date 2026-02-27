@@ -40,6 +40,8 @@ class PipelineContext:
         extension: str = ".nii.gz",
         task: str | None = None,
         run: int | None = None,
+        space: str | None = None,
+        atlas: str | None = None,
         extra: dict[str, str | int] | None = None,
     ) -> Path:
         """Copy *src* to a BIDS-named derivative path.
@@ -52,6 +54,8 @@ class PipelineContext:
             extension: File extension including leading dot.
             task: Optional ``task-`` entity.
             run: Optional ``run-`` index.
+            space: Optional ``space-`` entity.
+            atlas: Optional ``atlas-`` entity.
             extra: Non-standard entities (e.g. ``{"from": "T1w"}``).
 
         Returns:
@@ -63,6 +67,8 @@ class PipelineContext:
             task=task,
             run=run,
             desc=desc,
+            space=space,
+            atlas=atlas,
             extra=extra,
             suffix=suffix,
             extension=extension,
@@ -83,6 +89,8 @@ class PipelineContext:
         extension: str = "",
         task: str | None = None,
         run: int | None = None,
+        space: str | None = None,
+        atlas: str | None = None,
     ) -> Path:
         """Copy a directory to a BIDS-named derivative path.
 
@@ -94,6 +102,8 @@ class PipelineContext:
             extension: File extension (usually empty for directories).
             task: Optional ``task-`` entity.
             run: Optional ``run-`` index.
+            space: Optional ``space-`` entity.
+            atlas: Optional ``atlas-`` entity.
 
         Returns:
             Path to the copied output directory.
@@ -104,6 +114,8 @@ class PipelineContext:
             task=task,
             run=run,
             desc=desc,
+            space=space,
+            atlas=atlas,
             suffix=suffix,
             extension=extension,
             datatype=datatype,

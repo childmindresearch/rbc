@@ -89,6 +89,7 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
     extension: str = "",
     task: str | None = None,
     run: int | None = None,
+    space: str | None = None,
     extra: dict[str, str | int] | None = None,
 ) -> Path:
     """Return existing BIDS-named path matching provided entities.
@@ -103,6 +104,7 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         extension: File extension (usually empty for directories).
         task: Optional ``task-`` entity.
         run: Optional ``run-`` index.
+        space: Optional ``space-`` entity.
         extra: Optional non-standard entities (e.g. ``{"from": "T1w"}``).
 
     Returns:
@@ -127,6 +129,8 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         expr &= pl.col("task") == task
     if run is not None:
         expr &= pl.col("run") == run
+    if space is not None:
+        expr &= pl.col("space") == space
     if extra:
         for key, val in extra.items():
             expr &= get_extra_entity(key) == val

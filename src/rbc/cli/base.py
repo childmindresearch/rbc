@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
+
+from rbc_resources import ATLAS_REGISTRY
 
 if TYPE_CHECKING:
     import argparse
@@ -50,3 +53,23 @@ class BaseArgs:
             session_label=ns.session_label,
             verbose=ns.verbose,
         )
+
+
+def _validate_atlas(atlas: str | None) -> None:
+    """Validate atlas is available and exists."""
+    if atlas not in ATLAS_REGISTRY:
+        raise ValueError(f"Unknown atlas, got: {atlas!r}")
+
+
+def _validate_task(task: str | None) -> None:
+    """Validate BIDS task label contains only alphanumeric characters and '+'."""
+    if task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", task):
+        raise ValueError(
+            f"Task must contain only alphanumeric characters and '+', got: {task!r}."
+        )
+
+
+def _validate_positive(value: float | int | None, name: str) -> None:
+    """Validate that a numeric value is strictly positive."""
+    if value is not None and value <= 0:
+        raise ValueError(f"{name} should be greater than 0, got: {value!r}.")

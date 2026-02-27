@@ -52,6 +52,7 @@ class FunctionalOutputs(NamedTuple):
         template_bold: BOLD resampled to template space.
         cleaned_bold: Nuisance-regressed BOLD.
         regressor_file: Nuisance regressor ``.1D`` file.
+        template_brain_mask: Brain mask warped to template space.
     """
 
     reoriented_bold: Path
@@ -70,6 +71,7 @@ class FunctionalOutputs(NamedTuple):
     template_bold: Path
     cleaned_bold: Path
     regressor_file: Path
+    template_brain_mask: Path
 
 
 def _warp_mask_to_template(mask: Path, reference: Path, transform: Path) -> Path:
@@ -215,4 +217,5 @@ def single_session_preprocess(
         template_bold=template_bold,
         cleaned_bold=nuisance.cleaned_bold,
         regressor_file=nuisance.regressor_file,
+        template_brain_mask=tmpl_brain,
     )

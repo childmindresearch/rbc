@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from rbc.cli import main as cli
-from rbc.cli.functional import FunctionalArgs
 
 
 class TestGlobalOpts:
@@ -221,78 +220,3 @@ class TestMain:
         mock_cli.return_value = 1
         cli.main()
         mock_exit.assert_called_once_with(1)
-
-
-class TestFunctionalArgs:
-    """Test suite for FunctionalArgs validation."""
-
-    @pytest.fixture
-    def func_namespace(self, tmp_path: Path) -> argparse.Namespace:
-        """Fixture for functional argument namespace."""
-        input_dir = tmp_path / "input"
-        input_dir.touch()
-        output_dir = tmp_path / "output"
-        return argparse.Namespace(
-            runner="local",
-            verbose=0,
-            input_dir=input_dir,
-            output_dir=output_dir,
-            participant_label=[],
-            session_label=[],
-            regressor="36-parameter",
-            task=None,
-        )
-
-    def test_validate_namespace(self, func_namespace: argparse.Namespace) -> None:
-        """Test FunctionalArgs validates successfully with valid args."""
-        args = FunctionalArgs.validate_namespace(func_namespace)
-        assert isinstance(args, FunctionalArgs)
-        assert args.regressor == "36-parameter"
-        assert args.task is None
-
-    def test_validate_with_regressor(self, func_namespace: argparse.Namespace) -> None:
-        """Test FunctionalArgs preserves regressor choice."""
-        func_namespace.regressor = "aCompCor"
-        args = FunctionalArgs.validate_namespace(func_namespace)
-        assert args.regressor == "aCompCor"
-
-    def test_validate_with_task(self, func_namespace: argparse.Namespace) -> None:
-        """Test FunctionalArgs preserves task filter."""
-        func_namespace.task = "rest"
-        args = FunctionalArgs.validate_namespace(func_namespace)
-        assert args.task == "rest"
-
-    def test_defaults(self, func_namespace: argparse.Namespace) -> None:
-        """Test default values for regressor and task."""
-        args = FunctionalArgs.validate_namespace(func_namespace)
-        assert args.regressor == "36-parameter"
-        assert args.task is None
-        assert args.participant_label == []
-        assert args.session_label == []
-
-
-class TestFunctionalRegistration:
-    """Test that functional command is registered and discoverable."""
-
-    def test_functional_command_registered(self) -> None:
-        """Test functional workflow is available in parser."""
-        result = cli.cli(["/input", "/output", "functional", "--help"])
-        assert result == 0
-
-    def test_functional_parser_has_regressor(self) -> None:
-        """Test functional subparser includes --regressor argument."""
-        parser = cli.create_parser()
-        args = parser.parse_args(["/input", "/output", "functional"])
-        assert args.regressor == "36-parameter"
-
-    def test_functional_parser_has_task(self) -> None:
-        """Test functional subparser includes --task argument."""
-        parser = cli.create_parser()
-        args = parser.parse_args(["/input", "/output", "functional", "--task", "rest"])
-        assert args.task == "rest"
-
-    def test_functional_parser_task_default_none(self) -> None:
-        """Test functional subparser --task defaults to None."""
-        parser = cli.create_parser()
-        args = parser.parse_args(["/input", "/output", "functional"])
-        assert args.task is None

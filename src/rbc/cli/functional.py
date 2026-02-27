@@ -9,7 +9,6 @@ warping depend on the anatomical outputs.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -19,7 +18,7 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
@@ -41,16 +40,11 @@ class FunctionalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
-        task = ns.task
-        if task is not None and not re.fullmatch(r"[0-9a-zA-Z+]+", task):
-            raise ValueError(
-                "Task must contain only alphanumeric characters and '+', got: "
-                f"{task!r}."
-            )
+        _validate_task(ns.task)
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,  # Validated by argparse choices
-            task=task,
+            task=ns.task,
         )
 
 
@@ -177,6 +171,34 @@ def main(args: FunctionalArgs) -> int:
                 desc=args.regressor,
                 suffix="regressors",
                 extension=".1D",
+                task=bold_task,
+                run=bold_run,
+            )
+            pipe_ctx.export(
+                outputs.template_bold,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="preproc",
+                suffix="bold",
+                task=bold_task,
+                run=bold_run,
+            )
+            pipe_ctx.export(
+                outputs.cleaned_bold,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="preproc",
+                suffix="bold",
+                extra={"reg": args.regressor},
+                task=bold_task,
+                run=bold_run,
+            )
+            pipe_ctx.export(
+                outputs.template_brain_mask,
+                datatype="func",
+                space="MNI152NLin6ASym",
+                desc="bold",
+                suffix="mask",
                 task=bold_task,
                 run=bold_run,
             )
