@@ -87,10 +87,10 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         expression="a",
         prefix="test_bold.nii.gz",
     )
-    stc = slice_timing_correction(in_file=truncated.output_file)
-    bold_ref = extract_motion_reference(in_file=stc.out_file)
+    stc = slice_timing_correction(in_file=truncated)
+    bold_ref = extract_motion_reference(in_file=stc)
     motion_corrected = fsl_motion_correction(
-        in_file=stc.out_file,
+        in_file=stc,
         ref_file=bold_ref,
     )
     masking = bold_masking(
@@ -104,7 +104,7 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         wm_seg=synthetic_wm,
     )
     template_bold = resample_bold_to_template(
-        stc_img=stc.out_file,
+        stc_img=stc,
         motion_mat_dir=motion_corrected.mat_dir,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
@@ -115,7 +115,7 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     assert template_bold.exists()
 
     out_voxel_size = nib.nifti1.load(template_bold).header.get_zooms()[:3]
-    in_voxel_size = nib.nifti1.load(stc.out_file).header.get_zooms()[:3]
+    in_voxel_size = nib.nifti1.load(stc).header.get_zooms()[:3]
     template_voxel_size = nib.nifti1.load(template_mni).header.get_zooms()[:3]
 
     # Check that voxel sizes differ between input and output

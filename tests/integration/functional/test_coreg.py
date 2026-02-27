@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 def _create_synthetic_wm(t1w: Path) -> Path:
     """Create synthetic WM mask from T1w for testing.
 
-    - Brain mask: AFNI 3dAutomask
+    - Brain mask: AFNI 3dAutomasks
     - WM mask: inner core of brain mask (eroded by 3 voxels)
     """
     out_dir = generate_exec_folder("synthetic_wm")
@@ -60,8 +60,8 @@ def test_coregistration(test_subject: TestSubjectData) -> None:
     # Functional
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=2)
-    stc = slice_timing_correction(in_file=truncated.output_file)
-    bold_ref = extract_motion_reference(in_file=stc.out_file)
+    stc = slice_timing_correction(in_file=truncated)
+    bold_ref = extract_motion_reference(in_file=stc)
     masking = bold_masking(
         bold_ref=bold_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
