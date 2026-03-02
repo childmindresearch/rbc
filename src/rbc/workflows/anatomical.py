@@ -1,7 +1,8 @@
 """Anatomical processing workflow.
 
 Chains the full anatomical stream -- reorientation, brain extraction,
-tissue segmentation, and template registration -- and returns all output
+tissue segmentation, and template registration -- and performs longitudinal processing
+-- transforming data to the longitudinal template space -- and returns all output
 paths as an :class:`AnatomicalOutputs` named tuple.
 """
 
@@ -17,6 +18,7 @@ from rbc.core.anatomical import (
     fsl_wm_bbr_mask,
 )
 from rbc.core.common import deoblique_and_reorient
+from rbc.core.longitudinal.transform import anat_transform
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,13 +39,13 @@ class AnatomicalOutputs(NamedTuple):
     """
 
     brain: Path
-    brain_mask: Path
-    csf_mask: Path
-    gm_mask: Path
-    wm_mask: Path
-    wm_bbr_mask: Path
-    forward_xfm: Path
-    inverse_xfm: Path
+    brain_mask: Path | None = None
+    csf_mask: Path | None = None
+    gm_mask: Path | None = None
+    wm_mask: Path | None = None
+    wm_bbr_mask: Path | None = None
+    forward_xfm: Path | None = None
+    inverse_xfm: Path | None = None
 
 
 def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
@@ -79,4 +81,39 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
         wm_bbr_mask=wm_bbr,
         forward_xfm=transforms.forward,
         inverse_xfm=transforms.inverse,
+    )
+
+
+def longitudinal_process(
+    template: Path,
+    subj_to_template_xfm: Path,
+    *,
+    brain: Path,
+    brain_mask: Path | None = None,
+    csf_mask: Path | None = None,
+    gm_mask: Path | None = None,
+    wm_mask: Path | None = None,
+) -> AnatomicalOutputs:
+    """Transform preprocessed anatomical outputs to longitudinal template space.
+
+    Assumes a template generated and transforms computed.
+
+    Args:
+        template: Longitudinal template image.
+        subj_to_template_xfm: Transform from subject to template space.
+        brain: Preprocessed brain image.
+        brain_mask: Brain mask, if available.
+        csf_mask: CSF partial volume mask, if available.
+        gm_mask: Grey matter partial volume mask, if available.
+        wm_mask: White matter partial volume mask, if available.
+
+    Returns:
+        :class:`AnatomicalOutputs` with all non-null inputs transformed to template
+            space.
+    """
+    return AnatomicalOutputs._make(
+        anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
+        if val is not None
+        else None
+        for val in AnatomicalOutputs(brain, brain_mask, csf_mask, gm_mask, wm_mask)
     )
