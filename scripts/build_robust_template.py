@@ -208,7 +208,7 @@ def generate_robust_template(in_files: Sequence[Path]) -> RobustTemplateOutputs:
 
     # Initialize with same defaults as fmriprep
     robust_template = freesurfer.mri_robust_template(
-        mov=in_files,
+        mov=list(in_files),
         template="template.nii.gz",
         lta=lta_files,
         inittp=1,  # map everything to first time point
