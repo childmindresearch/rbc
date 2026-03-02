@@ -118,5 +118,5 @@ styxpodman = {git = "https://github.com/styx-api/styxpodman.git", rev = "1382977
 module-name = ["rbc", "rbc_resources"]
 
 [build-system]
-requires = ["uv_build>=0.9.3,<0.10.0"]
+requires = ["uv_build>=0.9.3,<0.11.0"]
 build-backend = "uv_build"
