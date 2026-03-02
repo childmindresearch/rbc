@@ -8,10 +8,9 @@ import nibabel as nib
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import despike_bold
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from conftest import TestSubjectData
 
 
@@ -22,9 +21,7 @@ def test_despike(test_subject: TestSubjectData) -> None:
     assert despiked.exists()
 
 
-def test_despike_reduces_single_outlier(
-    test_subject: TestSubjectData, tmp_path: Path
-) -> None:
+def test_despike_reduces_single_outlier(test_subject: TestSubjectData) -> None:
     """Test that despike attenuates an artificial spike in a single voxel."""
     img = nib.nifti1.load(test_subject.bold)
     data = img.get_fdata()
@@ -38,9 +35,9 @@ def test_despike_reduces_single_outlier(
     data[center_x, center_y, center_z, 5] = data.mean() * spike_multiplier
     spiked_val = data[center_x, center_y, center_z, 5]
 
-    spiked_img = nib.Nifti1Image(data, img.affine, img.header)
-    spiked_path = tmp_path / "spiked_input.nii.gz"
-    nib.save(spiked_img, spiked_path)
+    out_dir = generate_exec_folder("spiked_bold")
+    spiked_path = out_dir / "spiked_input.nii.gz"
+    nib.save(nib.Nifti1Image(data, img.affine, img.header), spiked_path)
 
     despiked = despike_bold(in_file=spiked_path)
 
@@ -55,7 +52,7 @@ def test_despike_reduces_single_outlier(
     )
 
 
-def test_despike_multiple_spikes(test_subject: TestSubjectData, tmp_path: Path) -> None:
+def test_despike_multiple_spikes(test_subject: TestSubjectData) -> None:
     """Test that despike attenuates multiple scattered spikes across volumes."""
     img = nib.nifti1.load(test_subject.bold)
     data = img.get_fdata()
@@ -73,9 +70,9 @@ def test_despike_multiple_spikes(test_subject: TestSubjectData, tmp_path: Path) 
     for coord in spike_coords:
         data[coord] = data.mean() * spike_multiplier
 
-    spiked_img = nib.Nifti1Image(data, img.affine, img.header)
-    spiked_path = tmp_path / "multi_spiked.nii.gz"
-    nib.save(spiked_img, spiked_path)
+    out_dir = generate_exec_folder("multi_spiked_bold")
+    spiked_path = out_dir / "multi_spiked.nii.gz"
+    nib.save(nib.Nifti1Image(data, img.affine, img.header), spiked_path)
 
     despiked = despike_bold(in_file=spiked_path)
     despiked_data = nib.nifti1.load(despiked).get_fdata()
