@@ -29,5 +29,6 @@ From FSL 6.0 standard templates via the container:
 | Current filename | Original filename |
 |---|---|
 | `mni152_T1w_1mm_brain.nii.gz` | `MNI152_T1_1mm_brain.nii.gz` |
+| `mni152_T1w_2mm_brain.nii.gz` | `MNI152_T1_2mm_brain.nii.gz` |
 | `mni152_T1w_2mm_brain_mask.nii.gz` | `MNI152_T1_2mm_brain_mask.nii.gz` |
 | `mni152_bold_ref_2mm.nii.gz` | `tpl-MNI152NLin2009cAsym_res-02_desc-fMRIPrep_boldref.nii.gz` |
