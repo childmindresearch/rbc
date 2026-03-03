@@ -39,13 +39,13 @@ class AnatomicalOutputs(NamedTuple):
     """
 
     brain: Path
-    brain_mask: Path | None = None
-    csf_mask: Path | None = None
-    gm_mask: Path | None = None
-    wm_mask: Path | None = None
-    wm_bbr_mask: Path | None = None
-    forward_xfm: Path | None = None
-    inverse_xfm: Path | None = None
+    brain_mask: Path
+    csf_mask: Path
+    gm_mask: Path
+    wm_mask: Path
+    wm_bbr_mask: Path
+    forward_xfm: Path
+    inverse_xfm: Path
 
 
 def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
@@ -84,6 +84,24 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     )
 
 
+class AnatomicalLongOutputs(NamedTuple):
+    """Outputs from the anatomical preprocessing pipeline.
+
+    Attributes:
+        brain: Skull-stripped T1w brain.
+        brain_mask: Binary brain mask.
+        csf_mask: CSF tissue mask.
+        gm_mask: GM tissue mask.
+        wm_mask: WM tissue mask.
+    """
+
+    brain: Path
+    brain_mask: Path | None
+    csf_mask: Path | None
+    gm_mask: Path | None
+    wm_mask: Path | None
+
+
 def longitudinal_process(
     template: Path,
     subj_to_template_xfm: Path,
@@ -93,7 +111,7 @@ def longitudinal_process(
     csf_mask: Path | None = None,
     gm_mask: Path | None = None,
     wm_mask: Path | None = None,
-) -> AnatomicalOutputs:
+) -> AnatomicalLongOutputs:
     """Transform preprocessed anatomical outputs to longitudinal template space.
 
     Assumes a template generated and transforms computed.
@@ -108,12 +126,12 @@ def longitudinal_process(
         wm_mask: White matter partial volume mask, if available.
 
     Returns:
-        :class:`AnatomicalOutputs` with all non-null inputs transformed to template
+        :class:`AnatomicalLongOutputs` with all non-null inputs transformed to template
             space.
     """
-    return AnatomicalOutputs._make(
+    return AnatomicalLongOutputs._make(
         anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
         if val is not None
         else None
-        for val in AnatomicalOutputs(brain, brain_mask, csf_mask, gm_mask, wm_mask)
+        for val in (brain, brain_mask, csf_mask, gm_mask, wm_mask)
     )
