@@ -176,18 +176,18 @@ def single_session_preprocess(
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
         bold_ref=masking.skull_stripped_bold,
-        template=MNI_TEMPLATES.bold_ref,
+        template=MNI_TEMPLATES.brain_2mm,
         t1w_brain=t1w_brain,
     )
 
     # 10. Warp tissue masks to template space (same grid as resampled BOLD)
     tmpl_brain = _warp_mask_to_template(
-        brain_mask, MNI_TEMPLATES.bold_ref, anat_to_template
+        brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
     tmpl_csf = _warp_mask_to_template(
-        csf_mask, MNI_TEMPLATES.bold_ref, anat_to_template
+        csf_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
-    tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.bold_ref, anat_to_template)
+    tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
     # 11. Nuisance regression in template space
     nuisance = nuisance_regression(
