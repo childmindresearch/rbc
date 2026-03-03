@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["nilearn>=0.11", "matplotlib>=3.9", "nibabel>=5.0", "numpy>=1.26"]
+# dependencies = ["matplotlib>=3.9", "nibabel>=5.0", "numpy>=1.26", "pyvista>=0.44"]
 # requires-python = ">=3.12"
 # ///
 """Visualize C-PAC RBC outputs using the same report layout as visualize_pipeline.py.
