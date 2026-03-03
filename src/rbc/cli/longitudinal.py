@@ -114,7 +114,7 @@ def _process_anat(
         run=t1w_run,
     )
     pipe_ctx.export(
-        _require_file(outputs.csf_mask, "gm_mask"),
+        _require_file(outputs.gm_mask, "gm_mask"),
         datatype="anat",
         space="longitudinal",
         desc="gm",
@@ -122,7 +122,7 @@ def _process_anat(
         run=t1w_run,
     )
     pipe_ctx.export(
-        _require_file(outputs.csf_mask, "wm_mask"),
+        _require_file(outputs.wm_mask, "wm_mask"),
         datatype="anat",
         space="longitudinal",
         desc="wm",
@@ -174,6 +174,8 @@ def main(args: LongitudinalArgs) -> int:
                 pl.col("sub") == pipe_ctx.sub, pl.col("ses") == "longitudinal"
             )
         )
+        if tpl_df.is_empty():
+            raise ValueError("No longitudinal template found")
 
         for func_df, anat_df in iter_session_files(session, groupby=("run", "task")):
             if args.anatomical:
