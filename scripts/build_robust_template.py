@@ -1,6 +1,6 @@
 # /// script
 # dependencies = [
-#     "niwrap",
+#     "niwrap>=0.9.1",
 #     "styxpodman",
 # ]
 # requires-python = ">=3.11"
