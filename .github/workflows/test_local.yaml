@@ -49,12 +49,12 @@ jobs:
         uv run scripts/visualize_pipeline.py --output $JOB_TMP/pipeline_report.png
 
         if [ -f "$JOB_TMP/pipeline_report.png" ]; then
-          # Save a compressed JPEG for the summary (base64 limit ~1MB)
-          uv run scripts/visualize_pipeline.py --output $JOB_TMP/pipeline_report_summary.jpg --dpi 80
+          # Low-DPI PNG for summary (base64 limit ~1MB)
+          uv run scripts/visualize_pipeline.py --output $JOB_TMP/pipeline_report_summary.png --dpi 72
 
-          if [ -f "$JOB_TMP/pipeline_report_summary.jpg" ]; then
+          if [ -f "$JOB_TMP/pipeline_report_summary.png" ]; then
             echo "## Pipeline Report" >> $GITHUB_STEP_SUMMARY
-            echo "<img src=\"data:image/jpeg;base64,$(base64 -w0 $JOB_TMP/pipeline_report_summary.jpg)\">" >> $GITHUB_STEP_SUMMARY
+            echo "<img src=\"data:image/png;base64,$(base64 -w0 $JOB_TMP/pipeline_report_summary.png)\">" >> $GITHUB_STEP_SUMMARY
           fi
         fi
 
