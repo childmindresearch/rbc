@@ -129,6 +129,20 @@ def _process_anat(
         suffix="mask",
         run=t1w_run,
     )
+    pipe_ctx.export(
+        outputs.forward_xfm,
+        datatype="anat",
+        suffix="xfm",
+        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        run=t1w_run,
+    )
+    pipe_ctx.export(
+        outputs.inverse_xfm,
+        datatype="anat",
+        suffix="xfm",
+        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        run=t1w_run,
+    )
 
 
 def _process_func(

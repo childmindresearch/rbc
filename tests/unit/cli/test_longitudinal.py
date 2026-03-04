@@ -48,6 +48,8 @@ def _mock_longitudinal_outputs() -> Mock:
     outputs.csf_mask = fake / "csf_mask.nii.gz"
     outputs.gm_mask = fake / "gm_mask.nii.gz"
     outputs.wm_mask = fake / "wm_mask.nii.gz"
+    outputs.forward_xfm = fake / "fwd_xfm.nii.gz"
+    outputs.inverse_xfm = fake / "inverse_xfm.nii.gz"
     return outputs
 
 
@@ -408,8 +410,7 @@ class TestProcessAnat:
             ),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
-            # brain, brain_mask, csf_mask, gm_mask, wm_mask
-            assert pipe_ctx.export.call_count == 5
+            assert pipe_ctx.export.call_count == 7
 
     def test_get_anat_file_swallows_file_not_found(
         self, anat_df: pl.DataFrame, tpl_df: pl.DataFrame

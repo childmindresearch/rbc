@@ -100,6 +100,8 @@ class AnatomicalLongOutputs(NamedTuple):
     csf_mask: Path | None
     gm_mask: Path | None
     wm_mask: Path | None
+    forward_xfm: Path
+    inverse_xfm: Path
 
 
 def longitudinal_process(
@@ -129,9 +131,21 @@ def longitudinal_process(
         :class:`AnatomicalLongOutputs` with all non-null inputs transformed to template
             space.
     """
-    return AnatomicalLongOutputs._make(
-        anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
-        if val is not None
-        else None
-        for val in (brain, brain_mask, csf_mask, gm_mask, wm_mask)
+
+    def _xfm(val: Path | None) -> Path | None:
+        if val is None:
+            return None
+        return anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
+
+    transforms = ants_registration(in_file=template)
+    return AnatomicalLongOutputs(
+        brain=anat_transform(
+            in_file=brain, template=template, xfm=subj_to_template_xfm
+        ),
+        brain_mask=_xfm(brain_mask),
+        csf_mask=_xfm(csf_mask),
+        gm_mask=_xfm(gm_mask),
+        wm_mask=_xfm(wm_mask),
+        forward_xfm=transforms.forward,
+        inverse_xfm=transforms.inverse,
     )
