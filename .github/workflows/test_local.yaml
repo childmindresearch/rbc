@@ -4,9 +4,9 @@ on:
   push:
   workflow_dispatch:
     inputs:
-      cleanup:
-        description: Clean up job folder after running tests
-        default: true
+      no_cleanup:
+        description: Keep intermediate files after running tests
+        default: false
         type: boolean
 
 concurrency:
@@ -54,7 +54,7 @@ jobs:
           --format=markdown >> $GITHUB_STEP_SUMMARY
 
     - name: Cleanup
-      if: ${{ always() && github.event.inputs.cleanup != false }}
+      if: ${{ always() && github.event.inputs.no_cleanup != true }}
       shell: bash
       run: |
         echo "Cleaning up job temp directory: $JOB_TMP"
