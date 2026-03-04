@@ -81,8 +81,8 @@ def _load_vol(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     For 4D images, returns the mean across time.
     """
     img = nib.load(str(path))
-    data = np.asarray(img.dataobj, dtype=np.float32)
-    pixdim = np.abs(img.header.get_zooms()[:3])  # type: ignore[union-attr]
+    data = np.asarray(img.dataobj, dtype=np.float32)  # type: ignore[attr-defined]
+    pixdim = np.abs(img.header.get_zooms()[:3])  # type: ignore[attr-defined]
     if data.ndim == 4:
         data = np.mean(data, axis=3)
     return data, np.asarray(pixdim, dtype=np.float64)
@@ -91,8 +91,8 @@ def _load_vol(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
 def _load_vol_std(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Load a 4D NIfTI and return temporal standard deviation."""
     img = nib.load(str(path))
-    data = np.asarray(img.dataobj, dtype=np.float32)
-    pixdim = np.abs(img.header.get_zooms()[:3])  # type: ignore[union-attr]
+    data = np.asarray(img.dataobj, dtype=np.float32)  # type: ignore[attr-defined]
+    pixdim = np.abs(img.header.get_zooms()[:3])  # type: ignore[attr-defined]
     if data.ndim == 4:
         data = np.std(data, axis=3)
     return data, np.asarray(pixdim, dtype=np.float64)
@@ -325,23 +325,21 @@ def _render_stat_overlay(
     cbar.outline.set_edgecolor(SPINE_COLOR)
 
 
-def _extract_surface(
-    nifti_path: str | Path,
-) -> tuple[Any, np.ndarray] | None:
+def _extract_surface(nifti_path: str | Path) -> Any | None:
     """Extract a smoothed surface mesh from a NIfTI mask.
 
-    Returns (pyvista.PolyData, spacing) or None on failure.
+    Returns a pyvista PolyData or None on failure.
     Imported lazily so pyvista is only required when called.
     """
     import pyvista as pv
 
     img = nib.load(str(nifti_path))
-    data = np.asarray(img.dataobj, dtype=np.float32)
+    data = np.asarray(img.dataobj, dtype=np.float32)  # type: ignore[attr-defined]
     if data.ndim == 4:
         data = np.mean(data, axis=3)
 
     volume = (data > 0.5).astype(np.float32)
-    affine = img.affine
+    affine = img.affine  # type: ignore[attr-defined]
     spacing = np.abs(np.diag(affine)[:3])
 
     grid = pv.ImageData(
@@ -355,7 +353,7 @@ def _extract_surface(
     if surface.n_points == 0:
         return None
 
-    return surface.smooth(n_iter=50, relaxation_factor=0.1), spacing
+    return surface.smooth(n_iter=50, relaxation_factor=0.1)
 
 
 def _render_3d_surface(
@@ -384,9 +382,9 @@ def _render_3d_surface(
 
         meshes: list[tuple[pv.PolyData, str]] = []
         for nifti_path, hex_color in surfaces:
-            result = _extract_surface(nifti_path)
-            if result is not None:
-                meshes.append((result[0], hex_color))
+            surface = _extract_surface(nifti_path)
+            if surface is not None:
+                meshes.append((surface, hex_color))
 
         if not meshes:
             return None
@@ -494,6 +492,30 @@ def _style_motion_ax(ax: plt.Axes) -> None:
     ax.grid(True, alpha=0.2, color=GRID_COLOR)
 
 
+def _add_3d_panel(
+    fig: plt.Figure,
+    gs: GridSpec,
+    row: int,
+    render_img: np.ndarray | None,
+    title_3d: str,
+) -> plt.Axes:
+    """Add a 3D surface panel (left col) and return the axes for the right panel.
+
+    If *render_img* is None (pyvista unavailable), returns a full-width axes
+    so the caller's lightbox fills the entire row.
+    """
+    if render_img is not None:
+        ax_3d = fig.add_subplot(gs[row, :1])
+        ax_3d.imshow(render_img)
+        ax_3d.set_title(
+            title_3d, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4
+        )
+        ax_3d.set_facecolor(BG_COLOR)
+        ax_3d.axis("off")
+        return fig.add_subplot(gs[row, 1:])
+    return fig.add_subplot(gs[row, :])
+
+
 # ---------------------------------------------------------------------------
 # Panel plotters
 # ---------------------------------------------------------------------------
@@ -509,24 +531,8 @@ def plot_anatomical(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> 
 
     # Row 1: 3D brain surface (left) + skull-stripped lightbox (right)
     brain_3d = _render_3d_surface([(anat["brain"], "#d4a574")])
-    if brain_3d is not None:
-        ax_3d = fig.add_subplot(gs[row, :1])
-        ax_3d.imshow(brain_3d)
-        ax_3d.set_title(
-            "Brain surface",
-            fontsize=10,
-            color=TEXT_COLOR,
-            fontweight="bold",
-            pad=4,
-        )
-        ax_3d.set_facecolor(BG_COLOR)
-        ax_3d.axis("off")
-
-        ax_lb = fig.add_subplot(gs[row, 1:])
-        _render_lightbox(ax_lb, brain_data, title="Skull-stripped T1w")
-    else:
-        ax_brain = fig.add_subplot(gs[row, :])
-        _render_lightbox(ax_brain, brain_data, title="Brain extraction")
+    ax_lb = _add_3d_panel(fig, gs, row, brain_3d, "Brain surface")
+    _render_lightbox(ax_lb, brain_data, title="Skull-stripped T1w")
     row += 1
 
     # Row 2: 3D tissue surfaces (left) + segmentation overlay lightbox (right)
@@ -535,22 +541,7 @@ def plot_anatomical(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> 
     csf_data, _ = _load_vol(anat["csf_mask"])
 
     seg_3d = _render_3d_surface([(anat["wm_mask"], WM_COLOR)])
-    if seg_3d is not None:
-        ax_3d = fig.add_subplot(gs[row, :1])
-        ax_3d.imshow(seg_3d)
-        ax_3d.set_title(
-            "WM surface",
-            fontsize=10,
-            color=TEXT_COLOR,
-            fontweight="bold",
-            pad=4,
-        )
-        ax_3d.set_facecolor(BG_COLOR)
-        ax_3d.axis("off")
-
-        ax_seg = fig.add_subplot(gs[row, 1:])
-    else:
-        ax_seg = fig.add_subplot(gs[row, :])
+    ax_seg = _add_3d_panel(fig, gs, row, seg_3d, "WM surface")
 
     _render_mask_overlay(
         ax_seg,
@@ -580,22 +571,7 @@ def plot_registration(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -
     mask_data, _ = _load_vol(func["bold_mask"])
 
     native_3d = _render_3d_surface([(func["bold_mask"], MASK_COLOR)])
-    if native_3d is not None:
-        ax_3d = fig.add_subplot(gs[row, :1])
-        ax_3d.imshow(native_3d)
-        ax_3d.set_title(
-            "BOLD mask surface",
-            fontsize=10,
-            color=TEXT_COLOR,
-            fontweight="bold",
-            pad=4,
-        )
-        ax_3d.set_facecolor(BG_COLOR)
-        ax_3d.axis("off")
-
-        ax_native = fig.add_subplot(gs[row, 1:])
-    else:
-        ax_native = fig.add_subplot(gs[row, :])
+    ax_native = _add_3d_panel(fig, gs, row, native_3d, "BOLD mask surface")
 
     _render_mask_overlay(
         ax_native,
@@ -611,22 +587,7 @@ def plot_registration(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -
     tmpl_mask_data, _ = _load_vol(template_brain_mask)
 
     tmpl_3d = _render_3d_surface([(template_brain_mask, MASK_COLOR)])
-    if tmpl_3d is not None:
-        ax_3d = fig.add_subplot(gs[row, :1])
-        ax_3d.imshow(tmpl_3d)
-        ax_3d.set_title(
-            "Template mask surface",
-            fontsize=10,
-            color=TEXT_COLOR,
-            fontweight="bold",
-            pad=4,
-        )
-        ax_3d.set_facecolor(BG_COLOR)
-        ax_3d.axis("off")
-
-        ax_tmpl = fig.add_subplot(gs[row, 1:])
-    else:
-        ax_tmpl = fig.add_subplot(gs[row, :])
+    ax_tmpl = _add_3d_panel(fig, gs, row, tmpl_3d, "Template mask surface")
 
     _render_mask_overlay(
         ax_tmpl,
