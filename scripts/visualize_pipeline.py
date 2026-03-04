@@ -8,8 +8,8 @@ Reads the manifest written by ``tests/full_pipeline/conftest.py`` and generates
 a multi-panel PNG report of the key anatomical, functional, QC, and metrics
 outputs.
 
-Uses pure matplotlib for rendering (lightbox mosaics, contour overlays, dark
-theme) and pyvista for 3D brain surface renders.
+Uses pure matplotlib for rendering (lightbox mosaics, alpha mask overlays,
+dark theme) and pyvista for 3D brain surface renders.
 
 Usage::
 
@@ -30,8 +30,9 @@ from typing import Any
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Patch
 
 # -- Dark theme constants --
 BG_COLOR = "#1a1a2e"
@@ -41,14 +42,15 @@ GRID_COLOR = "#444444"
 SPINE_COLOR = "#666666"
 SECTION_FONTSIZE = 12
 FIG_WIDTH = 20
+MOSAIC_WIDTH = 2000  # target pixel width for all lightbox mosaics
 
 # Row heights
 HEADER_HEIGHT = 0.5
-LIGHTBOX_ROW_HEIGHT = 2.4
+LIGHTBOX_ROW_HEIGHT = 3.5
 PLOT_ROW_HEIGHT = 2.4
 BOTTOM_ROW_HEIGHT = 5.0
 
-# Contour overlay colors
+# Overlay colors (R, G, B tuples for RGBA construction)
 WM_COLOR = "#4fc3f7"  # blue
 GM_COLOR = "#ef5350"  # red
 CSF_COLOR = "#66bb6a"  # green
@@ -102,27 +104,57 @@ def _robust_vmax(data: np.ndarray) -> float:
     return float(np.percentile(values, 98)) if len(values) > 0 else 1.0
 
 
+def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
+    """Convert hex color string to (r, g, b) floats in [0, 1]."""
+    h = hex_color.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
+
+
 def _axial_slices(data: np.ndarray, n: int = 7) -> list[int]:
     """Return n evenly-spaced axial slice indices, skipping empty edges."""
-    # Axial = last axis (RPI orientation: axis 2)
     nz = data.shape[2]
-    # Find non-empty range
     sums = np.sum(data, axis=(0, 1))
     nonzero = np.nonzero(sums > 0)[0]
     if len(nonzero) == 0:
         return list(np.linspace(0, nz - 1, n, dtype=int))
     lo, hi = int(nonzero[0]), int(nonzero[-1])
-    # Pad inward slightly
     margin = max(1, int((hi - lo) * 0.05))
     lo = min(lo + margin, hi)
     hi = max(hi - margin, lo)
     return list(np.linspace(lo, hi, n, dtype=int))
 
 
+def _resample_mosaic(
+    mosaic: np.ndarray,
+    target_w: int = MOSAIC_WIDTH,
+) -> np.ndarray:
+    """Resample mosaic to a fixed pixel width, preserving aspect ratio.
+
+    All mosaics get the same width so lightbox panels are visually
+    uniform. Height scales proportionally to preserve the original
+    data aspect ratio.
+    """
+    h, w = mosaic.shape
+    target_h = max(1, int(target_w * h / w))
+    row_idx = np.clip((np.arange(target_h) * h / target_h).astype(int), 0, h - 1)
+    col_idx = np.clip((np.arange(target_w) * w / target_w).astype(int), 0, w - 1)
+    return mosaic[np.ix_(row_idx, col_idx)]
+
+
+def _build_mosaic(
+    data: np.ndarray,
+    n: int = 7,
+) -> np.ndarray:
+    """Build an axial-slice mosaic resampled to standard dimensions."""
+    slices = _axial_slices(data, n)
+    panels = [data[:, :, z].T for z in slices]
+    mosaic = np.concatenate(panels, axis=1)
+    return _resample_mosaic(mosaic)
+
+
 def _render_lightbox(
     ax: plt.Axes,
     data: np.ndarray,
-    pixdim: np.ndarray,
     n: int = 7,
     cmap: str = "gray",
     vmin: float = 0,
@@ -133,17 +165,7 @@ def _render_lightbox(
     if vmax is None:
         vmax = _robust_vmax(data)
 
-    slices = _axial_slices(data, n)
-    # Each slice: data[:, :, z].T to get proper orientation
-    panels = []
-    for z in slices:
-        s = data[:, :, z].T
-        panels.append(s)
-
-    mosaic = np.concatenate(panels, axis=1)
-
-    # Aspect ratio: each panel is (Y, X). With pixdim correction.
-    aspect = pixdim[1] / pixdim[0] if pixdim[0] > 0 else 1.0
+    mosaic = _build_mosaic(data, n)
 
     ax.imshow(
         mosaic,
@@ -151,7 +173,7 @@ def _render_lightbox(
         vmin=vmin,
         vmax=vmax,
         origin="lower",
-        aspect=aspect,
+        aspect="equal",
         interpolation="bilinear",
     )
     ax.set_facecolor("black")
@@ -160,32 +182,36 @@ def _render_lightbox(
         ax.set_title(title, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4)
 
 
-def _render_contours(
+def _mask_contour(binary: np.ndarray) -> np.ndarray:
+    """Return a 1-px edge mask from a 2D binary array using gradient magnitude."""
+    dx = np.diff(binary.astype(np.float32), axis=1, prepend=0)
+    dy = np.diff(binary.astype(np.float32), axis=0, prepend=0)
+    return (np.abs(dx) + np.abs(dy) > 0).astype(np.float32)
+
+
+def _render_mask_overlay(
     ax: plt.Axes,
     bg_data: np.ndarray,
-    pixdim: np.ndarray,
     masks: list[tuple[np.ndarray, str, str]],
+    alpha: float = 0.35,
     n: int = 7,
     title: str = "",
+    *,
+    outline: float = 0.0,
 ) -> None:
-    """Render background lightbox with contour overlays for each mask.
+    """Render background lightbox with flat colored mask overlays.
 
     Args:
         ax: Matplotlib axes to render into.
         bg_data: 3D background volume array.
-        pixdim: Voxel dimensions (x, y, z).
-        masks: List of (mask_data, color, label) tuples.
+        masks: List of (mask_data, hex_color, label) tuples.
+        alpha: Opacity for mask overlays.
         n: Number of axial slices.
         title: Panel title text.
+        outline: If > 0, draw mask contour outlines at this opacity.
     """
     vmax = _robust_vmax(bg_data)
-    slices = _axial_slices(bg_data, n)
-
-    # Build background mosaic
-    bg_panels = [bg_data[:, :, z].T for z in slices]
-    bg_mosaic = np.concatenate(bg_panels, axis=1)
-
-    aspect = pixdim[1] / pixdim[0] if pixdim[0] > 0 else 1.0
+    bg_mosaic = _build_mosaic(bg_data, n)
 
     ax.imshow(
         bg_mosaic,
@@ -193,33 +219,48 @@ def _render_contours(
         vmin=0,
         vmax=vmax,
         origin="lower",
-        aspect=aspect,
+        aspect="equal",
         interpolation="bilinear",
     )
 
-    for mask_data, color, _label in masks:
-        mask_panels = [mask_data[:, :, z].T for z in slices]
-        mask_mosaic = np.concatenate(mask_panels, axis=1)
-        # Draw contours
-        ax.contour(
-            mask_mosaic,
-            levels=[0.5],
-            colors=[color],
-            linewidths=0.8,
+    for mask_data, hex_color, _label in masks:
+        mask_mosaic = _build_mosaic(mask_data, n)
+        binary = (mask_mosaic > 0.5).astype(np.float32)
+
+        r, g, b = _hex_to_rgb(hex_color)
+        cmap_solid = ListedColormap([(0, 0, 0, 0), (r, g, b, alpha)])
+        ax.imshow(
+            binary,
+            cmap=cmap_solid,
+            vmin=0,
+            vmax=1,
             origin="lower",
+            aspect="equal",
+            interpolation="nearest",
         )
+
+        if outline > 0:
+            edge = _mask_contour(binary)
+            cmap_edge = ListedColormap([(0, 0, 0, 0), (r, g, b, outline)])
+            ax.imshow(
+                edge,
+                cmap=cmap_edge,
+                vmin=0,
+                vmax=1,
+                origin="lower",
+                aspect="equal",
+                interpolation="nearest",
+            )
 
     ax.set_facecolor("black")
     ax.axis("off")
     if title:
         ax.set_title(title, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4)
 
-    # Legend
-    if masks:
-        from matplotlib.lines import Line2D
-
+    legend_masks = [(c, lbl) for _, c, lbl in masks if lbl]
+    if legend_masks:
         handles = [
-            Line2D([0], [0], color=c, linewidth=1.5, label=lbl) for _, c, lbl in masks
+            Patch(facecolor=c, alpha=alpha, label=lbl) for c, lbl in legend_masks
         ]
         ax.legend(
             handles=handles,
@@ -236,35 +277,26 @@ def _render_stat_overlay(
     ax: plt.Axes,
     bg_data: np.ndarray,
     stat_data: np.ndarray,
-    pixdim: np.ndarray,
     threshold: float = 2.0,
     n: int = 7,
     title: str = "",
 ) -> None:
     """Lightbox with thresholded stat map overlaid on background."""
     bg_vmax = _robust_vmax(bg_data)
-    slices = _axial_slices(bg_data, n)
+    bg_mosaic = _build_mosaic(bg_data, n)
+    stat_mosaic = _build_mosaic(stat_data, n)
 
-    bg_panels = [bg_data[:, :, z].T for z in slices]
-    bg_mosaic = np.concatenate(bg_panels, axis=1)
-
-    stat_panels = [stat_data[:, :, z].T for z in slices]
-    stat_mosaic = np.concatenate(stat_panels, axis=1)
-
-    aspect = pixdim[1] / pixdim[0] if pixdim[0] > 0 else 1.0
-
-    # Background
     ax.imshow(
         bg_mosaic,
         cmap="gray",
         vmin=0,
         vmax=bg_vmax,
         origin="lower",
-        aspect=aspect,
+        aspect="equal",
         interpolation="bilinear",
     )
 
-    # Mask below threshold
+    # Compute stat range
     if np.any(stat_mosaic != 0):
         pct = float(np.percentile(np.abs(stat_mosaic[stat_mosaic != 0]), 98))
         stat_vmax = max(pct, 0.1)
@@ -272,13 +304,13 @@ def _render_stat_overlay(
         stat_vmax = 5.0
     masked_stat = np.where(np.abs(stat_mosaic) >= threshold, stat_mosaic, np.nan)
 
-    ax.imshow(
+    im = ax.imshow(
         masked_stat,
         cmap=COLD_HOT_CMAP,
         vmin=-stat_vmax,
         vmax=stat_vmax,
         origin="lower",
-        aspect=aspect,
+        aspect="equal",
         alpha=0.85,
         interpolation="bilinear",
     )
@@ -287,72 +319,139 @@ def _render_stat_overlay(
     if title:
         ax.set_title(title, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4)
 
+    cbar = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02, shrink=0.8)
+    cbar.set_label("z-score", fontsize=7, color=TEXT_COLOR, labelpad=2)
+    cbar.ax.tick_params(labelsize=6, colors=TEXT_COLOR)
+    cbar.outline.set_edgecolor(SPINE_COLOR)
 
-def _render_3d_brain(
-    brain_path: str | Path,
-    mask_path: str | Path | None = None,
+
+def _extract_surface(
+    nifti_path: str | Path,
+) -> tuple[Any, np.ndarray] | None:
+    """Extract a smoothed surface mesh from a NIfTI mask.
+
+    Returns (pyvista.PolyData, spacing) or None on failure.
+    Imported lazily so pyvista is only required when called.
+    """
+    import pyvista as pv
+
+    img = nib.load(str(nifti_path))
+    data = np.asarray(img.dataobj, dtype=np.float32)
+    if data.ndim == 4:
+        data = np.mean(data, axis=3)
+
+    volume = (data > 0.5).astype(np.float32)
+    affine = img.affine
+    spacing = np.abs(np.diag(affine)[:3])
+
+    grid = pv.ImageData(
+        dimensions=volume.shape,
+        spacing=spacing,
+        origin=affine[:3, 3],
+    )
+    grid.point_data["values"] = volume.flatten(order="F")
+
+    surface = grid.contour([0.5], scalars="values", method="marching_cubes")
+    if surface.n_points == 0:
+        return None
+
+    return surface.smooth(n_iter=50, relaxation_factor=0.1), spacing
+
+
+def _render_3d_surface(
+    surfaces: list[tuple[str | Path, str]],
+    window_size: tuple[int, int] = (1200, 500),
+    *,
+    clip: str = "",
 ) -> np.ndarray | None:
-    """Render 3D brain surface using pyvista (offscreen).
+    """Render one or more 3D surfaces using pyvista (offscreen).
 
-    Returns RGBA array or None if rendering fails.
+    Args:
+        surfaces: List of (nifti_path, hex_color) tuples.  Each NIfTI is
+            treated as a mask (binarized at 0.5) and extracted via marching
+            cubes.
+        window_size: Pixel (width, height) for the offscreen render.
+        clip: Clip axis name ("x", "y", or "z") for a midline clip plane
+            that reveals interior structures.  Empty string disables.
+
+    Returns:
+        RGB array or ``None`` if rendering fails / pyvista unavailable.
     """
     try:
         import pyvista as pv
 
         pv.OFF_SCREEN = True
 
-        # Load mask for surface extraction
-        target = mask_path or brain_path
-        img = nib.load(str(target))
-        data = np.asarray(img.dataobj, dtype=np.float32)
-        if data.ndim == 4:
-            data = np.mean(data, axis=3)
+        meshes: list[tuple[pv.PolyData, str]] = []
+        for nifti_path, hex_color in surfaces:
+            result = _extract_surface(nifti_path)
+            if result is not None:
+                meshes.append((result[0], hex_color))
 
-        # Binarize for marching cubes
-        if mask_path:
-            volume = (data > 0.5).astype(np.float32)
-        else:
-            threshold = np.percentile(data[data > 0], 15) if np.any(data > 0) else 0.5
-            volume = (data > threshold).astype(np.float32)
-
-        affine = img.affine
-        spacing = np.abs(np.diag(affine)[:3])
-
-        # Create uniform grid for pyvista
-        grid = pv.ImageData(
-            dimensions=np.array(volume.shape) + 1,
-            spacing=spacing,
-            origin=affine[:3, 3],
-        )
-        grid.cell_data["values"] = volume.flatten(order="F")
-
-        # Extract surface
-        surface = grid.contour([0.5], scalars="values", method="marching_cubes")
-        if surface.n_points == 0:
+        if not meshes:
             return None
 
-        surface = surface.smooth(n_iter=50, relaxation_factor=0.1)
+        # Compute center / extent from the union of all surfaces
+        all_bounds = np.array([m.bounds for m, _ in meshes])
+        lo = np.min(all_bounds[:, 0::2], axis=0)  # xmin, ymin, zmin
+        hi = np.max(all_bounds[:, 1::2], axis=0)  # xmax, ymax, zmax
+        center = (lo + hi) / 2.0
+        extent = float(np.max(hi - lo))
+        dist = extent * 2.5
 
-        # Render two views: lateral (left) and medial (right)
-        plotter = pv.Plotter(shape=(1, 2), off_screen=True, window_size=(1200, 500))
-        plotter.set_background("#1a1a2e")
+        # Per-view meshes: when clipping, each view gets the opposite
+        # hemisphere so the camera always faces the exposed cross-section.
+        origin = tuple(center)
+        if clip:
+            per_view = []
+            for invert in (False, True):
+                half = [
+                    (m.clip(normal=clip, origin=origin, invert=invert), c)
+                    for m, c in meshes
+                ]
+                per_view.append([(m, c) for m, c in half if m.n_points > 0])
+        else:
+            per_view = [meshes, meshes]
 
-        for i, (_view, label) in enumerate([("yz", "Lateral"), ("yz", "Medial")]):
+        if not any(per_view):
+            return None
+
+        # Two views: left 3/4 anterior, right 3/4 anterior
+        cam_positions = [
+            (
+                center[0] - dist * 0.7,
+                center[1] + dist * 0.7,
+                center[2] + dist * 0.3,
+            ),
+            (
+                center[0] + dist * 0.7,
+                center[1] + dist * 0.7,
+                center[2] + dist * 0.3,
+            ),
+        ]
+
+        plotter = pv.Plotter(
+            shape=(1, 2),
+            off_screen=True,
+            window_size=window_size,
+        )
+        plotter.set_background(BG_COLOR)
+
+        for i, cam_pos in enumerate(cam_positions):
             plotter.subplot(0, i)
-            plotter.add_mesh(
-                surface,
-                color="#d4a574",
-                specular=0.3,
-                smooth_shading=True,
-                show_edges=False,
-            )
-            if i == 0:
-                plotter.view_yz()
-                plotter.camera.azimuth = 180
-            else:
-                plotter.view_yz()
-                plotter.camera.azimuth = 0
-            plotter.add_text(label, position="upper_left", font_size=10, color="white")
+            for mesh, color in per_view[i]:
+                plotter.add_mesh(
+                    mesh,
+                    color=color,
+                    specular=0.3,
+                    smooth_shading=True,
+                    show_edges=False,
+                )
+            plotter.camera.position = cam_pos
+            plotter.camera.focal_point = origin
+            plotter.camera.up = (0, 0, 1)
+            plotter.reset_camera()
+            plotter.camera.zoom(1.5)
 
         img_arr = plotter.screenshot(return_img=True)
         plotter.close()
@@ -401,45 +500,61 @@ def _style_motion_ax(ax: plt.Axes) -> None:
 
 
 def plot_anatomical(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> int:
-    """Plot brain extraction (3D + lightbox) and segmentation contours.
+    """Plot brain extraction (3D + lightbox) and tissue segmentation.
 
     Returns the next row index.
     """
     anat = manifest["anat"]
-    brain_data, brain_pix = _load_vol(anat["brain"])
+    brain_data, _ = _load_vol(anat["brain"])
 
-    # Row 1: 3D brain (left) + skull-stripped lightbox (right)
-    ax_3d = fig.add_subplot(gs[row, :1])
-    ax_lb = fig.add_subplot(gs[row, 1:])
-
-    brain_3d = _render_3d_brain(anat["brain"])
+    # Row 1: 3D brain surface (left) + skull-stripped lightbox (right)
+    brain_3d = _render_3d_surface([(anat["brain"], "#d4a574")])
     if brain_3d is not None:
+        ax_3d = fig.add_subplot(gs[row, :1])
         ax_3d.imshow(brain_3d)
         ax_3d.set_title(
-            "Brain extraction (3D)", fontsize=10, color=TEXT_COLOR, fontweight="bold"
+            "Brain surface",
+            fontsize=10,
+            color=TEXT_COLOR,
+            fontweight="bold",
+            pad=4,
         )
-    else:
-        # Fallback: lightbox of the brain
-        _render_lightbox(
-            ax_3d, brain_data, brain_pix, title="Brain extraction", cmap="gray"
-        )
-    ax_3d.set_facecolor("black")
-    ax_3d.axis("off")
+        ax_3d.set_facecolor(BG_COLOR)
+        ax_3d.axis("off")
 
-    _render_lightbox(
-        ax_lb, brain_data, brain_pix, title="Skull-stripped T1w", cmap="gray"
-    )
+        ax_lb = fig.add_subplot(gs[row, 1:])
+        _render_lightbox(ax_lb, brain_data, title="Skull-stripped T1w")
+    else:
+        ax_brain = fig.add_subplot(gs[row, :])
+        _render_lightbox(ax_brain, brain_data, title="Brain extraction")
     row += 1
 
-    # Row 2: Segmentation contours
-    ax_seg = fig.add_subplot(gs[row, :])
+    # Row 2: 3D tissue surfaces (left) + segmentation overlay lightbox (right)
     wm_data, _ = _load_vol(anat["wm_mask"])
     gm_data, _ = _load_vol(anat["gm_mask"])
     csf_data, _ = _load_vol(anat["csf_mask"])
-    _render_contours(
+
+    seg_3d = _render_3d_surface([(anat["wm_mask"], WM_COLOR)])
+    if seg_3d is not None:
+        ax_3d = fig.add_subplot(gs[row, :1])
+        ax_3d.imshow(seg_3d)
+        ax_3d.set_title(
+            "WM surface",
+            fontsize=10,
+            color=TEXT_COLOR,
+            fontweight="bold",
+            pad=4,
+        )
+        ax_3d.set_facecolor(BG_COLOR)
+        ax_3d.axis("off")
+
+        ax_seg = fig.add_subplot(gs[row, 1:])
+    else:
+        ax_seg = fig.add_subplot(gs[row, :])
+
+    _render_mask_overlay(
         ax_seg,
         brain_data,
-        brain_pix,
         masks=[
             (wm_data, WM_COLOR, "WM"),
             (gm_data, GM_COLOR, "GM"),
@@ -453,36 +568,72 @@ def plot_anatomical(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> 
 
 
 def plot_registration(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> int:
-    """Plot registration quality with contour overlays.
+    """Plot registration quality with 3D mask surfaces and lightbox overlays.
 
     Returns the next row index.
     """
     func = manifest["func"]
     template_brain_mask = manifest["template_brain_mask"]
 
-    # Left: BOLD mask on native BOLD ref
-    ax_native = fig.add_subplot(gs[row, :])
-    bold_data, bold_pix = _load_vol(func["skull_stripped_bold"])
+    # Row: 3D BOLD mask surface (left) + mask overlay on native BOLD (right)
+    bold_data, _ = _load_vol(func["skull_stripped_bold"])
     mask_data, _ = _load_vol(func["bold_mask"])
-    _render_contours(
+
+    native_3d = _render_3d_surface([(func["bold_mask"], MASK_COLOR)])
+    if native_3d is not None:
+        ax_3d = fig.add_subplot(gs[row, :1])
+        ax_3d.imshow(native_3d)
+        ax_3d.set_title(
+            "BOLD mask surface",
+            fontsize=10,
+            color=TEXT_COLOR,
+            fontweight="bold",
+            pad=4,
+        )
+        ax_3d.set_facecolor(BG_COLOR)
+        ax_3d.axis("off")
+
+        ax_native = fig.add_subplot(gs[row, 1:])
+    else:
+        ax_native = fig.add_subplot(gs[row, :])
+
+    _render_mask_overlay(
         ax_native,
         bold_data,
-        bold_pix,
-        masks=[(mask_data, MASK_COLOR, "BOLD mask")],
-        title="BOLD mask on native BOLD ref",
+        masks=[(mask_data, MASK_COLOR, "")],
+        title="Coregistration: BOLD mask overlay",
+        outline=0.9,
     )
     row += 1
 
-    # Right: template mask on template BOLD
-    ax_tmpl = fig.add_subplot(gs[row, :])
-    tmpl_data, tmpl_pix = _load_vol(func["template_bold"])
+    # Row: 3D template mask surface (left) + mask overlay on template BOLD (right)
+    tmpl_data, _ = _load_vol(func["template_bold"])
     tmpl_mask_data, _ = _load_vol(template_brain_mask)
-    _render_contours(
+
+    tmpl_3d = _render_3d_surface([(template_brain_mask, MASK_COLOR)])
+    if tmpl_3d is not None:
+        ax_3d = fig.add_subplot(gs[row, :1])
+        ax_3d.imshow(tmpl_3d)
+        ax_3d.set_title(
+            "Template mask surface",
+            fontsize=10,
+            color=TEXT_COLOR,
+            fontweight="bold",
+            pad=4,
+        )
+        ax_3d.set_facecolor(BG_COLOR)
+        ax_3d.axis("off")
+
+        ax_tmpl = fig.add_subplot(gs[row, 1:])
+    else:
+        ax_tmpl = fig.add_subplot(gs[row, :])
+
+    _render_mask_overlay(
         ax_tmpl,
         tmpl_data,
-        tmpl_pix,
-        masks=[(tmpl_mask_data, MASK_COLOR, "Template mask")],
-        title="Template brain mask on template BOLD",
+        masks=[(tmpl_mask_data, MASK_COLOR, "")],
+        title="Normalization: brain mask overlay",
+        outline=0.9,
     )
     row += 1
 
@@ -500,17 +651,18 @@ def plot_functional_bold(
 
     # Template BOLD mean
     ax_tmpl = fig.add_subplot(gs[row, :])
-    tmpl_data, tmpl_pix = _load_vol(func["template_bold"])
-    _render_lightbox(
-        ax_tmpl, tmpl_data, tmpl_pix, title="Template BOLD (mean)", cmap="gray"
-    )
+    tmpl_data, _ = _load_vol(func["template_bold"])
+    _render_lightbox(ax_tmpl, tmpl_data, title="Template BOLD (mean)")
     row += 1
 
     # Cleaned BOLD temporal std
     ax_clean = fig.add_subplot(gs[row, :])
-    std_data, std_pix = _load_vol_std(func["cleaned_bold"])
+    std_data, _ = _load_vol_std(func["cleaned_bold"])
     _render_lightbox(
-        ax_clean, std_data, std_pix, title="Cleaned BOLD (temporal std)", cmap="inferno"
+        ax_clean,
+        std_data,
+        title="Cleaned BOLD (temporal std)",
+        cmap="inferno",
     )
     row += 1
 
@@ -585,7 +737,7 @@ def plot_metrics_maps(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -
     """
     metrics = manifest["metrics"]
     func = manifest["func"]
-    bg_data, bg_pix = _load_vol(func["template_bold"])
+    bg_data, _ = _load_vol(func["template_bold"])
 
     for i, (key, label) in enumerate(
         [
@@ -596,7 +748,7 @@ def plot_metrics_maps(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -
     ):
         ax = fig.add_subplot(gs[row, i])
         stat_data, _ = _load_vol(metrics[key])
-        _render_stat_overlay(ax, bg_data, stat_data, bg_pix, threshold=2.0, title=label)
+        _render_stat_overlay(ax, bg_data, stat_data, threshold=2.0, title=label)
 
     row += 1
     return row
@@ -612,13 +764,14 @@ def plot_correlation_matrix(manifest: dict, ax: plt.Axes) -> None:
         fontweight="bold",
         color=TEXT_COLOR,
     )
-    ax.set_xlabel("ROI", fontsize=8, color=TEXT_COLOR)
-    ax.set_ylabel("ROI", fontsize=8, color=TEXT_COLOR)
-    ax.tick_params(labelsize=6, colors=TEXT_COLOR)
+    ax.set_xlabel("ROI", fontsize=8, color=TEXT_COLOR, labelpad=2)
+    ax.set_ylabel("ROI", fontsize=8, color=TEXT_COLOR, labelpad=2)
+    ax.tick_params(labelsize=6, colors=TEXT_COLOR, pad=1)
     ax.set_facecolor("black")
     for spine in ax.spines.values():
         spine.set_color(SPINE_COLOR)
-    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+    cbar.set_label("Pearson r", fontsize=7, color=TEXT_COLOR, labelpad=2)
     cbar.ax.tick_params(labelsize=6, colors=TEXT_COLOR)
     cbar.outline.set_edgecolor(SPINE_COLOR)
 
@@ -697,6 +850,7 @@ def plot_qc(manifest: dict, ax: plt.Axes) -> None:
         colLabels=["Metric", "Value"],
         loc="upper center",
         cellLoc="left",
+        colWidths=[0.35, 0.2],
     )
     table.auto_set_font_size(False)
     table.set_fontsize(8)
@@ -747,22 +901,18 @@ def build_report(manifest: dict, output: Path) -> None:
     has_metrics = "metrics" in manifest
     has_qc = "qc" in manifest
 
-    # Compute layout: list of (height, ncols, label)
     heights: list[float] = []
     labels: list[str] = []
 
-    # -- Anatomical --
-    # header + 3D/lightbox row + segmentation row
+    # -- Anatomical: header + brain lightbox + segmentation --
     heights += [HEADER_HEIGHT, LIGHTBOX_ROW_HEIGHT, LIGHTBOX_ROW_HEIGHT]
     labels += ["anat_hdr", "anat_brain", "anat_seg"]
 
-    # -- Registration --
-    # header + native overlay + template overlay
+    # -- Registration: header + native overlay + template overlay --
     heights += [HEADER_HEIGHT, LIGHTBOX_ROW_HEIGHT, LIGHTBOX_ROW_HEIGHT]
     labels += ["reg_hdr", "reg_native", "reg_tmpl"]
 
-    # -- Functional --
-    # header + template BOLD + cleaned BOLD + motion plots
+    # -- Functional: header + template BOLD + cleaned BOLD + motion plots --
     heights += [
         HEADER_HEIGHT,
         LIGHTBOX_ROW_HEIGHT,
