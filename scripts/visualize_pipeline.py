@@ -854,7 +854,7 @@ def load_manifest(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
-def build_report(manifest: dict, output: Path) -> None:
+def build_report(manifest: dict, output: Path, *, dpi: int = 150) -> None:
     """Build a multi-panel visualization report.
 
     This is the public API called by visualize_cpac.py.
@@ -956,7 +956,7 @@ def build_report(manifest: dict, output: Path) -> None:
         plot_qc(manifest, qc_ax)
         row += 1
 
-    fig.savefig(output, dpi=150, bbox_inches="tight", facecolor=BG_COLOR)
+    fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor=BG_COLOR)
     print(f"Report saved to: {output}")
 
 
@@ -981,10 +981,16 @@ def main() -> None:
         default=Path("pipeline_report.png"),
         help="Output image path (default: pipeline_report.png)",
     )
+    parser.add_argument(
+        "--dpi",
+        type=int,
+        default=150,
+        help="Output resolution in DPI (default: 150)",
+    )
     args = parser.parse_args()
 
     manifest = load_manifest(args.manifest)
-    build_report(manifest, args.output)
+    build_report(manifest, args.output, dpi=args.dpi)
 
 
 if __name__ == "__main__":
