@@ -16,3 +16,7 @@ _DEFAULT_ENV_VARS = {
 }
 
 _SUB_SES_QUERY = ("sub", "ses")
+# Suffix to split up T1w vs T2w vs something else
+_ANAT_GROUP = ("run", "acq", "suffix", "part", "echo", "ce", "rec", "inv")
+# Ignore suffix to keep sbref with bold
+_FUNC_GROUP = ("task", "run", "acq", "dir", "echo", "part", "rec")
