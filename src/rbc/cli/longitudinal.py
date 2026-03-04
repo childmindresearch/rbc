@@ -21,6 +21,7 @@ from rbc.context import PipelineContext
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
+from rbc.workflows.functional import longitudinal_process as functional_longitudinal
 
 
 @dataclass(frozen=True)
@@ -33,10 +34,6 @@ class LongitudinalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
         """Validation of longitudinal workflow specific arguments to NamedTuple."""
-        if ns.functional:
-            raise NotImplementedError(
-                "Functional longitudinal pipeline not yet implemented."
-            )
         if not ns.functional and not ns.anatomical:
             raise ValueError(
                 "At least one of '--anatomical' or '--functional' is required."
@@ -148,7 +145,85 @@ def _process_anat(
 def _process_func(
     pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
-    """Handle longitudinal functional processing."""
+    """Handle functional longitudinal processing."""
+    row = func_df.filter(suffix="bold").row(0, named=True)
+    bold_task: str | None = row.get("task")
+    bold_run: int | None = row.get("run")
+
+    # Grab files
+    def _get_func_file(**kwargs) -> Path | None:  # noqa: ANN003 - bids arguments
+        try:
+            return get_file_path(
+                df=func_df,
+                sub=pipe_ctx.sub,
+                ses=pipe_ctx.ses,
+                datatype="func",
+                run=bold_run,
+                task=bold_task,
+                **kwargs,
+            )
+        except FileNotFoundError:
+            return None
+
+    get_tpl_file = partial(
+        get_file_path, df=tpl_df, ses="longitudinal", sub=pipe_ctx.sub, datatype="anat"
+    )
+    outputs = functional_longitudinal(
+        template=get_tpl_file(suffix="T1w"),
+        anat_to_template_xfm=get_tpl_file(
+            extension=".mat", extra={"to": "longitudinal"}
+        ),
+        bold_to_anat_xfm=_require_file(
+            _get_func_file(
+                suffix="xfm",
+                desc="linear",
+                extension=".mat",
+                extra={"from": "bold", "to": "T1w", "mode": "image"},
+            ),
+            "bold_to_anat_xfm",
+        ),
+        sbref=_require_file(_get_func_file(suffix="sbref"), "sbref"),
+        bold=_require_file(_get_func_file(desc="preproc", suffix="bold"), "bold"),
+        bold_mask=_get_func_file(desc="brain", suffix="mask"),
+    )
+    # Save longitudinal outputs
+    pipe_ctx.export(
+        outputs.sbref,
+        datatype="func",
+        space="longitudinal",
+        suffix="sbref",
+        task=bold_task,
+        run=bold_run,
+    )
+    pipe_ctx.export(
+        outputs.bold,
+        datatype="func",
+        space="longitudinal",
+        desc="preproc",
+        suffix="bold",
+        task=bold_task,
+        run=bold_run,
+    )
+    pipe_ctx.export(
+        outputs.forward_xfm,
+        datatype="func",
+        suffix="xfm",
+        desc="composite",
+        extension=".nii.gz",
+        extra={"from": "bold", "to": "longitudinal", "mode": "image"},
+        task=bold_task,
+        run=bold_run,
+    )
+    if outputs.bold_mask:
+        pipe_ctx.export(
+            outputs.bold_mask,
+            datatype="func",
+            space="longitudinal",
+            desc="brain",
+            suffix="mask",
+            task=bold_task,
+            run=bold_run,
+        )
 
 
 def main(args: LongitudinalArgs) -> int:
