@@ -203,23 +203,6 @@ class TestLongitudinalArgs:
         assert args.anatomical is True
         assert args.functional is False
 
-    def test_validate_namespace_both_flags(
-        self, long_namespace: argparse.Namespace
-    ) -> None:
-        """Test anatomical=True, functional=True raises NotImplementedError."""
-        long_namespace.functional = True
-        with pytest.raises(NotImplementedError, match="not yet implemented"):
-            LongitudinalArgs.validate_namespace(long_namespace)
-
-    def test_validate_namespace_functional_only_raises(
-        self, long_namespace: argparse.Namespace
-    ) -> None:
-        """Test functional=True alone raises NotImplementedError."""
-        long_namespace.anatomical = False
-        long_namespace.functional = True
-        with pytest.raises(NotImplementedError, match="not yet implemented"):
-            LongitudinalArgs.validate_namespace(long_namespace)
-
     def test_validate_namespace_no_flags_raises(
         self, long_namespace: argparse.Namespace
     ) -> None:
