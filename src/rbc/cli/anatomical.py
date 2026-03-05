@@ -129,6 +129,8 @@ def main(args: AnatomicalArgs) -> int:
                 run=t1w_run,
             )
 
+        pipe_ctx.generate_dataset_description(workflow="anatomical")
+
     ctx.logger.info("RBC anatomical workflow complete")
     return 0
 
