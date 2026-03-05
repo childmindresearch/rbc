@@ -48,6 +48,8 @@ Workflows must be run in order: `anatomical` → `functional` → `metrics` / `q
 
 ## Outputs
 
+See the [data dictionary](docs/data_dictionary.md) for a complete description of every output file, including format details and the processing step that produces each one.
+
 <details>
 <summary>Example BIDS derivative tree</summary>
 
@@ -60,16 +62,17 @@ derivatives/rbc/
         sub-01_ses-01_desc-T1w_mask.nii.gz
         sub-01_ses-01_desc-{csf,gm,wm}_mask.nii.gz
         sub-01_ses-01_from-T1w_to-template_mode-image_xfm.nii.gz
+        sub-01_ses-01_from-template_to-T1w_mode-image_xfm.nii.gz
       func/
         sub-01_ses-01_task-rest_desc-preproc_bold.nii.gz
         sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_reg-36-parameter_bold.nii.gz
         sub-01_ses-01_task-rest_desc-motionParams_motion.1D
-        sub-01_ses-01_task-rest_desc-xcp_quality.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-alff_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-reho_bold.nii.gz
-        sub-01_ses-01_task-rest_atlas-schaefer200_timeseries.tsv
-        sub-01_ses-01_task-rest_atlas-schaefer200_correlationmatrix.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-xcp_reg-36-parameter_quality.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_alff.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_reho.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_desc-mean_reg-36-parameter_timeseries.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_desc-pearson_reg-36-parameter_correlations.tsv
 ```
 
 </details>
