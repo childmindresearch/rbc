@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
@@ -77,7 +77,9 @@ def main(args: FunctionalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for func_df, anat_df in iter_session_files(session, groupby=_FUNC_GROUP):
+        for func_df, anat_df in iter_session_files(
+            session, groupby=_FUNC_GROUP_ENTITIES
+        ):
             row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
             bold_task: str | None = row.get("task")
