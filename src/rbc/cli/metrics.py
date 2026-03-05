@@ -150,7 +150,7 @@ def main(args: MetricsArgs) -> int:
                 extension=".tsv",
                 atlas=args.atlas,
             )
-        pipe_ctx.generate_dataset_description(workflow="metrics")
+        pipe_ctx.generate_dataset_description()
 
     ctx.logger.info("RBC metrics workflow complete")
     return 0
