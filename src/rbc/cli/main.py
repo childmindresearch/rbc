@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from rbc.cli import all as all_
-from rbc.cli import anatomical, functional, metrics, qc
+from rbc.cli import anatomical, functional, longitudinal, metrics, qc
 from rbc.cli.base import BaseArgs
 
 __all__ = ["BaseArgs"]
@@ -95,6 +95,8 @@ def create_parser() -> argparse.ArgumentParser:
     metrics.register_command(subparsers, parents=[global_opts])
     qc.register_command(subparsers, parents=[global_opts])
     all_.register_command(subparsers, parents=[global_opts])
+    # Experimental subcommand
+    longitudinal.register_command(subparsers, parents=[global_opts])
 
     for action in global_opts._actions:
         parser._add_action(action)
