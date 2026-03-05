@@ -16,7 +16,7 @@ from pathlib import Path
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
+from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import PipelineContext
 from rbc.core.bids2table import load_table
@@ -61,7 +61,7 @@ def main(args: AnatomicalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for _, anat_df in iter_session_files(session, groupby=("run")):
+        for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
             row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
             t1w_run: int | None = row.get("run")
