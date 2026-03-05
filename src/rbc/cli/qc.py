@@ -185,7 +185,7 @@ def main(args: QCArgs) -> int:
             ctx.logger.info(
                 f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} run-{bold_run}"
             )
-        pipe_ctx.generate_dataset_description()
+        pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC QC workflow complete")
     return 0

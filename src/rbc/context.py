@@ -129,24 +129,30 @@ class PipelineContext:
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest
 
-    def generate_dataset_description(self) -> None:
+    def ensure_dataset_description(self) -> None:
         """Generate / append to dataset_description.json file."""
-        ds_file = self.output_dir / "dataset_description.json"
-        ds_file.parent.mkdir(parents=True, exist_ok=True)
+        _ensure_dataset_description(output_dir=self.output_dir)
 
-        if not ds_file.exists():
-            ds_data = {
-                "Name": "RBC Outputs",
-                "BIDSVersion": BIDS_VERSION,
-                "DatasetType": "derivative",
-                "ReferencesAndLinks": ["https://doi.org/10.1016/j.neuron.2025.08.026"],
-                "GeneratedBy": [
-                    {
-                        "Name": "RBC",
-                        "Version": _RBC_VERSION,
-                        "CodeURL": "https://github.com/childmindresearch/rbc",
-                    }
-                ],
+
+def _ensure_dataset_description(output_dir: Path) -> None:
+    """Generate / append to dataset_description.json file."""
+    ds_file = output_dir / "dataset_description.json"
+    if ds_file.exists():
+        return
+
+    ds_file.parent.mkdir(parents=True, exist_ok=True)
+    ds_data = {
+        "Name": "RBC Outputs",
+        "BIDSVersion": BIDS_VERSION,
+        "DatasetType": "derivative",
+        "ReferencesAndLinks": ["https://doi.org/10.1016/j.neuron.2025.08.026"],
+        "GeneratedBy": [
+            {
+                "Name": "RBC",
+                "Version": _RBC_VERSION,
+                "CodeURL": "https://github.com/childmindresearch/rbc",
             }
-            with ds_file.open("w") as fpath:
-                json.dump(ds_data, fpath, indent=2)
+        ],
+    }
+    with ds_file.open("w") as fpath:
+        json.dump(ds_data, fpath, indent=2)
