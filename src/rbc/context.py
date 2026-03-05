@@ -6,14 +6,32 @@ Holds subject identity and output directory, providing ``export()`` and
 
 from __future__ import annotations
 
+import copy
+import json
 import shutil
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+import tempfile
+from dataclasses import dataclass, field
+from importlib.metadata import version
+from pathlib import Path
+from typing import Any
 
-from rbc.core.bids import bids_path
+from filelock import BaseFileLock, FileLock, Timeout
 
-if TYPE_CHECKING:
-    from pathlib import Path
+from rbc.core.bids import BIDS_VERSION, bids_path
+
+_RBC_VERSION = version("rbc")
+_RBC_GENERATED_BY = {
+    "Version": _RBC_VERSION,
+    "CodeURL": "https://github.com/childmindresearch/rbc",
+}
+
+DEFAULT_DATASET_DESCRIPTION = {
+    "Name": "RBC Outputs",
+    "BIDSVersion": BIDS_VERSION,
+    "DatasetType": "derivative",
+    "ReferencesAndLinks": ["https://doi.org/10.1016/j.neuron.2025.08.026"],
+    "GeneratedBy": [],
+}
 
 
 @dataclass
@@ -29,6 +47,11 @@ class PipelineContext:
     sub: str
     ses: str | None
     output_dir: Path
+    _ds_lock: BaseFileLock = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Post initialization of PipelineContext."""
+        self._ds_lock = FileLock(self.output_dir / "dataset_description.json.lock")
 
     def export(
         self,
@@ -124,3 +147,36 @@ class PipelineContext:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest
+
+    def generate_dataset_description(self, *, workflow: str) -> None:
+        """Generate / append to dataset_description.json file.
+
+        Args:
+            workflow: specific pipeline run.
+        """
+        ds_file = self.output_dir / "dataset_description.json"
+        ds_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with self._ds_lock.acquire(timeout=0):
+                ds_data: dict[str, Any] = (
+                    json.loads(ds_file.read_text())
+                    if ds_file.exists()
+                    else copy.deepcopy(DEFAULT_DATASET_DESCRIPTION)
+                )
+
+                new_entry = {"Name": f"RBC {workflow} pipeline", **_RBC_GENERATED_BY}
+                generated_by: list[dict[str, str]] = ds_data.setdefault(
+                    "GeneratedBy", []
+                )
+                if new_entry not in generated_by:
+                    generated_by.append(new_entry)
+
+                    with tempfile.NamedTemporaryFile(
+                        mode="w", dir=ds_file.parent, delete=False, suffix=".tmp"
+                    ) as tmp:
+                        json.dump(ds_data, tmp, indent=2)
+                    tmp_path = Path(tmp.name)
+                    tmp_path.replace(ds_file)
+        except Timeout:
+            return
