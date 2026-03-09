@@ -135,7 +135,7 @@ class PipelineContext:
 
 
 def _ensure_dataset_description(output_dir: Path) -> None:
-    """Generate / append to dataset_description.json file."""
+    """Create dataset_description.json file in a directory if it doesn't exist."""
     ds_file = output_dir / "dataset_description.json"
     if ds_file.exists():
         return
