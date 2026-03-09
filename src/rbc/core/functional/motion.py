@@ -29,14 +29,16 @@ class MotionCorrectedOutputs(NamedTuple):
 
     Attributes:
         bold: Motion-corrected BOLD timeseries.
-        par: Six-column motion parameter file (3 rotations, 3 translations).
+        motion_params: Normalized six-column motion parameter file
+            (AFNI convention: [roll, pitch, yaw, dS, dL, dP],
+            rotations in degrees).
         rms_rel: Frame-to-frame (relative) RMS displacement.
         rms_abs: Volume-to-reference (absolute) RMS displacement.
         mat_dir: Directory containing per-volume affine matrices.
     """
 
     bold: Path
-    par: Path
+    motion_params: Path
     rms_rel: Path
     rms_abs: Path
     mat_dir: Path
@@ -105,21 +107,54 @@ def extract_motion_reference(in_file: Path) -> Path:
     return output_file
 
 
-def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutputs:
-    """Estimate and correct head motion using FSL ``mcflirt``.
+def normalize_motion_parameters(in_file: Path) -> Path:
+    """Convert FSL mcflirt motion parameters to AFNI space.
 
-    Each volume is rigidly aligned to the reference image. The per-volume
-    affine matrices are saved so they can later be composed with other
-    transforms (distortion correction, coregistration, template warp) for
-    single-step resampling to template space.
+    Converts rotations from radians to degrees and reorders/reorients
+    axes from FSL to AFNI convention:
+        FSL order: [rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]
+        AFNI order: [roll, pitch, yaw, dS, dL, dP]
+
+    Args:
+        in_file: Path to mcflirt .par file (rotations in radians).
+
+    Returns:
+        Path to normalized motion_params.1D (rotations in degrees).
+    """
+    motion_params = np.genfromtxt(in_file).T  # (6, T)
+    motion_params = np.vstack(
+        (
+            motion_params[2, :] * 180 / np.pi,  # roll  (FSL rot_z to degrees)
+            motion_params[0, :] * 180 / np.pi,  # pitch (FSL rot_x to degrees)
+            -motion_params[1, :] * 180 / np.pi,  # yaw   (FSL rot_y to degrees, flipped)
+            motion_params[5, :],  # dS    (FSL trans_z)
+            motion_params[3, :],  # dL    (FSL trans_x)
+            -motion_params[4, :],  # dP    (FSL trans_y, flipped)
+        )
+    )
+    motion_params = motion_params.T  # (T, 6)
+    out_file = generate_exec_folder(suffix="motion_params") / "motion_params.1D"
+    np.savetxt(out_file, motion_params)
+    return out_file
+
+
+def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutputs:
+    """Correct head motion using FSL ``mcflirt``.
+
+    Each volume is rigidly aligned to the reference image. The motion parameters
+    are normalized via :func:`normalize_motion_parameters` (FSL to AFNI convention)
+    and are used downstream for nuisance regression and QC. The per-volume affine
+    matrices are saved so they can later be composed with other transforms
+    (distortion correction, coregistration, template warp) for single-step
+    resampling to template space.
 
     Args:
         in_file: BOLD timeseries to motion-correct.
         ref_file: Single-volume reference image (from :func:`extract_motion_reference`).
 
     Returns:
-        Motion-corrected data, parameter files, displacement metrics, and
-        the per-volume transform matrix directory.
+        Motion-corrected data, normalized motion parameter file, displacement metrics,
+        and the per-volume transform matrix directory.
     """
     mc_result = fsl.mcflirt(
         in_file=in_file,
@@ -143,9 +178,11 @@ def fsl_motion_correction(in_file: Path, ref_file: Path) -> MotionCorrectedOutpu
     assert mc_result.rmsrel_files is not None  # noqa: S101
     assert mc_result.rmsabs_files is not None  # noqa: S101
 
+    motion_params = normalize_motion_parameters(mc_result.par_file)
+
     return MotionCorrectedOutputs(
         bold=bold_path,
-        par=mc_result.par_file,
+        motion_params=motion_params,
         rms_rel=mc_result.rmsrel_files,
         rms_abs=mc_result.rmsabs_files,
         mat_dir=motion_mat_dir,

@@ -48,8 +48,8 @@ def framewise_displacement_power(motion_params: np.ndarray) -> np.ndarray:
 
     Args:
         motion_params: ``(T, 6)`` array where columns are
-            ``[rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]``
-            (radians for rotations, mm for translations).
+            ``[roll, pitch, yaw, dS, dL, dP]``
+            (degrees for rotations, mm for translations).
 
     Returns:
         1-D float64 array of length *T* with 0 for the first volume.

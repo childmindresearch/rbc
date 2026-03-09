@@ -56,7 +56,7 @@ def nuisance_regression(
     brain_mask_file: str | Path,
     csf_mask_file: str | Path,
     wm_mask_file: str | Path,
-    motion_par_file: str | Path,
+    motion_params: str | Path,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
     bandpass: tuple[float, float] | None = (0.01, 0.1),
 ) -> NuisanceRegressionOutputs:
@@ -65,7 +65,7 @@ def nuisance_regression(
     Steps:
         1. Load BOLD and tissue masks
         2. Erode masks (CSF 90%, WM 60%, brain 30mm)
-        3. Load motion parameters from ``.par`` file
+        3. Load motion parameters from ``.1D`` file
         4. Extract tissue mean signals from eroded masks
         5. Assemble regressor matrix (36-param or aCompCor)
         6. Write ``.1D`` regressor file
@@ -76,7 +76,7 @@ def nuisance_regression(
         brain_mask_file: 3-D brain mask.
         csf_mask_file: 3-D CSF tissue mask.
         wm_mask_file: 3-D WM tissue mask.
-        motion_par_file: FSL-format ``.par`` file (T rows x 6 columns).
+        motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
         regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
         bandpass: ``(low_hz, high_hz)`` frequency band to retain, or
             *None* to skip bandpass filtering (in which case ``polort``
@@ -110,7 +110,7 @@ def nuisance_regression(
     eroded = ErodedMaskArrays(csf=csf_eroded, wm=wm_eroded, brain=brain_eroded)
 
     # 3. Load motion parameters
-    motion_params = np.loadtxt(motion_par_file)
+    motion_params_data = np.loadtxt(motion_params)
 
     # 4. Extract tissue mean signals
     csf_signal = extract_mean_signal(bold_data, csf_eroded)
@@ -120,13 +120,13 @@ def nuisance_regression(
     if regressor_set == "36-parameter":
         global_signal = extract_mean_signal(bold_data, brain_eroded)
         matrix, column_names = assemble_36param_regressors(
-            motion_params, csf_signal, wm_signal, global_signal
+            motion_params_data, csf_signal, wm_signal, global_signal
         )
     elif regressor_set == "aCompCor":
         union_mask = (csf_eroded | wm_eroded).astype(np.uint8)
         acompcor_components = compute_acompcor(bold_data, union_mask)
         matrix, column_names = assemble_acompcor_regressors(
-            motion_params, csf_signal, wm_signal, acompcor_components
+            motion_params_data, csf_signal, wm_signal, acompcor_components
         )
     else:
         raise ValueError(

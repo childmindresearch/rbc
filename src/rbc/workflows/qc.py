@@ -59,7 +59,7 @@ def single_session_qc(
     Args:
         template_bold: Pre-denoising BOLD in template space.
         cleaned_bold: Post-denoising (nuisance-regressed) BOLD.
-        motion_params: ``.par`` file from MCFLIRT (six-column).
+        motion_params: ``.1D`` file (six-column).
         rms_rel: ``_rel.rms`` file from MCFLIRT.
         bold_mask: Native BOLD brain mask.
         brain_mask: Anatomical brain mask (native space).

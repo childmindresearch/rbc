@@ -39,7 +39,7 @@ def test_xcp_qc_from_bold(
 
     # Load MCFLIRT outputs
     rms_values = np.loadtxt(mc.rms_rel)
-    motion_params = np.loadtxt(mc.par)
+    motion_params = np.loadtxt(mc.motion_params)
     fd = framewise_displacement_jenkinson(rms_values)
 
     # Compute sub-metrics
