@@ -195,7 +195,7 @@ def single_session_preprocess(
         brain_mask_file=tmpl_brain,
         csf_mask_file=tmpl_csf,
         wm_mask_file=tmpl_wm,
-        motion_par_file=mc.par,
+        motion_params=mc.motion_params,
         regressor_set=regressor_set,
         bandpass=bandpass,
     )
@@ -207,7 +207,7 @@ def single_session_preprocess(
         despiked_bold=despiked,
         sbref=motion_ref,
         motion_corrected_bold=mc.bold,
-        motion_params=mc.par,
+        motion_params=mc.motion_params,
         rms_rel=mc.rms_rel,
         rms_abs=mc.rms_abs,
         mat_dir=mc.mat_dir,

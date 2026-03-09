@@ -15,7 +15,7 @@ import numpy as np
 
 _logger = logging.getLogger(__name__)
 
-_MOTION_LABELS = ["rot_x", "rot_y", "rot_z", "trans_x", "trans_y", "trans_z"]
+_MOTION_LABELS = ["roll", "pitch", "yaw", "dS", "dL", "dP"]
 _EXPAND_SUFFIXES = ["", "_deriv", "_sq", "_deriv_sq"]
 
 
