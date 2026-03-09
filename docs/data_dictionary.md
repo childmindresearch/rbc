@@ -1,6 +1,6 @@
 # Data Dictionary
 
-This document describes every output file the RBC pipeline produces. All outputs are written to a BIDS derivatives directory (`derivatives/rbc/`) organized by subject, session, and data type.
+All outputs are written to a BIDS outputs derivatives directory.
 
 ## BIDS filename conventions
 
