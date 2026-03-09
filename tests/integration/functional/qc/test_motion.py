@@ -25,7 +25,7 @@ def test_motion_qc_from_mcflirt(motion_corrected_bold: MotionCorrectedBOLD) -> N
 
     # Read MCFLIRT outputs
     rms_values = np.loadtxt(mc.rms_rel)
-    motion_params = np.loadtxt(mc.par)
+    motion_params = np.loadtxt(mc.motion_params)
 
     # --- FD-Jenkinson ---
     fd_j = framewise_displacement_jenkinson(rms_values)
