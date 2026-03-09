@@ -130,7 +130,7 @@ class PipelineContext:
         return dest
 
     def ensure_dataset_description(self) -> None:
-        """Create dataset_description.json file in the output directory if it doesn't exist."""
+        """Create dataset_description.json in output directory if it doesn't exist."""
         _ensure_dataset_description(output_dir=self.output_dir)
 
 
