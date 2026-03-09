@@ -110,7 +110,7 @@ def nuisance_regression(
     eroded = ErodedMaskArrays(csf=csf_eroded, wm=wm_eroded, brain=brain_eroded)
 
     # 3. Load motion parameters
-    motion_params = np.loadtxt(motion_params)
+    motion_params_data = np.loadtxt(motion_params)
 
     # 4. Extract tissue mean signals
     csf_signal = extract_mean_signal(bold_data, csf_eroded)
@@ -120,13 +120,13 @@ def nuisance_regression(
     if regressor_set == "36-parameter":
         global_signal = extract_mean_signal(bold_data, brain_eroded)
         matrix, column_names = assemble_36param_regressors(
-            motion_params, csf_signal, wm_signal, global_signal
+            motion_params_data, csf_signal, wm_signal, global_signal
         )
     elif regressor_set == "aCompCor":
         union_mask = (csf_eroded | wm_eroded).astype(np.uint8)
         acompcor_components = compute_acompcor(bold_data, union_mask)
         matrix, column_names = assemble_acompcor_regressors(
-            motion_params, csf_signal, wm_signal, acompcor_components
+            motion_params_data, csf_signal, wm_signal, acompcor_components
         )
     else:
         raise ValueError(
