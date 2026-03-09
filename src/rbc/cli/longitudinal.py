@@ -196,6 +196,7 @@ def main(args: LongitudinalArgs) -> int:
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+        pipe_ctx.ensure_dataset_description()
 
     return 0
 

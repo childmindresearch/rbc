@@ -150,6 +150,7 @@ def main(args: MetricsArgs) -> int:
                 extension=".tsv",
                 atlas=args.atlas,
             )
+        pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC metrics workflow complete")
     return 0

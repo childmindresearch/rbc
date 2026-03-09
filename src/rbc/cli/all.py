@@ -296,6 +296,7 @@ def main(args: AllArgs) -> int:
             ctx.logger.info(
                 f"QC {status} for sub-{pipe_ctx.sub} task-{bold_task} run-{bold_run}"
             )
+        pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC full pipeline complete")
     return 0

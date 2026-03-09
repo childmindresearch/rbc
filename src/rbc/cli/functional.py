@@ -205,6 +205,8 @@ def main(args: FunctionalArgs) -> int:
                 run=bold_run,
             )
 
+        pipe_ctx.ensure_dataset_description()
+
     ctx.logger.info("RBC functional workflow complete")
     return 0
 

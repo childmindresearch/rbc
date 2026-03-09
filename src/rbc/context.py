@@ -6,14 +6,18 @@ Holds subject identity and output directory, providing ``export()`` and
 
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import dataclass
+from importlib.metadata import version
 from typing import TYPE_CHECKING
 
-from rbc.core.bids import bids_path
+from rbc.core.bids import BIDS_VERSION, bids_path
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+_RBC_VERSION = version("rbc")
 
 
 @dataclass
@@ -124,3 +128,31 @@ class PipelineContext:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest
+
+    def ensure_dataset_description(self) -> None:
+        """Create dataset_description.json in output directory if it doesn't exist."""
+        _ensure_dataset_description(output_dir=self.output_dir)
+
+
+def _ensure_dataset_description(output_dir: Path) -> None:
+    """Create dataset_description.json file in a directory if it doesn't exist."""
+    ds_file = output_dir / "dataset_description.json"
+    if ds_file.exists():
+        return
+
+    ds_file.parent.mkdir(parents=True, exist_ok=True)
+    ds_data = {
+        "Name": "RBC Outputs",
+        "BIDSVersion": BIDS_VERSION,
+        "DatasetType": "derivative",
+        "ReferencesAndLinks": ["https://doi.org/10.1016/j.neuron.2025.08.026"],
+        "GeneratedBy": [
+            {
+                "Name": "RBC",
+                "Version": _RBC_VERSION,
+                "CodeURL": "https://github.com/childmindresearch/rbc",
+            }
+        ],
+    }
+    with ds_file.open("w") as fpath:
+        json.dump(ds_data, fpath, indent=2)
