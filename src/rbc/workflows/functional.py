@@ -15,8 +15,12 @@ from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
+    PepolarFieldmap,
+    PhasediffFieldmap,
     bold_masking,
     coregister_bold_to_t1w,
+    correct_distortion_pepolar,
+    correct_distortion_phasediff,
     despike_bold,
     extract_motion_reference,
     fsl_motion_correction,
@@ -41,6 +45,10 @@ class FunctionalOutputs(NamedTuple):
         stc_bold: Slice-timing corrected BOLD.
         despiked_bold: Despiked BOLD timeseries.
         sbref: Motion reference (single-band reference) volume.
+        distortion_corrected_ref: Distortion-corrected BOLD reference, or
+            *None* if no fieldmap data was provided.
+        distortion_warp: ANTs/ITK-compatible distortion warp field, or
+            *None* if no fieldmap data was provided.
         motion_corrected_bold: Motion-corrected BOLD.
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
@@ -60,6 +68,8 @@ class FunctionalOutputs(NamedTuple):
     stc_bold: Path
     despiked_bold: Path
     sbref: Path
+    distortion_corrected_ref: Path | None
+    distortion_warp: Path | None
     motion_corrected_bold: Path
     motion_params: Path
     rms_rel: Path
@@ -99,6 +109,7 @@ def single_session_preprocess(
     start_tr: int = 2,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
     bandpass: tuple[float, float] | None = (0.01, 0.1),
+    fieldmap: PhasediffFieldmap | PepolarFieldmap | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
 
@@ -109,6 +120,7 @@ def single_session_preprocess(
     3.  Slice timing correction.
     4.  Despike the STC BOLD.
     5.  Extract motion reference from despiked STC.
+    5b. Susceptibility distortion correction (optional).
     6.  Motion correction (despiked STC -> motion ref).
     7.  BOLD brain masking.
     8.  BBR coregistration (BOLD -> T1w).
@@ -127,6 +139,10 @@ def single_session_preprocess(
         start_tr: Number of initial TRs to discard.
         regressor_set: Nuisance regressor strategy.
         bandpass: Frequency band to retain, or *None* to skip.
+        fieldmap: Fieldmap inputs for susceptibility distortion correction.
+            Pass a :class:`PhasediffFieldmap` for B0 fieldmap correction or a
+            :class:`PepolarFieldmap` for opposite phase-encoding correction.
+            *None* skips distortion correction.
 
     Returns:
         All output paths bundled in a :class:`FunctionalOutputs` tuple.
@@ -152,12 +168,39 @@ def single_session_preprocess(
     # 5. Extract motion reference from despiked STC
     motion_ref = extract_motion_reference(in_file=despiked)
 
+    # 5b. Distortion correction (optional)
+    distortion = None
+    if isinstance(fieldmap, PhasediffFieldmap):
+        distortion = correct_distortion_phasediff(
+            bold_ref=motion_ref,
+            magnitude=fieldmap.magnitude,
+            delta_te=fieldmap.delta_te,
+            effective_echo_spacing=fieldmap.effective_echo_spacing,
+            pe_direction=fieldmap.pe_direction,
+            phasediff=fieldmap.phasediff,
+            phase1=fieldmap.phase1,
+            phase2=fieldmap.phase2,
+        )
+    elif isinstance(fieldmap, PepolarFieldmap):
+        distortion = correct_distortion_pepolar(
+            bold_ref=motion_ref,
+            epi_ap=fieldmap.epi_ap,
+            epi_pa=fieldmap.epi_pa,
+            readout_time_ap=fieldmap.readout_time_ap,
+            readout_time_pa=fieldmap.readout_time_pa,
+            pe_direction=fieldmap.pe_direction,
+            topup_config=fieldmap.topup_config,
+        )
+
+    effective_ref = distortion.corrected_ref if distortion else motion_ref
+    distortion_warp = distortion.warp_field if distortion else None
+
     # 6. Motion correction on despiked STC
-    mc = fsl_motion_correction(in_file=despiked, ref_file=motion_ref)
+    mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. BOLD brain masking
     masking = bold_masking(
-        bold_ref=motion_ref,
+        bold_ref=effective_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
         template_ref=MNI_TEMPLATES.bold_ref,
     )
@@ -178,6 +221,7 @@ def single_session_preprocess(
         bold_ref=masking.skull_stripped_bold,
         template=MNI_TEMPLATES.brain_2mm,
         t1w_brain=t1w_brain,
+        distortion_warp=distortion_warp,
     )
 
     # 10. Warp tissue masks to template space (same grid as resampled BOLD)
@@ -206,6 +250,8 @@ def single_session_preprocess(
         stc_bold=st_corrected,
         despiked_bold=despiked,
         sbref=motion_ref,
+        distortion_corrected_ref=distortion.corrected_ref if distortion else None,
+        distortion_warp=distortion_warp,
         motion_corrected_bold=mc.bold,
         motion_params=mc.par,
         rms_rel=mc.rms_rel,

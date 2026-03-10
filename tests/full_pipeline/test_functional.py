@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 
 def test_single_session_preprocess(pipeline_data: PipelineData) -> None:
-    """All 16 FunctionalOutputs paths must exist on disk."""
+    """All non-None FunctionalOutputs paths must exist on disk."""
     for path in pipeline_data.func:
-        assert Path(path).exists()
+        if path is not None:
+            assert Path(path).exists()
