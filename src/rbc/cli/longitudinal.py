@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -74,13 +73,17 @@ def _process_anat(
         except FileNotFoundError:
             return None
 
-    get_tpl_file = partial(
-        get_file_path, df=tpl_df, ses="longitudinal", sub=pipe_ctx.sub, datatype="anat"
-    )
     outputs = anatomical_longitudinal(
-        template=get_tpl_file(suffix="T1w"),
-        subj_to_template_xfm=get_tpl_file(
-            extension=".mat", extra={"to": "longitudinal"}
+        template=get_file_path(
+            df=tpl_df,
+            sub=pipe_ctx.sub,
+            ses="longitudinal",
+            datatype="anat",
+            suffix="T1w",
+        ),
+        subj_to_template_xfm=_require_file(
+            _get_anat_file(extension=".mat", extra={"to": "longitudinal"}),
+            "subj_to_template_xfm",
         ),
         brain=_require_file(_get_anat_file(suffix="T1w", desc="brain"), "brain"),
         brain_mask=_get_anat_file(suffix="mask", desc="T1w"),
