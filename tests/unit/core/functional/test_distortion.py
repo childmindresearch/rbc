@@ -85,14 +85,14 @@ class TestWriteAcqparams:
 
     def test_basic_j_direction(self, tmp_path: Path) -> None:
         """AP (j) + PA (j-) with known readout times."""
-        epi_ap = self._make_nifti((4, 4, 4, 1), tmp_path, "ap.nii.gz")
-        epi_pa = self._make_nifti((4, 4, 4, 2), tmp_path, "pa.nii.gz")
+        epi_forward = self._make_nifti((4, 4, 4, 1), tmp_path, "forward.nii.gz")
+        epi_reverse = self._make_nifti((4, 4, 4, 2), tmp_path, "reverse.nii.gz")
         output = tmp_path / "acqparams.txt"
 
         _write_acqparams(
             pe_dirs=["j", "j-"],
             readout_times=[0.05, 0.05],
-            epi_files=[epi_ap, epi_pa],
+            epi_files=[epi_forward, epi_reverse],
             output=output,
         )
 
@@ -338,9 +338,9 @@ class TestCorrectDistortionPepolarValidation:
         with pytest.raises(ValueError, match="Invalid pe_direction"):
             correct_distortion_pepolar(
                 bold_ref=dummy,
-                epi_ap=dummy,
-                epi_pa=dummy,
-                readout_time_ap=0.05,
-                readout_time_pa=0.05,
+                epi_forward=dummy,
+                epi_reverse=dummy,
+                readout_time_forward=0.05,
+                readout_time_reverse=0.05,
                 pe_direction="bad",  # type: ignore[arg-type]
             )

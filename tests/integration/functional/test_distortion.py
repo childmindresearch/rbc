@@ -105,16 +105,16 @@ def test_correct_distortion_pepolar(test_subject: TestSubjectData) -> None:
 
     out_dir = generate_exec_folder(suffix="test_pepolar_synth")
 
-    ap_path = out_dir / "epi_ap.nii.gz"
-    pa_path = out_dir / "epi_pa.nii.gz"
-    _create_synthetic_epi_pair(ref_img, str(ap_path), str(pa_path))
+    forward_path = out_dir / "epi_forward.nii.gz"
+    reverse_path = out_dir / "epi_reverse.nii.gz"
+    _create_synthetic_epi_pair(ref_img, str(forward_path), str(reverse_path))
 
     result = correct_distortion_pepolar(
         bold_ref=motion_ref,
-        epi_ap=ap_path,
-        epi_pa=pa_path,
-        readout_time_ap=0.05,
-        readout_time_pa=0.05,
+        epi_forward=forward_path,
+        epi_reverse=reverse_path,
+        readout_time_forward=0.05,
+        readout_time_reverse=0.05,
         pe_direction="j",
     )
 

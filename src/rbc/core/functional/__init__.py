@@ -13,8 +13,8 @@ from .coregistration import coregister_bold_to_t1w
 from .despiking import despike_bold
 from .distortion import (
     BidsPhaseEncoding,
-    PepolarFieldmap,
-    PhasediffFieldmap,
+    PEPolarFieldmap,
+    PhaseDiffFieldmap,
     correct_distortion_pepolar,
     correct_distortion_phasediff,
     is_valid_pe_direction,
@@ -44,8 +44,8 @@ from .timing import slice_timing_correction
 
 __all__ = [
     "BidsPhaseEncoding",
-    "PepolarFieldmap",
-    "PhasediffFieldmap",
+    "PEPolarFieldmap",
+    "PhaseDiffFieldmap",
     "assemble_36param_regressors",
     "assemble_acompcor_regressors",
     "bold_masking",

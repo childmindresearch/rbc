@@ -15,8 +15,8 @@ from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
-    PepolarFieldmap,
-    PhasediffFieldmap,
+    PEPolarFieldmap,
+    PhaseDiffFieldmap,
     bold_masking,
     coregister_bold_to_t1w,
     correct_distortion_pepolar,
@@ -109,7 +109,7 @@ def single_session_preprocess(
     start_tr: int = 2,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
     bandpass: tuple[float, float] | None = (0.01, 0.1),
-    fieldmap: PhasediffFieldmap | PepolarFieldmap | None = None,
+    fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
 
@@ -140,8 +140,8 @@ def single_session_preprocess(
         regressor_set: Nuisance regressor strategy.
         bandpass: Frequency band to retain, or *None* to skip.
         fieldmap: Fieldmap inputs for susceptibility distortion correction.
-            Pass a :class:`PhasediffFieldmap` for B0 fieldmap correction or a
-            :class:`PepolarFieldmap` for opposite phase-encoding correction.
+            Pass a :class:`PhaseDiffFieldmap` for B0 fieldmap correction or a
+            :class:`PEPolarFieldmap` for opposite phase-encoding correction.
             *None* skips distortion correction.
 
     Returns:
@@ -170,7 +170,7 @@ def single_session_preprocess(
 
     # 5b. Distortion correction (optional)
     distortion = None
-    if isinstance(fieldmap, PhasediffFieldmap):
+    if isinstance(fieldmap, PhaseDiffFieldmap):
         distortion = correct_distortion_phasediff(
             bold_ref=motion_ref,
             magnitude=fieldmap.magnitude,
@@ -181,13 +181,13 @@ def single_session_preprocess(
             phase1=fieldmap.phase1,
             phase2=fieldmap.phase2,
         )
-    elif isinstance(fieldmap, PepolarFieldmap):
+    elif isinstance(fieldmap, PEPolarFieldmap):
         distortion = correct_distortion_pepolar(
             bold_ref=motion_ref,
-            epi_ap=fieldmap.epi_ap,
-            epi_pa=fieldmap.epi_pa,
-            readout_time_ap=fieldmap.readout_time_ap,
-            readout_time_pa=fieldmap.readout_time_pa,
+            epi_forward=fieldmap.epi_forward,
+            epi_reverse=fieldmap.epi_reverse,
+            readout_time_forward=fieldmap.readout_time_forward,
+            readout_time_reverse=fieldmap.readout_time_reverse,
             pe_direction=fieldmap.pe_direction,
             topup_config=fieldmap.topup_config,
         )

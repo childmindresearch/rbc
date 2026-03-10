@@ -33,7 +33,7 @@ BidsPhaseEncoding = Literal["i", "i-", "j", "j-", "k", "k-"]
 FslDirection = Literal["x", "x-", "y", "y-", "z", "z-"]
 
 
-class PhasediffFieldmap(NamedTuple):
+class PhaseDiffFieldmap(NamedTuple):
     """Inputs for phase-difference B0 fieldmap distortion correction.
 
     Attributes:
@@ -55,23 +55,23 @@ class PhasediffFieldmap(NamedTuple):
     phase2: Path | None = None
 
 
-class PepolarFieldmap(NamedTuple):
+class PEPolarFieldmap(NamedTuple):
     """Inputs for opposite phase-encoding (PEPOLAR) distortion correction.
 
     Attributes:
-        epi_ap: EPI image in the primary phase-encoding direction.
-        epi_pa: EPI image in the reversed phase-encoding direction.
-        readout_time_ap: Total readout time for *epi_ap* (seconds).
-        readout_time_pa: Total readout time for *epi_pa* (seconds).
+        epi_forward: EPI image in the primary phase-encoding direction.
+        epi_reverse: EPI image in the reversed phase-encoding direction.
+        readout_time_forward: Total readout time for *epi_forward* (seconds).
+        readout_time_reverse: Total readout time for *epi_reverse* (seconds).
         pe_direction: BIDS phase-encoding axis of the primary EPI
             (e.g. ``"j"`` for AP).
         topup_config: Optional TOPUP configuration file.
     """
 
-    epi_ap: Path
-    epi_pa: Path
-    readout_time_ap: float
-    readout_time_pa: float
+    epi_forward: Path
+    epi_reverse: Path
+    readout_time_forward: float
+    readout_time_reverse: float
     pe_direction: BidsPhaseEncoding
     topup_config: Path | None = None
 
@@ -407,10 +407,10 @@ def correct_distortion_phasediff(
 
 def correct_distortion_pepolar(
     bold_ref: Path,
-    epi_ap: Path,
-    epi_pa: Path,
-    readout_time_ap: float,
-    readout_time_pa: float,
+    epi_forward: Path,
+    epi_reverse: Path,
+    readout_time_forward: float,
+    readout_time_reverse: float,
     pe_direction: BidsPhaseEncoding,
     topup_config: Path | None = None,
 ) -> DistortionCorrectionOutputs:
@@ -423,10 +423,10 @@ def correct_distortion_pepolar(
 
     Args:
         bold_ref: BOLD reference volume to correct.
-        epi_ap: EPI image in the primary phase-encoding direction.
-        epi_pa: EPI image in the reversed phase-encoding direction.
-        readout_time_ap: Total readout time for *epi_ap* (seconds).
-        readout_time_pa: Total readout time for *epi_pa* (seconds).
+        epi_forward: EPI image in the primary phase-encoding direction.
+        epi_reverse: EPI image in the reversed phase-encoding direction.
+        readout_time_forward: Total readout time for *epi_forward* (seconds).
+        readout_time_reverse: Total readout time for *epi_reverse* (seconds).
         pe_direction: BIDS phase-encoding axis of the primary EPI
             (e.g. ``"j"`` for AP).
         topup_config: Optional TOPUP configuration file. If *None*,
@@ -446,14 +446,14 @@ def correct_distortion_pepolar(
     # 1. Write acquisition parameters file
     acqparams = _write_acqparams(
         pe_dirs=[pe_direction, pe_opposite],
-        readout_times=[readout_time_ap, readout_time_pa],
-        epi_files=[epi_ap, epi_pa],
+        readout_times=[readout_time_forward, readout_time_reverse],
+        epi_files=[epi_forward, epi_reverse],
         output=out_dir / "acqparams.txt",
     )
 
-    # 2. Merge AP/PA into 4D
+    # 2. Merge forward/reverse into 4D
     merged_path = merge_3d_to_4d(
-        volumes=[epi_ap, epi_pa],
+        volumes=[epi_forward, epi_reverse],
         output=out_dir / "merged_epi.nii.gz",
     )
 
@@ -484,7 +484,7 @@ def correct_distortion_pepolar(
     itk_warp = _fieldmap_hz_to_itk_warp(
         fieldmap_hz=topup_result.fout,
         pe_direction=pe_direction,
-        readout_time=readout_time_ap,
+        readout_time=readout_time_forward,
         output=out_dir / "distortion_warp_itk.nii.gz",
     )
 
