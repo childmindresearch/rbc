@@ -215,7 +215,9 @@ class TestFieldmapHzToItkWarp:
             tmp_path / "fmap.nii.gz",
         )
         result = _fieldmap_hz_to_itk_warp(
-            tmp_path / "fmap.nii.gz", "j", 0.05,
+            tmp_path / "fmap.nii.gz",
+            "j",
+            0.05,
             tmp_path / "warp.nii.gz",
         )
         warp = np.asarray(nib.nifti1.load(result).dataobj)
@@ -234,7 +236,9 @@ class TestFieldmapHzToItkWarp:
             tmp_path / "fmap.nii.gz",
         )
         result = _fieldmap_hz_to_itk_warp(
-            tmp_path / "fmap.nii.gz", "j", 0.1,
+            tmp_path / "fmap.nii.gz",
+            "j",
+            0.1,
             tmp_path / "warp.nii.gz",
         )
         warp = np.asarray(nib.nifti1.load(result).dataobj)
@@ -250,7 +254,9 @@ class TestFieldmapHzToItkWarp:
             tmp_path / "fmap.nii.gz",
         )
         result = _fieldmap_hz_to_itk_warp(
-            tmp_path / "fmap.nii.gz", "j-", 0.05,
+            tmp_path / "fmap.nii.gz",
+            "j-",
+            0.05,
             tmp_path / "warp.nii.gz",
         )
         warp = np.asarray(nib.nifti1.load(result).dataobj)
@@ -269,9 +275,7 @@ class TestCorrectDistortionPhasediffValidation:
         from rbc.core.functional.distortion import correct_distortion_phasediff
 
         dummy = tmp_path / "dummy.nii.gz"
-        img = nib.Nifti1Image(
-            np.zeros((3, 3, 3), dtype=np.float32), np.eye(4)
-        )
+        img = nib.Nifti1Image(np.zeros((3, 3, 3), dtype=np.float32), np.eye(4))
         nib.save(img, dummy)
 
         with pytest.raises(ValueError, match="Must provide either"):
@@ -288,9 +292,7 @@ class TestCorrectDistortionPhasediffValidation:
         from rbc.core.functional.distortion import correct_distortion_phasediff
 
         dummy = tmp_path / "dummy.nii.gz"
-        img = nib.Nifti1Image(
-            np.zeros((3, 3, 3), dtype=np.float32), np.eye(4)
-        )
+        img = nib.Nifti1Image(np.zeros((3, 3, 3), dtype=np.float32), np.eye(4))
         nib.save(img, dummy)
 
         with pytest.raises(ValueError, match="Must provide either"):
@@ -308,9 +310,7 @@ class TestCorrectDistortionPhasediffValidation:
         from rbc.core.functional.distortion import correct_distortion_phasediff
 
         dummy = tmp_path / "dummy.nii.gz"
-        img = nib.Nifti1Image(
-            np.zeros((3, 3, 3), dtype=np.float32), np.eye(4)
-        )
+        img = nib.Nifti1Image(np.zeros((3, 3, 3), dtype=np.float32), np.eye(4))
         nib.save(img, dummy)
 
         with pytest.raises(ValueError, match="Invalid pe_direction"):
@@ -332,9 +332,7 @@ class TestCorrectDistortionPepolarValidation:
         from rbc.core.functional.distortion import correct_distortion_pepolar
 
         dummy = tmp_path / "dummy.nii.gz"
-        img = nib.Nifti1Image(
-            np.zeros((3, 3, 3), dtype=np.float32), np.eye(4)
-        )
+        img = nib.Nifti1Image(np.zeros((3, 3, 3), dtype=np.float32), np.eye(4))
         nib.save(img, dummy)
 
         with pytest.raises(ValueError, match="Invalid pe_direction"):

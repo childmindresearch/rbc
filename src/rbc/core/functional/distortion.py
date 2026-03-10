@@ -215,9 +215,7 @@ def _shiftmap_to_itk_warp(
     header.set_intent(1007)  # NIFTI_INTENT_VECTOR
     header.set_data_dtype(np.float32)
 
-    nib.save(
-        nib.Nifti1Image(warp, shift_img.affine, header), output
-    )
+    nib.save(nib.Nifti1Image(warp, shift_img.affine, header), output)
     return output
 
 
@@ -252,9 +250,7 @@ def _fieldmap_hz_to_itk_warp(
     sign = _pe_sign(pe_direction)
 
     warp = np.zeros((*fmap_data.shape[:3], 3), dtype=np.float32)
-    warp[..., axis] = (
-        fmap_data * readout_time * voxel_sizes[axis] * sign
-    )
+    warp[..., axis] = fmap_data * readout_time * voxel_sizes[axis] * sign
 
     # RAS -> LPS for ANTs
     warp[..., 0] *= -1
@@ -264,9 +260,7 @@ def _fieldmap_hz_to_itk_warp(
     header.set_intent(1007)
     header.set_data_dtype(np.float32)
 
-    nib.save(
-        nib.Nifti1Image(warp, fmap_img.affine, header), output
-    )
+    nib.save(nib.Nifti1Image(warp, fmap_img.affine, header), output)
     return output
 
 
@@ -336,9 +330,7 @@ def correct_distortion_phasediff(
 
     # 2. Erode magnitude mask (scipy - avoids an FSL container call)
     mask_img = nib.nifti1.load(bet_result.binary_mask)
-    eroded_data = binary_erosion(
-        np.asarray(mask_img.dataobj) > 0
-    ).astype(np.uint8)
+    eroded_data = binary_erosion(np.asarray(mask_img.dataobj) > 0).astype(np.uint8)
     eroded_mask_path = out_dir / "magnitude_mask_ero.nii.gz"
     nib.save(
         nib.Nifti1Image(eroded_data, mask_img.affine, mask_img.header),
@@ -351,9 +343,9 @@ def correct_distortion_phasediff(
         assert phase2 is not None  # noqa: S101
         p1_img = nib.nifti1.load(phase1)
         p2_img = nib.nifti1.load(phase2)
-        diff_data = np.asarray(
-            p1_img.dataobj, dtype=np.float32
-        ) - np.asarray(p2_img.dataobj, dtype=np.float32)
+        diff_data = np.asarray(p1_img.dataobj, dtype=np.float32) - np.asarray(
+            p2_img.dataobj, dtype=np.float32
+        )
         diff_img = nib.Nifti1Image(
             diff_data, affine=p1_img.affine, header=p1_img.header
         )
@@ -372,9 +364,7 @@ def correct_distortion_phasediff(
     # 5. Create fieldmap mask: nonzero fieldmap voxels ∩ eroded magnitude mask
     fmap_img = nib.nifti1.load(fieldmap.output_fieldmap)
     fmap_data = np.asarray(fmap_img.dataobj, dtype=np.float32)
-    fmap_mask_data = (
-        (np.abs(fmap_data) > 0) & (eroded_data > 0)
-    ).astype(np.uint8)
+    fmap_mask_data = ((np.abs(fmap_data) > 0) & (eroded_data > 0)).astype(np.uint8)
     fieldmap_mask_path = out_dir / "fieldmap_mask.nii.gz"
     nib.save(
         nib.Nifti1Image(fmap_mask_data, fmap_img.affine, fmap_img.header),
