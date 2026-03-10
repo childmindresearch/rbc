@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["bidsschematools"]
+# dependencies = ["bidsschematools>=1.2.1"]
 # requires-python = ">=3.12"
 # ///
 """Generate BIDS schema constants, utilities, and tests for the rbc package.
@@ -19,9 +19,9 @@ import subprocess
 import textwrap
 from pathlib import Path
 
+from bids_project import DESCS, SPACES
+from bids_project import SUFFIXES as PROJECT_SUFFIXES
 from bidsschematools.schema import load_schema
-
-from bids_project import DESCS, SPACES, SUFFIXES as PROJECT_SUFFIXES
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_MODULE = ROOT / "src" / "rbc" / "core" / "bids.py"
@@ -130,7 +130,7 @@ def generate_module(  # noqa: C901
 
     # -- Internal helpers --
     w(f'_LABEL_RE = re.compile(r"^{label_pattern}$")')
-    # Extract the character class from the label pattern (e.g. "[0-9a-zA-Z+]+" -> "0-9a-zA-Z+")
+    # Extract char class from pattern, e.g. "[0-9a-zA-Z+]+" -> "0-9a-zA-Z+"
     _char_class = label_pattern.split("]")[0].lstrip("[")
     w(f'_SANITIZE_RE = re.compile(r"[^{_char_class}]")')
     w()
