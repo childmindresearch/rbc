@@ -319,7 +319,7 @@ class TestCorrectDistortionPhasediffValidation:
                 magnitude=dummy,
                 delta_te=2.46,
                 effective_echo_spacing=0.00068,
-                pe_direction="bad",
+                pe_direction="bad",  # type: ignore[arg-type]
                 phasediff=dummy,
             )
 
@@ -342,5 +342,5 @@ class TestCorrectDistortionPepolarValidation:
                 epi_pa=dummy,
                 readout_time_ap=0.05,
                 readout_time_pa=0.05,
-                pe_direction="bad",
+                pe_direction="bad",  # type: ignore[arg-type]
             )
