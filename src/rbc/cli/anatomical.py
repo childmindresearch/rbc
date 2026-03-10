@@ -19,6 +19,7 @@ from tqdm import tqdm
 from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import PipelineContext
+from rbc.core.bids import Datatype, Desc, Suffix
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
@@ -74,57 +75,57 @@ def main(args: AnatomicalArgs) -> int:
             )
             pipe_ctx.export(
                 outputs.brain,
-                datatype="anat",
-                suffix="T1w",
-                desc="brain",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.T1W,
+                desc=Desc.BRAIN,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.brain_mask,
-                datatype="anat",
-                suffix="mask",
-                desc="T1w",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
+                desc=Desc.T1W,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.csf_mask,
-                datatype="anat",
-                suffix="mask",
-                desc="csf",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
+                desc=Desc.CSF,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.gm_mask,
-                datatype="anat",
-                suffix="mask",
-                desc="gm",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
+                desc=Desc.GM,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.wm_mask,
-                datatype="anat",
-                suffix="mask",
-                desc="wm",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
+                desc=Desc.WM,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.wm_bbr_mask,
-                datatype="anat",
-                suffix="mask",
-                desc="wmBBR",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
+                desc=Desc.WMBBR,
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.forward_xfm,
-                datatype="anat",
-                suffix="xfm",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.XFM,
                 extra={"from": "T1w", "to": "template", "mode": "image"},
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.inverse_xfm,
-                datatype="anat",
-                suffix="xfm",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.XFM,
                 extra={"from": "template", "to": "T1w", "mode": "image"},
                 run=t1w_run,
             )

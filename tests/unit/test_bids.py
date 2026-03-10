@@ -9,10 +9,13 @@ import pytest
 from rbc.core.bids import (
     BIDSFile,
     Datatype,
+    Desc,
     Modality,
+    Space,
     Suffix,
     bids_name,
     bids_path,
+    bids_safe_label,
     parse_bids_name,
 )
 
@@ -255,6 +258,26 @@ class TestParseBidsName:
         assert result.suffix == "xfm"
 
 
+class TestBidsSafeLabel:
+    """Tests for bids_safe_label."""
+
+    def test_strips_hyphens(self) -> None:
+        """Hyphens are removed."""
+        assert bids_safe_label("36-parameter") == "36parameter"
+
+    def test_passthrough(self) -> None:
+        """Valid labels pass through unchanged."""
+        assert bids_safe_label("aCompCor") == "aCompCor"
+
+    def test_strips_spaces_and_underscores(self) -> None:
+        """Spaces and underscores are removed."""
+        assert bids_safe_label("a_b c+d") == "abc+d"
+
+    def test_empty_after_sanitization(self) -> None:
+        """All-invalid input yields empty string."""
+        assert bids_safe_label("---") == ""
+
+
 class TestConstants:
     """Tests for namespace constant classes."""
 
@@ -281,3 +304,28 @@ class TestConstants:
         assert Modality.EEG == "eeg"
         assert Modality.EMG == "emg"
         assert Modality.IEEG == "ieeg"
+
+    def test_project_suffix_values(self) -> None:
+        """Project-specific suffix constants are present."""
+        assert Suffix.XFM == "xfm"
+        assert Suffix.REGRESSORS == "regressors"
+        assert Suffix.ALFF == "alff"
+        assert Suffix.FALFF == "falff"
+        assert Suffix.REHO == "reho"
+        assert Suffix.TIMESERIES == "timeseries"
+        assert Suffix.CORRELATIONS == "correlations"
+        assert Suffix.QUALITY == "quality"
+
+    def test_space_values(self) -> None:
+        """Space constants hold the expected string values."""
+        assert Space.MNI152NLIN6ASYM == "MNI152NLin6ASym"
+        assert Space.MNI152NLIN2009CASYM == "MNI152NLin2009cAsym"
+        assert Space.LONGITUDINAL == "longitudinal"
+
+    def test_desc_values(self) -> None:
+        """Desc constants hold the expected string values."""
+        assert Desc.BRAIN == "brain"
+        assert Desc.PREPROC == "preproc"
+        assert Desc.T1W == "T1w"
+        assert Desc.CSF == "csf"
+        assert Desc.GM == "gm"

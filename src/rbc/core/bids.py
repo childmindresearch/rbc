@@ -2,7 +2,7 @@
 # Regenerate with: uv run scripts/generate_bids_tools.py
 """BIDS schema constants and utilities.
 
-Auto-generated from BIDS schema v1.11.1.
+Auto-generated from BIDS schema v1.11.0.
 Regenerate with: ``uv run scripts/generate_bids_tools.py``
 """
 
@@ -11,11 +11,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import PurePath
-from typing import Literal
+from typing import Literal, TypedDict
 
-BIDS_VERSION = "1.11.1"
+BIDS_VERSION = "1.11.0"
 
 _LABEL_RE = re.compile(r"^[0-9a-zA-Z+]+$")
+_SANITIZE_RE = re.compile(r"[^0-9a-zA-Z+]")
 
 _COMPOUND_EXTENSIONS: tuple[str, ...] = (
     ".dlabel.nii",
@@ -26,6 +27,15 @@ _COMPOUND_EXTENSIONS: tuple[str, ...] = (
     ".nii.gz",
     ".tsv.gz",
 )
+
+
+def bids_safe_label(value: str) -> str:
+    """Strip characters that are invalid in a BIDS entity label.
+
+    BIDS labels must match ``[0-9a-zA-Z+]+``.  This removes anything
+    outside that set (e.g. hyphens, underscores, spaces).
+    """
+    return _SANITIZE_RE.sub("", value)
 
 
 class Datatype:
@@ -266,6 +276,9 @@ class Suffix:
     XPCT: Literal["XPCT"] = "XPCT"
     """X-ray Phase-Contrast Tomography."""
 
+    ALFF: Literal["alff"] = "alff"
+    """Amplitude of low frequency fluctuations."""
+
     ANGIO: Literal["angio"] = "angio"
     """Angiogram."""
 
@@ -299,6 +312,9 @@ class Suffix:
     COORDSYSTEM: Literal["coordsystem"] = "coordsystem"
     """Coordinate System File."""
 
+    CORRELATIONS: Literal["correlations"] = "correlations"
+    """Correlation matrix."""
+
     DEFACEMASK: Literal["defacemask"] = "defacemask"
     """Defacing Mask."""
 
@@ -331,6 +347,9 @@ class Suffix:
 
     EXPADC: Literal["expADC"] = "expADC"
     """Exponental ADC."""
+
+    FALFF: Literal["falff"] = "falff"
+    """Fractional ALFF."""
 
     FIELDMAP: Literal["fieldmap"] = "fieldmap"
     """Fieldmap."""
@@ -413,6 +432,15 @@ class Suffix:
     PROBSEG: Literal["probseg"] = "probseg"
     """Probabilistic Segmentation."""
 
+    QUALITY: Literal["quality"] = "quality"
+    """Quality metrics."""
+
+    REGRESSORS: Literal["regressors"] = "regressors"
+    """Nuisance regressors."""
+
+    REHO: Literal["reho"] = "reho"
+    """Regional homogeneity."""
+
     SBREF: Literal["sbref"] = "sbref"
     """Single-band reference image."""
 
@@ -428,6 +456,9 @@ class Suffix:
     SVS: Literal["svs"] = "svs"
     """Single-voxel spectroscopy."""
 
+    TIMESERIES: Literal["timeseries"] = "timeseries"
+    """Atlas time series."""
+
     TRACE: Literal["trace"] = "trace"
     """Trace-weighted diffusion image."""
 
@@ -436,6 +467,77 @@ class Suffix:
 
     UNLOC: Literal["unloc"] = "unloc"
     """Unlocalized spectroscopy."""
+
+    XFM: Literal["xfm"] = "xfm"
+    """Spatial transformation."""
+
+
+class Space:
+    """Common coordinate space labels."""
+
+    MNI152NLIN6ASYM: Literal["MNI152NLin6ASym"] = "MNI152NLin6ASym"
+    """MNI 152 non-linear 6th generation asymmetric."""
+
+    MNI152NLIN2009CASYM: Literal["MNI152NLin2009cAsym"] = "MNI152NLin2009cAsym"
+    """MNI 152 non-linear 2009c asymmetric."""
+
+    LONGITUDINAL: Literal["longitudinal"] = "longitudinal"
+    """Subject-specific longitudinal template."""
+
+
+class Desc:
+    """Common description labels used by the RBC pipeline."""
+
+    BRAIN: Literal["brain"] = "brain"
+    """Brain-extracted."""
+
+    PREPROC: Literal["preproc"] = "preproc"
+    """Preprocessed."""
+
+    T1W: Literal["T1w"] = "T1w"
+    """T1-weighted space."""
+
+    CSF: Literal["csf"] = "csf"
+    """Cerebrospinal fluid."""
+
+    GM: Literal["gm"] = "gm"
+    """Gray matter."""
+
+    WM: Literal["wm"] = "wm"
+    """White matter."""
+
+    WMBBR: Literal["wmBBR"] = "wmBBR"
+    """White matter BBR mask."""
+
+    MOTIONPARAMS: Literal["motionParams"] = "motionParams"
+    """Motion parameters."""
+
+    RELSDISPLACEMENT: Literal["relsDisplacement"] = "relsDisplacement"
+    """Relative RMS displacement."""
+
+    MAXDISPLACEMENT: Literal["maxDisplacement"] = "maxDisplacement"
+    """Max displacement."""
+
+    LINEAR: Literal["linear"] = "linear"
+    """Linear transformation."""
+
+    BOLD: Literal["bold"] = "bold"
+    """BOLD space."""
+
+    SMOOTH: Literal["smooth"] = "smooth"
+    """Spatially smoothed."""
+
+    SMOOTHZSTD: Literal["smoothZstd"] = "smoothZstd"
+    """Smoothed and z-standardized."""
+
+    MEAN: Literal["mean"] = "mean"
+    """Temporal mean."""
+
+    PEARSON: Literal["pearson"] = "pearson"
+    """Pearson correlation."""
+
+    XCP: Literal["xcp"] = "xcp"
+    """XCP-D format."""
 
 
 class Modality:
@@ -487,6 +589,54 @@ class BIDSFile:
 
     extension: str
     """File extension including leading dot (e.g. ``".nii.gz"``)."""
+
+
+class BidsEntities(TypedDict, total=False):
+    """Typed dictionary of all recognised BIDS entity keys.
+
+    Intended for use in ``TYPE_CHECKING`` blocks to annotate functions that
+    accept BIDS entity keyword arguments.
+    """
+
+    sub: str
+    tpl: str
+    ses: str
+    cohort: str
+    sample: str
+    task: str
+    tracksys: str
+    acq: str
+    nuc: str
+    voi: str
+    ce: str
+    trc: str
+    stain: str
+    rec: str
+    dir: str
+    run: int
+    mod: str
+    echo: int
+    flip: int
+    inv: int
+    mt: Literal["on", "off"]
+    part: Literal["mag", "phase", "real", "imag"]
+    proc: str
+    hemi: Literal["L", "R"]
+    space: str
+    split: int
+    recording: str
+    chunk: int
+    atlas: str
+    seg: str
+    scale: str
+    res: str
+    den: str
+    label: str
+    desc: str
+    suffix: str
+    extension: str
+    datatype: str
+    extra: dict[str, str | int]
 
 
 def _format_entity(key: str, val: str | int) -> str:

@@ -4,7 +4,8 @@
 # ///
 """Generate BIDS schema constants, utilities, and tests for the rbc package.
 
-Reads the BIDS schema via bidsschematools and generates:
+Reads the BIDS schema via bidsschematools and project-specific constants
+from ``scripts/bids_project.py``, then generates:
   - src/rbc/core/bids.py   (constants + build/parse functions)
   - tests/unit/test_bids.py (unit tests)
 
@@ -19,6 +20,8 @@ import textwrap
 from pathlib import Path
 
 from bidsschematools.schema import load_schema
+
+from bids_project import DESCS, SPACES, SUFFIXES as PROJECT_SUFFIXES
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_MODULE = ROOT / "src" / "rbc" / "core" / "bids.py"
@@ -97,6 +100,9 @@ def generate_module(  # noqa: C901
     modalities: list[tuple[str, str]],
     compound_extensions: list[str],
     label_pattern: str,
+    project_suffixes: list[tuple[str, str]],
+    spaces: list[tuple[str, str]],
+    descs: list[tuple[str, str]],
 ) -> str:
     """Return the full source of src/rbc/core/bids.py."""
     lines: list[str] = []
@@ -117,16 +123,30 @@ def generate_module(  # noqa: C901
     w("import re")
     w("from dataclasses import dataclass")
     w("from pathlib import PurePath")
-    w("from typing import Literal")
+    w("from typing import Literal, TypedDict")
     w()
     w(f'BIDS_VERSION = "{bids_version}"')
     w()
 
     # -- Internal helpers --
     w(f'_LABEL_RE = re.compile(r"^{label_pattern}$")')
+    # Extract the character class from the label pattern (e.g. "[0-9a-zA-Z+]+" -> "0-9a-zA-Z+")
+    _char_class = label_pattern.split("]")[0].lstrip("[")
+    w(f'_SANITIZE_RE = re.compile(r"[^{_char_class}]")')
     w()
     ext_items = ", ".join(q(e) for e in compound_extensions)
     w(f"_COMPOUND_EXTENSIONS: tuple[str, ...] = ({ext_items},)")
+    w()
+    w()
+
+    # -- bids_safe_label --
+    w("def bids_safe_label(value: str) -> str:")
+    w('    """Strip characters that are invalid in a BIDS entity label.')
+    w()
+    w(f"    BIDS labels must match ``{label_pattern}``.  This removes anything")
+    w("    outside that set (e.g. hyphens, underscores, spaces).")
+    w('    """')
+    w('    return _SANITIZE_RE.sub("", value)')
     w()
     w()
 
@@ -140,14 +160,42 @@ def generate_module(  # noqa: C901
         w()
     w()
 
-    # -- Suffix namespace --
+    # -- Suffix namespace (schema + project) --
+    # Merge project suffixes, skipping any already in schema
+    schema_suffix_values = {v for v, _ in suffixes}
+    merged_suffixes = list(suffixes)
+    for value, display in project_suffixes:
+        if value not in schema_suffix_values:
+            merged_suffixes.append((value, display))
+    merged_suffixes.sort()
+
     w("class Suffix:")
     w('    """BIDS suffixes."""')
     w()
-    for value, display in suffixes:
+    for value, display in merged_suffixes:
         escaped = display.replace('"', '\\"')
         w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
         w(f'    """{escaped}."""')
+        w()
+    w()
+
+    # -- Space namespace (project-specific) --
+    w("class Space:")
+    w('    """Common coordinate space labels."""')
+    w()
+    for value, display in spaces:
+        w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
+        w(f'    """{display}."""')
+        w()
+    w()
+
+    # -- Desc namespace (project-specific) --
+    w("class Desc:")
+    w('    """Common description labels used by the RBC pipeline."""')
+    w()
+    for value, display in descs:
+        w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
+        w(f'    """{display}."""')
         w()
     w()
 
@@ -174,6 +222,33 @@ def generate_module(  # noqa: C901
     w()
     w("    extension: str")
     w('    """File extension including leading dot (e.g. ``".nii.gz"``)."""')
+    w()
+    w()
+
+    # -- BidsEntities TypedDict --
+    w("class BidsEntities(TypedDict, total=False):")
+    w('    """Typed dictionary of all recognised BIDS entity keys.')
+    w()
+    w("    Intended for use in ``TYPE_CHECKING`` blocks to annotate functions that")
+    w("    accept BIDS entity keyword arguments.")
+    w('    """')
+    w()
+    for e in entities:
+        key = str(e["key"])
+        fmt = str(e["format"])
+        enum = e["enum"]
+        if enum is not None:
+            lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr,attr-defined]
+            hint = lit
+        elif fmt == "index":
+            hint = "int"
+        else:
+            hint = "str"
+        w(f"    {key}: {hint}")
+    w("    suffix: str")
+    w("    extension: str")
+    w("    datatype: str")
+    w("    extra: dict[str, str | int]")
     w()
     w()
 
@@ -388,6 +463,9 @@ def generate_tests(
     datatypes: list[tuple[str, str]],
     suffixes: list[tuple[str, str]],
     modalities: list[tuple[str, str]],
+    project_suffixes: list[tuple[str, str]],
+    spaces: list[tuple[str, str]],
+    descs: list[tuple[str, str]],
 ) -> str:
     """Return the full source of tests/unit/test_bids.py."""
     lines: list[str] = []
@@ -409,10 +487,13 @@ def generate_tests(
     w("from rbc.core.bids import (")
     w("    BIDSFile,")
     w("    Datatype,")
+    w("    Desc,")
     w("    Modality,")
+    w("    Space,")
     w("    Suffix,")
     w("    bids_name,")
     w("    bids_path,")
+    w("    bids_safe_label,")
     w("    parse_bids_name,")
     w(")")
     w()
@@ -720,6 +801,28 @@ def generate_tests(
     w()
     w()
 
+    # ---- TestBidsSafeLabel ----
+    w("class TestBidsSafeLabel:")
+    w('    """Tests for bids_safe_label."""')
+    w()
+    w("    def test_strips_hyphens(self) -> None:")
+    w('        """Hyphens are removed."""')
+    w('        assert bids_safe_label("36-parameter") == "36parameter"')
+    w()
+    w("    def test_passthrough(self) -> None:")
+    w('        """Valid labels pass through unchanged."""')
+    w('        assert bids_safe_label("aCompCor") == "aCompCor"')
+    w()
+    w("    def test_strips_spaces_and_underscores(self) -> None:")
+    w('        """Spaces and underscores are removed."""')
+    w('        assert bids_safe_label("a_b c+d") == "abc+d"')
+    w()
+    w("    def test_empty_after_sanitization(self) -> None:")
+    w('        """All-invalid input yields empty string."""')
+    w('        assert bids_safe_label("---") == ""')
+    w()
+    w()
+
     # ---- TestConstants ----
     w("class TestConstants:")
     w('    """Tests for namespace constant classes."""')
@@ -749,6 +852,27 @@ def generate_tests(
     w('        """Modality constants hold the expected string values."""')
     for val, _ in modalities[:4]:
         w(f'        assert Modality.{to_const(val)} == "{val}"')
+    w()
+
+    # Project suffix spot-checks
+    w("    def test_project_suffix_values(self) -> None:")
+    w('        """Project-specific suffix constants are present."""')
+    for val, _ in project_suffixes:
+        w(f'        assert Suffix.{to_const(val)} == "{val}"')
+    w()
+
+    # Space spot-checks
+    w("    def test_space_values(self) -> None:")
+    w('        """Space constants hold the expected string values."""')
+    for val, _ in spaces:
+        w(f'        assert Space.{to_const(val)} == "{val}"')
+    w()
+
+    # Desc spot-checks
+    w("    def test_desc_values(self) -> None:")
+    w('        """Desc constants hold the expected string values."""')
+    for val, _ in descs[:5]:
+        w(f'        assert Desc.{to_const(val)} == "{val}"')
     w()
 
     return "\n".join(lines)
@@ -814,6 +938,9 @@ def main() -> None:
         modalities=modalities,
         compound_extensions=compound_extensions,
         label_pattern=label_pattern,
+        project_suffixes=PROJECT_SUFFIXES,
+        spaces=SPACES,
+        descs=DESCS,
     )
     OUTPUT_MODULE.write_text(module_src, encoding="utf-8")
     print(f"Generated {OUTPUT_MODULE}")  # noqa: T201
@@ -825,6 +952,9 @@ def main() -> None:
         datatypes=datatypes,
         suffixes=suffixes,
         modalities=modalities,
+        project_suffixes=PROJECT_SUFFIXES,
+        spaces=SPACES,
+        descs=DESCS,
     )
     OUTPUT_TESTS.write_text(tests_src, encoding="utf-8")
     print(f"Generated {OUTPUT_TESTS}")  # noqa: T201
