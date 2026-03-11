@@ -138,14 +138,14 @@ def _process_anat(
         outputs.forward_xfm,
         datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        extra={"from": "longitudinal", "to": "template", "mode": "image"},
         run=t1w_run,
     )
     pipe_ctx.export(
         outputs.inverse_xfm,
         datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
+        extra={"from": "template", "to": "longitudinal", "mode": "image"},
         run=t1w_run,
     )
 
@@ -179,7 +179,9 @@ def _process_func(
     outputs = functional_longitudinal(
         template=get_tpl_file(suffix="T1w"),
         anat_to_template_xfm=get_tpl_file(
-            extension=".mat", extra={"to": "longitudinal"}
+            suffix="xfm",
+            extension=".mat",
+            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
         bold_to_anat_xfm=_require_file(
             _get_func_file(
@@ -249,10 +251,7 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [
-        pl.col("ses") != "longitudinal",
-        pl.col("space").is_null() | (pl.col("space") != "longitudinal"),
-    ]
+    filters = [pl.col("ses") != "longitudinal"]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -285,6 +284,9 @@ def main(args: LongitudinalArgs) -> int:
             session, groupby=_FUNC_GROUP_ENTITIES
         ):
             if args.anatomical:
+                anat_df = anat_df.filter(
+                    pl.col("space").is_null() | (pl.col("space") != "longitudinal")
+                )
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
