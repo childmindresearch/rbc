@@ -935,7 +935,11 @@ def main() -> None:
         if not value.startswith("."):
             continue
         const_name = ext_to_const(value)
-        display = clean_desc(ext_obj.display_name) if hasattr(ext_obj, "display_name") else key
+        display = (
+            clean_desc(ext_obj.display_name)
+            if hasattr(ext_obj, "display_name")
+            else key
+        )
         extensions.append((value, const_name, display))
 
     # --- Generate & write module --------------------------------------------
