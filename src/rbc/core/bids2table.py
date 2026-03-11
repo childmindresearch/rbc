@@ -4,10 +4,16 @@ Provides utilities for working with bids2table, including flattening extra entit
 for simpler querying.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import bids2table as b2t
 import polars as pl
+
+if TYPE_CHECKING:
+    from rbc.core.bids import BidsEntities  # noqa: F401
 
 
 def load_table(
@@ -93,6 +99,8 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
     extra: dict[str, str | int] | None = None,
 ) -> Path:
     """Return existing BIDS-named path matching provided entities.
+
+    Keyword arguments mirror :class:`~rbc.core.bids.BidsEntities`.
 
     Args:
         df: bids2table to filter

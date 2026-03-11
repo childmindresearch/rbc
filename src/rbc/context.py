@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 
-from rbc.core.bids import BIDS_VERSION, bids_path
+from rbc.core.bids import BIDS_VERSION, bids_path, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -70,7 +70,7 @@ class PipelineContext:
             ses=self.ses,
             task=task,
             run=run,
-            desc=desc,
+            desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
             atlas=atlas,
             extra=extra,
@@ -117,7 +117,7 @@ class PipelineContext:
             ses=self.ses,
             task=task,
             run=run,
-            desc=desc,
+            desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
             atlas=atlas,
             suffix=suffix,

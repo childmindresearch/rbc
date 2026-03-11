@@ -11,11 +11,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import PurePath
-from typing import Literal
+from typing import Literal, TypedDict
 
 BIDS_VERSION = "1.11.1"
 
 _LABEL_RE = re.compile(r"^[0-9a-zA-Z+]+$")
+_SANITIZE_RE = re.compile(r"[^0-9a-zA-Z+]")
 
 _COMPOUND_EXTENSIONS: tuple[str, ...] = (
     ".dlabel.nii",
@@ -26,6 +27,15 @@ _COMPOUND_EXTENSIONS: tuple[str, ...] = (
     ".nii.gz",
     ".tsv.gz",
 )
+
+
+def bids_safe_label(value: str) -> str:
+    """Strip characters that are invalid in a BIDS entity label.
+
+    BIDS labels must match ``[0-9a-zA-Z+]+``.  This removes anything
+    outside that set (e.g. hyphens, underscores, spaces).
+    """
+    return _SANITIZE_RE.sub("", value)
 
 
 class Datatype:
@@ -438,6 +448,172 @@ class Suffix:
     """Unlocalized spectroscopy."""
 
 
+class TemplateSpace:
+    """Standard template coordinate systems from the BIDS schema."""
+
+    ICBM452AIRSPACE: Literal["ICBM452AirSpace"] = "ICBM452AirSpace"
+
+    ICBM452WARP5SPACE: Literal["ICBM452Warp5Space"] = "ICBM452Warp5Space"
+
+    IXI549SPACE: Literal["IXI549Space"] = "IXI549Space"
+
+    MNI152LIN: Literal["MNI152Lin"] = "MNI152Lin"
+
+    MNI152NLIN2009AASYM: Literal["MNI152NLin2009aAsym"] = "MNI152NLin2009aAsym"
+
+    MNI152NLIN2009ASYM: Literal["MNI152NLin2009aSym"] = "MNI152NLin2009aSym"
+
+    MNI152NLIN2009BASYM: Literal["MNI152NLin2009bAsym"] = "MNI152NLin2009bAsym"
+
+    MNI152NLIN2009BSYM: Literal["MNI152NLin2009bSym"] = "MNI152NLin2009bSym"
+
+    MNI152NLIN2009CASYM: Literal["MNI152NLin2009cAsym"] = "MNI152NLin2009cAsym"
+
+    MNI152NLIN2009CSYM: Literal["MNI152NLin2009cSym"] = "MNI152NLin2009cSym"
+
+    MNI152NLIN6ASYM: Literal["MNI152NLin6Asym"] = "MNI152NLin6Asym"
+
+    MNI152NLIN6SYM: Literal["MNI152NLin6Sym"] = "MNI152NLin6Sym"
+
+    MNI305: Literal["MNI305"] = "MNI305"
+
+    MNICOLIN27: Literal["MNIColin27"] = "MNIColin27"
+
+    NIHPD: Literal["NIHPD"] = "NIHPD"
+
+    OASIS30ANTSOASISANTS: Literal["OASIS30AntsOASISAnts"] = "OASIS30AntsOASISAnts"
+
+    OASIS30ATROPOS: Literal["OASIS30Atropos"] = "OASIS30Atropos"
+
+    TALAIRACH: Literal["Talairach"] = "Talairach"
+
+    UNCINFANT: Literal["UNCInfant"] = "UNCInfant"
+
+    FSLR: Literal["fsLR"] = "fsLR"
+
+    FSAVERAGE: Literal["fsaverage"] = "fsaverage"
+
+    FSAVERAGESYM: Literal["fsaverageSym"] = "fsaverageSym"
+
+
+class Extension:
+    """File extensions from the BIDS schema."""
+
+    OME_BTF: Literal[".ome.btf"] = ".ome.btf"
+    """Open Microscopy Environment BigTIFF."""
+
+    OME_TIF: Literal[".ome.tif"] = ".ome.tif"
+    """Open Microscopy Environment Tag Image File Format."""
+
+    AVE: Literal[".ave"] = ".ave"
+    """AVE."""
+
+    BDF: Literal[".bdf"] = ".bdf"
+    """Biosemi Data Format."""
+
+    BVAL: Literal[".bval"] = ".bval"
+    """FSL-Format Gradient Amplitudes."""
+
+    BVEC: Literal[".bvec"] = ".bvec"
+    """FSL-Format Gradient Directions."""
+
+    CHN: Literal[".chn"] = ".chn"
+    """KRISS CHN."""
+
+    CON: Literal[".con"] = ".con"
+    """KIT/Yokogawa/Ricoh Continuous Data."""
+
+    DAT: Literal[".dat"] = ".dat"
+    """MEG Fine-Calibration Format."""
+
+    DLABEL_NII: Literal[".dlabel.nii"] = ".dlabel.nii"
+    """CIFTI-2 Dense Label File."""
+
+    EDF: Literal[".edf"] = ".edf"
+    """European Data Format."""
+
+    EEG: Literal[".eeg"] = ".eeg"
+    """BrainVision Binary Data."""
+
+    FDT: Literal[".fdt"] = ".fdt"
+    """EEGLAB FDT."""
+
+    FIF: Literal[".fif"] = ".fif"
+    """Functional Imaging File Format."""
+
+    JPG: Literal[".jpg"] = ".jpg"
+    """Joint Photographic Experts Group Format."""
+
+    JSON: Literal[".json"] = ".json"
+    """JavaScript Object Notation."""
+
+    KDF: Literal[".kdf"] = ".kdf"
+    """KRISS KDF."""
+
+    LABEL_GII: Literal[".label.gii"] = ".label.gii"
+    """GIFTI label/annotation file."""
+
+    MD: Literal[".md"] = ".md"
+    """Markdown."""
+
+    MHD: Literal[".mhd"] = ".mhd"
+    """ITAB Binary Header."""
+
+    MRK: Literal[".mrk"] = ".mrk"
+    """MRK."""
+
+    NII: Literal[".nii"] = ".nii"
+    """NIfTI."""
+
+    NII_GZ: Literal[".nii.gz"] = ".nii.gz"
+    """Compressed NIfTI."""
+
+    NWB: Literal[".nwb"] = ".nwb"
+    """Neurodata Without Borders Format."""
+
+    PNG: Literal[".png"] = ".png"
+    """Portable Network Graphics."""
+
+    POS: Literal[".pos"] = ".pos"
+    """Head Point Position."""
+
+    RAW: Literal[".raw"] = ".raw"
+    """RAW."""
+
+    RST: Literal[".rst"] = ".rst"
+    """reStructuredText."""
+
+    SET: Literal[".set"] = ".set"
+    """EEGLAB SET."""
+
+    SNIRF: Literal[".snirf"] = ".snirf"
+    """Shared Near Infrared Spectroscopy Format."""
+
+    SQD: Literal[".sqd"] = ".sqd"
+    """SQD."""
+
+    TIF: Literal[".tif"] = ".tif"
+    """Tag Image File Format."""
+
+    TRG: Literal[".trg"] = ".trg"
+    """KRISS TRG."""
+
+    TSV: Literal[".tsv"] = ".tsv"
+    """Tab-Delimited."""
+
+    TSV_GZ: Literal[".tsv.gz"] = ".tsv.gz"
+    """Compressed Tab-Delimited."""
+
+    TXT: Literal[".txt"] = ".txt"
+    """Text."""
+
+    VHDR: Literal[".vhdr"] = ".vhdr"
+    """BrainVision Text Header."""
+
+    VMRK: Literal[".vmrk"] = ".vmrk"
+    """BrainVision Marker."""
+
+
 class Modality:
     """BIDS modalities."""
 
@@ -487,6 +663,54 @@ class BIDSFile:
 
     extension: str
     """File extension including leading dot (e.g. ``".nii.gz"``)."""
+
+
+class BidsEntities(TypedDict, total=False):
+    """Typed dictionary of all recognised BIDS entity keys.
+
+    Intended for use in ``TYPE_CHECKING`` blocks to annotate functions that
+    accept BIDS entity keyword arguments.
+    """
+
+    sub: str
+    tpl: str
+    ses: str
+    cohort: str
+    sample: str
+    task: str
+    tracksys: str
+    acq: str
+    nuc: str
+    voi: str
+    ce: str
+    trc: str
+    stain: str
+    rec: str
+    dir: str
+    run: int
+    mod: str
+    echo: int
+    flip: int
+    inv: int
+    mt: Literal["on", "off"]
+    part: Literal["mag", "phase", "real", "imag"]
+    proc: str
+    hemi: Literal["L", "R"]
+    space: str
+    split: int
+    recording: str
+    chunk: int
+    atlas: str
+    seg: str
+    scale: str
+    res: str
+    den: str
+    label: str
+    desc: str
+    suffix: str
+    extension: str
+    datatype: str
+    extra: dict[str, str | int]
 
 
 def _format_entity(key: str, val: str | int) -> str:

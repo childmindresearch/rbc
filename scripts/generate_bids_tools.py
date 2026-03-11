@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["bidsschematools"]
+# dependencies = ["bidsschematools>=1.2.1"]
 # requires-python = ">=3.12"
 # ///
 """Generate BIDS schema constants, utilities, and tests for the rbc package.
@@ -84,6 +84,18 @@ def wrap_arg_doc(key: str, desc: str, indent: int = 8) -> list[str]:
     return text.split("\n")
 
 
+def ext_to_const(value: str) -> str:
+    """Convert a file extension to an UPPER_CASE Python constant name.
+
+    Strips the leading dot, replaces remaining dots with underscores,
+    and upper-cases the result.  E.g. ``.nii.gz`` → ``NII_GZ``.
+    """
+    name = value.lstrip(".").replace(".", "_").upper()
+    if name[0].isdigit():
+        name = "_" + name
+    return name
+
+
 # ---------------------------------------------------------------------------
 # Module generation
 # ---------------------------------------------------------------------------
@@ -97,6 +109,8 @@ def generate_module(  # noqa: C901
     modalities: list[tuple[str, str]],
     compound_extensions: list[str],
     label_pattern: str,
+    template_spaces: list[str],
+    extensions: list[tuple[str, str, str]],
 ) -> str:
     """Return the full source of src/rbc/core/bids.py."""
     lines: list[str] = []
@@ -117,16 +131,30 @@ def generate_module(  # noqa: C901
     w("import re")
     w("from dataclasses import dataclass")
     w("from pathlib import PurePath")
-    w("from typing import Literal")
+    w("from typing import Literal, TypedDict")
     w()
     w(f'BIDS_VERSION = "{bids_version}"')
     w()
 
     # -- Internal helpers --
     w(f'_LABEL_RE = re.compile(r"^{label_pattern}$")')
+    # Extract char class from pattern, e.g. "[0-9a-zA-Z+]+" -> "0-9a-zA-Z+"
+    _char_class = label_pattern.split("]")[0].lstrip("[")
+    w(f'_SANITIZE_RE = re.compile(r"[^{_char_class}]")')
     w()
     ext_items = ", ".join(q(e) for e in compound_extensions)
     w(f"_COMPOUND_EXTENSIONS: tuple[str, ...] = ({ext_items},)")
+    w()
+    w()
+
+    # -- bids_safe_label --
+    w("def bids_safe_label(value: str) -> str:")
+    w('    """Strip characters that are invalid in a BIDS entity label.')
+    w()
+    w(f"    BIDS labels must match ``{label_pattern}``.  This removes anything")
+    w("    outside that set (e.g. hyphens, underscores, spaces).")
+    w('    """')
+    w('    return _SANITIZE_RE.sub("", value)')
     w()
     w()
 
@@ -140,7 +168,7 @@ def generate_module(  # noqa: C901
         w()
     w()
 
-    # -- Suffix namespace --
+    # -- Suffix namespace (schema only) --
     w("class Suffix:")
     w('    """BIDS suffixes."""')
     w()
@@ -148,6 +176,25 @@ def generate_module(  # noqa: C901
         escaped = display.replace('"', '\\"')
         w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
         w(f'    """{escaped}."""')
+        w()
+    w()
+
+    # -- TemplateSpace namespace (from schema _StandardTemplateCoordSys) --
+    w("class TemplateSpace:")
+    w('    """Standard template coordinate systems from the BIDS schema."""')
+    w()
+    for space in template_spaces:
+        w(f'    {to_const(space)}: Literal["{space}"] = "{space}"')
+        w()
+    w()
+
+    # -- Extension namespace (from schema extensions) --
+    w("class Extension:")
+    w('    """File extensions from the BIDS schema."""')
+    w()
+    for ext_value, ext_const, ext_display in extensions:
+        w(f'    {ext_const}: Literal["{ext_value}"] = "{ext_value}"')
+        w(f'    """{ext_display}."""')
         w()
     w()
 
@@ -174,6 +221,33 @@ def generate_module(  # noqa: C901
     w()
     w("    extension: str")
     w('    """File extension including leading dot (e.g. ``".nii.gz"``)."""')
+    w()
+    w()
+
+    # -- BidsEntities TypedDict --
+    w("class BidsEntities(TypedDict, total=False):")
+    w('    """Typed dictionary of all recognised BIDS entity keys.')
+    w()
+    w("    Intended for use in ``TYPE_CHECKING`` blocks to annotate functions that")
+    w("    accept BIDS entity keyword arguments.")
+    w('    """')
+    w()
+    for e in entities:
+        key = str(e["key"])
+        fmt = str(e["format"])
+        enum = e["enum"]
+        if enum is not None:
+            lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr,attr-defined]
+            hint = lit
+        elif fmt == "index":
+            hint = "int"
+        else:
+            hint = "str"
+        w(f"    {key}: {hint}")
+    w("    suffix: str")
+    w("    extension: str")
+    w("    datatype: str")
+    w("    extra: dict[str, str | int]")
     w()
     w()
 
@@ -388,6 +462,8 @@ def generate_tests(
     datatypes: list[tuple[str, str]],
     suffixes: list[tuple[str, str]],
     modalities: list[tuple[str, str]],
+    template_spaces: list[str],
+    extensions: list[tuple[str, str, str]],
 ) -> str:
     """Return the full source of tests/unit/test_bids.py."""
     lines: list[str] = []
@@ -409,10 +485,13 @@ def generate_tests(
     w("from rbc.core.bids import (")
     w("    BIDSFile,")
     w("    Datatype,")
+    w("    Extension,")
     w("    Modality,")
     w("    Suffix,")
+    w("    TemplateSpace,")
     w("    bids_name,")
     w("    bids_path,")
+    w("    bids_safe_label,")
     w("    parse_bids_name,")
     w(")")
     w()
@@ -720,6 +799,28 @@ def generate_tests(
     w()
     w()
 
+    # ---- TestBidsSafeLabel ----
+    w("class TestBidsSafeLabel:")
+    w('    """Tests for bids_safe_label."""')
+    w()
+    w("    def test_strips_hyphens(self) -> None:")
+    w('        """Hyphens are removed."""')
+    w('        assert bids_safe_label("36-parameter") == "36parameter"')
+    w()
+    w("    def test_passthrough(self) -> None:")
+    w('        """Valid labels pass through unchanged."""')
+    w('        assert bids_safe_label("aCompCor") == "aCompCor"')
+    w()
+    w("    def test_strips_spaces_and_underscores(self) -> None:")
+    w('        """Spaces and underscores are removed."""')
+    w('        assert bids_safe_label("a_b c+d") == "abc+d"')
+    w()
+    w("    def test_empty_after_sanitization(self) -> None:")
+    w('        """All-invalid input yields empty string."""')
+    w('        assert bids_safe_label("---") == ""')
+    w()
+    w()
+
     # ---- TestConstants ----
     w("class TestConstants:")
     w('    """Tests for namespace constant classes."""')
@@ -749,6 +850,20 @@ def generate_tests(
     w('        """Modality constants hold the expected string values."""')
     for val, _ in modalities[:4]:
         w(f'        assert Modality.{to_const(val)} == "{val}"')
+    w()
+
+    # TemplateSpace spot-checks
+    w("    def test_template_space_values(self) -> None:")
+    w('        """TemplateSpace constants hold the expected string values."""')
+    for space in template_spaces[:5]:
+        w(f'        assert TemplateSpace.{to_const(space)} == "{space}"')
+    w()
+
+    # Extension spot-checks
+    w("    def test_extension_values(self) -> None:")
+    w('        """Extension constants hold the expected string values."""')
+    for ext_value, ext_const, _ in extensions[:5]:
+        w(f'        assert Extension.{ext_const} == "{ext_value}"')
     w()
 
     return "\n".join(lines)
@@ -804,6 +919,29 @@ def main() -> None:
         reverse=True,
     )
 
+    # --- Template spaces from BIDS schema -----------------------------------
+    coord_sys = schema.objects.enums["_StandardTemplateCoordSys"]
+    template_spaces: list[str] = sorted(coord_sys.enum)
+
+    # --- Extensions from BIDS schema ----------------------------------------
+    # Filter out special values: wildcards, directory markers, and empty strings
+    extensions: list[tuple[str, str, str]] = []
+    for key, ext_obj in sorted(schema.objects.extensions.items()):
+        value = ext_obj.value
+        # Skip special values
+        if value in (".*", "/", "") or value.endswith("/"):
+            continue
+        # Skip non-dot extensions (shouldn't exist, but safety)
+        if not value.startswith("."):
+            continue
+        const_name = ext_to_const(value)
+        display = (
+            clean_desc(ext_obj.display_name)
+            if hasattr(ext_obj, "display_name")
+            else key
+        )
+        extensions.append((value, const_name, display))
+
     # --- Generate & write module --------------------------------------------
 
     module_src = generate_module(
@@ -814,6 +952,8 @@ def main() -> None:
         modalities=modalities,
         compound_extensions=compound_extensions,
         label_pattern=label_pattern,
+        template_spaces=template_spaces,
+        extensions=extensions,
     )
     OUTPUT_MODULE.write_text(module_src, encoding="utf-8")
     print(f"Generated {OUTPUT_MODULE}")  # noqa: T201
@@ -825,6 +965,8 @@ def main() -> None:
         datatypes=datatypes,
         suffixes=suffixes,
         modalities=modalities,
+        template_spaces=template_spaces,
+        extensions=extensions,
     )
     OUTPUT_TESTS.write_text(tests_src, encoding="utf-8")
     print(f"Generated {OUTPUT_TESTS}")  # noqa: T201
