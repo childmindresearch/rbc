@@ -19,7 +19,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess as anatomical_preprocess
@@ -212,20 +212,20 @@ def main(args: AllArgs) -> int:
             )
             _fex(
                 func_outputs.template_bold,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
             )
             _fex(
                 func_outputs.cleaned_bold,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
             )
             _fex(
                 func_outputs.template_brain_mask,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="bold",
                 suffix=Suffix.MASK,
             )
@@ -245,7 +245,7 @@ def main(args: AllArgs) -> int:
             _mex = partial(
                 pipe_ctx.export,
                 datatype=Datatype.FUNC,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra=reg_extra,
@@ -311,7 +311,7 @@ def main(args: AllArgs) -> int:
                 suffix="quality",
                 desc="xcp",
                 extension=".tsv",
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},

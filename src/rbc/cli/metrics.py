@@ -16,7 +16,7 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.metrics import single_session_metrics
@@ -69,7 +69,7 @@ def main(args: MetricsArgs) -> int:
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6Asym",
+        pl.col("space") == TemplateSpace.MNI152NLIN6ASYM,
     ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
@@ -98,7 +98,7 @@ def main(args: MetricsArgs) -> int:
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
                 desc="preproc",
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
@@ -107,7 +107,7 @@ def main(args: MetricsArgs) -> int:
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
                 desc="bold",
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
             )
@@ -123,7 +123,7 @@ def main(args: MetricsArgs) -> int:
             _export = partial(
                 pipe_ctx.export,
                 datatype=Datatype.FUNC,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra=reg_extra,

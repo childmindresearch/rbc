@@ -21,7 +21,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.functional import single_session_preprocess
@@ -180,7 +180,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.template_bold,
                 datatype=Datatype.FUNC,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
                 task=bold_task,
@@ -189,7 +189,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.cleaned_bold,
                 datatype=Datatype.FUNC,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
@@ -199,7 +199,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.template_brain_mask,
                 datatype=Datatype.FUNC,
-                space="MNI152NLin6Asym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="bold",
                 suffix=Suffix.MASK,
                 task=bold_task,
