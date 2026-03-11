@@ -422,7 +422,7 @@ wheels = [
 
 [[package]]
 name = "niwrap"
-version = "0.9.1"
+version = "0.9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "niwrap-afni" },
@@ -441,9 +441,9 @@ dependencies = [
     { name = "styxgraph" },
     { name = "styxsingularity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/57/6d156f74e1b657160738fb41b091cd9374a0bc4645e091515c4921790cd3/niwrap-0.9.1.tar.gz", hash = "sha256:aff6c5f5fa3451937fff02dbd63fa8b28c6fd33fadc0d5e5b47e591c349e0d64", size = 3570, upload-time = "2026-02-26T04:03:44.694Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/ec/83c32b1d157ab7a829337919e64d31ceaa059e63008467ecdfc98d6719a8/niwrap-0.9.2.tar.gz", hash = "sha256:dd98a177e8f8e64f26d5a5d5d6fc25779dbe4c1ca1b612e981f52ae8103ca4aa", size = 3568, upload-time = "2026-03-10T15:26:34.879Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/84/c434d2859e2dddcdf385fbfb71424be13a495b81b953d7a9ad06d3bbd1eb/niwrap-0.9.1-py3-none-any.whl", hash = "sha256:498aef3ddbf1de93e02a9425ffa873e69e4711d346b88cb463a1aa40d5a8623c", size = 4223, upload-time = "2026-02-26T04:03:29.985Z" },
+    { url = "https://files.pythonhosted.org/packages/30/53/ceb2d49bbc3a3ad5b951840059fa57ec6bfbe1fb25554515c39683ac40d4/niwrap-0.9.2-py3-none-any.whl", hash = "sha256:2564398f3ce5814ca6485816f32baec1221e44fe7f69915aa54a1436e352e4c8", size = 4222, upload-time = "2026-03-10T15:26:06.655Z" },
 ]
 
 [[package]]
@@ -520,14 +520,14 @@ wheels = [
 
 [[package]]
 name = "niwrap-fsl"
-version = "0.9.1"
+version = "0.9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "styxdefs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/8b/1c987f1b510a672205c7cf537491bb1753a1e9c2d5c3a2e7e9631d7be604/niwrap_fsl-0.9.1.tar.gz", hash = "sha256:48428f3c4edf4016f73e0c2f6efdec3b743e6d38c4d4cb0d5beb00fc65fdd4ed", size = 359533, upload-time = "2026-02-26T04:03:50.646Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/de/55ab04ca891d73e74e7a946443c1b968c10568cccb0143138dcc9f0515b7/niwrap_fsl-0.9.2.tar.gz", hash = "sha256:00960dfc295b9b7a97f381aef7d25cc87032a2edca2f7a1fc799539a42074faf", size = 359443, upload-time = "2026-03-10T15:26:41.971Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6f/dc/dc895233c2f775618aea8f78d279f9493ba2bf49f44adb4bb4f4f31c3d75/niwrap_fsl-0.9.1-py3-none-any.whl", hash = "sha256:561bf55bf00b00d9b4fa7ac12776d33a86fa4e8ee3754bc0d2151b222bf97e5c", size = 656192, upload-time = "2026-02-26T04:03:38.035Z" },
+    { url = "https://files.pythonhosted.org/packages/09/24/b323e72e9ac08396815dc95f7ff8eb1d9b632846b9ddd3a55e3aebed0dc4/niwrap_fsl-0.9.2-py3-none-any.whl", hash = "sha256:eb17eeab934cfb65c175f381dfee011bf8e20935e84afb28d2a6ead75c6c32bc", size = 656136, upload-time = "2026-03-10T15:26:27.951Z" },
 ]
 
 [[package]]
@@ -975,7 +975,7 @@ docs = [
 requires-dist = [
     { name = "bids2table", specifier = ">=2.1.2" },
     { name = "nibabel", specifier = ">=5.3.3" },
-    { name = "niwrap", specifier = ">=0.8.13" },
+    { name = "niwrap", specifier = ">=0.9.2" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "polars", specifier = ">=1.38.1" },
     { name = "scipy", specifier = ">=1.17.0" },
