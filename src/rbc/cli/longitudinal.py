@@ -18,7 +18,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix
+from rbc.core.bids import Datatype, Extension, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -154,7 +154,7 @@ def _process_func(
     pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle functional longitudinal processing."""
-    row = func_df.filter(suffix="bold").row(0, named=True)
+    row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     bold_task: str | None = row.get("task")
     bold_run: int | None = row.get("run")
 
@@ -165,7 +165,7 @@ def _process_func(
                 df=func_df,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses,
-                datatype="func",
+                datatype=Datatype.FUNC,
                 run=bold_run,
                 task=bold_task,
                 **kwargs,
@@ -192,34 +192,36 @@ def _process_func(
             ),
             "bold_to_anat_xfm",
         ),
-        sbref=_require_file(_get_func_file(suffix="sbref"), "sbref"),
-        bold=_require_file(_get_func_file(desc="preproc", suffix="bold"), "bold"),
-        bold_mask=_get_func_file(desc="brain", suffix="mask"),
+        sbref=_require_file(_get_func_file(suffix=Suffix.SBREF), Suffix.SBREF),
+        bold=_require_file(
+            _get_func_file(desc="preproc", suffix=Suffix.BOLD), Suffix.BOLD
+        ),
+        bold_mask=_get_func_file(desc="brain", suffix=Suffix.MASK),
     )
     # Save longitudinal outputs
     pipe_ctx.export(
         outputs.sbref,
-        datatype="func",
+        datatype=Datatype.FUNC,
         space="longitudinal",
-        suffix="sbref",
+        suffix=Suffix.SBREF,
         task=bold_task,
         run=bold_run,
     )
     pipe_ctx.export(
         outputs.bold,
-        datatype="func",
+        datatype=Datatype.FUNC,
         space="longitudinal",
         desc="preproc",
-        suffix="bold",
+        suffix=Suffix.BOLD,
         task=bold_task,
         run=bold_run,
     )
     pipe_ctx.export(
         outputs.forward_xfm,
-        datatype="func",
+        datatype=Datatype.FUNC,
         suffix="xfm",
         desc="composite",
-        extension=".nii.gz",
+        extension=Extension.NII_GZ,
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},
         task=bold_task,
         run=bold_run,
@@ -227,10 +229,10 @@ def _process_func(
     if outputs.bold_mask:
         pipe_ctx.export(
             outputs.bold_mask,
-            datatype="func",
+            datatype=Datatype.FUNC,
             space="longitudinal",
             desc="brain",
-            suffix="mask",
+            suffix=Suffix.MASK,
             task=bold_task,
             run=bold_run,
         )

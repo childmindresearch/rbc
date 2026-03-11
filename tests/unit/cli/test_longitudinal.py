@@ -553,7 +553,15 @@ class TestProcessFunc:
         [
             ("bold", {"suffix": "bold", "desc": "preproc"}),
             ("sbref", {"suffix": "sbref"}),
-            ("bold_to_anat_xfm", {"suffix": "xfm"}),
+            (
+                "bold_to_anat_xfm",
+                {
+                    "suffix": "xfm",
+                    "desc": "linear",
+                    "extension": ".mat",
+                    "extra": {"from": "bold", "to": "T1w", "mode": "image"},
+                },
+            ),
         ],
     )
     def test_missing_required_file_raises(
