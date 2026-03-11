@@ -58,8 +58,6 @@ def _process_anat(
     pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
-    if pipe_ctx.ses is None:
-        raise ValueError("No session data - unable to perform longitudinal processing")
     row = anat_df.filter(suffix="T1w").row(0, named=True)
     t1w_run: int | None = row.get("run")
 
@@ -83,7 +81,9 @@ def _process_anat(
     outputs = anatomical_longitudinal(
         template=_get_tpl_file(suffix="T1w"),
         subj_to_template_xfm=_get_tpl_file(
-            suffix="xfm", extension=".mat", extra={"from": pipe_ctx.ses}
+            suffix="xfm",
+            extension=".mat",
+            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
         brain=_require_file(_get_anat_file(suffix="T1w", desc="brain"), "brain"),
         brain_mask=_get_anat_file(suffix="mask", desc="T1w"),
@@ -182,9 +182,13 @@ def main(args: LongitudinalArgs) -> int:
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
-            ses=sub_ses_group["ses"][0] or None,
+            ses=sub_ses_group["ses"][0],
             output_dir=args.output_dir,
         )
+        if pipe_ctx.ses is None:
+            raise ValueError(
+                "No session data - unable to perform longitudinal processing"
+            )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         tpl_df = df.filter(
             pl.all_horizontal(
