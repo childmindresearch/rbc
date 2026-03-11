@@ -209,6 +209,7 @@ def generate_robust_template(in_files: Sequence[Path]) -> RobustTemplateOutputs:
         NeuroImage 61(4):1402-1418, 2012.
     """
     lta_files = []
+    entities = None
     for in_file in in_files:
         if not Path(in_file).exists():
             raise FileNotFoundError(f"{in_file} not found.")
@@ -225,9 +226,10 @@ def generate_robust_template(in_files: Sequence[Path]) -> RobustTemplateOutputs:
         lta_files.append(lta_fname)
 
     # Initialize with same defaults as fmriprep
+    assert entities is not None, "No entities found"
     robust_template = freesurfer.mri_robust_template(
         mov=list(in_files),
-        template="template.nii.gz",
+        template=f"sub-{entities['sub']}_ses-longitudinal_T1w.nii.gz",
         lta=lta_files,
         inittp=1,  # map everything to first time point
         fixtp=True,
@@ -327,7 +329,7 @@ if __name__ == "__main__":
             Path(args.output_dir)
             / b2t.format_bids_path(
                 {"sub": sub, "ses": "longitudinal", "datatype": "anat"}
-            )
+            ).parent
         )
         output_dir.mkdir(exist_ok=True, parents=True)
         for fpath in [robust_template.template, *subj_to_temp]:
