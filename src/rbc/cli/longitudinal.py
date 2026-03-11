@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -57,6 +58,8 @@ def _process_anat(
     pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
+    if pipe_ctx.ses is None:
+        raise ValueError("No session data - unable to perform longitudinal processing")
     row = anat_df.filter(suffix="T1w").row(0, named=True)
     t1w_run: int | None = row.get("run")
 
@@ -73,17 +76,14 @@ def _process_anat(
         except FileNotFoundError:
             return None
 
+    _get_tpl_file = partial(
+        get_file_path, df=tpl_df, sub=pipe_ctx.sub, ses="longitudinal", datatype="anat"
+    )
+
     outputs = anatomical_longitudinal(
-        template=get_file_path(
-            df=tpl_df,
-            sub=pipe_ctx.sub,
-            ses="longitudinal",
-            datatype="anat",
-            suffix="T1w",
-        ),
-        subj_to_template_xfm=_require_file(
-            _get_anat_file(extension=".mat", extra={"to": "longitudinal"}),
-            "subj_to_template_xfm",
+        template=_get_tpl_file(suffix="T1w"),
+        subj_to_template_xfm=_get_tpl_file(
+            suffix="xfm", extension=".mat", extra={"from": pipe_ctx.ses}
         ),
         brain=_require_file(_get_anat_file(suffix="T1w", desc="brain"), "brain"),
         brain_mask=_get_anat_file(suffix="mask", desc="T1w"),
@@ -143,7 +143,7 @@ def _process_anat(
         outputs.inverse_xfm,
         datatype="anat",
         suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
         run=t1w_run,
     )
 
