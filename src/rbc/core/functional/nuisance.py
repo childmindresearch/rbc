@@ -72,7 +72,8 @@ def bandpass_filter(
         highpass=f_low,
         lowpass=f_high,
     )
-    return Path(result.out_file)
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file
 
 
 def nuisance_regression(
