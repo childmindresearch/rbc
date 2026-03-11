@@ -151,6 +151,7 @@ def sample_dataframe() -> pl.DataFrame:
                 "longitudinal",
             ],
             "task": [None] * 6,
+            "space": [None] * 6,
             "run": [None] * 6,
             "desc": [None] * 6,
             "root": ["/data"] * 6,
