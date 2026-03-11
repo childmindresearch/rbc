@@ -169,7 +169,10 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [pl.col("ses") != "longitudinal", pl.col("space") != "longitudinal"]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null() | (pl.col("space") != "longitudinal"),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
