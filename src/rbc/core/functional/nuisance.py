@@ -51,6 +51,30 @@ class NuisanceRegressionOutputs(NamedTuple):
     eroded_masks: ErodedMaskArrays
 
 
+def bandpass_filter(
+    bold: str | Path,
+    f_low: float = 0.01,
+    f_high: float = 0.1,
+) -> Path:
+    """Apply bandpass filtering to a BOLD timeseries.
+
+    Args:
+        bold: 4-D BOLD timeseries to filter.
+        f_low: Low frequency cutoff (Hz).
+        f_high: High frequency cutoff (Hz).
+
+    Returns:
+        Path to bandpass-filtered BOLD timeseries.
+    """
+    result = afni.v_3d_bandpass(
+        in_file=bold,
+        prefix="bandpassed_bold.nii.gz",
+        highpass=f_low,
+        lowpass=f_high,
+    )
+    return result.out_file
+
+
 def nuisance_regression(
     bold_file: str | Path,
     brain_mask_file: str | Path,
