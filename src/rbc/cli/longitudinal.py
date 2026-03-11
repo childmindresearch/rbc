@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -74,17 +75,20 @@ def _process_anat(
         except FileNotFoundError:
             return None
 
+    _get_tpl_file = partial(
+        get_file_path,
+        df=tpl_df,
+        sub=pipe_ctx.sub,
+        ses="longitudinal",
+        datatype=Datatype.ANAT,
+    )
+
     outputs = anatomical_longitudinal(
-        template=get_file_path(
-            df=tpl_df,
-            sub=pipe_ctx.sub,
-            ses="longitudinal",
-            datatype=Datatype.ANAT,
-            suffix=Suffix.T1W,
-        ),
-        subj_to_template_xfm=_require_file(
-            _get_anat_file(extension=".mat", extra={"to": "longitudinal"}),
-            "subj_to_template_xfm",
+        template=_get_tpl_file(suffix=Suffix.T1W),
+        subj_to_template_xfm=_get_tpl_file(
+            suffix="xfm",
+            extension=".mat",
+            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
         brain=_require_file(_get_anat_file(suffix=Suffix.T1W, desc="brain"), "brain"),
         brain_mask=_get_anat_file(suffix=Suffix.MASK, desc="T1w"),
@@ -144,7 +148,7 @@ def _process_anat(
         outputs.inverse_xfm,
         datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
         run=t1w_run,
     )
 
@@ -170,7 +174,10 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = []
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null() | (pl.col("space") != "longitudinal"),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -183,9 +190,13 @@ def main(args: LongitudinalArgs) -> int:
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
-            ses=sub_ses_group["ses"][0] or None,
+            ses=sub_ses_group["ses"][0],
             output_dir=args.output_dir,
         )
+        if pipe_ctx.ses is None:
+            raise ValueError(
+                "No session data - unable to perform longitudinal processing"
+            )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         tpl_df = df.filter(
             pl.all_horizontal(
