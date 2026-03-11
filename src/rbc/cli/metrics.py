@@ -94,6 +94,15 @@ def main(args: MetricsArgs) -> int:
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
 
+            residuals = get_deriv(
+                datatype="func",
+                suffix="bold",
+                desc="residuals",
+                space="MNI152NLin6ASym",
+                task=bold_task,
+                run=bold_run,
+                extra={"reg": args.regressor},
+            )
             cleaned_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
@@ -113,6 +122,7 @@ def main(args: MetricsArgs) -> int:
             )
 
             outputs = single_session_metrics(
+                residuals=residuals,
                 cleaned_bold=cleaned_bold,
                 template_brain_mask=template_brain_mask,
                 atlas=args.atlas,

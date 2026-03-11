@@ -72,7 +72,7 @@ def bandpass_filter(
         highpass=f_low,
         lowpass=f_high,
     )
-    return result.out_file
+    return Path(result.out_file)
 
 
 def nuisance_regression(

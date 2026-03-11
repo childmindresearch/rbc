@@ -217,6 +217,13 @@ def main(args: AllArgs) -> int:
                 suffix=Suffix.BOLD,
             )
             _fex(
+                func_outputs.residuals,
+                space="MNI152NLin6ASym",
+                desc="residuals",
+                suffix="bold",
+                extra={"reg": args.regressor},
+            )
+            _fex(
                 func_outputs.cleaned_bold,
                 space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
@@ -235,6 +242,7 @@ def main(args: AllArgs) -> int:
                 f"Metrics: sub-{pipe_ctx.sub} task-{bold_task} run-{bold_run}"
             )
             metrics_outputs = metrics_pipeline(
+                residuals=func_outputs.residuals,
                 cleaned_bold=func_outputs.cleaned_bold,
                 template_brain_mask=func_outputs.template_brain_mask,
                 atlas=args.atlas,
