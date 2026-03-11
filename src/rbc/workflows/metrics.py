@@ -55,7 +55,7 @@ class MetricsOutputs(NamedTuple):
 
 
 def single_session_metrics(
-    residuals: Path,
+    regressed_bold: Path,
     cleaned_bold: Path,
     template_brain_mask: Path,
     tr: float | None = None,
@@ -65,7 +65,7 @@ def single_session_metrics(
     """Compute all derivative metrics for a single functional run.
 
     Args:
-        residuals: Nuisance-regressed (non-bandpassed) BOLD in template space.
+        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD in template space.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD in template space.
         template_brain_mask: Brain mask warped to template space.
         tr: Repetition time in seconds; if *None*, read from NIfTI header.
@@ -75,9 +75,9 @@ def single_session_metrics(
     Returns:
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
     """
-    # 1. ALFF / fALFF on residuals (non-bandpassed)
+    # 1. ALFF / fALFF on regressed BOLD (non-bandpassed)
     alff_path, falff_path = compute_alff(
-        residuals, template_brain_mask, tr=tr, method="qm"
+        regressed_bold, template_brain_mask, tr=tr, method="qm"
     )
 
     # 2. ReHo on bandpass-filtered cleaned BOLD

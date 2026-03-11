@@ -16,7 +16,7 @@ def test_single_session_metrics(
 ) -> None:
     """All 11 MetricsOutputs paths must exist on disk."""
     result = metrics_pipeline(
-        residuals=pipeline_data.func.residuals,
+        regressed_bold=pipeline_data.func.regressed_bold,
         cleaned_bold=pipeline_data.func.cleaned_bold,
         template_brain_mask=pipeline_data.template_brain_mask,
     )

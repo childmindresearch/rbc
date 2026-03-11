@@ -59,7 +59,7 @@ class FunctionalOutputs(NamedTuple):
         skull_stripped_bold: Skull-stripped BOLD reference.
         bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
         template_bold: BOLD resampled to template space.
-        residuals: Nuisance-regressed (non-bandpassed) BOLD.
+        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
         regressor_file: Nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
@@ -81,7 +81,7 @@ class FunctionalOutputs(NamedTuple):
     skull_stripped_bold: Path
     bold_to_anat_matrix: Path
     template_bold: Path
-    residuals: Path
+    regressed_bold: Path
     cleaned_bold: Path
     regressor_file: Path
     template_brain_mask: Path
@@ -234,7 +234,7 @@ def single_session_preprocess(
     )
     tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
-    # 11. Nuisance regression in template space for residuals (used in ALFF/fALFF)
+    # 11. Nuisance regression in template space (used in ALFF/fALFF)
     nuisance = nuisance_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
@@ -245,7 +245,7 @@ def single_session_preprocess(
         bandpass=None,
     )
 
-    # 12. Bandpass filter the residuals (used in ReHo, timeseries)
+    # 12. Bandpass filter regressed BOLD (used in ReHo, timeseries)
     cleaned_bold = bandpass_filter(nuisance.cleaned_bold, f_low=0.01, f_high=0.1)
 
     return FunctionalOutputs(
@@ -265,7 +265,7 @@ def single_session_preprocess(
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
-        residuals=nuisance.cleaned_bold,
+        regressed_bold=nuisance.cleaned_bold,
         cleaned_bold=cleaned_bold,
         regressor_file=nuisance.regressor_file,
         template_brain_mask=tmpl_brain,
