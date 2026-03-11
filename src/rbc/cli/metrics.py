@@ -16,7 +16,7 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Desc, Space, Suffix
+from rbc.core.bids import Datatype, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.metrics import single_session_metrics
@@ -69,7 +69,7 @@ def main(args: MetricsArgs) -> int:
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6ASym",
+        pl.col("space") == "MNI152NLin6Asym",
     ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
@@ -97,8 +97,8 @@ def main(args: MetricsArgs) -> int:
             cleaned_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
-                desc=Desc.PREPROC,
-                space=Space.MNI152NLIN6ASYM,
+                desc="preproc",
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
@@ -106,8 +106,8 @@ def main(args: MetricsArgs) -> int:
             template_brain_mask = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
-                desc=Desc.BOLD,
-                space=Space.MNI152NLIN6ASYM,
+                desc="bold",
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
             )
@@ -123,31 +123,31 @@ def main(args: MetricsArgs) -> int:
             _export = partial(
                 pipe_ctx.export,
                 datatype=Datatype.FUNC,
-                space=Space.MNI152NLIN6ASYM,
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
                 extra=reg_extra,
             )
-            _export(outputs.alff, suffix=Suffix.ALFF)
-            _export(outputs.falff, suffix=Suffix.FALFF)
-            _export(outputs.alff_smooth, suffix=Suffix.ALFF, desc=Desc.SMOOTH)
-            _export(outputs.falff_smooth, suffix=Suffix.FALFF, desc=Desc.SMOOTH)
-            _export(outputs.alff_zscored, suffix=Suffix.ALFF, desc=Desc.SMOOTHZSTD)
-            _export(outputs.falff_zscored, suffix=Suffix.FALFF, desc=Desc.SMOOTHZSTD)
-            _export(outputs.reho, suffix=Suffix.REHO)
-            _export(outputs.reho_smooth, suffix=Suffix.REHO, desc=Desc.SMOOTH)
-            _export(outputs.reho_zscored, suffix=Suffix.REHO, desc=Desc.SMOOTHZSTD)
+            _export(outputs.alff, suffix="alff")
+            _export(outputs.falff, suffix="falff")
+            _export(outputs.alff_smooth, suffix="alff", desc="smooth")
+            _export(outputs.falff_smooth, suffix="falff", desc="smooth")
+            _export(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
+            _export(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
+            _export(outputs.reho, suffix="reho")
+            _export(outputs.reho_smooth, suffix="reho", desc="smooth")
+            _export(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
             _export(
                 outputs.timeseries,
-                suffix=Suffix.TIMESERIES,
-                desc=Desc.MEAN,
+                suffix="timeseries",
+                desc="mean",
                 extension=".tsv",
                 atlas=args.atlas,
             )
             _export(
                 outputs.correlation_matrix,
-                suffix=Suffix.CORRELATIONS,
-                desc=Desc.PEARSON,
+                suffix="correlations",
+                desc="pearson",
                 extension=".tsv",
                 atlas=args.atlas,
             )

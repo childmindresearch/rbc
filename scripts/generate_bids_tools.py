@@ -4,8 +4,7 @@
 # ///
 """Generate BIDS schema constants, utilities, and tests for the rbc package.
 
-Reads the BIDS schema via bidsschematools and project-specific constants
-from ``scripts/bids_project.py``, then generates:
+Reads the BIDS schema via bidsschematools and generates:
   - src/rbc/core/bids.py   (constants + build/parse functions)
   - tests/unit/test_bids.py (unit tests)
 
@@ -19,8 +18,6 @@ import subprocess
 import textwrap
 from pathlib import Path
 
-from bids_project import DESCS, SPACES
-from bids_project import SUFFIXES as PROJECT_SUFFIXES
 from bidsschematools.schema import load_schema
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -87,6 +84,18 @@ def wrap_arg_doc(key: str, desc: str, indent: int = 8) -> list[str]:
     return text.split("\n")
 
 
+def ext_to_const(value: str) -> str:
+    """Convert a file extension to an UPPER_CASE Python constant name.
+
+    Strips the leading dot, replaces remaining dots with underscores,
+    and upper-cases the result.  E.g. ``.nii.gz`` → ``NII_GZ``.
+    """
+    name = value.lstrip(".").replace(".", "_").upper()
+    if name[0].isdigit():
+        name = "_" + name
+    return name
+
+
 # ---------------------------------------------------------------------------
 # Module generation
 # ---------------------------------------------------------------------------
@@ -100,9 +109,8 @@ def generate_module(  # noqa: C901
     modalities: list[tuple[str, str]],
     compound_extensions: list[str],
     label_pattern: str,
-    project_suffixes: list[tuple[str, str]],
-    spaces: list[tuple[str, str]],
-    descs: list[tuple[str, str]],
+    template_spaces: list[str],
+    extensions: list[tuple[str, str, str]],
 ) -> str:
     """Return the full source of src/rbc/core/bids.py."""
     lines: list[str] = []
@@ -160,42 +168,33 @@ def generate_module(  # noqa: C901
         w()
     w()
 
-    # -- Suffix namespace (schema + project) --
-    # Merge project suffixes, skipping any already in schema
-    schema_suffix_values = {v for v, _ in suffixes}
-    merged_suffixes = list(suffixes)
-    for value, display in project_suffixes:
-        if value not in schema_suffix_values:
-            merged_suffixes.append((value, display))
-    merged_suffixes.sort()
-
+    # -- Suffix namespace (schema only) --
     w("class Suffix:")
     w('    """BIDS suffixes."""')
     w()
-    for value, display in merged_suffixes:
+    for value, display in suffixes:
         escaped = display.replace('"', '\\"')
         w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
         w(f'    """{escaped}."""')
         w()
     w()
 
-    # -- Space namespace (project-specific) --
-    w("class Space:")
-    w('    """Common coordinate space labels."""')
+    # -- TemplateSpace namespace (from schema _StandardTemplateCoordSys) --
+    w("class TemplateSpace:")
+    w('    """Standard template coordinate systems from the BIDS schema."""')
     w()
-    for value, display in spaces:
-        w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
-        w(f'    """{display}."""')
+    for space in template_spaces:
+        w(f'    {to_const(space)}: Literal["{space}"] = "{space}"')
         w()
     w()
 
-    # -- Desc namespace (project-specific) --
-    w("class Desc:")
-    w('    """Common description labels used by the RBC pipeline."""')
+    # -- Extension namespace (from schema extensions) --
+    w("class Extension:")
+    w('    """File extensions from the BIDS schema."""')
     w()
-    for value, display in descs:
-        w(f'    {to_const(value)}: Literal["{value}"] = "{value}"')
-        w(f'    """{display}."""')
+    for ext_value, ext_const, ext_display in extensions:
+        w(f'    {ext_const}: Literal["{ext_value}"] = "{ext_value}"')
+        w(f'    """{ext_display}."""')
         w()
     w()
 
@@ -463,9 +462,8 @@ def generate_tests(
     datatypes: list[tuple[str, str]],
     suffixes: list[tuple[str, str]],
     modalities: list[tuple[str, str]],
-    project_suffixes: list[tuple[str, str]],
-    spaces: list[tuple[str, str]],
-    descs: list[tuple[str, str]],
+    template_spaces: list[str],
+    extensions: list[tuple[str, str, str]],
 ) -> str:
     """Return the full source of tests/unit/test_bids.py."""
     lines: list[str] = []
@@ -487,10 +485,10 @@ def generate_tests(
     w("from rbc.core.bids import (")
     w("    BIDSFile,")
     w("    Datatype,")
-    w("    Desc,")
+    w("    Extension,")
     w("    Modality,")
-    w("    Space,")
     w("    Suffix,")
+    w("    TemplateSpace,")
     w("    bids_name,")
     w("    bids_path,")
     w("    bids_safe_label,")
@@ -854,25 +852,18 @@ def generate_tests(
         w(f'        assert Modality.{to_const(val)} == "{val}"')
     w()
 
-    # Project suffix spot-checks
-    w("    def test_project_suffix_values(self) -> None:")
-    w('        """Project-specific suffix constants are present."""')
-    for val, _ in project_suffixes:
-        w(f'        assert Suffix.{to_const(val)} == "{val}"')
+    # TemplateSpace spot-checks
+    w("    def test_template_space_values(self) -> None:")
+    w('        """TemplateSpace constants hold the expected string values."""')
+    for space in template_spaces[:5]:
+        w(f'        assert TemplateSpace.{to_const(space)} == "{space}"')
     w()
 
-    # Space spot-checks
-    w("    def test_space_values(self) -> None:")
-    w('        """Space constants hold the expected string values."""')
-    for val, _ in spaces:
-        w(f'        assert Space.{to_const(val)} == "{val}"')
-    w()
-
-    # Desc spot-checks
-    w("    def test_desc_values(self) -> None:")
-    w('        """Desc constants hold the expected string values."""')
-    for val, _ in descs[:5]:
-        w(f'        assert Desc.{to_const(val)} == "{val}"')
+    # Extension spot-checks
+    w("    def test_extension_values(self) -> None:")
+    w('        """Extension constants hold the expected string values."""')
+    for ext_value, ext_const, _ in extensions[:5]:
+        w(f'        assert Extension.{ext_const} == "{ext_value}"')
     w()
 
     return "\n".join(lines)
@@ -928,6 +919,25 @@ def main() -> None:
         reverse=True,
     )
 
+    # --- Template spaces from BIDS schema -----------------------------------
+    coord_sys = schema.objects.enums["_StandardTemplateCoordSys"]
+    template_spaces: list[str] = sorted(coord_sys.enum)
+
+    # --- Extensions from BIDS schema ----------------------------------------
+    # Filter out special values: wildcards, directory markers, and empty strings
+    extensions: list[tuple[str, str, str]] = []
+    for key, ext_obj in sorted(schema.objects.extensions.items()):
+        value = ext_obj.value
+        # Skip special values
+        if value in (".*", "/", "") or value.endswith("/"):
+            continue
+        # Skip non-dot extensions (shouldn't exist, but safety)
+        if not value.startswith("."):
+            continue
+        const_name = ext_to_const(value)
+        display = clean_desc(ext_obj.display_name) if hasattr(ext_obj, "display_name") else key
+        extensions.append((value, const_name, display))
+
     # --- Generate & write module --------------------------------------------
 
     module_src = generate_module(
@@ -938,9 +948,8 @@ def main() -> None:
         modalities=modalities,
         compound_extensions=compound_extensions,
         label_pattern=label_pattern,
-        project_suffixes=PROJECT_SUFFIXES,
-        spaces=SPACES,
-        descs=DESCS,
+        template_spaces=template_spaces,
+        extensions=extensions,
     )
     OUTPUT_MODULE.write_text(module_src, encoding="utf-8")
     print(f"Generated {OUTPUT_MODULE}")  # noqa: T201
@@ -952,9 +961,8 @@ def main() -> None:
         datatypes=datatypes,
         suffixes=suffixes,
         modalities=modalities,
-        project_suffixes=PROJECT_SUFFIXES,
-        spaces=SPACES,
-        descs=DESCS,
+        template_spaces=template_spaces,
+        extensions=extensions,
     )
     OUTPUT_TESTS.write_text(tests_src, encoding="utf-8")
     print(f"Generated {OUTPUT_TESTS}")  # noqa: T201

@@ -9,10 +9,10 @@ import pytest
 from rbc.core.bids import (
     BIDSFile,
     Datatype,
-    Desc,
+    Extension,
     Modality,
-    Space,
     Suffix,
+    TemplateSpace,
     bids_name,
     bids_path,
     bids_safe_label,
@@ -305,27 +305,18 @@ class TestConstants:
         assert Modality.EMG == "emg"
         assert Modality.IEEG == "ieeg"
 
-    def test_project_suffix_values(self) -> None:
-        """Project-specific suffix constants are present."""
-        assert Suffix.XFM == "xfm"
-        assert Suffix.REGRESSORS == "regressors"
-        assert Suffix.ALFF == "alff"
-        assert Suffix.FALFF == "falff"
-        assert Suffix.REHO == "reho"
-        assert Suffix.TIMESERIES == "timeseries"
-        assert Suffix.CORRELATIONS == "correlations"
-        assert Suffix.QUALITY == "quality"
+    def test_template_space_values(self) -> None:
+        """TemplateSpace constants hold the expected string values."""
+        assert TemplateSpace.ICBM452AIRSPACE == "ICBM452AirSpace"
+        assert TemplateSpace.ICBM452WARP5SPACE == "ICBM452Warp5Space"
+        assert TemplateSpace.IXI549SPACE == "IXI549Space"
+        assert TemplateSpace.MNI152LIN == "MNI152Lin"
+        assert TemplateSpace.MNI152NLIN2009AASYM == "MNI152NLin2009aAsym"
 
-    def test_space_values(self) -> None:
-        """Space constants hold the expected string values."""
-        assert Space.MNI152NLIN6ASYM == "MNI152NLin6ASym"
-        assert Space.MNI152NLIN2009CASYM == "MNI152NLin2009cAsym"
-        assert Space.LONGITUDINAL == "longitudinal"
-
-    def test_desc_values(self) -> None:
-        """Desc constants hold the expected string values."""
-        assert Desc.BRAIN == "brain"
-        assert Desc.PREPROC == "preproc"
-        assert Desc.T1W == "T1w"
-        assert Desc.CSF == "csf"
-        assert Desc.GM == "gm"
+    def test_extension_values(self) -> None:
+        """Extension constants hold the expected string values."""
+        assert Extension.OME_BTF == ".ome.btf"
+        assert Extension.OME_TIF == ".ome.tif"
+        assert Extension.AVE == ".ave"
+        assert Extension.BDF == ".bdf"
+        assert Extension.BVAL == ".bval"

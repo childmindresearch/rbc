@@ -276,9 +276,6 @@ class Suffix:
     XPCT: Literal["XPCT"] = "XPCT"
     """X-ray Phase-Contrast Tomography."""
 
-    ALFF: Literal["alff"] = "alff"
-    """Amplitude of low frequency fluctuations."""
-
     ANGIO: Literal["angio"] = "angio"
     """Angiogram."""
 
@@ -312,9 +309,6 @@ class Suffix:
     COORDSYSTEM: Literal["coordsystem"] = "coordsystem"
     """Coordinate System File."""
 
-    CORRELATIONS: Literal["correlations"] = "correlations"
-    """Correlation matrix."""
-
     DEFACEMASK: Literal["defacemask"] = "defacemask"
     """Defacing Mask."""
 
@@ -347,9 +341,6 @@ class Suffix:
 
     EXPADC: Literal["expADC"] = "expADC"
     """Exponental ADC."""
-
-    FALFF: Literal["falff"] = "falff"
-    """Fractional ALFF."""
 
     FIELDMAP: Literal["fieldmap"] = "fieldmap"
     """Fieldmap."""
@@ -432,15 +423,6 @@ class Suffix:
     PROBSEG: Literal["probseg"] = "probseg"
     """Probabilistic Segmentation."""
 
-    QUALITY: Literal["quality"] = "quality"
-    """Quality metrics."""
-
-    REGRESSORS: Literal["regressors"] = "regressors"
-    """Nuisance regressors."""
-
-    REHO: Literal["reho"] = "reho"
-    """Regional homogeneity."""
-
     SBREF: Literal["sbref"] = "sbref"
     """Single-band reference image."""
 
@@ -456,9 +438,6 @@ class Suffix:
     SVS: Literal["svs"] = "svs"
     """Single-voxel spectroscopy."""
 
-    TIMESERIES: Literal["timeseries"] = "timeseries"
-    """Atlas time series."""
-
     TRACE: Literal["trace"] = "trace"
     """Trace-weighted diffusion image."""
 
@@ -468,76 +447,171 @@ class Suffix:
     UNLOC: Literal["unloc"] = "unloc"
     """Unlocalized spectroscopy."""
 
-    XFM: Literal["xfm"] = "xfm"
-    """Spatial transformation."""
 
+class TemplateSpace:
+    """Standard template coordinate systems from the BIDS schema."""
 
-class Space:
-    """Common coordinate space labels."""
+    ICBM452AIRSPACE: Literal["ICBM452AirSpace"] = "ICBM452AirSpace"
 
-    MNI152NLIN6ASYM: Literal["MNI152NLin6ASym"] = "MNI152NLin6ASym"
-    """MNI 152 non-linear 6th generation asymmetric."""
+    ICBM452WARP5SPACE: Literal["ICBM452Warp5Space"] = "ICBM452Warp5Space"
+
+    IXI549SPACE: Literal["IXI549Space"] = "IXI549Space"
+
+    MNI152LIN: Literal["MNI152Lin"] = "MNI152Lin"
+
+    MNI152NLIN2009AASYM: Literal["MNI152NLin2009aAsym"] = "MNI152NLin2009aAsym"
+
+    MNI152NLIN2009ASYM: Literal["MNI152NLin2009aSym"] = "MNI152NLin2009aSym"
+
+    MNI152NLIN2009BASYM: Literal["MNI152NLin2009bAsym"] = "MNI152NLin2009bAsym"
+
+    MNI152NLIN2009BSYM: Literal["MNI152NLin2009bSym"] = "MNI152NLin2009bSym"
 
     MNI152NLIN2009CASYM: Literal["MNI152NLin2009cAsym"] = "MNI152NLin2009cAsym"
-    """MNI 152 non-linear 2009c asymmetric."""
 
-    LONGITUDINAL: Literal["longitudinal"] = "longitudinal"
-    """Subject-specific longitudinal template."""
+    MNI152NLIN2009CSYM: Literal["MNI152NLin2009cSym"] = "MNI152NLin2009cSym"
+
+    MNI152NLIN6ASYM: Literal["MNI152NLin6Asym"] = "MNI152NLin6Asym"
+
+    MNI152NLIN6SYM: Literal["MNI152NLin6Sym"] = "MNI152NLin6Sym"
+
+    MNI305: Literal["MNI305"] = "MNI305"
+
+    MNICOLIN27: Literal["MNIColin27"] = "MNIColin27"
+
+    NIHPD: Literal["NIHPD"] = "NIHPD"
+
+    OASIS30ANTSOASISANTS: Literal["OASIS30AntsOASISAnts"] = "OASIS30AntsOASISAnts"
+
+    OASIS30ATROPOS: Literal["OASIS30Atropos"] = "OASIS30Atropos"
+
+    TALAIRACH: Literal["Talairach"] = "Talairach"
+
+    UNCINFANT: Literal["UNCInfant"] = "UNCInfant"
+
+    FSLR: Literal["fsLR"] = "fsLR"
+
+    FSAVERAGE: Literal["fsaverage"] = "fsaverage"
+
+    FSAVERAGESYM: Literal["fsaverageSym"] = "fsaverageSym"
 
 
-class Desc:
-    """Common description labels used by the RBC pipeline."""
+class Extension:
+    """File extensions from the BIDS schema."""
 
-    BRAIN: Literal["brain"] = "brain"
-    """Brain-extracted."""
+    OME_BTF: Literal[".ome.btf"] = ".ome.btf"
+    """Open Microscopy Environment BigTIFF."""
 
-    PREPROC: Literal["preproc"] = "preproc"
-    """Preprocessed."""
+    OME_TIF: Literal[".ome.tif"] = ".ome.tif"
+    """Open Microscopy Environment Tag Image File Format."""
 
-    T1W: Literal["T1w"] = "T1w"
-    """T1-weighted space."""
+    AVE: Literal[".ave"] = ".ave"
+    """AVE."""
 
-    CSF: Literal["csf"] = "csf"
-    """Cerebrospinal fluid."""
+    BDF: Literal[".bdf"] = ".bdf"
+    """Biosemi Data Format."""
 
-    GM: Literal["gm"] = "gm"
-    """Gray matter."""
+    BVAL: Literal[".bval"] = ".bval"
+    """FSL-Format Gradient Amplitudes."""
 
-    WM: Literal["wm"] = "wm"
-    """White matter."""
+    BVEC: Literal[".bvec"] = ".bvec"
+    """FSL-Format Gradient Directions."""
 
-    WMBBR: Literal["wmBBR"] = "wmBBR"
-    """White matter BBR mask."""
+    CHN: Literal[".chn"] = ".chn"
+    """KRISS CHN."""
 
-    MOTIONPARAMS: Literal["motionParams"] = "motionParams"
-    """Motion parameters."""
+    CON: Literal[".con"] = ".con"
+    """KIT/Yokogawa/Ricoh Continuous Data."""
 
-    RELSDISPLACEMENT: Literal["relsDisplacement"] = "relsDisplacement"
-    """Relative RMS displacement."""
+    DAT: Literal[".dat"] = ".dat"
+    """MEG Fine-Calibration Format."""
 
-    MAXDISPLACEMENT: Literal["maxDisplacement"] = "maxDisplacement"
-    """Max displacement."""
+    DLABEL_NII: Literal[".dlabel.nii"] = ".dlabel.nii"
+    """CIFTI-2 Dense Label File."""
 
-    LINEAR: Literal["linear"] = "linear"
-    """Linear transformation."""
+    EDF: Literal[".edf"] = ".edf"
+    """European Data Format."""
 
-    BOLD: Literal["bold"] = "bold"
-    """BOLD space."""
+    EEG: Literal[".eeg"] = ".eeg"
+    """BrainVision Binary Data."""
 
-    SMOOTH: Literal["smooth"] = "smooth"
-    """Spatially smoothed."""
+    FDT: Literal[".fdt"] = ".fdt"
+    """EEGLAB FDT."""
 
-    SMOOTHZSTD: Literal["smoothZstd"] = "smoothZstd"
-    """Smoothed and z-standardized."""
+    FIF: Literal[".fif"] = ".fif"
+    """Functional Imaging File Format."""
 
-    MEAN: Literal["mean"] = "mean"
-    """Temporal mean."""
+    JPG: Literal[".jpg"] = ".jpg"
+    """Joint Photographic Experts Group Format."""
 
-    PEARSON: Literal["pearson"] = "pearson"
-    """Pearson correlation."""
+    JSON: Literal[".json"] = ".json"
+    """JavaScript Object Notation."""
 
-    XCP: Literal["xcp"] = "xcp"
-    """XCP-D format."""
+    KDF: Literal[".kdf"] = ".kdf"
+    """KRISS KDF."""
+
+    LABEL_GII: Literal[".label.gii"] = ".label.gii"
+    """GIFTI label/annotation file."""
+
+    MD: Literal[".md"] = ".md"
+    """Markdown."""
+
+    MHD: Literal[".mhd"] = ".mhd"
+    """ITAB Binary Header."""
+
+    MRK: Literal[".mrk"] = ".mrk"
+    """MRK."""
+
+    NII: Literal[".nii"] = ".nii"
+    """NIfTI."""
+
+    NII_GZ: Literal[".nii.gz"] = ".nii.gz"
+    """Compressed NIfTI."""
+
+    NWB: Literal[".nwb"] = ".nwb"
+    """Neurodata Without Borders Format."""
+
+    PNG: Literal[".png"] = ".png"
+    """Portable Network Graphics."""
+
+    POS: Literal[".pos"] = ".pos"
+    """Head Point Position."""
+
+    RAW: Literal[".raw"] = ".raw"
+    """RAW."""
+
+    RST: Literal[".rst"] = ".rst"
+    """reStructuredText."""
+
+    SET: Literal[".set"] = ".set"
+    """EEGLAB SET."""
+
+    SNIRF: Literal[".snirf"] = ".snirf"
+    """Shared Near Infrared Spectroscopy Format."""
+
+    SQD: Literal[".sqd"] = ".sqd"
+    """SQD."""
+
+    TIF: Literal[".tif"] = ".tif"
+    """Tag Image File Format."""
+
+    TRG: Literal[".trg"] = ".trg"
+    """KRISS TRG."""
+
+    TSV: Literal[".tsv"] = ".tsv"
+    """Tab-Delimited."""
+
+    TSV_GZ: Literal[".tsv.gz"] = ".tsv.gz"
+    """Compressed Tab-Delimited."""
+
+    TXT: Literal[".txt"] = ".txt"
+    """Text."""
+
+    VHDR: Literal[".vhdr"] = ".vhdr"
+    """BrainVision Text Header."""
+
+    VMRK: Literal[".vmrk"] = ".vmrk"
+    """BrainVision Marker."""
 
 
 class Modality:

@@ -21,7 +21,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Desc, Space, Suffix
+from rbc.core.bids import Datatype, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.functional import single_session_preprocess
@@ -96,13 +96,13 @@ def main(args: FunctionalArgs) -> int:
             )
             outputs = single_session_preprocess(
                 in_bold=bold_fpath,
-                t1w_brain=get_anat_file(suffix=Suffix.T1W, desc=Desc.BRAIN),
-                wm_bbr_mask=get_anat_file(suffix=Suffix.MASK, desc=Desc.WMBBR),
-                brain_mask=get_anat_file(suffix=Suffix.MASK, desc=Desc.T1W),
-                csf_mask=get_anat_file(suffix=Suffix.MASK, desc=Desc.CSF),
-                wm_mask=get_anat_file(suffix=Suffix.MASK, desc=Desc.WM),
+                t1w_brain=get_anat_file(suffix=Suffix.T1W, desc="brain"),
+                wm_bbr_mask=get_anat_file(suffix=Suffix.MASK, desc="wmBBR"),
+                brain_mask=get_anat_file(suffix=Suffix.MASK, desc="T1w"),
+                csf_mask=get_anat_file(suffix=Suffix.MASK, desc="csf"),
+                wm_mask=get_anat_file(suffix=Suffix.MASK, desc="wm"),
                 anat_to_template=get_anat_file(
-                    suffix=Suffix.XFM,
+                    suffix="xfm",
                     extra={"from": "template", "to": "T1w", "mode": "image"},
                 ),
                 regressor_set=args.regressor,
@@ -118,7 +118,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.motion_corrected_bold,
                 datatype=Datatype.FUNC,
-                desc=Desc.PREPROC,
+                desc="preproc",
                 suffix=Suffix.BOLD,
                 task=bold_task,
                 run=bold_run,
@@ -126,7 +126,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.motion_params,
                 datatype=Datatype.FUNC,
-                desc=Desc.MOTIONPARAMS,
+                desc="motionParams",
                 suffix=Suffix.MOTION,
                 extension=".1D",
                 task=bold_task,
@@ -135,7 +135,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.rms_rel,
                 datatype=Datatype.FUNC,
-                desc=Desc.RELSDISPLACEMENT,
+                desc="relsDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
                 task=bold_task,
@@ -144,7 +144,7 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.rms_abs,
                 datatype=Datatype.FUNC,
-                desc=Desc.MAXDISPLACEMENT,
+                desc="maxDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
                 task=bold_task,
@@ -154,15 +154,15 @@ def main(args: FunctionalArgs) -> int:
                 outputs.bold_mask,
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
-                desc=Desc.BRAIN,
+                desc="brain",
                 task=bold_task,
                 run=bold_run,
             )
             pipe_ctx.export(
                 outputs.bold_to_anat_matrix,
                 datatype=Datatype.FUNC,
-                suffix=Suffix.XFM,
-                desc=Desc.LINEAR,
+                suffix="xfm",
+                desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
                 task=bold_task,
@@ -172,7 +172,7 @@ def main(args: FunctionalArgs) -> int:
                 outputs.regressor_file,
                 datatype=Datatype.FUNC,
                 desc=args.regressor,
-                suffix=Suffix.REGRESSORS,
+                suffix="regressors",
                 extension=".1D",
                 task=bold_task,
                 run=bold_run,
@@ -180,8 +180,8 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.template_bold,
                 datatype=Datatype.FUNC,
-                space=Space.MNI152NLIN6ASYM,
-                desc=Desc.PREPROC,
+                space="MNI152NLin6Asym",
+                desc="preproc",
                 suffix=Suffix.BOLD,
                 task=bold_task,
                 run=bold_run,
@@ -189,8 +189,8 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.cleaned_bold,
                 datatype=Datatype.FUNC,
-                space=Space.MNI152NLIN6ASYM,
-                desc=Desc.PREPROC,
+                space="MNI152NLin6Asym",
+                desc="preproc",
                 suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
                 task=bold_task,
@@ -199,8 +199,8 @@ def main(args: FunctionalArgs) -> int:
             pipe_ctx.export(
                 outputs.template_brain_mask,
                 datatype=Datatype.FUNC,
-                space=Space.MNI152NLIN6ASYM,
-                desc=Desc.BOLD,
+                space="MNI152NLin6Asym",
+                desc="bold",
                 suffix=Suffix.MASK,
                 task=bold_task,
                 run=bold_run,

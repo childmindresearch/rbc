@@ -17,7 +17,7 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Desc, Space, Suffix
+from rbc.core.bids import Datatype, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.qc import single_session_qc
@@ -65,7 +65,7 @@ def main(args: QCArgs) -> int:
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6ASym",
+        pl.col("space") == "MNI152NLin6Asym",
     ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
@@ -93,16 +93,16 @@ def main(args: QCArgs) -> int:
             template_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
-                desc=Desc.PREPROC,
-                space=Space.MNI152NLIN6ASYM,
+                desc="preproc",
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
             )
             cleaned_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
-                desc=Desc.PREPROC,
-                space=Space.MNI152NLIN6ASYM,
+                desc="preproc",
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
@@ -110,7 +110,7 @@ def main(args: QCArgs) -> int:
             motion_params = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MOTION,
-                desc=Desc.MOTIONPARAMS,
+                desc="motionParams",
                 extension=".1D",
                 task=bold_task,
                 run=bold_run,
@@ -118,7 +118,7 @@ def main(args: QCArgs) -> int:
             rms_rel = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MOTION,
-                desc=Desc.RELSDISPLACEMENT,
+                desc="relsDisplacement",
                 extension=".rms",
                 task=bold_task,
                 run=bold_run,
@@ -126,19 +126,19 @@ def main(args: QCArgs) -> int:
             bold_mask = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
-                desc=Desc.BRAIN,
+                desc="brain",
                 task=bold_task,
                 run=bold_run,
             )
             brain_mask = get_deriv(
                 datatype=Datatype.ANAT,
                 suffix=Suffix.MASK,
-                desc=Desc.T1W,
+                desc="T1w",
             )
             bold_to_anat_matrix = get_deriv(
                 datatype=Datatype.FUNC,
-                suffix=Suffix.XFM,
-                desc=Desc.LINEAR,
+                suffix="xfm",
+                desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
                 task=bold_task,
@@ -147,8 +147,8 @@ def main(args: QCArgs) -> int:
             template_brain_mask = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
-                desc=Desc.BOLD,
-                space=Space.MNI152NLIN6ASYM,
+                desc="bold",
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
             )
@@ -173,10 +173,10 @@ def main(args: QCArgs) -> int:
             pipe_ctx.export(
                 qc_outputs.qc_file,
                 datatype=Datatype.FUNC,
-                suffix=Suffix.QUALITY,
-                desc=Desc.XCP,
+                suffix="quality",
+                desc="xcp",
                 extension=".tsv",
-                space=Space.MNI152NLIN6ASYM,
+                space="MNI152NLin6Asym",
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
