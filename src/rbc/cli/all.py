@@ -19,6 +19,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess as anatomical_preprocess
@@ -95,27 +96,51 @@ def main(args: AllArgs) -> int:
 
         anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
 
-        pipe_ctx.export(anat_outputs.brain, datatype="anat", suffix="T1w", desc="brain")
         pipe_ctx.export(
-            anat_outputs.brain_mask, datatype="anat", suffix="mask", desc="T1w"
+            anat_outputs.brain,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.T1W,
+            desc="brain",
         )
         pipe_ctx.export(
-            anat_outputs.csf_mask, datatype="anat", suffix="mask", desc="csf"
+            anat_outputs.brain_mask,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.MASK,
+            desc="T1w",
         )
-        pipe_ctx.export(anat_outputs.gm_mask, datatype="anat", suffix="mask", desc="gm")
-        pipe_ctx.export(anat_outputs.wm_mask, datatype="anat", suffix="mask", desc="wm")
         pipe_ctx.export(
-            anat_outputs.wm_bbr_mask, datatype="anat", suffix="mask", desc="wmBBR"
+            anat_outputs.csf_mask,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.MASK,
+            desc="csf",
+        )
+        pipe_ctx.export(
+            anat_outputs.gm_mask,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.MASK,
+            desc="gm",
+        )
+        pipe_ctx.export(
+            anat_outputs.wm_mask,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.MASK,
+            desc="wm",
+        )
+        pipe_ctx.export(
+            anat_outputs.wm_bbr_mask,
+            datatype=Datatype.ANAT,
+            suffix=Suffix.MASK,
+            desc="wmBBR",
         )
         pipe_ctx.export(
             anat_outputs.forward_xfm,
-            datatype="anat",
+            datatype=Datatype.ANAT,
             suffix="xfm",
             extra={"from": "T1w", "to": "template", "mode": "image"},
         )
         pipe_ctx.export(
             anat_outputs.inverse_xfm,
-            datatype="anat",
+            datatype=Datatype.ANAT,
             suffix="xfm",
             extra={"from": "template", "to": "T1w", "mode": "image"},
         )
@@ -143,35 +168,35 @@ def main(args: AllArgs) -> int:
             # Export functional outputs
             _fex = partial(
                 pipe_ctx.export,
-                datatype="func",
+                datatype=Datatype.FUNC,
                 task=bold_task,
                 run=bold_run,
             )
-            _fex(func_outputs.sbref, suffix="sbref")
+            _fex(func_outputs.sbref, suffix=Suffix.SBREF)
             _fex(
                 func_outputs.motion_corrected_bold,
                 desc="preproc",
-                suffix="bold",
+                suffix=Suffix.BOLD,
             )
             _fex(
                 func_outputs.motion_params,
                 desc="motionParams",
-                suffix="motion",
+                suffix=Suffix.MOTION,
                 extension=".1D",
             )
             _fex(
                 func_outputs.rms_rel,
                 desc="relsDisplacement",
-                suffix="motion",
+                suffix=Suffix.MOTION,
                 extension=".rms",
             )
             _fex(
                 func_outputs.rms_abs,
                 desc="maxDisplacement",
-                suffix="motion",
+                suffix=Suffix.MOTION,
                 extension=".rms",
             )
-            _fex(func_outputs.bold_mask, suffix="mask", desc="brain")
+            _fex(func_outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
             _fex(
                 func_outputs.bold_to_anat_matrix,
                 suffix="xfm",
@@ -187,22 +212,22 @@ def main(args: AllArgs) -> int:
             )
             _fex(
                 func_outputs.template_bold,
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
-                suffix="bold",
+                suffix=Suffix.BOLD,
             )
             _fex(
                 func_outputs.cleaned_bold,
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
-                suffix="bold",
+                suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
             )
             _fex(
                 func_outputs.template_brain_mask,
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="bold",
-                suffix="mask",
+                suffix=Suffix.MASK,
             )
 
             # --- Metrics ---
@@ -219,8 +244,8 @@ def main(args: AllArgs) -> int:
             reg_extra: dict[str, str | int] = {"reg": args.regressor}
             _mex = partial(
                 pipe_ctx.export,
-                datatype="func",
-                space="MNI152NLin6ASym",
+                datatype=Datatype.FUNC,
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra=reg_extra,
@@ -282,11 +307,11 @@ def main(args: AllArgs) -> int:
 
             pipe_ctx.export(
                 qc_outputs.qc_file,
-                datatype="func",
+                datatype=Datatype.FUNC,
                 suffix="quality",
                 desc="xcp",
                 extension=".tsv",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},

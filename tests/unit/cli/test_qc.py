@@ -25,7 +25,7 @@ def _make_filtered_df(
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6ASym",
+        pl.col("space") == "MNI152NLin6Asym",
         *([pl.col("sub").is_in(participant)] if participant else []),
         *([pl.col("ses").is_in(session)] if session else []),
         *([pl.col("task") == task] if task else []),
@@ -115,10 +115,10 @@ def sample_dataframe() -> pl.DataFrame:
             "suffix": ["bold", "bold", "bold", "bold", "bold"],
             "desc": ["preproc", "preproc", "preproc", "preproc", "preproc"],
             "space": [
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
                 "T1w",  # Should be excluded by space filter
             ],
             "sub": ["01", "01", "02", "01", "01"],

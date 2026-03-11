@@ -9,10 +9,13 @@ import pytest
 from rbc.core.bids import (
     BIDSFile,
     Datatype,
+    Extension,
     Modality,
     Suffix,
+    TemplateSpace,
     bids_name,
     bids_path,
+    bids_safe_label,
     parse_bids_name,
 )
 
@@ -255,6 +258,26 @@ class TestParseBidsName:
         assert result.suffix == "xfm"
 
 
+class TestBidsSafeLabel:
+    """Tests for bids_safe_label."""
+
+    def test_strips_hyphens(self) -> None:
+        """Hyphens are removed."""
+        assert bids_safe_label("36-parameter") == "36parameter"
+
+    def test_passthrough(self) -> None:
+        """Valid labels pass through unchanged."""
+        assert bids_safe_label("aCompCor") == "aCompCor"
+
+    def test_strips_spaces_and_underscores(self) -> None:
+        """Spaces and underscores are removed."""
+        assert bids_safe_label("a_b c+d") == "abc+d"
+
+    def test_empty_after_sanitization(self) -> None:
+        """All-invalid input yields empty string."""
+        assert bids_safe_label("---") == ""
+
+
 class TestConstants:
     """Tests for namespace constant classes."""
 
@@ -281,3 +304,19 @@ class TestConstants:
         assert Modality.EEG == "eeg"
         assert Modality.EMG == "emg"
         assert Modality.IEEG == "ieeg"
+
+    def test_template_space_values(self) -> None:
+        """TemplateSpace constants hold the expected string values."""
+        assert TemplateSpace.ICBM452AIRSPACE == "ICBM452AirSpace"
+        assert TemplateSpace.ICBM452WARP5SPACE == "ICBM452Warp5Space"
+        assert TemplateSpace.IXI549SPACE == "IXI549Space"
+        assert TemplateSpace.MNI152LIN == "MNI152Lin"
+        assert TemplateSpace.MNI152NLIN2009AASYM == "MNI152NLin2009aAsym"
+
+    def test_extension_values(self) -> None:
+        """Extension constants hold the expected string values."""
+        assert Extension.OME_BTF == ".ome.btf"
+        assert Extension.OME_TIF == ".ome.tif"
+        assert Extension.AVE == ".ave"
+        assert Extension.BDF == ".bdf"
+        assert Extension.BVAL == ".bval"

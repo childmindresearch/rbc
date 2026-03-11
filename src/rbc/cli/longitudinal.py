@@ -18,6 +18,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
+from rbc.core.bids import Datatype, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -68,80 +69,84 @@ def _process_anat(
                 df=anat_df,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses,
-                datatype="anat",
+                datatype=Datatype.ANAT,
                 **kwargs,
             )
         except FileNotFoundError:
             return None
 
     _get_tpl_file = partial(
-        get_file_path, df=tpl_df, sub=pipe_ctx.sub, ses="longitudinal", datatype="anat"
+        get_file_path,
+        df=tpl_df,
+        sub=pipe_ctx.sub,
+        ses="longitudinal",
+        datatype=Datatype.ANAT,
     )
 
     outputs = anatomical_longitudinal(
-        template=_get_tpl_file(suffix="T1w"),
+        template=_get_tpl_file(suffix=Suffix.T1W),
         subj_to_template_xfm=_get_tpl_file(
             suffix="xfm",
             extension=".mat",
             extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
-        brain=_require_file(_get_anat_file(suffix="T1w", desc="brain"), "brain"),
-        brain_mask=_get_anat_file(suffix="mask", desc="T1w"),
-        csf_mask=_get_anat_file(suffix="mask", desc="csf"),
-        gm_mask=_get_anat_file(suffix="mask", desc="gm"),
-        wm_mask=_get_anat_file(suffix="mask", desc="wm"),
+        brain=_require_file(_get_anat_file(suffix=Suffix.T1W, desc="brain"), "brain"),
+        brain_mask=_get_anat_file(suffix=Suffix.MASK, desc="T1w"),
+        csf_mask=_get_anat_file(suffix=Suffix.MASK, desc="csf"),
+        gm_mask=_get_anat_file(suffix=Suffix.MASK, desc="gm"),
+        wm_mask=_get_anat_file(suffix=Suffix.MASK, desc="wm"),
     )
     # Save longitudinal outputs
     pipe_ctx.export(
         outputs.brain,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="brain",
-        suffix="T1w",
+        suffix=Suffix.T1W,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.brain_mask, "brain_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="T1w",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.csf_mask, "csf_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="csf",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.gm_mask, "gm_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="gm",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.wm_mask, "wm_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="wm",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         outputs.forward_xfm,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         suffix="xfm",
         extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
         run=t1w_run,
     )
     pipe_ctx.export(
         outputs.inverse_xfm,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         suffix="xfm",
         extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
         run=t1w_run,

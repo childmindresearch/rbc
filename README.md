@@ -62,12 +62,12 @@ derivatives/rbc/
         sub-01_ses-01_from-T1w_to-template_mode-image_xfm.nii.gz
       func/
         sub-01_ses-01_task-rest_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6Asym_reg-36-parameter_desc-preproc_bold.nii.gz
         sub-01_ses-01_task-rest_desc-motionParams_motion.1D
         sub-01_ses-01_task-rest_desc-xcp_quality.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-alff_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-reho_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6Asym_desc-alff_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6Asym_desc-reho_bold.nii.gz
         sub-01_ses-01_task-rest_atlas-schaefer200_timeseries.tsv
         sub-01_ses-01_task-rest_atlas-schaefer200_correlationmatrix.tsv
 ```
@@ -102,16 +102,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 If you use this pipeline, please cite:
 
 ```bibtex
-@article{shafiei2024reproducible,
+@article{shafiei2025reproducible,
   title={Reproducible Brain Charts: An open data resource for mapping brain development and its associations with mental health},
-  author={Shafiei, Golia and Esper, Natasha B and Hoffmann, Madeleine S and Ai, Lei and Chen, Andrew A and Cluce, Julia and Covitz, Sydney and Giavasis, Steven and Lane, Connor and Mehta, Kahini and Moore, Tyler M and Salo, Taylor and Tapera, Tinashe M and Calkins, Monica E and Colcombe, Stanley and Davatzikos, Christos and Gur, Raquel E and Gur, Ruben C and Pan, Pedro M and Jackowski, Andrea P and Rokem, Ariel and Rohde, Luis A and Shinohara, Russell T and Tottenham, Nim and Zuo, Xi-Nian and Cieslak, Matthew and Franco, Alexandre R and Kiar, Gregory and Salum, Giovanni A and Milham, Michael P and Satterthwaite, Theodore D},
+  author={Shafiei, Golia and Esper, Nathalia B. and Hoffmann, Mauricio S. and Ai, Lei and Chen, Andrew A. and Cluce, Jon and Covitz, Sydney and Giavasis, Steven and Lane, Connor and Mehta, Kahini and Moore, Tyler M. and Salo, Taylor and Tapera, Tinashe M. and Calkins, Monica E. and Colcombe, Stanley and Davatzikos, Christos and Gur, Raquel E. and Gur, Ruben C. and Pan, Pedro M. and Jackowski, Andrea P. and Rokem, Ariel and Rohde, Luis A. and Shinohara, Russell T. and Tottenham, Nim and Zuo, Xi-Nian and Cieslak, Matthew and Franco, Alexandre R. and Kiar, Gregory and Salum, Giovanni A. and Milham, Michael P. and Satterthwaite, Theodore D.},
   journal={Neuron},
   volume={113},
   number={22},
-  pages={3758--3779},
-  year={2024},
+  pages={3758--3779.e6},
+  year={2025},
   publisher={Elsevier},
-  doi={10.1016/j.neuron.2024.08.026}
+  doi={10.1016/j.neuron.2025.08.026}
 }
 ```
 
@@ -131,4 +131,4 @@ RBC facilitates large-scale, reproducible, and generalizable research in develop
 
 ## Acknowledgments
 
-This implementation is based on the RBC protocol described in Shafiei et al. (2024) and originally implemented in [C-PAC](https://fcp-indi.github.io/). Development is supported by the [Child Mind Institute](https://childmind.org).
+This implementation is based on the RBC protocol described in Shafiei et al. (2025) and originally implemented in [C-PAC](https://fcp-indi.github.io/). Development is supported by the [Child Mind Institute](https://childmind.org).
