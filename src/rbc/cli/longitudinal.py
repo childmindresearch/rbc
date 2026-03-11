@@ -59,8 +59,6 @@ def _process_anat(
     pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
-    if pipe_ctx.ses is None:
-        raise ValueError("No session data - unable to perform longitudinal processing")
     row = anat_df.filter(suffix="T1w").row(0, named=True)
     t1w_run: int | None = row.get("run")
 
