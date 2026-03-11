@@ -1,7 +1,10 @@
 # /// script
 # dependencies = [
+#     "bids2table>=2.1.2",
 #     "niwrap>=0.9.1",
+#     "polars>=1.38.1",
 #     "styxpodman",
+#     "tqdm>=4.67.3",
 # ]
 # requires-python = ">=3.11"
 #
@@ -9,15 +12,10 @@
 # styxpodman = { git = "https://github.com/styx-api/styxpodman", rev = "1382977" }
 #
 # ///
-"""Generate a template using Freesurfer's mri_robust_template.
+"""Generate a robust, longitudinal T1w template using Freesurfer's mri_robust_template.
 
 Run with:
-    uv run scripts/build_robust_template.py <[input_file, ...]> <output_file>
-
-Example:
-    uv run scripts/build_robust_teplate \
-        data/sub-01/ses-*/anat/sub-01_ses-*_T1w.nii.gz \
-        sub-01_ses-longitudinal.nii.gz
+    uv run scripts/build_robust_template.py <data_dir> <output_dir>
 """
 
 from __future__ import annotations
@@ -30,6 +28,8 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
+import bids2table as b2t
+import polars as pl
 from niwrap import (
     Runner,
     freesurfer,
@@ -40,6 +40,7 @@ from niwrap import (
     use_singularity,
 )
 from styxpodman import PodmanRunner
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -65,19 +66,27 @@ def create_parser() -> argparse.ArgumentParser:
         help="Increase verbosity (can be repeated: -v, -vv, -vvv)",
     )
     parser.add_argument(
-        "in_files",
-        nargs="+",
+        "input_dir",
         type=Path,
-        help="Space separate list of input file(s) to create a template from",
+        help="BIDS-organized input dataset directory",
     )
     parser.add_argument(
-        "output_file", type=Path, help="Output template file (including directory)"
+        "output_dir",
+        type=Path,
+        help="Directory where output data should be stored",
     )
     parser.add_argument(
         "--fs-license",
         required=False,
         type=Path,
         help="Path to Freesurfer license",
+    )
+    parser.add_argument(
+        "--participant-label",
+        nargs="+",
+        default=[],
+        type=lambda x: x.removeprefix("sub-"),
+        help="Space-delimited participant identifier ('sub-' prefix can be removed)",
     )
     parser.add_argument(
         "--runner",
@@ -200,16 +209,27 @@ def generate_robust_template(in_files: Sequence[Path]) -> RobustTemplateOutputs:
         NeuroImage 61(4):1402-1418, 2012.
     """
     lta_files = []
+    entities = None
     for in_file in in_files:
         if not Path(in_file).exists():
             raise FileNotFoundError(f"{in_file} not found.")
-        fname = in_file.name.split(".")[0]
-        lta_files.append(f"{fname}_to-template.lta")
+        entities = b2t.parse_bids_entities(in_file)
+        lta_fname = b2t.format_bids_path(
+            {
+                "sub": entities["sub"],
+                "ses": "longitudinal",
+                "from": entities["ses"],
+                "suffix": "xfm",
+                "ext": ".lta",
+            }
+        ).name
+        lta_files.append(lta_fname)
 
     # Initialize with same defaults as fmriprep
+    assert entities is not None, "No entities found"
     robust_template = freesurfer.mri_robust_template(
         mov=list(in_files),
-        template="template.nii.gz",
+        template=f"sub-{entities['sub']}_ses-longitudinal_T1w.nii.gz",
         lta=lta_files,
         inittp=1,  # map everything to first time point
         fixtp=True,
@@ -246,30 +266,73 @@ if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
 
-    # 0. Setup
+    # 1. Setup
     fs_license = args.fs_license or os.getenv("FS_LICENSE")
     if fs_license is None or not Path(fs_license).exists():
         raise FileNotFoundError(f"Freesurfer license not found: {fs_license}")
     ctx = setup_runner(runner=args.runner, verbose=args.verbose)
+    # Taken from rbc's _DEFAULT_ENVS (uses CPAC ANTs seed)
+    ctx.runner.environ = {
+        "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
+        "ANTS_RANDOM_SEED": 77742777,
+    }
+    ctx.logger.warning(
+        "This script is experimental and may be sensitive to input file naming "
+        "conventions."
+    )
     mount_fs_license(ctx.runner, fs_license)
 
-    # 1. Construct template
+    ctx.logger.info("Preparing to generate longitudinal templates")
+    tables = b2t.batch_index_dataset(
+        b2t.find_bids_datasets(args.input_dir),
+        max_workers=0,
+        show_progress=ctx.verbose,
+    )
+    dfs: list[pl.DataFrame] = []
+    for table in tables:
+        result = pl.from_arrow(table)
+        if not isinstance(result, pl.DataFrame):
+            raise TypeError(f"Expected DataFrame, got {type(result)}")
+        dfs.append(result)
+    df = pl.concat(dfs)
+    # Filters for preprocessed T1w to create longitudinal template
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("datatype") == "anat",
+        pl.col("desc") == "brain",
+        pl.col("suffix") == "T1w",
+    ]
+    if len(args.participant_label) > 0:
+        filters.append(pl.col("sub").is_in(args.participant_label))
+    df = df.filter(pl.all_horizontal(filters))
+    del dfs
+
     ctx.logger.info("Starting processing")
-    in_files = args.in_files
-    if len(in_files) == 1:
+    if len(df) == 1:
         raise ValueError("Only a single volume found")
-    ctx.logger.info("Building robust template")
-    robust_template = generate_robust_template(in_files=in_files)
+    for _, sub_group in tqdm(df.group_by("sub"), disable=not ctx.verbose):
+        # 2. Construct template
+        sub = sub_group["sub"][0]
+        ctx.logger.info(f"Building robust template for sub-{sub}")
+        in_files = [
+            Path(row["root"]) / row["path"] for row in sub_group.iter_rows(named=True)
+        ]
+        robust_template = generate_robust_template(in_files=in_files)
 
-    # 2. Convert transformations to ANTs compatible format
-    ctx.logger.info("Converting Freesurfer transformations to ANTs compatible format")
-    subj_to_temp = fs_to_ants_xfm(robust_template.transforms)
+        # 3. Convert transformations to ANTs compatible format
+        ctx.logger.info("Converting Freesurfer transformations to ANTs format")
+        subj_to_temp = fs_to_ants_xfm(robust_template.transforms)
 
-    # 3. Save outputs
-    ctx.logger.info("Saving files")
-    output_dir = Path(args.output_file).parent
-    output_dir.mkdir(exist_ok=True, parents=True)
-    shutil.copy2(robust_template.template, args.output_file)
-    for xfm in subj_to_temp:
-        shutil.copy2(xfm, output_dir)
-    ctx.logger.info("Robust template creation complete")
+        # 4. Save outputs
+        ctx.logger.info("Saving files")
+        output_dir = (
+            Path(args.output_dir)
+            / b2t.format_bids_path(
+                {"sub": sub, "ses": "longitudinal", "datatype": "anat"}
+            ).parent
+        )
+        output_dir.mkdir(exist_ok=True, parents=True)
+        for fpath in [robust_template.template, *subj_to_temp]:
+            shutil.copy2(fpath, output_dir)
+        ctx.logger.info("Robust template creation complete")
+    ctx.logger.info("Completed creating all templates.")

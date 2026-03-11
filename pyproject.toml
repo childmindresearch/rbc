@@ -58,7 +58,8 @@ target-version = "py312"
 extend-exclude = [
   "src/rbc/core/bids.py",
   "tests/unit/test_bids.py",
-  "scripts/visualize_pipeline.py"
+  "scripts/visualize_pipeline.py",
+  "scripts/build_robust_template.py"
 ]
 
 [tool.ruff.lint]
