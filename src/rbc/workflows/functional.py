@@ -156,20 +156,13 @@ def single_session_preprocess(
     # 2. Truncate TRs
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
 
-    # 3. Slice timing correction
-    st_corrected = slice_timing_correction(
-        in_file=truncated,
-        tr=metadata.get("RepetitionTime"),
-        tpattern=metadata.get("SliceTiming"),
-    )
+    # 3. Despike truncated BOLD
+    despiked = despike_bold(in_file=truncated)
 
-    # 4. Despike STC
-    despiked = despike_bold(in_file=st_corrected)
-
-    # 5. Extract motion reference from despiked STC
+    # 4. Extract motion reference from despiked BOLD
     motion_ref = extract_motion_reference(in_file=despiked)
 
-    # 5b. Distortion correction (optional)
+    # 5. Distortion correction (optional)
     distortion = None
     if isinstance(fieldmap, PhaseDiffFieldmap):
         distortion = correct_distortion_phasediff(
@@ -196,26 +189,36 @@ def single_session_preprocess(
     effective_ref = distortion.corrected_ref if distortion else motion_ref
     distortion_warp = distortion.warp_field if distortion else None
 
-    # 6. Motion correction on despiked STC
-    mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
+    # 6. Motion correction on despiked BOLD -> for motion parameters
+    mc_for_params = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
-    # 7. BOLD brain masking
+    # 7. Slice timing correction
+    st_corrected = slice_timing_correction(
+        in_file=despiked,
+        tr=metadata.get("RepetitionTime"),
+        tpattern=metadata.get("SliceTiming"),
+    )
+
+    # 8. Motion correction on STC BOLD -> for motion-corrected timeseries
+    mc = fsl_motion_correction(in_file=st_corrected, ref_file=effective_ref)
+
+    # 9. BOLD brain masking
     masking = bold_masking(
         bold_ref=effective_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
         template_ref=MNI_TEMPLATES.bold_ref,
     )
 
-    # 8. BBR coregistration
+    # 10. BBR coregistration
     bbr = coregister_bold_to_t1w(
         in_file=masking.skull_stripped_bold,
         reference=t1w_brain,
         wm_seg=wm_bbr_mask,
     )
 
-    # 9. Single-step resampling (despiked STC -> template)
+    # 11. Single-step resampling (STC -> template)
     template_bold = resample_bold_to_template(
-        stc_img=despiked,
+        stc_img=st_corrected,
         motion_mat_dir=mc.mat_dir,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
@@ -225,7 +228,7 @@ def single_session_preprocess(
         distortion_warp=distortion_warp,
     )
 
-    # 10. Warp tissue masks to template space (same grid as resampled BOLD)
+    # 12. Warp tissue masks to template space (same grid as resampled BOLD)
     tmpl_brain = _warp_mask_to_template(
         brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
@@ -234,17 +237,17 @@ def single_session_preprocess(
     )
     tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
-    # 11. Nuisance regression in template space (used in ALFF/fALFF)
+    # 13. Nuisance regression in template space (used in ALFF/fALFF)
     nuisance = nuisance_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
         csf_mask_file=tmpl_csf,
         wm_mask_file=tmpl_wm,
-        motion_params=mc.motion_params,
+        motion_params=mc_for_params.motion_params,
         regressor_set=regressor_set,
     )
 
-    # 12. Bandpass filter regressed BOLD (used in ReHo, timeseries)
+    # 14. Bandpass filter regressed BOLD (used in ReHo, timeseries)
     cleaned_bold = bandpass_filter(
         nuisance.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
     )
@@ -258,7 +261,7 @@ def single_session_preprocess(
         distortion_corrected_ref=distortion.corrected_ref if distortion else None,
         distortion_warp=distortion_warp,
         motion_corrected_bold=mc.bold,
-        motion_params=mc.motion_params,
+        motion_params=mc_for_params.motion_params,
         rms_rel=mc.rms_rel,
         rms_abs=mc.rms_abs,
         mat_dir=mc.mat_dir,
