@@ -242,11 +242,12 @@ def single_session_preprocess(
         wm_mask_file=tmpl_wm,
         motion_params=mc.motion_params,
         regressor_set=regressor_set,
-        bandpass=None,
     )
 
     # 12. Bandpass filter regressed BOLD (used in ReHo, timeseries)
-    cleaned_bold = bandpass_filter(nuisance.cleaned_bold, f_low=0.01, f_high=0.1)
+    cleaned_bold = bandpass_filter(
+        nuisance.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
+    )
 
     return FunctionalOutputs(
         reoriented_bold=reoriented.out_file,
@@ -265,7 +266,7 @@ def single_session_preprocess(
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
-        regressed_bold=nuisance.cleaned_bold,
+        regressed_bold=nuisance.regressed_bold,
         cleaned_bold=cleaned_bold,
         regressor_file=nuisance.regressor_file,
         template_brain_mask=tmpl_brain,
