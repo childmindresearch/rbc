@@ -113,7 +113,7 @@ def compute_regressors(
 
     Steps:
         1. Load BOLD and tissue masks as numpy arrays
-        2. Erode masks (CSF 90%%, WM 60%%, brain 30 mm)
+        2. Erode masks (CSF 90%, WM 60%, brain 30 mm)
         3. Load motion parameters from ``.1D`` file
         4. Extract tissue mean signals from eroded masks
         5. Assemble regressor matrix (36-param or aCompCor)
