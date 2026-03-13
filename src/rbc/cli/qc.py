@@ -17,6 +17,7 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import PipelineContext
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.qc import single_session_qc
@@ -64,7 +65,7 @@ def main(args: QCArgs) -> int:
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6ASym",
+        pl.col("space") == TemplateSpace.MNI152NLIN6ASYM,
     ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
@@ -90,52 +91,52 @@ def main(args: QCArgs) -> int:
             bold_run: int | None = row.get("run")
 
             template_bold = get_deriv(
-                datatype="func",
-                suffix="bold",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.BOLD,
                 desc="preproc",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
             )
             cleaned_bold = get_deriv(
-                datatype="func",
-                suffix="bold",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.BOLD,
                 desc="preproc",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
             )
             motion_params = get_deriv(
-                datatype="func",
-                suffix="motion",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.MOTION,
                 desc="motionParams",
                 extension=".1D",
                 task=bold_task,
                 run=bold_run,
             )
             rms_rel = get_deriv(
-                datatype="func",
-                suffix="motion",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.MOTION,
                 desc="relsDisplacement",
                 extension=".rms",
                 task=bold_task,
                 run=bold_run,
             )
             bold_mask = get_deriv(
-                datatype="func",
-                suffix="mask",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.MASK,
                 desc="brain",
                 task=bold_task,
                 run=bold_run,
             )
             brain_mask = get_deriv(
-                datatype="anat",
-                suffix="mask",
+                datatype=Datatype.ANAT,
+                suffix=Suffix.MASK,
                 desc="T1w",
             )
             bold_to_anat_matrix = get_deriv(
-                datatype="func",
+                datatype=Datatype.FUNC,
                 suffix="xfm",
                 desc="linear",
                 extension=".mat",
@@ -144,10 +145,10 @@ def main(args: QCArgs) -> int:
                 run=bold_run,
             )
             template_brain_mask = get_deriv(
-                datatype="func",
-                suffix="mask",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.MASK,
                 desc="bold",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
             )
@@ -171,11 +172,11 @@ def main(args: QCArgs) -> int:
 
             pipe_ctx.export(
                 qc_outputs.qc_file,
-                datatype="func",
+                datatype=Datatype.FUNC,
                 suffix="quality",
                 desc="xcp",
                 extension=".tsv",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},
@@ -185,6 +186,7 @@ def main(args: QCArgs) -> int:
             ctx.logger.info(
                 f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} run-{bold_run}"
             )
+        pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC QC workflow complete")
     return 0

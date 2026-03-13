@@ -59,11 +59,6 @@ class TestLoadSession:
         result = load_session(sample_dataframe, "01", "baseline")
         assert result.anat["ses"].unique().to_list() == ["baseline"]
 
-    def test_excludes_non_nii_files(self, sample_dataframe: pl.DataFrame) -> None:
-        """Non-.nii files such as JSON sidecars are excluded from results."""
-        result = load_session(sample_dataframe, "01", "baseline")
-        assert all(ext.startswith(".nii") for ext in result.anat["ext"].to_list())
-
     def test_anat_and_func_separated(self, sample_dataframe: pl.DataFrame) -> None:
         """Anat and func dataframes contain only their respective datatypes."""
         result = load_session(sample_dataframe, "01", "baseline")

@@ -29,10 +29,7 @@ def load_session(df: pl.DataFrame, subject: str, session: str | None) -> Session
         A :class:`SessionTables` containing separate anatomical and functional
             dataframes.
     """
-    base: list[pl.Expr] = [
-        pl.col("ext").str.contains(".nii"),
-        pl.col("sub") == subject,
-    ]
+    base: list[pl.Expr] = [pl.col("sub") == subject]
     if session is not None:
         base.append(pl.col("ses") == session)
     anat_df = df.filter(pl.all_horizontal([*base, pl.col("datatype") == "anat"]))

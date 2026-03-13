@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 class _PreparedData(NamedTuple):
     bold: Path
-    par: Path
+    motion_params: Path
     brain_mask: Path
     csf_mask: Path
     wm_mask: Path
@@ -103,7 +103,7 @@ def _prepare_bold_and_masks(
 
     return _PreparedData(
         bold=bold_file,
-        par=mc.par,
+        motion_params=mc.motion_params,
         brain_mask=brain_mask,
         csf_mask=csf_mask,
         wm_mask=wm_mask,
@@ -120,13 +120,12 @@ def test_nuisance_36param(test_subject: TestSubjectData) -> None:
         brain_mask_file=data.brain_mask,
         csf_mask_file=data.csf_mask,
         wm_mask_file=data.wm_mask,
-        motion_par_file=data.par,
+        motion_params=data.motion_params,
         regressor_set="36-parameter",
-        bandpass=None,
     )
 
-    assert result.cleaned_bold.exists()
-    assert nifti_num_volumes(result.cleaned_bold) == 50
+    assert result.regressed_bold.exists()
+    assert nifti_num_volumes(result.regressed_bold) == 50
     assert result.regressor_file.exists()
     assert len(result.column_names) == 36
     assert result.eroded_masks.csf.any()
@@ -143,13 +142,12 @@ def test_nuisance_acompcor(test_subject: TestSubjectData) -> None:
         brain_mask_file=data.brain_mask,
         csf_mask_file=data.csf_mask,
         wm_mask_file=data.wm_mask,
-        motion_par_file=data.par,
+        motion_params=data.motion_params,
         regressor_set="aCompCor",
-        bandpass=None,
     )
 
-    assert result.cleaned_bold.exists()
-    assert nifti_num_volumes(result.cleaned_bold) == 50
+    assert result.regressed_bold.exists()
+    assert nifti_num_volumes(result.regressed_bold) == 50
     assert result.regressor_file.exists()
     assert len(result.column_names) == 37
     assert result.eroded_masks.csf.any()

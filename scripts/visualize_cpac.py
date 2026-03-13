@@ -122,10 +122,10 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
             ),
             "bold_mask": str(func_dir / f"{prefix_func}_desc-brain_mask.nii.gz"),
             "template_bold": str(
-                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_desc-head_bold.nii.gz"
+                func_dir / f"{prefix_func}_space-MNI152NLin6Asym_desc-head_bold.nii.gz"
             ),
             "cleaned_bold": str(
-                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                func_dir / f"{prefix_func}_space-MNI152NLin6Asym_reg-{reg}_"
                 "desc-preproc_bold.nii.gz"
             ),
             "motion_params": str(
@@ -134,24 +134,24 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
             "rms_rel": str(func_dir / f"{prefix_func}_desc-FDPower_motion.1D"),
         },
         "template_brain_mask": str(
-            func_dir / f"{prefix_func}_space-MNI152NLin6ASym_desc-bold_mask.nii.gz"
+            func_dir / f"{prefix_func}_space-MNI152NLin6Asym_desc-bold_mask.nii.gz"
         ),
         "metrics": {
             "alff_zscored": str(
-                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                func_dir / f"{prefix_func}_space-MNI152NLin6Asym_reg-{reg}_"
                 "desc-smZstd_alff.nii.gz"
             ),
             "falff_zscored": str(
-                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                func_dir / f"{prefix_func}_space-MNI152NLin6Asym_reg-{reg}_"
                 "desc-smZstd_falff.nii.gz"
             ),
             "reho_zscored": str(
-                func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_"
+                func_dir / f"{prefix_func}_space-MNI152NLin6Asym_reg-{reg}_"
                 "desc-smZstd_reho.nii.gz"
             ),
             "correlation_matrix": str(
                 func_dir
-                / f"{prefix_func}_atlas-{atlas}_space-MNI152NLin6ASym_reg-{reg}_"
+                / f"{prefix_func}_atlas-{atlas}_space-MNI152NLin6Asym_reg-{reg}_"
                 "desc-PearsonNilearn_correlations.tsv"
             ),
         },
@@ -159,7 +159,7 @@ def build_manifest(cpac_dir: Path, reg: str, atlas: str) -> dict:
 
     # QC
     qc_tsv = (
-        func_dir / f"{prefix_func}_space-MNI152NLin6ASym_reg-{reg}_desc-xcp_quality.tsv"
+        func_dir / f"{prefix_func}_space-MNI152NLin6Asym_reg-{reg}_desc-xcp_quality.tsv"
     )
     if qc_tsv.exists():
         manifest["qc"] = _parse_qc_tsv(qc_tsv)

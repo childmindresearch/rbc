@@ -9,7 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
   "bids2table>=2.1.2",
   "nibabel>=5.3.3",
-  "niwrap>=0.8.13",
+  "niwrap>=0.9.2",
   "numpy>=2.4.2",
   "polars>=1.38.1",
   "scipy>=1.17.0",
@@ -58,7 +58,8 @@ target-version = "py312"
 extend-exclude = [
   "src/rbc/core/bids.py",
   "tests/unit/test_bids.py",
-  "scripts/visualize_pipeline.py"
+  "scripts/visualize_pipeline.py",
+  "scripts/build_robust_template.py"
 ]
 
 [tool.ruff.lint]

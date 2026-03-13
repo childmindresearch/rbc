@@ -1,8 +1,7 @@
 """Nuisance regression for fMRI data.
 
 Orchestrates mask erosion, regressor assembly, and AFNI ``3dTproject``
-to remove confound signals from BOLD timeseries with simultaneous
-bandpass filtering.
+to remove confound signals from BOLD timeseries.
 """
 
 from __future__ import annotations
@@ -45,10 +44,43 @@ class ErodedMaskArrays(NamedTuple):
 class NuisanceRegressionOutputs(NamedTuple):
     """Outputs from :func:`nuisance_regression`."""
 
-    cleaned_bold: Path
+    regressed_bold: Path
     regressor_file: Path
     column_names: list[str]
     eroded_masks: ErodedMaskArrays
+
+
+def bandpass_filter(
+    bold: str | Path,
+    brain_mask_file: str | Path,
+    f_low: float = 0.01,
+    f_high: float = 0.1,
+) -> Path:
+    """Apply bandpass filtering to a BOLD timeseries via AFNI 3dBandpass.
+
+    Retains low-frequency fluctuations (default 0.01--0.1 Hz) while removing
+    physiological noise and scanner drift. This is split out from nuisance
+    regression so that ALFF/fALFF can be computed from the pre-bandpass
+    residuals (where fALFF is meaningful).
+
+    Args:
+        bold: 4-D BOLD timeseries to filter.
+        brain_mask_file: 3-D brain mask.
+        f_low: Low frequency cutoff (Hz).
+        f_high: High frequency cutoff (Hz).
+
+    Returns:
+        Path to bandpass-filtered BOLD timeseries.
+    """
+    result = afni.v_3d_bandpass(
+        in_file=bold,
+        mask=Path(brain_mask_file),
+        prefix="bandpassed_bold.nii.gz",
+        highpass=f_low,
+        lowpass=f_high,
+    )
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file
 
 
 def nuisance_regression(
@@ -56,34 +88,30 @@ def nuisance_regression(
     brain_mask_file: str | Path,
     csf_mask_file: str | Path,
     wm_mask_file: str | Path,
-    motion_par_file: str | Path,
+    motion_params: str | Path,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
-    bandpass: tuple[float, float] | None = (0.01, 0.1),
 ) -> NuisanceRegressionOutputs:
-    """Run nuisance regression with bandpass filtering via AFNI 3dTproject.
+    """Run nuisance regression via AFNI 3dTproject.
 
     Steps:
         1. Load BOLD and tissue masks
         2. Erode masks (CSF 90%, WM 60%, brain 30mm)
-        3. Load motion parameters from ``.par`` file
+        3. Load motion parameters from ``.1D`` file
         4. Extract tissue mean signals from eroded masks
         5. Assemble regressor matrix (36-param or aCompCor)
         6. Write ``.1D`` regressor file
-        7. Call ``3dTproject`` with bandpass filtering
+        7. Call ``3dTproject``
 
     Args:
         bold_file: 4-D BOLD timeseries.
         brain_mask_file: 3-D brain mask.
         csf_mask_file: 3-D CSF tissue mask.
         wm_mask_file: 3-D WM tissue mask.
-        motion_par_file: FSL-format ``.par`` file (T rows x 6 columns).
+        motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
         regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
-        bandpass: ``(low_hz, high_hz)`` frequency band to retain, or
-            *None* to skip bandpass filtering (in which case ``polort``
-            defaults to 2 for polynomial detrending).
 
     Returns:
-        :class:`NuisanceRegressionOutputs` with cleaned BOLD path,
+        :class:`NuisanceRegressionOutputs` with regressed BOLD path,
         regressor file path, column names, and eroded masks.
     """
     import nibabel as nib
@@ -110,7 +138,7 @@ def nuisance_regression(
     eroded = ErodedMaskArrays(csf=csf_eroded, wm=wm_eroded, brain=brain_eroded)
 
     # 3. Load motion parameters
-    motion_params = np.loadtxt(motion_par_file)
+    motion_params_data = np.loadtxt(motion_params)
 
     # 4. Extract tissue mean signals
     csf_signal = extract_mean_signal(bold_data, csf_eroded)
@@ -120,13 +148,13 @@ def nuisance_regression(
     if regressor_set == "36-parameter":
         global_signal = extract_mean_signal(bold_data, brain_eroded)
         matrix, column_names = assemble_36param_regressors(
-            motion_params, csf_signal, wm_signal, global_signal
+            motion_params_data, csf_signal, wm_signal, global_signal
         )
     elif regressor_set == "aCompCor":
         union_mask = (csf_eroded | wm_eroded).astype(np.uint8)
         acompcor_components = compute_acompcor(bold_data, union_mask)
         matrix, column_names = assemble_acompcor_regressors(
-            motion_params, csf_signal, wm_signal, acompcor_components
+            motion_params_data, csf_signal, wm_signal, acompcor_components
         )
     else:
         raise ValueError(
@@ -140,24 +168,17 @@ def nuisance_regression(
     write_regressor_file(matrix, column_names, regressor_file)
 
     # 7. Call 3dTproject
-    # When bandpass is active, low-frequency trends are handled by the
-    # filter so polort=0 suffices.  Without bandpass, use polort=2 for
-    # quadratic detrending (AFNI default).
-    polort = 0 if bandpass is not None else 2
-    bp_arg = [bandpass[0], bandpass[1]] if bandpass is not None else None
-
     result = afni.v_3d_tproject(
         in_file=Path(bold_file),
-        prefix="cleaned_bold.nii.gz",
-        polort=polort,
+        prefix="regressed_bold.nii.gz",
+        polort=0,
         ort=regressor_file,
-        bandpass=bp_arg,
         mask=Path(brain_mask_file),
         norm=False,
     )
 
     return NuisanceRegressionOutputs(
-        cleaned_bold=Path(result.out_file),
+        regressed_bold=Path(result.out_file),
         regressor_file=regressor_file,
         column_names=column_names,
         eroded_masks=eroded,

@@ -25,7 +25,7 @@ def _make_filtered_df(
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6ASym",
+        pl.col("space") == "MNI152NLin6Asym",
         *([pl.col("sub").is_in(participant)] if participant else []),
         *([pl.col("ses").is_in(session)] if session else []),
         *([pl.col("task") == task] if task else []),
@@ -127,10 +127,10 @@ def sample_dataframe() -> pl.DataFrame:
             "suffix": ["bold", "bold", "bold", "bold", "bold"],
             "desc": ["preproc", "preproc", "preproc", "preproc", "preproc"],
             "space": [
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
-                "MNI152NLin6ASym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
+                "MNI152NLin6Asym",
                 "T1w",  # Should be excluded by space filter
             ],
             "sub": ["01", "01", "02", "01", "01"],
@@ -342,7 +342,7 @@ class TestMetricsExports:
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
     ) -> None:
-        """All exports use MNI152NLin6ASym space."""
+        """All exports use MNI152NLin6Asym space."""
         base_args.participant_label = ["01"]
         base_args.session_label = ["baseline"]
         base_args.task = "rest"
@@ -354,7 +354,7 @@ class TestMetricsExports:
             mock_ctx_cls.return_value = mock_pipe_ctx
             metrics.main(args)
             for call in mock_pipe_ctx.export.call_args_list:
-                assert call[1]["space"] == "MNI152NLin6ASym"
+                assert call[1]["space"] == "MNI152NLin6Asym"
 
     def test_export_includes_regressor_extra(
         self,

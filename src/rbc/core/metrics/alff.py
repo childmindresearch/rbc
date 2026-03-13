@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from rbc.core.nifti import Volume
+
 if TYPE_CHECKING:
     from typing import Literal
 
@@ -246,16 +248,16 @@ def compute_alff(
     Returns:
         ``(alff_path, falff_path)``.
     """
-    import nibabel as nib
-
     in_file = Path(in_file)
-    img = nib.nifti1.load(in_file)
-    mask = nib.nifti1.load(mask_file).get_fdata()
+    bold = Volume.load(in_file, dtype=np.float64, expected_ndim=4)
+    mask = Volume.load(mask_file, dtype=np.uint8)
+    bold.check_compatible(mask)
 
-    if tr is None:
-        tr = float(img.header["pixdim"][4])
-
-    alff_map, falff_map = alff(img.get_fdata(), mask, tr, f_low, f_high, method)
+    effective_tr = tr if tr is not None else bold.tr
+    assert effective_tr is not None  # noqa: S101 - guaranteed by expected_ndim=4
+    alff_map, falff_map = alff(
+        bold.data, mask.data, effective_tr, f_low, f_high, method
+    )
 
     stem = in_file.name.split(".nii")[0]
     if out_file is None:
@@ -267,8 +269,6 @@ def compute_alff(
     if falff_path == alff_path:
         falff_path = alff_path.parent / f"{stem}_falff.nii.gz"
 
-    nib.nifti1.Nifti1Image(alff_map, img.affine, img.header).to_filename(str(alff_path))
-    nib.nifti1.Nifti1Image(falff_map, img.affine, img.header).to_filename(
-        str(falff_path)
-    )
+    bold.derive(alff_map).save(alff_path)
+    bold.derive(falff_map).save(falff_path)
     return alff_path, falff_path

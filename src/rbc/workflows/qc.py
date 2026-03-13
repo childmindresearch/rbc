@@ -14,6 +14,7 @@ import nibabel as nib
 import numpy as np
 from niwrap import fsl
 
+from rbc.core.bids import TemplateSpace
 from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics
@@ -59,7 +60,7 @@ def single_session_qc(
     Args:
         template_bold: Pre-denoising BOLD in template space.
         cleaned_bold: Post-denoising (nuisance-regressed) BOLD.
-        motion_params: ``.par`` file from MCFLIRT (six-column).
+        motion_params: ``.1D`` file (six-column).
         rms_rel: ``_rel.rms`` file from MCFLIRT.
         bold_mask: Native BOLD brain mask.
         brain_mask: Anatomical brain mask (native space).
@@ -131,7 +132,7 @@ def single_session_qc(
         run=run,
         desc="RBC",
         regressors=regressor_set,
-        space="MNI152NLin2009cAsym",
+        space=TemplateSpace.MNI152NLIN2009CASYM,
         motion=motion,
         dvars_init=dvars_init,
         dvars_final=dvars_final,

@@ -11,12 +11,13 @@ RBC output filenames follow the [BIDS derivatives](https://bids-specification.re
 | `sub-` | Subject identifier | `sub-01` |
 | `ses-` | Session label (optional) | `ses-baseline` |
 | `task-` | Task performed during fMRI | `task-rest` |
+| `acq-` | Acquisition variant (optional) | `acq-VNavNorm` |
 | `run-` | Run index when a scan is repeated | `run-1` |
 | `space-` | Coordinate space the image is aligned to | `space-MNI152NLin6ASym` |
-| `desc-` | Free-text description of the file content | `desc-brain` |
-| `reg-` | Nuisance regression strategy applied | `reg-36-parameter` |
 | `atlas-` | Brain parcellation used | `atlas-schaefer200` |
+| `reg-` | Nuisance regression strategy applied | `reg-36-parameter` |
 | `from-` / `to-` | Source and target spaces of a transform | `from-T1w_to-template` |
+| `desc-` | Free-text description of the file content | `desc-brain` |
 
 Entities in square brackets (e.g., `[_ses-{ses}]`) are included only when the dataset contains that information.
 
@@ -30,9 +31,9 @@ Produced by `rbc anatomical`. These are structural (T1-weighted) processing resu
 |------|--------|-------------|------------|--------|
 | `*_desc-brain_T1w.nii.gz` | `T1w` | Skull-stripped, bias-corrected brain image | ANTs brain extraction + N4 bias correction | 3D NIfTI |
 | `*_desc-T1w_mask.nii.gz` | `mask` | Binary mask delineating brain tissue | ANTs brain extraction | 3D NIfTI, binary mask |
-| `*_desc-csf_mask.nii.gz` | `mask` | Cerebrospinal fluid partial volume map | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
-| `*_desc-gm_mask.nii.gz` | `mask` | Gray matter partial volume map | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
-| `*_desc-wm_mask.nii.gz` | `mask` | White matter partial volume map | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
+| `*_desc-csf_mask.nii.gz` | `mask` | Cerebrospinal fluid discrete segmentation mask (thresholded at 0.95) | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
+| `*_desc-gm_mask.nii.gz` | `mask` | Gray matter discrete segmentation mask (thresholded at 0.95) | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
+| `*_desc-wm_mask.nii.gz` | `mask` | White matter discrete segmentation mask (thresholded at 0.95) | FSL FAST tissue segmentation | 3D NIfTI, binary mask |
 | `*_desc-wmBBR_mask.nii.gz` | `mask` | White matter boundary used for boundary-based registration (BBR) of functional data to anatomy | FSL WM boundary extraction | 3D NIfTI, binary mask |
 | `*_from-T1w_to-template_mode-image_xfm.nii.gz` | `xfm` | Nonlinear warp field mapping subject anatomy to MNI152NLin6ASym template space | ANTs registration | 3D NIfTI, displacement field |
 | `*_from-template_to-T1w_mode-image_xfm.nii.gz` | `xfm` | Inverse warp field mapping MNI152NLin6ASym template space back to subject anatomy | ANTs registration | 3D NIfTI, displacement field |
@@ -51,10 +52,10 @@ Produced by `rbc functional`. These are functional MRI (BOLD) processing results
 | `*_desc-relsDisplacement_motion.rms` | `motion` | Frame-to-frame relative root-mean-square displacement over time | FSL MCFLIRT | Text, single-column RMS file |
 | `*_desc-maxDisplacement_motion.rms` | `motion` | Absolute root-mean-square displacement of each volume relative to the reference | FSL MCFLIRT | Text, single-column RMS file |
 | `*_desc-brain_mask.nii.gz` | `mask` | Binary brain mask in native BOLD space | FSL BET | 3D NIfTI, binary mask |
-| `*_desc-linear_from-bold_to-T1w_mode-image_xfm.mat` | `xfm` | Affine transformation matrix aligning BOLD to the T1w anatomical image | ANTs boundary-based registration | 4x4 affine matrix |
+| `*_from-bold_to-T1w_mode-image_desc-linear_xfm.mat` | `xfm` | Affine transformation matrix aligning BOLD to the T1w anatomical image | ANTs boundary-based registration | 4x4 affine matrix |
 | `*_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz` | `bold` | BOLD timeseries resampled to MNI152NLin6ASym template space in a single interpolation step (before denoising) | ANTs resampling | 4D NIfTI |
 | `*_space-MNI152NLin6ASym_desc-bold_mask.nii.gz` | `mask` | Brain mask warped to template space at the BOLD resolution | ANTs resampling | 3D NIfTI, binary mask |
-| `*_space-MNI152NLin6ASym_desc-preproc_reg-{regressor}_bold.nii.gz` | `bold` | Denoised BOLD timeseries in template space after nuisance regression and bandpass filtering. `{regressor}` is `36-parameter` or `aCompCor` | Nuisance regression | 4D NIfTI |
+| `*_space-MNI152NLin6ASym_reg-{regressor}_desc-preproc_bold.nii.gz` | `bold` | Denoised BOLD timeseries in template space after nuisance regression and bandpass filtering. `{regressor}` is `36-parameter` or `aCompCor` | Nuisance regression | 4D NIfTI |
 | `*_desc-{regressor}_regressors.1D` | `regressors` | Nuisance regressor matrix used for denoising. `{regressor}` is `36-parameter` or `aCompCor` | Computed from motion parameters and tissue masks | Text, multi-column 1D file |
 
 ---
@@ -65,17 +66,17 @@ Produced by `rbc metrics`. Voxel-wise and region-wise summary measures computed 
 
 | File | Suffix | Description | Created by | Format |
 |------|--------|-------------|------------|--------|
-| `*_reg-{regressor}_alff.nii.gz` | `alff` | Amplitude of Low-Frequency Fluctuations — sum of spectral power in the 0.01–0.1 Hz band at each voxel | Frequency-domain analysis | 3D NIfTI |
-| `*_desc-smooth_reg-{regressor}_alff.nii.gz` | `alff` | Spatially smoothed ALFF map | Gaussian kernel smoothing | 3D NIfTI |
-| `*_desc-smoothZstd_reg-{regressor}_alff.nii.gz` | `alff` | Z-scored (standardized) smoothed ALFF, normalized within the brain mask | Z-score normalization | 3D NIfTI |
-| `*_reg-{regressor}_falff.nii.gz` | `falff` | Fractional ALFF — ratio of low-frequency power (0.01–0.1 Hz) to total power at each voxel | Frequency-domain analysis | 3D NIfTI |
-| `*_desc-smooth_reg-{regressor}_falff.nii.gz` | `falff` | Spatially smoothed fALFF map | Gaussian kernel smoothing | 3D NIfTI |
-| `*_desc-smoothZstd_reg-{regressor}_falff.nii.gz` | `falff` | Z-scored smoothed fALFF, normalized within the brain mask | Z-score normalization | 3D NIfTI |
-| `*_reg-{regressor}_reho.nii.gz` | `reho` | Regional Homogeneity — Kendall's W measuring local synchronization in a 26-voxel neighborhood | AFNI 3dReHo | 3D NIfTI |
-| `*_desc-smooth_reg-{regressor}_reho.nii.gz` | `reho` | Spatially smoothed ReHo map | Gaussian kernel smoothing | 3D NIfTI |
-| `*_desc-smoothZstd_reg-{regressor}_reho.nii.gz` | `reho` | Z-scored smoothed ReHo, normalized within the brain mask | Z-score normalization | 3D NIfTI |
-| `*_atlas-{atlas}_desc-mean_reg-{regressor}_timeseries.tsv` | `timeseries` | Mean BOLD signal averaged within each region of the specified atlas. Atlases: `schaefer_200`, `schaefer_300`, `schaefer_400`, `schaefer_1000`, `aal` | Region-wise averaging | TSV, regions x timepoints |
-| `*_atlas-{atlas}_desc-pearson_reg-{regressor}_correlations.tsv` | `correlations` | Pairwise Pearson correlation matrix between all atlas region timeseries | Pearson correlation | TSV, regions x regions |
+| `*_reg-{regressor}_alff.nii.gz` | `alff` | Amplitude of Low-Frequency Fluctuations, the sum of spectral power in the 0.01-0.1 Hz band at each voxel | Frequency-domain analysis | 3D NIfTI |
+| `*_reg-{regressor}_desc-smooth_alff.nii.gz` | `alff` | Spatially smoothed ALFF map | Gaussian kernel smoothing | 3D NIfTI |
+| `*_reg-{regressor}_desc-smoothZstd_alff.nii.gz` | `alff` | Z-scored (standardized) smoothed ALFF, normalized within the brain mask | Z-score normalization | 3D NIfTI |
+| `*_reg-{regressor}_falff.nii.gz` | `falff` | Fractional ALFF, the ratio of low-frequency power (0.01-0.1 Hz) to total power at each voxel | Frequency-domain analysis | 3D NIfTI |
+| `*_reg-{regressor}_desc-smooth_falff.nii.gz` | `falff` | Spatially smoothed fALFF map | Gaussian kernel smoothing | 3D NIfTI |
+| `*_reg-{regressor}_desc-smoothZstd_falff.nii.gz` | `falff` | Z-scored smoothed fALFF, normalized within the brain mask | Z-score normalization | 3D NIfTI |
+| `*_reg-{regressor}_reho.nii.gz` | `reho` | Regional Homogeneity, Kendall's W measuring local synchronization in a 26-voxel neighborhood | AFNI 3dReHo | 3D NIfTI |
+| `*_reg-{regressor}_desc-smooth_reho.nii.gz` | `reho` | Spatially smoothed ReHo map | Gaussian kernel smoothing | 3D NIfTI |
+| `*_reg-{regressor}_desc-smoothZstd_reho.nii.gz` | `reho` | Z-scored smoothed ReHo, normalized within the brain mask | Z-score normalization | 3D NIfTI |
+| `*_atlas-{atlas}_reg-{regressor}_desc-mean_timeseries.tsv` | `timeseries` | Mean BOLD signal averaged within each region of the specified atlas. Atlases: `schaefer_200`, `schaefer_300`, `schaefer_400`, `schaefer_1000`, `aal` | Region-wise averaging | TSV, regions x timepoints |
+| `*_atlas-{atlas}_reg-{regressor}_desc-pearson_correlations.tsv` | `correlations` | Pairwise Pearson correlation matrix between all atlas region timeseries | Pearson correlation | TSV, regions x regions |
 
 All metrics files include `space-MNI152NLin6ASym` in the filename (omitted from the table for readability).
 
@@ -87,7 +88,7 @@ Produced by `rbc qc`. A single summary file per functional run containing qualit
 
 | File | Suffix | Description | Created by | Format |
 |------|--------|-------------|------------|--------|
-| `*_space-MNI152NLin6ASym_desc-xcp_reg-{regressor}_quality.tsv` | `quality` | Single-row TSV with 24 quality control metrics (see columns below) | QC aggregation | TSV, 1 row |
+| `*_space-MNI152NLin6ASym_reg-{regressor}_desc-xcp_quality.tsv` | `quality` | Single-row TSV with 24 quality control metrics (see columns below) | QC aggregation | TSV, 1 row |
 
 ### QC columns
 

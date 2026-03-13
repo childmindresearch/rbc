@@ -18,6 +18,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
+from rbc.core.bids import Datatype, Suffix
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -68,79 +69,86 @@ def _process_anat(
                 df=anat_df,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses,
-                datatype="anat",
+                datatype=Datatype.ANAT,
                 **kwargs,
             )
         except FileNotFoundError:
             return None
 
-    get_tpl_file = partial(
-        get_file_path, df=tpl_df, ses="longitudinal", sub=pipe_ctx.sub, datatype="anat"
+    _get_tpl_file = partial(
+        get_file_path,
+        df=tpl_df,
+        sub=pipe_ctx.sub,
+        ses="longitudinal",
+        datatype=Datatype.ANAT,
     )
+
     outputs = anatomical_longitudinal(
-        template=get_tpl_file(suffix="T1w"),
-        subj_to_template_xfm=get_tpl_file(
-            extension=".mat", extra={"to": "longitudinal"}
+        template=_get_tpl_file(suffix=Suffix.T1W),
+        subj_to_template_xfm=_get_tpl_file(
+            suffix="xfm",
+            extension=".mat",
+            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
-        brain=_require_file(_get_anat_file(suffix="T1w", desc="brain"), "brain"),
-        brain_mask=_get_anat_file(suffix="mask", desc="T1w"),
-        csf_mask=_get_anat_file(suffix="mask", desc="csf"),
-        gm_mask=_get_anat_file(suffix="mask", desc="gm"),
-        wm_mask=_get_anat_file(suffix="mask", desc="wm"),
+        brain=_require_file(_get_anat_file(suffix=Suffix.T1W, desc="brain"), "brain"),
+        brain_mask=_get_anat_file(suffix=Suffix.MASK, desc="T1w"),
+        csf_mask=_get_anat_file(suffix=Suffix.MASK, desc="csf"),
+        gm_mask=_get_anat_file(suffix=Suffix.MASK, desc="gm"),
+        wm_mask=_get_anat_file(suffix=Suffix.MASK, desc="wm"),
     )
     # Save longitudinal outputs
     pipe_ctx.export(
         outputs.brain,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="brain",
-        suffix="T1w",
+        suffix=Suffix.T1W,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.brain_mask, "brain_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="T1w",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.csf_mask, "csf_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="csf",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.gm_mask, "gm_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="gm",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         _require_file(outputs.wm_mask, "wm_mask"),
-        datatype="anat",
+        datatype=Datatype.ANAT,
         space="longitudinal",
         desc="wm",
-        suffix="mask",
+        suffix=Suffix.MASK,
         run=t1w_run,
     )
     pipe_ctx.export(
         outputs.forward_xfm,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         suffix="xfm",
         extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
         run=t1w_run,
     )
     pipe_ctx.export(
         outputs.inverse_xfm,
-        datatype="anat",
+        datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
         run=t1w_run,
     )
 
@@ -166,7 +174,10 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = []
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null() | (pl.col("space") != "longitudinal"),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -179,9 +190,13 @@ def main(args: LongitudinalArgs) -> int:
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
-            ses=sub_ses_group["ses"][0] or None,
+            ses=sub_ses_group["ses"][0],
             output_dir=args.output_dir,
         )
+        if pipe_ctx.ses is None:
+            raise ValueError(
+                "No session data - unable to perform longitudinal processing"
+            )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         tpl_df = df.filter(
             pl.all_horizontal(
@@ -196,6 +211,7 @@ def main(args: LongitudinalArgs) -> int:
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+        pipe_ctx.ensure_dataset_description()
 
     return 0
 

@@ -15,8 +15,13 @@ from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
+    PEPolarFieldmap,
+    PhaseDiffFieldmap,
+    bandpass_filter,
     bold_masking,
     coregister_bold_to_t1w,
+    correct_distortion_pepolar,
+    correct_distortion_phasediff,
     despike_bold,
     extract_motion_reference,
     fsl_motion_correction,
@@ -41,6 +46,10 @@ class FunctionalOutputs(NamedTuple):
         stc_bold: Slice-timing corrected BOLD.
         despiked_bold: Despiked BOLD timeseries.
         sbref: Motion reference (single-band reference) volume.
+        distortion_corrected_ref: Distortion-corrected BOLD reference, or
+            *None* if no fieldmap data was provided.
+        distortion_warp: ANTs/ITK-compatible distortion warp field, or
+            *None* if no fieldmap data was provided.
         motion_corrected_bold: Motion-corrected BOLD.
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
@@ -50,7 +59,8 @@ class FunctionalOutputs(NamedTuple):
         skull_stripped_bold: Skull-stripped BOLD reference.
         bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
         template_bold: BOLD resampled to template space.
-        cleaned_bold: Nuisance-regressed BOLD.
+        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD.
+        cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
         regressor_file: Nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """
@@ -60,6 +70,8 @@ class FunctionalOutputs(NamedTuple):
     stc_bold: Path
     despiked_bold: Path
     sbref: Path
+    distortion_corrected_ref: Path | None
+    distortion_warp: Path | None
     motion_corrected_bold: Path
     motion_params: Path
     rms_rel: Path
@@ -69,6 +81,7 @@ class FunctionalOutputs(NamedTuple):
     skull_stripped_bold: Path
     bold_to_anat_matrix: Path
     template_bold: Path
+    regressed_bold: Path
     cleaned_bold: Path
     regressor_file: Path
     template_brain_mask: Path
@@ -98,7 +111,7 @@ def single_session_preprocess(
     anat_to_template: Path,
     start_tr: int = 2,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
-    bandpass: tuple[float, float] | None = (0.01, 0.1),
+    fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
 
@@ -109,6 +122,7 @@ def single_session_preprocess(
     3.  Slice timing correction.
     4.  Despike the STC BOLD.
     5.  Extract motion reference from despiked STC.
+    5b. Susceptibility distortion correction (optional).
     6.  Motion correction (despiked STC -> motion ref).
     7.  BOLD brain masking.
     8.  BBR coregistration (BOLD -> T1w).
@@ -126,7 +140,10 @@ def single_session_preprocess(
         anat_to_template: T1w -> template composite warp.
         start_tr: Number of initial TRs to discard.
         regressor_set: Nuisance regressor strategy.
-        bandpass: Frequency band to retain, or *None* to skip.
+        fieldmap: Fieldmap inputs for susceptibility distortion correction.
+            Pass a :class:`PhaseDiffFieldmap` for B0 fieldmap correction or a
+            :class:`PEPolarFieldmap` for opposite phase-encoding correction.
+            *None* skips distortion correction.
 
     Returns:
         All output paths bundled in a :class:`FunctionalOutputs` tuple.
@@ -152,12 +169,39 @@ def single_session_preprocess(
     # 5. Extract motion reference from despiked STC
     motion_ref = extract_motion_reference(in_file=despiked)
 
+    # 5b. Distortion correction (optional)
+    distortion = None
+    if isinstance(fieldmap, PhaseDiffFieldmap):
+        distortion = correct_distortion_phasediff(
+            bold_ref=motion_ref,
+            magnitude=fieldmap.magnitude,
+            delta_te=fieldmap.delta_te,
+            effective_echo_spacing=fieldmap.effective_echo_spacing,
+            pe_direction=fieldmap.pe_direction,
+            phasediff=fieldmap.phasediff,
+            phase1=fieldmap.phase1,
+            phase2=fieldmap.phase2,
+        )
+    elif isinstance(fieldmap, PEPolarFieldmap):
+        distortion = correct_distortion_pepolar(
+            bold_ref=motion_ref,
+            epi_forward=fieldmap.epi_forward,
+            epi_reverse=fieldmap.epi_reverse,
+            readout_time_forward=fieldmap.readout_time_forward,
+            readout_time_reverse=fieldmap.readout_time_reverse,
+            pe_direction=fieldmap.pe_direction,
+            topup_config=fieldmap.topup_config,
+        )
+
+    effective_ref = distortion.corrected_ref if distortion else motion_ref
+    distortion_warp = distortion.warp_field if distortion else None
+
     # 6. Motion correction on despiked STC
-    mc = fsl_motion_correction(in_file=despiked, ref_file=motion_ref)
+    mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. BOLD brain masking
     masking = bold_masking(
-        bold_ref=motion_ref,
+        bold_ref=effective_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
         template_ref=MNI_TEMPLATES.bold_ref,
     )
@@ -178,6 +222,7 @@ def single_session_preprocess(
         bold_ref=masking.skull_stripped_bold,
         template=MNI_TEMPLATES.brain_2mm,
         t1w_brain=t1w_brain,
+        distortion_warp=distortion_warp,
     )
 
     # 10. Warp tissue masks to template space (same grid as resampled BOLD)
@@ -189,15 +234,19 @@ def single_session_preprocess(
     )
     tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
-    # 11. Nuisance regression in template space
+    # 11. Nuisance regression in template space (used in ALFF/fALFF)
     nuisance = nuisance_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
         csf_mask_file=tmpl_csf,
         wm_mask_file=tmpl_wm,
-        motion_par_file=mc.par,
+        motion_params=mc.motion_params,
         regressor_set=regressor_set,
-        bandpass=bandpass,
+    )
+
+    # 12. Bandpass filter regressed BOLD (used in ReHo, timeseries)
+    cleaned_bold = bandpass_filter(
+        nuisance.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
     )
 
     return FunctionalOutputs(
@@ -206,8 +255,10 @@ def single_session_preprocess(
         stc_bold=st_corrected,
         despiked_bold=despiked,
         sbref=motion_ref,
+        distortion_corrected_ref=distortion.corrected_ref if distortion else None,
+        distortion_warp=distortion_warp,
         motion_corrected_bold=mc.bold,
-        motion_params=mc.par,
+        motion_params=mc.motion_params,
         rms_rel=mc.rms_rel,
         rms_abs=mc.rms_abs,
         mat_dir=mc.mat_dir,
@@ -215,7 +266,8 @@ def single_session_preprocess(
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
-        cleaned_bold=nuisance.cleaned_bold,
+        regressed_bold=nuisance.regressed_bold,
+        cleaned_bold=cleaned_bold,
         regressor_file=nuisance.regressor_file,
         template_brain_mask=tmpl_brain,
     )

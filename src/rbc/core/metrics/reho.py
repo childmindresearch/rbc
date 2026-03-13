@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.stats import rankdata
 
+from rbc.core.nifti import Volume
+
 if TYPE_CHECKING:
     from typing import Literal
 
@@ -177,18 +179,17 @@ def compute_reho(
     Returns:
         Path to the output NIfTI file.
     """
-    import nibabel as nib
-
     in_file = Path(in_file)
-    img = nib.nifti1.load(in_file)
-    mask = nib.nifti1.load(mask_file).get_fdata()
+    bold = Volume.load(in_file, dtype=np.float64, expected_ndim=4)
+    mask = Volume.load(mask_file, dtype=np.uint8)
+    bold.check_compatible(mask)
 
-    reho_map = reho(img.get_fdata(), mask, cluster_size)
+    reho_map = reho(bold.data, mask.data, cluster_size)
 
     if out_file is None:
         stem = in_file.name.split(".nii")[0]
         out_file = in_file.parent / f"{stem}_reho.nii.gz"
     out_file = Path(out_file)
 
-    nib.nifti1.Nifti1Image(reho_map, img.affine, img.header).to_filename(str(out_file))
+    bold.derive(reho_map).save(out_file)
     return out_file
