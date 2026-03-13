@@ -442,9 +442,7 @@ class TestComputeAlff:
 
         # Header has TR=2.0. Override with TR=0.5 shifts freq resolution
         # from 0.005 Hz to 0.02 Hz, changing which bins fall in [0.01, 0.1].
-        a1, _ = compute_alff(
-            bold_path, mask_path, out_file=tmp_path / "a_alff.nii.gz"
-        )
+        a1, _ = compute_alff(bold_path, mask_path, out_file=tmp_path / "a_alff.nii.gz")
         a2, _ = compute_alff(
             bold_path, mask_path, tr=0.5, out_file=tmp_path / "b_alff.nii.gz"
         )
