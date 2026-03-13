@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import nibabel as nib
 import numpy as np
+import pytest
 from niwrap import afni
 from scipy.ndimage import binary_erosion
 
@@ -69,6 +70,7 @@ def _create_identity_affine() -> Path:
     return mat_file
 
 
+@pytest.mark.slow
 def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     """Test resampling on short BOLD timeseries produces output files."""
     from rbc.core.functional import apply_motion_transforms
