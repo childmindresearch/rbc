@@ -251,9 +251,7 @@ def single_session_preprocess(
     bold_to_anat_itk = mat_to_itk(
         bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, "bold2anat.txt"
     )
-    native_brain = _warp_mask_to_bold_space(
-        brain_mask, effective_ref, bold_to_anat_itk
-    )
+    native_brain = _warp_mask_to_bold_space(brain_mask, effective_ref, bold_to_anat_itk)
     native_csf = _warp_mask_to_bold_space(csf_mask, effective_ref, bold_to_anat_itk)
     native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bold_to_anat_itk)
 
