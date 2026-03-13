@@ -53,7 +53,7 @@ BOTTOM_ROW_HEIGHT = 5.0
 # Overlay colors (R, G, B tuples for RGBA construction)
 WM_COLOR = "#4fc3f7"  # blue
 GM_COLOR = "#ef5350"  # red
-CSF_COLOR = "#66bb6a"  # green
+CSF_COLOR = "#fdd835"  # yellow
 MASK_COLOR = "#ffb74d"  # orange
 
 # Cold-hot diverging colormap for stat maps
@@ -277,7 +277,7 @@ def _render_stat_overlay(
     ax: plt.Axes,
     bg_data: np.ndarray,
     stat_data: np.ndarray,
-    threshold: float = 2.0,
+    threshold: float = 0.5,
     n: int = 7,
     title: str = "",
 ) -> None:
@@ -317,7 +317,10 @@ def _render_stat_overlay(
     ax.set_facecolor("black")
     ax.axis("off")
     if title:
-        ax.set_title(title, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4)
+        thresh_label = f"{title}  |z| > {threshold}"
+        ax.set_title(
+            thresh_label, fontsize=10, color=TEXT_COLOR, fontweight="bold", pad=4
+        )
 
     cbar = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02, shrink=0.8)
     cbar.set_label("z-score", fontsize=7, color=TEXT_COLOR, labelpad=2)
@@ -414,17 +417,17 @@ def _render_3d_surface(
         if not any(per_view):
             return None
 
-        # Two views: left 3/4 anterior, right 3/4 anterior
+        # Two views: left 3/4 anterior, right 3/4 anterior (rotated outward)
         cam_positions = [
             (
-                center[0] - dist * 0.7,
-                center[1] + dist * 0.7,
-                center[2] + dist * 0.3,
+                center[0] - dist * 0.85,
+                center[1] + dist * 0.55,
+                center[2] + dist * 0.35,
             ),
             (
-                center[0] + dist * 0.7,
-                center[1] + dist * 0.7,
-                center[2] + dist * 0.3,
+                center[0] + dist * 0.85,
+                center[1] + dist * 0.55,
+                center[2] + dist * 0.35,
             ),
         ]
 
@@ -445,10 +448,10 @@ def _render_3d_surface(
                     smooth_shading=True,
                     show_edges=False,
                 )
+            plotter.reset_camera()
             plotter.camera.position = cam_pos
             plotter.camera.focal_point = origin
             plotter.camera.up = (0, 0, 1)
-            plotter.reset_camera()
             plotter.camera.zoom(1.5)
 
         img_arr = plotter.screenshot(return_img=True)
@@ -652,7 +655,7 @@ def plot_motion(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> int:
         edgecolor=SPINE_COLOR,
         labelcolor=TEXT_COLOR,
     )
-    ax_rot.set_title("Rotation", fontsize=9, fontweight="bold")
+    ax_rot.set_title("Rotation (vs. first volume)", fontsize=9, fontweight="bold")
     _style_motion_ax(ax_rot)
 
     # Translation
@@ -668,7 +671,7 @@ def plot_motion(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> int:
         edgecolor=SPINE_COLOR,
         labelcolor=TEXT_COLOR,
     )
-    ax_trans.set_title("Translation", fontsize=9, fontweight="bold")
+    ax_trans.set_title("Translation (vs. first volume)", fontsize=9, fontweight="bold")
     _style_motion_ax(ax_trans)
 
     # RMS displacement
@@ -677,7 +680,7 @@ def plot_motion(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -> int:
     ax_rms.axhline(0.2, color="#ef5350", ls="--", alpha=0.7, label="0.2 mm threshold")
     ax_rms.set_ylabel("RMS (mm)", fontsize=8)
     ax_rms.set_xlabel("Volume", fontsize=8)
-    ax_rms.set_title("Relative RMS displacement", fontsize=9, fontweight="bold")
+    ax_rms.set_title("Relative RMS (frame-to-frame)", fontsize=9, fontweight="bold")
     ax_rms.legend(
         fontsize=7,
         loc="upper right",
@@ -709,22 +712,49 @@ def plot_metrics_maps(manifest: dict, fig: plt.Figure, gs: GridSpec, row: int) -
     ):
         ax = fig.add_subplot(gs[row, i])
         stat_data, _ = _load_vol(metrics[key])
-        _render_stat_overlay(ax, bg_data, stat_data, threshold=2.0, title=label)
+        _render_stat_overlay(ax, bg_data, stat_data, title=label)
 
     row += 1
     return row
 
 
+def _guess_atlas_name(n_rois: int) -> str:
+    """Guess the atlas name from the number of ROIs."""
+    known: dict[int, str] = {
+        200: "Schaefer 200",
+        300: "Schaefer 300",
+        400: "Schaefer 400",
+        1000: "Schaefer 1000",
+        116: "AAL",
+        48: "Harvard-Oxford Cortical",
+        21: "Harvard-Oxford Subcortical",
+        360: "Glasser",
+        7: "Yeo 7",
+        17: "Yeo 17",
+    }
+    return known.get(n_rois, f"{n_rois} ROIs")
+
+
 def plot_correlation_matrix(manifest: dict, ax: plt.Axes) -> None:
     """Plot the FC correlation matrix with dark theme."""
     corr = np.loadtxt(manifest["metrics"]["correlation_matrix"], delimiter="\t")
+    n_rois = corr.shape[0]
+    atlas_name = _guess_atlas_name(n_rois)
     im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1, aspect="equal")
     ax.set_title(
-        "FC correlation matrix",
+        f"FC correlation matrix ({atlas_name})",
         fontsize=10,
         fontweight="bold",
         color=TEXT_COLOR,
     )
+    # Show tick labels at regular intervals for large matrices
+    if n_rois > 50:
+        tick_step = max(1, n_rois // 10)
+        ticks = list(range(0, n_rois, tick_step))
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([str(t + 1) for t in ticks])
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([str(t + 1) for t in ticks])
     ax.set_xlabel("ROI", fontsize=8, color=TEXT_COLOR, labelpad=2)
     ax.set_ylabel("ROI", fontsize=8, color=TEXT_COLOR, labelpad=2)
     ax.tick_params(labelsize=6, colors=TEXT_COLOR, pad=1)
@@ -747,37 +777,37 @@ def plot_qc(manifest: dict, ax: plt.Axes) -> None:
         (
             "Motion",
             [
-                ("meanFD", "Mean FD"),
-                ("relMeansRMSMotion", "Mean RMS"),
-                ("relMaxRMSMotion", "Max RMS"),
-                ("nVolCensored", "Vols censored"),
+                ("meanFD", "Mean FD (mm)"),
+                ("relMeansRMSMotion", "Mean RMS (mm)"),
+                ("relMaxRMSMotion", "Max RMS (mm)"),
+                ("nVolCensored", "Vols censored (count)"),
             ],
         ),
         (
             "DVARS",
             [
-                ("meanDVInit", "Mean DV (init)"),
-                ("meanDVFinal", "Mean DV (final)"),
-                ("motionDVCorrInit", "Motion-DV r (init)"),
-                ("motionDVCorrFinal", "Motion-DV r (final)"),
+                ("meanDVInit", "Mean DV init (BOLD units)"),
+                ("meanDVFinal", "Mean DV final (BOLD units)"),
+                ("motionDVCorrInit", "Motion-DV r init"),
+                ("motionDVCorrFinal", "Motion-DV r final"),
             ],
         ),
         (
             "Coregistration",
             [
-                ("coregDice", "Dice"),
-                ("coregJaccard", "Jaccard"),
-                ("coregCrossCorr", "Cross-corr"),
-                ("coregCoverage", "Coverage"),
+                ("coregDice", "Dice (0-1)"),
+                ("coregJaccard", "Jaccard (0-1)"),
+                ("coregCrossCorr", "Cross-corr (r)"),
+                ("coregCoverage", "Coverage (0-1)"),
             ],
         ),
         (
             "Normalization",
             [
-                ("normDice", "Dice"),
-                ("normJaccard", "Jaccard"),
-                ("normCrossCorr", "Cross-corr"),
-                ("normCoverage", "Coverage"),
+                ("normDice", "Dice (0-1)"),
+                ("normJaccard", "Jaccard (0-1)"),
+                ("normCrossCorr", "Cross-corr (r)"),
+                ("normCoverage", "Coverage (0-1)"),
             ],
         ),
     ]
@@ -798,7 +828,7 @@ def plot_qc(manifest: dict, ax: plt.Axes) -> None:
     status = "PASSED" if passed else "FAILED"
     color = "#66bb6a" if passed else "#ef5350"
     ax.set_title(
-        f"QC Summary \u2014 {status}",
+        f"QC Summary: {status}",
         fontsize=11,
         fontweight="bold",
         color=color,
@@ -811,7 +841,7 @@ def plot_qc(manifest: dict, ax: plt.Axes) -> None:
         colLabels=["Metric", "Value"],
         loc="upper center",
         cellLoc="left",
-        colWidths=[0.35, 0.2],
+        colWidths=[0.45, 0.2],
     )
     table.auto_set_font_size(False)
     table.set_fontsize(8)
