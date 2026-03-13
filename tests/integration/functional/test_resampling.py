@@ -72,9 +72,7 @@ def _create_identity_affine() -> Path:
 
 @pytest.mark.slow
 def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
-    """Test resampling on short BOLD timeseries produces output files."""
-    from rbc.core.functional import apply_motion_transforms
-
+    """Test single-step resampling of STC BOLD to template space."""
     template_mni = MNI_TEMPLATES.brain_2mm
     synthetic_wm = _create_synthetic_wm(test_subject.t1w)
     anat_to_template = _create_identity_affine()
@@ -92,11 +90,6 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     bold_ref = extract_motion_reference(in_file=truncated.output_file)
     mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=bold_ref)
     stc = slice_timing_correction(in_file=truncated.output_file)
-    preproc_bold = apply_motion_transforms(
-        stc_img=stc,
-        motion_mat_dir=mc.mat_dir,
-        bold_ref=bold_ref,
-    )
     masking = bold_masking(
         bold_ref=bold_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
@@ -108,7 +101,8 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         wm_seg=synthetic_wm,
     )
     template_bold = resample_bold_to_template(
-        preproc_bold=preproc_bold,
+        stc_bold=stc,
+        motion_mat_dir=mc.mat_dir,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
         bold_ref=masking.skull_stripped_bold,

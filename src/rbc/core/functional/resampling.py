@@ -2,9 +2,11 @@
 
 Provides two resampling steps:
 - :func:`apply_motion_transforms`: applies per-volume mcflirt affines to
-  STC volumes to produce motion-corrected BOLD in native space.
-- :func:`resample_bold_to_template`: resamples motion-corrected BOLD to
-  template space via BBR + anat-to-template transforms.
+  STC volumes to produce motion-corrected BOLD in native space (used as
+  an intermediate for masking and BBR coregistration).
+- :func:`resample_bold_to_template`: single-step resampling of STC BOLD
+  to template space, applying motion + BBR + anat-to-template transforms
+  in one interpolation pass per volume.
 """
 
 from __future__ import annotations
@@ -79,7 +81,8 @@ def apply_motion_transforms(
 
 
 def resample_bold_to_template(
-    preproc_bold: Path,
+    stc_bold: Path,
+    motion_mat_dir: Path,
     bold_to_anat: Path,
     anat_to_template: Path,
     bold_ref: Path,
@@ -87,53 +90,76 @@ def resample_bold_to_template(
     t1w_brain: Path,
     distortion_warp: Path | None = None,
 ) -> Path:
-    """Resample motion-corrected BOLD to template space.
+    """Single-step resampling of STC BOLD to template space.
 
-    Motion correction is already applied in desc-preproc_bold - resampling
-    chain is func->T1w (BBR) + T1w->template (ANTs) only.
+    Applies all spatial transforms (motion + BBR + anat-to-template, and
+    optionally distortion correction) in a single ``antsApplyTransforms``
+    call per volume. This avoids multiple interpolation passes.
 
     Args:
-        preproc_bold: Motion-corrected + STC 4D BOLD.
+        stc_bold: Slice-timing corrected 4D BOLD timeseries.
+        motion_mat_dir: Directory of per-volume MAT_* matrices from mcflirt.
         bold_to_anat: BOLD to T1w affine (output from BBR).
         anat_to_template: T1w to template composite warp.
-        bold_ref: Skull-stripped BOLD reference.
+        bold_ref: BOLD reference volume (used for ITK conversion).
         template: Brain template in target space.
         t1w_brain: Skull-stripped T1w brain.
         distortion_warp: Optional distortion correction warp.
 
     Returns:
         Resampled 4D BOLD in template space.
+
+    Raises:
+        FileNotFoundError: No motion .mat files found in the directory.
+        ValueError: Number of motion matrices does not match STC volumes.
     """
+    motion_mats = sorted(motion_mat_dir.glob("MAT_*"))
+    if not motion_mats:
+        raise FileNotFoundError(f"No motion .mat files found in {motion_mat_dir}")
+
     bold2anat_itk = mat_to_itk(bold_to_anat, t1w_brain, bold_ref, "bold2anat.txt")
 
+    stc_vols = split_4d(stc_bold)
+
+    if len(motion_mats) != len(stc_vols):
+        raise ValueError(
+            f"Count mismatch: ({len(motion_mats)}) mats, ({len(stc_vols)}) volumes"
+        )
+
+    # Shared transforms (applied to every volume)
     base_transforms = [anat_to_template, bold2anat_itk]
     if distortion_warp:
         base_transforms.append(distortion_warp)
 
-    transforms: list[
-        ants.AntsApplyTransformsTransformFileNameParamsDictTagged
-        | ants.AntsApplyTransformsUseInverseParamsDictTagged
-    ] = [ants.ants_apply_transforms_transform_file_name(t) for t in base_transforms]
-
-    preproc_vols = split_4d(preproc_bold)
-
-    # Order: distortion -> bold2anat -> anat2template
+    # Per-volume: all transforms in one antsApplyTransforms call
+    # Order (last applied first): motion -> distortion -> bold2anat -> anat2template
     transformed_vols = []
-    for idx, vol in enumerate(preproc_vols):
+    for idx, (motion_mat, stc_vol) in enumerate(
+        zip(motion_mats, stc_vols, strict=True)
+    ):
+        motion_itk = mat_to_itk(
+            motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt"
+        )
+        transforms: list[
+            ants.AntsApplyTransformsTransformFileNameParamsDictTagged
+            | ants.AntsApplyTransformsUseInverseParamsDictTagged
+        ] = [
+            ants.ants_apply_transforms_transform_file_name(t)
+            for t in [*base_transforms, motion_itk]
+        ]
         result = ants.ants_apply_transforms(
-            input_image=vol,
-            reference_image=template,  # bold in template space
+            input_image=stc_vol,
+            reference_image=template,
             transform=transforms,
             interpolation=ants.ants_apply_transforms_lanczos_windowed_sinc(),
             float_=True,
             default_value=0,
             dimensionality=3,
             output=ants.ants_apply_transforms_warped_output(
-                f"vol_{idx:04d}_transform.nii.gz"
+                f"vol_{idx:04d}_template.nii.gz"
             ),
         )
         transformed_vols.append(result.output.output_image_outfile)
 
-    # Merge transformed volumes back to 4D timeseries
     out_path = transformed_vols[0].parent / "bold_to_template_resampled.nii.gz"
     return merge_3d_to_4d(transformed_vols, out_path)
