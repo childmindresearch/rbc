@@ -19,7 +19,7 @@ from tqdm import tqdm
 from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix
+from rbc.core.bids import Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
@@ -119,14 +119,22 @@ def main(args: AnatomicalArgs) -> int:
                 outputs.forward_xfm,
                 datatype=Datatype.ANAT,
                 suffix="xfm",
-                extra={"from": "T1w", "to": "template", "mode": "image"},
+                extra={
+                    "from": "T1w",
+                    "to": TemplateSpace.MNI152NLIN6ASYM,
+                    "mode": "image",
+                },
                 run=t1w_run,
             )
             pipe_ctx.export(
                 outputs.inverse_xfm,
                 datatype=Datatype.ANAT,
                 suffix="xfm",
-                extra={"from": "template", "to": "T1w", "mode": "image"},
+                extra={
+                    "from": TemplateSpace.MNI152NLIN6ASYM,
+                    "to": "T1w",
+                    "mode": "image",
+                },
                 run=t1w_run,
             )
         pipe_ctx.ensure_dataset_description()

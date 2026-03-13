@@ -103,7 +103,11 @@ def main(args: FunctionalArgs) -> int:
                 wm_mask=get_anat_file(suffix=Suffix.MASK, desc="wm"),
                 anat_to_template=get_anat_file(
                     suffix="xfm",
-                    extra={"from": "template", "to": "T1w", "mode": "image"},
+                    extra={
+                        "from": TemplateSpace.MNI152NLIN6ASYM,
+                        "to": "T1w",
+                        "mode": "image",
+                    },
                 ),
                 regressor_set=args.regressor,
             )

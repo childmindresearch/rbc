@@ -136,13 +136,13 @@ def main(args: AllArgs) -> int:
             anat_outputs.forward_xfm,
             datatype=Datatype.ANAT,
             suffix="xfm",
-            extra={"from": "T1w", "to": "template", "mode": "image"},
+            extra={"from": "T1w", "to": TemplateSpace.MNI152NLIN6ASYM, "mode": "image"},
         )
         pipe_ctx.export(
             anat_outputs.inverse_xfm,
             datatype=Datatype.ANAT,
             suffix="xfm",
-            extra={"from": "template", "to": "T1w", "mode": "image"},
+            extra={"from": TemplateSpace.MNI152NLIN6ASYM, "to": "T1w", "mode": "image"},
         )
 
         # --- Functional + Metrics + QC (per BOLD run) ---
