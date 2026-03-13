@@ -104,9 +104,7 @@ def _warp_mask_to_template(mask: Path, reference: Path, transform: Path) -> Path
     return result.output.output_image_outfile
 
 
-def _warp_mask_to_bold_space(
-    mask: Path, reference: Path, bold_to_anat: Path
-) -> Path:
+def _warp_mask_to_bold_space(mask: Path, reference: Path, bold_to_anat: Path) -> Path:
     """Warp a T1w-space mask to BOLD space using the inverse of bold_to_anat."""
     out_name = f"{mask.stem.split('.')[0]}_bold.nii.gz"
     result = ants.ants_apply_transforms(
@@ -253,12 +251,8 @@ def single_session_preprocess(
     native_brain = _warp_mask_to_bold_space(
         brain_mask, effective_ref, bbr.out_matrix_file
     )
-    native_csf = _warp_mask_to_bold_space(
-        csf_mask, effective_ref, bbr.out_matrix_file
-    )
-    native_wm = _warp_mask_to_bold_space(
-        wm_mask, effective_ref, bbr.out_matrix_file
-    )
+    native_csf = _warp_mask_to_bold_space(csf_mask, effective_ref, bbr.out_matrix_file)
+    native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bbr.out_matrix_file)
 
     # 12. Compute regressors from motion-corrected BOLD in native space
     regressors = compute_regressors(
