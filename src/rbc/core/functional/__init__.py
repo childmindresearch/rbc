@@ -39,13 +39,14 @@ from .regressors import (
     extract_mean_signal,
     write_regressor_file,
 )
-from .resampling import resample_bold_to_template
+from .resampling import apply_motion_transforms, resample_bold_to_template
 from .timing import slice_timing_correction
 
 __all__ = [
     "BidsPhaseEncoding",
     "PEPolarFieldmap",
     "PhaseDiffFieldmap",
+    "apply_motion_transforms",
     "assemble_36param_regressors",
     "assemble_acompcor_regressors",
     "bandpass_filter",

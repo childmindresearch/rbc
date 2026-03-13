@@ -174,7 +174,7 @@ def main(args: AllArgs) -> int:
             )
             _fex(func_outputs.sbref, suffix=Suffix.SBREF)
             _fex(
-                func_outputs.motion_corrected_bold,
+                func_outputs.preproc_bold,
                 desc="preproc",
                 suffix=Suffix.BOLD,
             )

@@ -72,13 +72,11 @@ def _create_identity_affine() -> Path:
 
 @pytest.mark.slow
 def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
-    """Test resampling on short BOLD timeseries produces output files."""
-    # Anatomical
+    """Test single-step resampling of STC BOLD to template space."""
     template_mni = MNI_TEMPLATES.brain_2mm
     synthetic_wm = _create_synthetic_wm(test_subject.t1w)
     anat_to_template = _create_identity_affine()
 
-    # Functional
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     truncated = afni.v_3dcalc(
         dataset_a=afni.v_3dcalc_dataset_a_file(
@@ -88,12 +86,10 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         prefix="test_bold.nii.gz",
     )
     assert truncated.output_file is not None
+
+    bold_ref = extract_motion_reference(in_file=truncated.output_file)
+    mc = fsl_motion_correction(in_file=truncated.output_file, ref_file=bold_ref)
     stc = slice_timing_correction(in_file=truncated.output_file)
-    bold_ref = extract_motion_reference(in_file=stc)
-    motion_corrected = fsl_motion_correction(
-        in_file=stc,
-        ref_file=bold_ref,
-    )
     masking = bold_masking(
         bold_ref=bold_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
@@ -105,8 +101,8 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
         wm_seg=synthetic_wm,
     )
     template_bold = resample_bold_to_template(
-        stc_img=stc,
-        motion_mat_dir=motion_corrected.mat_dir,
+        stc_bold=stc,
+        motion_mat_dir=mc.mat_dir,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
         bold_ref=masking.skull_stripped_bold,
