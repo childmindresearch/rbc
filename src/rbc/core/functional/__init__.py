@@ -29,7 +29,7 @@ from .mask_utils import (
 )
 from .masking import bold_masking
 from .motion import extract_motion_reference, fsl_motion_correction
-from .nuisance import nuisance_regression
+from .nuisance import bandpass_filter, nuisance_regression
 from .regressors import (
     assemble_36param_regressors,
     assemble_acompcor_regressors,
@@ -48,6 +48,7 @@ __all__ = [
     "PhaseDiffFieldmap",
     "assemble_36param_regressors",
     "assemble_acompcor_regressors",
+    "bandpass_filter",
     "bold_masking",
     "check_regressor_rank",
     "compute_acompcor",

@@ -17,6 +17,7 @@ from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
     PEPolarFieldmap,
     PhaseDiffFieldmap,
+    bandpass_filter,
     bold_masking,
     coregister_bold_to_t1w,
     correct_distortion_pepolar,
@@ -58,7 +59,8 @@ class FunctionalOutputs(NamedTuple):
         skull_stripped_bold: Skull-stripped BOLD reference.
         bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
         template_bold: BOLD resampled to template space.
-        cleaned_bold: Nuisance-regressed BOLD.
+        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD.
+        cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
         regressor_file: Nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """
@@ -79,6 +81,7 @@ class FunctionalOutputs(NamedTuple):
     skull_stripped_bold: Path
     bold_to_anat_matrix: Path
     template_bold: Path
+    regressed_bold: Path
     cleaned_bold: Path
     regressor_file: Path
     template_brain_mask: Path
@@ -108,7 +111,6 @@ def single_session_preprocess(
     anat_to_template: Path,
     start_tr: int = 2,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
-    bandpass: tuple[float, float] | None = (0.01, 0.1),
     fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
@@ -138,7 +140,6 @@ def single_session_preprocess(
         anat_to_template: T1w -> template composite warp.
         start_tr: Number of initial TRs to discard.
         regressor_set: Nuisance regressor strategy.
-        bandpass: Frequency band to retain, or *None* to skip.
         fieldmap: Fieldmap inputs for susceptibility distortion correction.
             Pass a :class:`PhaseDiffFieldmap` for B0 fieldmap correction or a
             :class:`PEPolarFieldmap` for opposite phase-encoding correction.
@@ -233,7 +234,7 @@ def single_session_preprocess(
     )
     tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
-    # 11. Nuisance regression in template space
+    # 11. Nuisance regression in template space (used in ALFF/fALFF)
     nuisance = nuisance_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
@@ -241,7 +242,11 @@ def single_session_preprocess(
         wm_mask_file=tmpl_wm,
         motion_params=mc.motion_params,
         regressor_set=regressor_set,
-        bandpass=bandpass,
+    )
+
+    # 12. Bandpass filter regressed BOLD (used in ReHo, timeseries)
+    cleaned_bold = bandpass_filter(
+        nuisance.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
     )
 
     return FunctionalOutputs(
@@ -261,7 +266,8 @@ def single_session_preprocess(
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
-        cleaned_bold=nuisance.cleaned_bold,
+        regressed_bold=nuisance.regressed_bold,
+        cleaned_bold=cleaned_bold,
         regressor_file=nuisance.regressor_file,
         template_brain_mask=tmpl_brain,
     )
