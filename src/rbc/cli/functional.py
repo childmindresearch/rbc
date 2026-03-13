@@ -116,7 +116,7 @@ def main(args: FunctionalArgs) -> int:
                 run=bold_run,
             )
             pipe_ctx.export(
-                outputs.motion_corrected_bold,
+                outputs.preproc_bold,
                 datatype=Datatype.FUNC,
                 desc="preproc",
                 suffix=Suffix.BOLD,

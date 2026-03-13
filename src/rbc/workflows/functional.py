@@ -17,6 +17,7 @@ from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import (
     PEPolarFieldmap,
     PhaseDiffFieldmap,
+    apply_motion_transforms,
     bandpass_filter,
     bold_masking,
     coregister_bold_to_t1w,
@@ -43,14 +44,14 @@ class FunctionalOutputs(NamedTuple):
     Attributes:
         reoriented_bold: Deobliqued and RPI-reoriented BOLD.
         truncated_bold: BOLD after discarding initial TRs.
-        stc_bold: Slice-timing corrected BOLD.
         despiked_bold: Despiked BOLD timeseries.
         sbref: Motion reference (single-band reference) volume.
         distortion_corrected_ref: Distortion-corrected BOLD reference, or
             *None* if no fieldmap data was provided.
         distortion_warp: ANTs/ITK-compatible distortion warp field, or
             *None* if no fieldmap data was provided.
-        motion_corrected_bold: Motion-corrected BOLD.
+        stc_bold: Slice-timing corrected BOLD.
+        preproc_bold: Motion-corrected & STC BOLD.
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
         rms_abs: Volume-to-reference absolute RMS displacement.
@@ -67,12 +68,12 @@ class FunctionalOutputs(NamedTuple):
 
     reoriented_bold: Path
     truncated_bold: Path
-    stc_bold: Path
     despiked_bold: Path
     sbref: Path
     distortion_corrected_ref: Path | None
     distortion_warp: Path | None
-    motion_corrected_bold: Path
+    stc_bold: Path
+    preproc_bold: Path
     motion_params: Path
     rms_rel: Path
     rms_abs: Path
@@ -119,16 +120,18 @@ def single_session_preprocess(
 
     1.  Deoblique & reorient BOLD to RPI.
     2.  Truncate initial TRs.
-    3.  Slice timing correction.
-    4.  Despike the STC BOLD.
-    5.  Extract motion reference from despiked STC.
-    5b. Susceptibility distortion correction (optional).
-    6.  Motion correction (despiked STC -> motion ref).
-    7.  BOLD brain masking.
-    8.  BBR coregistration (BOLD -> T1w).
-    9.  Single-step resampling (despiked STC -> template).
-    10. Warp tissue masks to template space.
-    11. Nuisance regression in template space.
+    3.  Despike BOLD.
+    4.  Extract motion reference from despiked BOLD.
+    5.  Susceptibility distortion correction (optional).
+    6.  Motion correction on despiked BOLD (pre-STC).
+    7.  Slice timing correction.
+    8.  Apply pre-STC motion transforms to STC BOLD -> preproc_bold in native space.
+    9.  BOLD brain masking.
+    10. BBR coregistration (BOLD -> T1w).
+    11. Resample preproc_bold to template space.
+    12. Warp tissue masks to template space.
+    13. Nuisance regression in template space.
+    14. Bandpass filter regressed BOLD.
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -189,8 +192,10 @@ def single_session_preprocess(
     effective_ref = distortion.corrected_ref if distortion else motion_ref
     distortion_warp = distortion.warp_field if distortion else None
 
-    # 6. Motion correction on despiked BOLD -> for motion parameters
-    mc_for_params = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
+    # 6. MC on despiked (pre-STC)
+    # .par -> motion params for nuisance regression + QC
+    # .mat -> applied to STC image below
+    mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
     st_corrected = slice_timing_correction(
@@ -199,8 +204,13 @@ def single_session_preprocess(
         tpattern=metadata.get("SliceTiming"),
     )
 
-    # 8. Motion correction on STC BOLD -> for motion-corrected timeseries
-    mc = fsl_motion_correction(in_file=st_corrected, ref_file=effective_ref)
+    # 8. Apply pre-STC motion transforms to STC BOLD ->
+    # preprocessed BOLD in native space
+    preproc_bold = apply_motion_transforms(
+        stc_img=st_corrected,
+        motion_mat_dir=mc.mat_dir,
+        bold_ref=effective_ref,
+    )
 
     # 9. BOLD brain masking
     masking = bold_masking(
@@ -216,10 +226,9 @@ def single_session_preprocess(
         wm_seg=wm_bbr_mask,
     )
 
-    # 11. Single-step resampling (STC -> template)
+    # 11. Single-step resampling (preproc_bold -> template)
     template_bold = resample_bold_to_template(
-        stc_img=st_corrected,
-        motion_mat_dir=mc.mat_dir,
+        preproc_bold=preproc_bold,
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
         bold_ref=masking.skull_stripped_bold,
@@ -243,7 +252,7 @@ def single_session_preprocess(
         brain_mask_file=tmpl_brain,
         csf_mask_file=tmpl_csf,
         wm_mask_file=tmpl_wm,
-        motion_params=mc_for_params.motion_params,
+        motion_params=mc.motion_params,
         regressor_set=regressor_set,
     )
 
@@ -255,13 +264,13 @@ def single_session_preprocess(
     return FunctionalOutputs(
         reoriented_bold=reoriented.out_file,
         truncated_bold=truncated,
-        stc_bold=st_corrected,
         despiked_bold=despiked,
         sbref=motion_ref,
         distortion_corrected_ref=distortion.corrected_ref if distortion else None,
         distortion_warp=distortion_warp,
-        motion_corrected_bold=mc.bold,
-        motion_params=mc_for_params.motion_params,
+        stc_bold=st_corrected,
+        preproc_bold=preproc_bold,
+        motion_params=mc.motion_params,
         rms_rel=mc.rms_rel,
         rms_abs=mc.rms_abs,
         mat_dir=mc.mat_dir,
