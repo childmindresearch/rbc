@@ -41,6 +41,20 @@ class ErodedMaskArrays(NamedTuple):
     brain: np.ndarray
 
 
+class ComputeRegressorsOutputs(NamedTuple):
+    """Outputs from :func:`compute_regressors`."""
+
+    regressor_file: Path
+    column_names: list[str]
+    eroded_masks: ErodedMaskArrays
+
+
+class ApplyRegressionOutputs(NamedTuple):
+    """Outputs from :func:`apply_regression`."""
+
+    regressed_bold: Path
+
+
 class NuisanceRegressionOutputs(NamedTuple):
     """Outputs from :func:`nuisance_regression`."""
 
@@ -83,42 +97,45 @@ def bandpass_filter(
     return result.out_file
 
 
-def nuisance_regression(
+def compute_regressors(
     bold_file: str | Path,
     brain_mask_file: str | Path,
     csf_mask_file: str | Path,
     wm_mask_file: str | Path,
     motion_params: str | Path,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
-) -> NuisanceRegressionOutputs:
-    """Run nuisance regression via AFNI 3dTproject.
+) -> ComputeRegressorsOutputs:
+    """Compute nuisance regressors from BOLD and tissue masks.
+
+    Extracts tissue mean signals from (optionally eroded) masks and assembles
+    the regressor matrix. Intended to run on native-space BOLD so that tissue
+    signals are estimated before any template-resampling interpolation.
 
     Steps:
-        1. Load BOLD and tissue masks
-        2. Erode masks (CSF 90%, WM 60%, brain 30mm)
+        1. Load BOLD and tissue masks as numpy arrays
+        2. Erode masks (CSF 90%%, WM 60%%, brain 30 mm)
         3. Load motion parameters from ``.1D`` file
         4. Extract tissue mean signals from eroded masks
         5. Assemble regressor matrix (36-param or aCompCor)
         6. Write ``.1D`` regressor file
-        7. Call ``3dTproject``
 
     Args:
-        bold_file: 4-D BOLD timeseries.
-        brain_mask_file: 3-D brain mask.
-        csf_mask_file: 3-D CSF tissue mask.
-        wm_mask_file: 3-D WM tissue mask.
+        bold_file: 4-D BOLD timeseries (native space).
+        brain_mask_file: 3-D brain mask (in BOLD space).
+        csf_mask_file: 3-D CSF tissue mask (in BOLD space).
+        wm_mask_file: 3-D WM tissue mask (in BOLD space).
         motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
         regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
 
     Returns:
-        :class:`NuisanceRegressionOutputs` with regressed BOLD path,
-        regressor file path, column names, and eroded masks.
+        :class:`ComputeRegressorsOutputs` with regressor file path,
+        column names, and eroded masks.
     """
     import nibabel as nib
 
     from rbc.core.functional.regressors import check_regressor_rank
 
-    out_dir = generate_exec_folder("nuisance_regression")
+    out_dir = generate_exec_folder("compute_regressors")
 
     # 1. Load data
     bold_img = nib.nifti1.load(bold_file)
@@ -167,19 +184,88 @@ def nuisance_regression(
     regressor_file = out_dir / "regressors.1D"
     write_regressor_file(matrix, column_names, regressor_file)
 
-    # 7. Call 3dTproject
+    return ComputeRegressorsOutputs(
+        regressor_file=regressor_file,
+        column_names=column_names,
+        eroded_masks=eroded,
+    )
+
+
+def apply_regression(
+    bold_file: str | Path,
+    brain_mask_file: str | Path,
+    regressor_file: str | Path,
+) -> ApplyRegressionOutputs:
+    """Apply pre-computed nuisance regressors to a BOLD timeseries.
+
+    Runs AFNI ``3dTproject`` to project out the regressors. This is intended
+    to be called on template-space BOLD with regressors that were computed
+    from the native-space BOLD.
+
+    Args:
+        bold_file: 4-D BOLD timeseries to regress.
+        brain_mask_file: 3-D brain mask for the regression.
+        regressor_file: ``.1D`` regressor file from :func:`compute_regressors`.
+
+    Returns:
+        :class:`ApplyRegressionOutputs` with the regressed BOLD path.
+    """
     result = afni.v_3d_tproject(
         in_file=Path(bold_file),
         prefix="regressed_bold.nii.gz",
         polort=0,
-        ort=regressor_file,
+        ort=Path(regressor_file),
         mask=Path(brain_mask_file),
         norm=False,
     )
 
+    return ApplyRegressionOutputs(regressed_bold=Path(result.out_file))
+
+
+def nuisance_regression(
+    bold_file: str | Path,
+    brain_mask_file: str | Path,
+    csf_mask_file: str | Path,
+    wm_mask_file: str | Path,
+    motion_params: str | Path,
+    regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
+) -> NuisanceRegressionOutputs:
+    """Run nuisance regression via AFNI 3dTproject.
+
+    Convenience wrapper that calls :func:`compute_regressors` followed by
+    :func:`apply_regression`. For the split workflow (compute in native space,
+    apply in template space), call those two functions directly.
+
+    Args:
+        bold_file: 4-D BOLD timeseries.
+        brain_mask_file: 3-D brain mask.
+        csf_mask_file: 3-D CSF tissue mask.
+        wm_mask_file: 3-D WM tissue mask.
+        motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
+        regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
+
+    Returns:
+        :class:`NuisanceRegressionOutputs` with regressed BOLD path,
+        regressor file path, column names, and eroded masks.
+    """
+    regressors = compute_regressors(
+        bold_file=bold_file,
+        brain_mask_file=brain_mask_file,
+        csf_mask_file=csf_mask_file,
+        wm_mask_file=wm_mask_file,
+        motion_params=motion_params,
+        regressor_set=regressor_set,
+    )
+
+    regression = apply_regression(
+        bold_file=bold_file,
+        brain_mask_file=brain_mask_file,
+        regressor_file=regressors.regressor_file,
+    )
+
     return NuisanceRegressionOutputs(
-        regressed_bold=Path(result.out_file),
-        regressor_file=regressor_file,
-        column_names=column_names,
-        eroded_masks=eroded,
+        regressed_bold=regression.regressed_bold,
+        regressor_file=regressors.regressor_file,
+        column_names=regressors.column_names,
+        eroded_masks=regressors.eroded_masks,
     )

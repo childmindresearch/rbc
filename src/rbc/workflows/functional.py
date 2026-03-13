@@ -18,15 +18,16 @@ from rbc.core.functional import (
     PEPolarFieldmap,
     PhaseDiffFieldmap,
     apply_motion_transforms,
+    apply_regression,
     bandpass_filter,
     bold_masking,
+    compute_regressors,
     coregister_bold_to_t1w,
     correct_distortion_pepolar,
     correct_distortion_phasediff,
     despike_bold,
     extract_motion_reference,
     fsl_motion_correction,
-    nuisance_regression,
     resample_bold_to_template,
     slice_timing_correction,
     truncate_trs,
@@ -103,6 +104,22 @@ def _warp_mask_to_template(mask: Path, reference: Path, transform: Path) -> Path
     return result.output.output_image_outfile
 
 
+def _warp_mask_to_bold_space(
+    mask: Path, reference: Path, bold_to_anat: Path
+) -> Path:
+    """Warp a T1w-space mask to BOLD space using the inverse of bold_to_anat."""
+    out_name = f"{mask.stem.split('.')[0]}_bold.nii.gz"
+    result = ants.ants_apply_transforms(
+        input_image=mask,
+        reference_image=reference,
+        transform=[ants.ants_apply_transforms_use_inverse(bold_to_anat)],
+        interpolation=ants.ants_apply_transforms_nearest_neighbor(),
+        dimensionality=3,
+        output=ants.ants_apply_transforms_warped_output(out_name),
+    )
+    return result.output.output_image_outfile
+
+
 def single_session_preprocess(
     in_bold: Path,
     t1w_brain: Path,
@@ -131,11 +148,13 @@ def single_session_preprocess(
         MC + STC output, exported but not consumed by later steps).
     9.  BOLD brain masking (on motion reference volume).
     10. BBR coregistration (skull-stripped BOLD ref -> T1w).
-    11. Single-step resampling: STC volumes -> template space (motion +
+    11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat).
+    12. Compute nuisance regressors from native-space BOLD.
+    13. Single-step resampling: STC volumes -> template space (motion +
         BBR + anat2template in one interpolation pass per volume).
-    12. Warp tissue masks to template space.
-    13. Nuisance regression in template space.
-    14. Bandpass filter regressed BOLD.
+    14. Warp brain mask to template space.
+    15. Apply nuisance regression to template-space BOLD.
+    16. Bandpass filter regressed BOLD.
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -198,7 +217,7 @@ def single_session_preprocess(
 
     # 6. MC on despiked (pre-STC)
     # .par -> motion params for nuisance regression + QC
-    # .mat -> per-volume affines used in steps 8 and 11
+    # .mat -> per-volume affines used in steps 8 and 13
     mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
@@ -230,7 +249,28 @@ def single_session_preprocess(
         wm_seg=wm_bbr_mask,
     )
 
-    # 11. Single-step resampling (STC -> template)
+    # 11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat)
+    native_brain = _warp_mask_to_bold_space(
+        brain_mask, effective_ref, bbr.out_matrix_file
+    )
+    native_csf = _warp_mask_to_bold_space(
+        csf_mask, effective_ref, bbr.out_matrix_file
+    )
+    native_wm = _warp_mask_to_bold_space(
+        wm_mask, effective_ref, bbr.out_matrix_file
+    )
+
+    # 12. Compute regressors from motion-corrected BOLD in native space
+    regressors = compute_regressors(
+        bold_file=preproc_bold,
+        brain_mask_file=native_brain,
+        csf_mask_file=native_csf,
+        wm_mask_file=native_wm,
+        motion_params=mc.motion_params,
+        regressor_set=regressor_set,
+    )
+
+    # 13. Single-step resampling (STC -> template)
     # All spatial transforms (motion + BBR + anat2template) applied in one
     # interpolation pass per volume to minimize resampling artifacts.
     template_bold = resample_bold_to_template(
@@ -244,28 +284,21 @@ def single_session_preprocess(
         distortion_warp=distortion_warp,
     )
 
-    # 12. Warp tissue masks to template space (same grid as resampled BOLD)
+    # 14. Warp brain mask to template space (needed for regression + bandpass)
     tmpl_brain = _warp_mask_to_template(
         brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
-    tmpl_csf = _warp_mask_to_template(
-        csf_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
-    )
-    tmpl_wm = _warp_mask_to_template(wm_mask, MNI_TEMPLATES.brain_2mm, anat_to_template)
 
-    # 13. Nuisance regression in template space (used in ALFF/fALFF)
-    nuisance = nuisance_regression(
+    # 15. Apply pre-computed regressors to template-space BOLD
+    regression = apply_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
-        csf_mask_file=tmpl_csf,
-        wm_mask_file=tmpl_wm,
-        motion_params=mc.motion_params,
-        regressor_set=regressor_set,
+        regressor_file=regressors.regressor_file,
     )
 
-    # 14. Bandpass filter regressed BOLD (used in ReHo, timeseries)
+    # 16. Bandpass filter regressed BOLD (used in ReHo, timeseries)
     cleaned_bold = bandpass_filter(
-        nuisance.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
+        regression.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
     )
 
     return FunctionalOutputs(
@@ -285,8 +318,8 @@ def single_session_preprocess(
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
-        regressed_bold=nuisance.regressed_bold,
+        regressed_bold=regression.regressed_bold,
         cleaned_bold=cleaned_bold,
-        regressor_file=nuisance.regressor_file,
+        regressor_file=regressors.regressor_file,
         template_brain_mask=tmpl_brain,
     )
