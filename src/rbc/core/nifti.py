@@ -250,6 +250,11 @@ class Volume:
         return _spatial_unit_from_xyzt(self._xyzt_units)
 
     @property
+    def orientation(self) -> str:
+        """Axis orientation code derived from the affine (e.g. ``"RAS"``)."""
+        return "".join(nib.aff2axcodes(self._affine))
+
+    @property
     def source_path(self) -> Path | None:
         """Original file path, if loaded from disk."""
         return self._source_path
@@ -263,6 +268,7 @@ class Volume:
         sform: Space | None = None,
         qform: Space | None = None,
         min_volumes: int | None = None,
+        orientation: str | None = None,
     ) -> Volume:
         """Assert metadata expectations (chainable).
 
@@ -273,6 +279,7 @@ class Volume:
             sform: Expected sform coordinate-space code.
             qform: Expected qform coordinate-space code.
             min_volumes: Minimum number of volumes (4th dim).
+            orientation: Expected axis orientation (e.g. ``"RAS"``).
 
         Returns:
             ``self``, for chaining.
@@ -310,6 +317,13 @@ class Volume:
             if nvol < min_volumes:
                 msg = f"Expected >= {min_volumes} volumes, got {nvol}{src}"
                 raise ValueError(msg)
+
+        if orientation is not None and self.orientation != orientation.upper():
+            msg = (
+                f"Expected orientation {orientation.upper()}, "
+                f"got {self.orientation}{src}"
+            )
+            raise ValueError(msg)
 
         return self
 
