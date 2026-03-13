@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import nibabel as nib
 import numpy as np
 import pytest
 from scipy.stats import rankdata
 
 from rbc.core.metrics.reho import (
+    compute_reho,
     get_neighbor_offsets,
     kendall_w,
     rank_timeseries,
@@ -16,6 +18,8 @@ from rbc.core.metrics.reho import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from rbc.core.metrics.reho import ClusterSize
 
 
@@ -280,3 +284,96 @@ class TestReHo:
         r2 = reho(data, mask, cluster_size=19)
 
         np.testing.assert_array_equal(r1, r2)
+
+
+# ===================================================================
+# compute_reho (file I/O wrapper)
+# ===================================================================
+
+REHO_SHAPE = (6, 6, 6, 10)
+
+
+def _write_nifti(
+    path: Path,
+    data: np.ndarray,
+    *,
+    tr: float = 2.0,
+    sform_code: int = 4,
+) -> Path:
+    """Write a minimal NIfTI with controlled metadata."""
+    img = nib.Nifti1Image(data, np.eye(4))
+    hdr = img.header
+    hdr["sform_code"] = sform_code
+    hdr["qform_code"] = sform_code
+    hdr["xyzt_units"] = 2  # mm
+    if data.ndim >= 4:
+        pixdim = hdr["pixdim"].copy()
+        pixdim[4] = tr
+        hdr["pixdim"] = pixdim
+    img.to_filename(str(path))
+    return path
+
+
+class TestComputeReho:
+    """Tests for compute_reho (Volume-based file I/O)."""
+
+    def test_output_exists(self, tmp_path: Path) -> None:
+        """compute_reho should write a ReHo file."""
+        rng = np.random.default_rng(30)
+        bold_path = _write_nifti(
+            tmp_path / "bold.nii.gz", rng.standard_normal(REHO_SHAPE)
+        )
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz", np.ones(REHO_SHAPE[:3], dtype=np.uint8)
+        )
+
+        reho_path = compute_reho(bold_path, mask_path, cluster_size=7)
+        assert reho_path.exists()
+
+    def test_output_is_3d(self, tmp_path: Path) -> None:
+        """Output NIfTI must have 3D shape (not 4D header from input)."""
+        rng = np.random.default_rng(31)
+        bold_path = _write_nifti(
+            tmp_path / "bold.nii.gz", rng.standard_normal(REHO_SHAPE)
+        )
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz", np.ones(REHO_SHAPE[:3], dtype=np.uint8)
+        )
+
+        reho_path = compute_reho(bold_path, mask_path, cluster_size=7)
+
+        img = nib.nifti1.load(reho_path)
+        assert len(img.shape) == 3
+        assert img.shape == REHO_SHAPE[:3]
+
+    def test_preserves_sform(self, tmp_path: Path) -> None:
+        """Output should preserve sform code from the input BOLD."""
+        rng = np.random.default_rng(32)
+        bold_path = _write_nifti(
+            tmp_path / "bold.nii.gz", rng.standard_normal(REHO_SHAPE), sform_code=4
+        )
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz",
+            np.ones(REHO_SHAPE[:3], dtype=np.uint8),
+            sform_code=4,
+        )
+
+        reho_path = compute_reho(bold_path, mask_path, cluster_size=7)
+        img = nib.nifti1.load(reho_path)
+        assert int(img.header["sform_code"]) == 4
+
+    def test_matches_pure_function(self, tmp_path: Path) -> None:
+        """File I/O wrapper should produce identical values to pure reho()."""
+        rng = np.random.default_rng(33)
+        data = rng.standard_normal(REHO_SHAPE)
+        mask_data = np.ones(REHO_SHAPE[:3], dtype=np.uint8)
+
+        bold_path = _write_nifti(tmp_path / "bold.nii.gz", data)
+        mask_path = _write_nifti(tmp_path / "mask.nii.gz", mask_data)
+
+        reho_path = compute_reho(bold_path, mask_path, cluster_size=7)
+
+        expected = reho(data, mask_data, cluster_size=7)
+        np.testing.assert_allclose(
+            nib.nifti1.load(reho_path).get_fdata(), expected, atol=1e-10
+        )

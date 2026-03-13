@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import nibabel as nib
 import numpy as np
 import pytest
 
 from rbc.core.metrics.alff import (
     alff,
     am_alff,
+    compute_alff,
     compute_frequency_bins,
     qm_alff,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Shared test constants
@@ -347,3 +354,118 @@ class TestAlffDispatcher:
         mask = np.ones(SHAPE[:3])
         with pytest.raises(ValueError, match="Unknown method"):
             alff(data, mask, TR, method="bad")  # type: ignore[arg-type]
+
+
+# ===================================================================
+# compute_alff (file I/O wrapper)
+# ===================================================================
+
+
+def _write_nifti(
+    path: Path,
+    data: np.ndarray,
+    *,
+    tr: float = TR,
+    sform_code: int = 4,
+) -> Path:
+    """Write a minimal NIfTI with controlled metadata."""
+    img = nib.Nifti1Image(data, np.eye(4))
+    hdr = img.header
+    hdr["sform_code"] = sform_code
+    hdr["qform_code"] = sform_code
+    hdr["xyzt_units"] = 2  # mm
+    if data.ndim >= 4:
+        pixdim = hdr["pixdim"].copy()
+        pixdim[4] = tr
+        hdr["pixdim"] = pixdim
+    img.to_filename(str(path))
+    return path
+
+
+class TestComputeAlff:
+    """Tests for compute_alff (Volume-based file I/O)."""
+
+    def test_outputs_exist(self, tmp_path: Path) -> None:
+        """compute_alff should write ALFF and fALFF files."""
+        rng = np.random.default_rng(30)
+        bold_path = _write_nifti(tmp_path / "bold.nii.gz", rng.standard_normal(SHAPE))
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
+        )
+
+        alff_path, falff_path = compute_alff(bold_path, mask_path)
+        assert alff_path.exists()
+        assert falff_path.exists()
+
+    def test_output_is_3d(self, tmp_path: Path) -> None:
+        """Output NIfTIs must have 3D shape (not 4D header from input)."""
+        rng = np.random.default_rng(31)
+        bold_path = _write_nifti(tmp_path / "bold.nii.gz", rng.standard_normal(SHAPE))
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
+        )
+
+        alff_path, falff_path = compute_alff(bold_path, mask_path)
+
+        alff_img = nib.nifti1.load(alff_path)
+        falff_img = nib.nifti1.load(falff_path)
+        assert len(alff_img.shape) == 3
+        assert alff_img.shape == SHAPE[:3]
+        assert len(falff_img.shape) == 3
+        assert falff_img.shape == SHAPE[:3]
+
+    def test_preserves_sform(self, tmp_path: Path) -> None:
+        """Output should preserve sform code from the input BOLD."""
+        rng = np.random.default_rng(32)
+        bold_path = _write_nifti(
+            tmp_path / "bold.nii.gz", rng.standard_normal(SHAPE), sform_code=4
+        )
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz",
+            np.ones(SHAPE[:3], dtype=np.uint8),
+            sform_code=4,
+        )
+
+        alff_path, _ = compute_alff(bold_path, mask_path)
+        img = nib.nifti1.load(alff_path)
+        assert int(img.header["sform_code"]) == 4
+
+    def test_tr_override(self, tmp_path: Path) -> None:
+        """Explicit tr= should override the header value."""
+        rng = np.random.default_rng(33)
+        bold_path = _write_nifti(
+            tmp_path / "bold.nii.gz", rng.standard_normal(SHAPE), tr=2.0
+        )
+        mask_path = _write_nifti(
+            tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
+        )
+
+        # Header has TR=2.0. Override with TR=0.5 shifts freq resolution
+        # from 0.005 Hz to 0.02 Hz, changing which bins fall in [0.01, 0.1].
+        a1, _ = compute_alff(bold_path, mask_path, out_file=tmp_path / "a_alff.nii.gz")
+        a2, _ = compute_alff(
+            bold_path, mask_path, tr=0.5, out_file=tmp_path / "b_alff.nii.gz"
+        )
+
+        d1 = nib.nifti1.load(a1).get_fdata()
+        d2 = nib.nifti1.load(a2).get_fdata()
+        assert not np.allclose(d1, d2)
+
+    def test_matches_pure_function(self, tmp_path: Path) -> None:
+        """File I/O wrapper should produce identical values to pure alff()."""
+        rng = np.random.default_rng(34)
+        data = rng.standard_normal(SHAPE)
+        mask_data = np.ones(SHAPE[:3], dtype=np.uint8)
+
+        bold_path = _write_nifti(tmp_path / "bold.nii.gz", data)
+        mask_path = _write_nifti(tmp_path / "mask.nii.gz", mask_data)
+
+        alff_path, falff_path = compute_alff(bold_path, mask_path)
+
+        expected_a, expected_fa = am_alff(data, mask_data, TR)
+        np.testing.assert_allclose(
+            nib.nifti1.load(alff_path).get_fdata(), expected_a, atol=1e-10
+        )
+        np.testing.assert_allclose(
+            nib.nifti1.load(falff_path).get_fdata(), expected_fa, atol=1e-10
+        )
