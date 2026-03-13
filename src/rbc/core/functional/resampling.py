@@ -142,9 +142,7 @@ def resample_bold_to_template(
     for idx, (motion_mat, stc_vol) in enumerate(
         zip(motion_mats, stc_vols, strict=True)
     ):
-        motion_itk = mat_to_itk(
-            motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt"
-        )
+        motion_itk = mat_to_itk(motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt")
         transforms: list[
             ants.AntsApplyTransformsTransformFileNameParamsDictTagged
             | ants.AntsApplyTransformsUseInverseParamsDictTagged
