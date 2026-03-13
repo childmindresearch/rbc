@@ -95,10 +95,10 @@ def main(args: MetricsArgs) -> int:
             bold_run: int | None = row.get("run")
 
             regressed_bold = get_deriv(
-                datatype="func",
-                suffix="bold",
+                datatype=Datatype.FUNC,
+                suffix=Suffix.BOLD,
                 desc="regressed",
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
                 extra={"reg": args.regressor},

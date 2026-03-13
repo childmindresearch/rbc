@@ -218,9 +218,9 @@ def main(args: AllArgs) -> int:
             )
             _fex(
                 func_outputs.regressed_bold,
-                space="MNI152NLin6ASym",
+                space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="regressed",
-                suffix="bold",
+                suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
             )
             _fex(
