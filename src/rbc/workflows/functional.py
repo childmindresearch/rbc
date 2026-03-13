@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from bids2table import load_bids_metadata
 from niwrap import ants
 
-from rbc.core.common import deoblique_and_reorient
+from rbc.core.common import deoblique_and_reorient, mat_to_itk
 from rbc.core.functional import (
     PEPolarFieldmap,
     PhaseDiffFieldmap,
@@ -248,11 +248,14 @@ def single_session_preprocess(
     )
 
     # 11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat)
-    native_brain = _warp_mask_to_bold_space(
-        brain_mask, effective_ref, bbr.out_matrix_file
+    bold_to_anat_itk = mat_to_itk(
+        bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, "bold2anat.txt"
     )
-    native_csf = _warp_mask_to_bold_space(csf_mask, effective_ref, bbr.out_matrix_file)
-    native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bbr.out_matrix_file)
+    native_brain = _warp_mask_to_bold_space(
+        brain_mask, effective_ref, bold_to_anat_itk
+    )
+    native_csf = _warp_mask_to_bold_space(csf_mask, effective_ref, bold_to_anat_itk)
+    native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bold_to_anat_itk)
 
     # 12. Compute regressors from motion-corrected BOLD in native space
     regressors = compute_regressors(
