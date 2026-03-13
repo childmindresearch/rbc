@@ -93,7 +93,8 @@ def single_session_metrics(
     falff_zscored_path = compute_zscore(falff_smooth_path, template_brain_mask)
     reho_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
 
-    # 5. Atlas timeseries + correlation matrix from cleaned BOLD
+    # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
+    # bandpass-filtered BOLD
     ts_outputs = compute_timeseries(cleaned_bold, get_atlas(atlas))
 
     return MetricsOutputs(

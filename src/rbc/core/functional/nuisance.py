@@ -56,10 +56,12 @@ def bandpass_filter(
     f_low: float = 0.01,
     f_high: float = 0.1,
 ) -> Path:
-    """Apply bandpass filtering to a BOLD timeseries.
+    """Apply bandpass filtering to a BOLD timeseries via AFNI 3dBandpass.
 
-    Retains low-frequency fluctuations while removing physiological noise
-    and scanner drift.
+    Retains low-frequency fluctuations (default 0.01--0.1 Hz) while removing
+    physiological noise and scanner drift. This is split out from nuisance
+    regression so that ALFF/fALFF can be computed from the pre-bandpass
+    residuals (where fALFF is meaningful).
 
     Args:
         bold: 4-D BOLD timeseries to filter.
