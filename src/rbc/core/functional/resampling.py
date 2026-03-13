@@ -1,9 +1,10 @@
 """Resampling utilities for BOLD timeseries.
 
-Provides two resampling steps:
+Provides two functions:
+
 - :func:`apply_motion_transforms`: applies per-volume mcflirt affines to
-  STC volumes to produce motion-corrected BOLD in native space (used as
-  an intermediate for masking and BBR coregistration).
+  STC volumes, producing desc-preproc_bold (MC + STC in native space).
+  This is an exported derivative only, not consumed by downstream steps.
 - :func:`resample_bold_to_template`: single-step resampling of STC BOLD
   to template space, applying motion + BBR + anat-to-template transforms
   in one interpolation pass per volume.
@@ -26,20 +27,24 @@ def apply_motion_transforms(
     motion_mat_dir: Path,
     bold_ref: Path,
 ) -> Path:
-    """Apply pre-STC motion correction transforms to STC volumes.
+    """Apply mcflirt motion affines to STC volumes (desc-preproc_bold).
 
-    Applies per-volume mcflirt .mat affines to the slice-timing corrected
-    BOLD timeseries to produce preprocessed (motion-corrected + STC) BOLD
-    in native space. The reference space is the BOLD reference volume.
+    Produces a motion-corrected + slice-timing corrected BOLD in native
+    space. Motion was estimated on pre-STC (despiked) data; here the
+    resulting per-volume .mat affines are applied to the STC timeseries.
+
+    The output is exported as desc-preproc_bold but is not consumed by
+    any downstream workflow step. Template-space output uses
+    :func:`resample_bold_to_template` instead (single interpolation pass).
 
     Args:
         stc_img: Slice-timing corrected 4D BOLD timeseries.
-        motion_mat_dir: Directory of MAT_* motion matrices from mcflirt.
+        motion_mat_dir: Directory of per-volume MAT_* matrices from mcflirt.
         bold_ref: BOLD reference volume (used as both source and reference
-            for ITK conversion).
+            for FSL-to-ITK matrix conversion).
 
     Returns:
-        Motion-corrected 4D BOLD in native space.
+        4D BOLD (MC + STC) in native space.
 
     Raises:
         FileNotFoundError: No motion .mat files are found in the specified directory.

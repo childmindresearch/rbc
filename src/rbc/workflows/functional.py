@@ -51,7 +51,8 @@ class FunctionalOutputs(NamedTuple):
         distortion_warp: ANTs/ITK-compatible distortion warp field, or
             *None* if no fieldmap data was provided.
         stc_bold: Slice-timing corrected BOLD.
-        preproc_bold: Motion-corrected & STC BOLD.
+        preproc_bold: Motion-corrected + STC BOLD in native space
+            (exported as desc-preproc_bold, not consumed downstream).
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
         rms_abs: Volume-to-reference absolute RMS displacement.
@@ -197,7 +198,7 @@ def single_session_preprocess(
 
     # 6. MC on despiked (pre-STC)
     # .par -> motion params for nuisance regression + QC
-    # .mat -> applied to STC image below
+    # .mat -> per-volume affines used in steps 8 and 11
     mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
