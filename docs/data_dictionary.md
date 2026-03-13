@@ -15,7 +15,7 @@ RBC output filenames follow the [BIDS derivatives](https://bids-specification.re
 | `run-` | Run index when a scan is repeated | `run-1` |
 | `space-` | Coordinate space the image is aligned to | `space-MNI152NLin6ASym` |
 | `atlas-` | Brain parcellation used | `atlas-schaefer200` |
-| `reg-` | Nuisance regression strategy applied | `reg-36-parameter` |
+| `reg-` | Nuisance regression strategy applied | `reg-36parameter` |
 | `from-` / `to-` | Source and target spaces of a transform | `from-T1w_to-template` |
 | `desc-` | Free-text description of the file content | `desc-brain` |
 
@@ -55,8 +55,8 @@ Produced by `rbc functional`. These are functional MRI (BOLD) processing results
 | `*_from-bold_to-T1w_mode-image_desc-linear_xfm.mat` | `xfm` | Affine transformation matrix aligning BOLD to the T1w anatomical image | ANTs boundary-based registration | 4x4 affine matrix |
 | `*_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz` | `bold` | BOLD timeseries resampled to MNI152NLin6ASym template space in a single interpolation step (before denoising) | ANTs resampling | 4D NIfTI |
 | `*_space-MNI152NLin6ASym_desc-bold_mask.nii.gz` | `mask` | Brain mask warped to template space at the BOLD resolution | ANTs resampling | 3D NIfTI, binary mask |
-| `*_space-MNI152NLin6ASym_reg-{regressor}_desc-preproc_bold.nii.gz` | `bold` | Denoised BOLD timeseries in template space after nuisance regression and bandpass filtering. `{regressor}` is `36-parameter` or `aCompCor` | Nuisance regression | 4D NIfTI |
-| `*_desc-{regressor}_regressors.1D` | `regressors` | Nuisance regressor matrix used for denoising. `{regressor}` is `36-parameter` or `aCompCor` | Computed from motion parameters and tissue masks | Text, multi-column 1D file |
+| `*_space-MNI152NLin6ASym_reg-{regressor}_desc-preproc_bold.nii.gz` | `bold` | Denoised BOLD timeseries in template space after nuisance regression and bandpass filtering. `{regressor}` is `36parameter` or `aCompCor` | Nuisance regression | 4D NIfTI |
+| `*_desc-{regressor}_regressors.1D` | `regressors` | Nuisance regressor matrix used for denoising. `{regressor}` is `36parameter` or `aCompCor` | Computed from motion parameters and tissue masks | Text, multi-column 1D file |
 
 ---
 

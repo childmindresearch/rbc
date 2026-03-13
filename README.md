@@ -66,13 +66,13 @@ derivatives/rbc/
       func/
         sub-01_ses-01_task-rest_desc-preproc_bold.nii.gz
         sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_desc-preproc_bold.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_desc-preproc_bold.nii.gz
         sub-01_ses-01_task-rest_desc-motionParams_motion.1D
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_desc-xcp_quality.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_alff.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36-parameter_reho.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36-parameter_desc-mean_timeseries.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36-parameter_desc-pearson_correlations.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_desc-xcp_quality.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_alff.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_reho.nii.gz
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36parameter_desc-mean_timeseries.tsv
+        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36parameter_desc-pearson_correlations.tsv
 ```
 
 </details>
