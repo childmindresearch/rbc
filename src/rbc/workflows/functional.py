@@ -122,14 +122,16 @@ def single_session_preprocess(
     2.  Truncate initial TRs.
     3.  Despike BOLD.
     4.  Extract motion reference from despiked BOLD.
-    5.  Susceptibility distortion correction (optional).
-    6.  Motion correction on despiked BOLD (pre-STC, for estimates + .mat).
+    5.  Susceptibility distortion correction (optional, requires fieldmaps).
+    6.  Motion correction on despiked BOLD (pre-STC, for .par estimates
+        and per-volume .mat affines).
     7.  Slice timing correction on despiked BOLD.
-    8.  Apply motion transforms to STC BOLD -> preproc_bold (for masking/BBR).
-    9.  BOLD brain masking.
-    10. BBR coregistration (BOLD -> T1w).
-    11. Single-step resampling: STC -> template (motion + BBR + anat2template
-        in one interpolation pass per volume).
+    8.  Apply motion .mat to STC volumes -> desc-preproc_bold (native-space
+        MC + STC output, exported but not consumed by later steps).
+    9.  BOLD brain masking (on motion reference volume).
+    10. BBR coregistration (skull-stripped BOLD ref -> T1w).
+    11. Single-step resampling: STC volumes -> template space (motion +
+        BBR + anat2template in one interpolation pass per volume).
     12. Warp tissue masks to template space.
     13. Nuisance regression in template space.
     14. Bandpass filter regressed BOLD.
@@ -206,7 +208,7 @@ def single_session_preprocess(
     )
 
     # 8. Apply pre-STC motion transforms to STC BOLD ->
-    # preprocessed BOLD in native space
+    # desc-preproc_bold (native-space MC + STC, exported only)
     preproc_bold = apply_motion_transforms(
         stc_img=st_corrected,
         motion_mat_dir=mc.mat_dir,
