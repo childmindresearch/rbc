@@ -10,7 +10,7 @@ from rbc.core.functional.regressors import (
     assemble_acompcor_regressors,
     check_regressor_rank,
     compute_acompcor,
-    compute_derivative,
+    compute_delayed,
     expand_motion_params,
     expand_regressor,
     extract_mean_signal,
@@ -20,39 +20,41 @@ T = 50  # timepoints
 
 
 # ===================================================================
-# compute_derivative
+# compute_delayed
 # ===================================================================
-class TestComputeDerivative:
-    """Tests for backward-difference derivative."""
+class TestComputeDelayed:
+    """Tests for lag-1 delayed signal."""
 
     def test_shape(self) -> None:
         """Output shape should match input."""
         signal = np.random.default_rng(0).standard_normal(T)
-        result = compute_derivative(signal)
+        result = compute_delayed(signal)
         assert result.shape == (T,)
 
     def test_first_element_zero(self) -> None:
         """First element should be zero."""
         signal = np.random.default_rng(1).standard_normal(T)
-        result = compute_derivative(signal)
+        result = compute_delayed(signal)
         assert result[0] == 0.0
 
     def test_known_values(self) -> None:
-        """Known input should produce known derivative."""
+        """Known input should produce lag-1 shifted copy."""
         signal = np.array([1.0, 3.0, 6.0, 10.0])
-        result = compute_derivative(signal)
-        np.testing.assert_array_equal(result, [0.0, 2.0, 3.0, 4.0])
+        result = compute_delayed(signal)
+        np.testing.assert_array_equal(result, [0.0, 1.0, 3.0, 6.0])
 
     def test_constant_signal(self) -> None:
-        """Constant signal should have zero derivative (except possibly first)."""
+        """Constant signal delayed should be constant (except first)."""
         signal = np.ones(T) * 5.0
-        result = compute_derivative(signal)
-        np.testing.assert_array_equal(result, np.zeros(T))
+        result = compute_delayed(signal)
+        expected = np.ones(T) * 5.0
+        expected[0] = 0.0
+        np.testing.assert_array_equal(result, expected)
 
     def test_rejects_non_1d(self) -> None:
         """Non-1D input should raise."""
         with pytest.raises(ValueError, match="1D"):
-            compute_derivative(np.zeros((5, 3)))
+            compute_delayed(np.zeros((5, 3)))
 
 
 # ===================================================================
@@ -68,15 +70,15 @@ class TestExpandRegressor:
         assert result.shape == (T, 4)
 
     def test_columns_are_correct(self) -> None:
-        """Columns should be [original, deriv, squared, deriv_squared]."""
+        """Columns should be [original, delayed, squared, delayed_squared]."""
         signal = np.array([1.0, 3.0, 6.0, 10.0])
         result = expand_regressor(signal)
-        deriv = compute_derivative(signal)
+        delayed = compute_delayed(signal)
 
         np.testing.assert_array_equal(result[:, 0], signal)
-        np.testing.assert_array_equal(result[:, 1], deriv)
+        np.testing.assert_array_equal(result[:, 1], delayed)
         np.testing.assert_array_equal(result[:, 2], signal**2)
-        np.testing.assert_array_equal(result[:, 3], deriv**2)
+        np.testing.assert_array_equal(result[:, 3], delayed**2)
 
     def test_dtype_float64(self) -> None:
         """Output dtype should be float64."""

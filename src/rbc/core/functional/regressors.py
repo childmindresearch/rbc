@@ -16,33 +16,37 @@ import numpy as np
 _logger = logging.getLogger(__name__)
 
 _MOTION_LABELS = ["roll", "pitch", "yaw", "dS", "dL", "dP"]
-_EXPAND_SUFFIXES = ["", "_deriv", "_sq", "_deriv_sq"]
+_EXPAND_SUFFIXES = ["", "_delayed", "_sq", "_delayed_sq"]
 
 
-def compute_derivative(signal: np.ndarray) -> np.ndarray:
-    """Compute backward-difference derivative of a 1-D signal.
+def compute_delayed(signal: np.ndarray) -> np.ndarray:
+    """Compute lag-1 (delayed) copy of a 1-D signal.
+
+    Matches C-PAC's ``include_delayed`` expansion: each timepoint
+    gets the previous timepoint's value, with the first set to zero.
 
     Args:
         signal: 1-D array of length T.
 
     Returns:
-        1-D array ``[0, signal[1]-signal[0], signal[2]-signal[1], ...]``.
+        1-D array ``[0, signal[0], signal[1], ..., signal[T-2]]``.
 
     Raises:
         ValueError: If *signal* is not 1-D.
     """
     if signal.ndim != 1:
         raise ValueError(f"Expected 1D signal, got {signal.ndim}D")
-    deriv = np.empty_like(signal, dtype=np.float64)
-    deriv[0] = 0.0
-    deriv[1:] = np.diff(signal)
-    return deriv
+    delayed = np.empty_like(signal, dtype=np.float64)
+    delayed[0] = 0.0
+    delayed[1:] = signal[:-1]
+    return delayed
 
 
 def expand_regressor(signal: np.ndarray) -> np.ndarray:
     """Expand a single regressor to 4 columns.
 
-    Returns ``[original, derivative, squared, derivative_squared]``.
+    Returns ``[original, delayed, squared, delayed_squared]``,
+    matching C-PAC's 36-parameter expansion.
 
     Args:
         signal: 1-D array of length T.
@@ -55,8 +59,8 @@ def expand_regressor(signal: np.ndarray) -> np.ndarray:
     """
     if signal.ndim != 1:
         raise ValueError(f"Expected 1D signal, got {signal.ndim}D")
-    deriv = compute_derivative(signal)
-    return np.column_stack([signal, deriv, signal**2, deriv**2]).astype(np.float64)
+    delayed = compute_delayed(signal)
+    return np.column_stack([signal, delayed, signal**2, delayed**2]).astype(np.float64)
 
 
 def expand_motion_params(params: np.ndarray) -> np.ndarray:
