@@ -41,6 +41,27 @@ C-PAC computes ALFF as the temporal standard deviation of a bandpass-filtered si
 
 ---
 
+## 4. Bandpass filtering uses wrong TR from resampled NIfTI header
+
+C-PAC's `frequency_filter` node calls `bandpass_voxels` (in `CPAC/nuisance/bandpass.py`) which reads the TR from the NIfTI header of the template-space residuals image. After ANTs resampling to template space, the pixdim[4] (TR) in the NIfTI header is set to 1.0 instead of the original repetition time (2.0 for ds000001).
+
+Verified from the working directory:
+```
+tests/data/cpac_outputs/ds000001/working/.../nuisance_regression_template_36-parameter_212/
+    .../frequency_filter/_inputs.pklz
+    -> realigned_file: .../residuals.nii.gz   (header has TR=1.0)
+    -> bandpass_freqs: [0.01, 0.1]
+    -> sample_period: (not connected, reads from nifti)
+```
+
+The `ideal_bandpass` function uses `sample_period` to compute FFT frequency bin indices. With TR=1.0 instead of 2.0, the effective passband is 0.005-0.05 Hz (half the intended 0.01-0.1 Hz range). This affects both the BOLD bandpass filtering and the regressor bandpass filtering.
+
+Confirmed by reproducing the filter: applying `ideal_bandpass` with TR=1.0 to C-PAC's raw regressors produces r=1.000 correlation with C-PAC's exported filtered regressors, while TR=2.0 (correct) produces r=0.758.
+
+This bug affects all outputs downstream of the frequency filter: cleaned BOLD, ReHo, timeseries extraction, and connectivity matrices. ALFF/fALFF are also affected since they are computed from the bandpassed BOLD.
+
+---
+
 ## Notes
 
 ### Two parallel motion correction paths
