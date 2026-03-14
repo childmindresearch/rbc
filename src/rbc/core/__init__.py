@@ -10,4 +10,18 @@ from __future__ import annotations
 
 CPAC_ANTS_SEED = 77742777
 
-__all__ = ["CPAC_ANTS_SEED"]
+__all__ = [
+    "CPAC_ANTS_SEED",
+    "anatomical",
+    "bids",
+    "bids2table",
+    "common",
+    "fileops",
+    "functional",
+    "longitudinal",
+    "metrics",
+    "nifti",
+    "niwrap",
+    "qc",
+    "resources",
+]

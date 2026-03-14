@@ -171,3 +171,5 @@ cython_debug/
 
 # Full-pipeline test artifacts
 tests/full_pipeline/.last_run.json
+tests/data/rbc_run/
+CLAUDE.md
