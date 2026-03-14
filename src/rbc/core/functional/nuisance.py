@@ -64,37 +64,67 @@ class NuisanceRegressionOutputs(NamedTuple):
     eroded_masks: ErodedMaskArrays
 
 
-def bandpass_filter(
-    bold: str | Path,
-    brain_mask_file: str | Path,
+def bandpass_regressor_file(
+    regressor_file: str | Path,
+    tr: float,
     f_low: float = 0.01,
     f_high: float = 0.1,
 ) -> Path:
-    """Apply bandpass filtering to a BOLD timeseries via AFNI 3dBandpass.
+    """Bandpass-filter a regressor .1D file (demean + ideal FFT filter).
 
-    Retains low-frequency fluctuations (default 0.01--0.1 Hz) while removing
-    physiological noise and scanner drift. This is split out from nuisance
-    regression so that ALFF/fALFF can be computed from the pre-bandpass
-    residuals (where fALFF is meaningful).
+    Matches C-PAC's ``ideal_bandpass`` implementation so that the exported
+    regressor file reflects what ``3dTproject -bandpass`` actually applies.
 
     Args:
-        bold: 4-D BOLD timeseries to filter.
-        brain_mask_file: 3-D brain mask.
+        regressor_file: AFNI-format ``.1D`` regressor file.
+        tr: Repetition time in seconds.
         f_low: Low frequency cutoff (Hz).
         f_high: High frequency cutoff (Hz).
 
     Returns:
-        Path to bandpass-filtered BOLD timeseries.
+        Path to the bandpass-filtered regressor file.
     """
-    result = afni.v_3d_bandpass(
-        in_file=bold,
-        mask=Path(brain_mask_file),
-        prefix="bandpassed_bold.nii.gz",
-        highpass=f_low,
-        lowpass=f_high,
-    )
-    assert result.out_file is not None  # noqa: S101
-    return result.out_file
+    from scipy.fft import fft, ifft
+
+    regressor_file = Path(regressor_file)
+    header_lines: list[str] = []
+    with regressor_file.open() as f:
+        for line in f:
+            if line.startswith("#"):
+                header_lines.append(line)
+            else:
+                break
+
+    data = np.loadtxt(regressor_file)
+    n_tp = data.shape[0]
+
+    # Demean each column
+    data -= data.mean(axis=0, keepdims=True)
+
+    # Ideal bandpass per column (zero-padded FFT, C-PAC style)
+    n_padded = int(2 ** np.ceil(np.log2(n_tp)))
+    low_i = int(np.ceil(f_low * n_padded * tr))
+    high_i = int(np.fix(f_high * n_padded * tr))
+
+    freq_mask = np.zeros(n_padded, dtype=bool)
+    freq_mask[low_i : high_i + 1] = True
+    freq_mask[n_padded - high_i : n_padded + 1 - low_i] = True
+
+    filtered = np.zeros_like(data)
+    for col in range(data.shape[1]):
+        padded = np.zeros(n_padded)
+        padded[:n_tp] = data[:, col]
+        f_data = fft(padded)
+        f_data[~freq_mask] = 0.0
+        filtered[:, col] = np.real(ifft(f_data))[:n_tp]
+
+    out_path = regressor_file.parent / "regressors_filtered.1D"
+    with out_path.open("w") as f:
+        for line in header_lines:
+            f.write(line)
+        np.savetxt(f, filtered, fmt="%.18f", delimiter="\t")
+
+    return out_path
 
 
 def compute_regressors(
@@ -196,11 +226,14 @@ def apply_regression(
     brain_mask_file: str | Path,
     regressor_file: str | Path,
 ) -> ApplyRegressionOutputs:
-    """Apply pre-computed nuisance regressors to a BOLD timeseries.
+    """Regress nuisance signals without bandpass filtering.
 
-    Runs AFNI ``3dTproject`` to project out the regressors. This is intended
-    to be called on template-space BOLD with regressors that were computed
-    from the native-space BOLD.
+    Runs AFNI ``3dTproject`` to project out the regressors, retaining all
+    frequencies. The output is suitable for ALFF/fALFF computation where
+    the full frequency range is needed.
+
+    This is intended to be called on template-space BOLD with regressors
+    that were computed from the native-space BOLD.
 
     Args:
         bold_file: 4-D BOLD timeseries to regress.
@@ -218,7 +251,41 @@ def apply_regression(
         mask=Path(brain_mask_file),
         norm=False,
     )
+    return ApplyRegressionOutputs(regressed_bold=Path(result.out_file))
 
+
+def apply_regression_bandpass(
+    bold_file: str | Path,
+    brain_mask_file: str | Path,
+    regressor_file: str | Path,
+    f_low: float = 0.01,
+    f_high: float = 0.1,
+) -> ApplyRegressionOutputs:
+    """Regress nuisance signals with simultaneous bandpass filtering.
+
+    Runs AFNI ``3dTproject`` with ``-bandpass`` so that regressors are
+    filtered to the same passband before projection, preventing
+    re-introduction of removed frequencies (Hallquist et al. 2013).
+
+    Args:
+        bold_file: 4-D BOLD timeseries to regress.
+        brain_mask_file: 3-D brain mask for the regression.
+        regressor_file: ``.1D`` regressor file from :func:`compute_regressors`.
+        f_low: Low frequency cutoff (Hz).
+        f_high: High frequency cutoff (Hz).
+
+    Returns:
+        :class:`ApplyRegressionOutputs` with the cleaned BOLD path.
+    """
+    result = afni.v_3d_tproject(
+        in_file=Path(bold_file),
+        prefix="cleaned_bold.nii.gz",
+        polort=0,
+        ort=Path(regressor_file),
+        mask=Path(brain_mask_file),
+        norm=False,
+        bandpass=[f_low, f_high],
+    )
     return ApplyRegressionOutputs(regressed_bold=Path(result.out_file))
 
 

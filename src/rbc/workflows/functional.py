@@ -19,7 +19,8 @@ from rbc.core.functional import (
     PhaseDiffFieldmap,
     apply_motion_transforms,
     apply_regression,
-    bandpass_filter,
+    apply_regression_bandpass,
+    bandpass_regressor_file,
     bold_masking,
     compute_regressors,
     coregister_bold_to_t1w,
@@ -151,8 +152,8 @@ def single_session_preprocess(
     13. Single-step resampling: STC volumes -> template space (motion +
         BBR + anat2template in one interpolation pass per volume).
     14. Warp brain mask to template space.
-    15. Apply nuisance regression to template-space BOLD.
-    16. Bandpass filter regressed BOLD.
+    15. Nuisance regression without bandpass (for ALFF/fALFF).
+    16. Simultaneous regression + bandpass (Hallquist 2013).
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -284,16 +285,28 @@ def single_session_preprocess(
         brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
 
-    # 15. Apply pre-computed regressors to template-space BOLD
+    # 15. Nuisance regression without bandpass (pre-bandpass residuals
+    #     for ALFF/fALFF computation, where full frequency range matters)
     regression = apply_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
         regressor_file=regressors.regressor_file,
     )
 
-    # 16. Bandpass filter regressed BOLD (used in ReHo, timeseries)
-    cleaned_bold = bandpass_filter(
-        regression.regressed_bold, brain_mask_file=tmpl_brain, f_low=0.01, f_high=0.1
+    # 16. Simultaneous regression + bandpass filtering (Hallquist 2013).
+    #     Regressors are filtered to the same passband before projection,
+    #     preventing re-introduction of removed frequencies.
+    cleaned = apply_regression_bandpass(
+        bold_file=template_bold,
+        brain_mask_file=tmpl_brain,
+        regressor_file=regressors.regressor_file,
+    )
+
+    # 17. Export bandpass-filtered regressors (matches what 3dTproject
+    #     actually applied; raw regressors still in compute_regressors output)
+    tr = metadata.get("RepetitionTime")
+    filtered_regressors = bandpass_regressor_file(
+        regressors.regressor_file, tr=tr, f_low=0.01, f_high=0.1
     )
 
     return FunctionalOutputs(
@@ -314,7 +327,7 @@ def single_session_preprocess(
         bold_to_anat_matrix=bbr.out_matrix_file,
         template_bold=template_bold,
         regressed_bold=regression.regressed_bold,
-        cleaned_bold=cleaned_bold,
-        regressor_file=regressors.regressor_file,
+        cleaned_bold=cleaned.regressed_bold,
+        regressor_file=filtered_regressors,
         template_brain_mask=tmpl_brain,
     )

@@ -31,7 +31,8 @@ from .masking import bold_masking
 from .motion import extract_motion_reference, fsl_motion_correction
 from .nuisance import (
     apply_regression,
-    bandpass_filter,
+    apply_regression_bandpass,
+    bandpass_regressor_file,
     compute_regressors,
     nuisance_regression,
 )
@@ -53,9 +54,10 @@ __all__ = [
     "PhaseDiffFieldmap",
     "apply_motion_transforms",
     "apply_regression",
+    "apply_regression_bandpass",
     "assemble_36param_regressors",
     "assemble_acompcor_regressors",
-    "bandpass_filter",
+    "bandpass_regressor_file",
     "bold_masking",
     "check_regressor_rank",
     "compute_acompcor",
