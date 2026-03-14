@@ -19,6 +19,7 @@ from rbc.core.functional import (
     PhaseDiffFieldmap,
     apply_motion_transforms,
     apply_regression,
+    apply_regression_bandpass,
     bandpass_regressor_file,
     bold_masking,
     compute_regressors,
@@ -295,11 +296,10 @@ def single_session_preprocess(
     # 16. Simultaneous regression + bandpass filtering (Hallquist 2013).
     #     Regressors are filtered to the same passband before projection,
     #     preventing re-introduction of removed frequencies.
-    cleaned = apply_regression(
+    cleaned = apply_regression_bandpass(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
         regressor_file=regressors.regressor_file,
-        bandpass=(0.01, 0.1),
     )
 
     # 17. Export bandpass-filtered regressors (matches what 3dTproject
