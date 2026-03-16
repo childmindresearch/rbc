@@ -17,6 +17,7 @@ __all__ = [
     "bids2table",
     "common",
     "fileops",
+    "fsl2itk",
     "functional",
     "longitudinal",
     "metrics",

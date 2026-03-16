@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 
 from niwrap import ants
 
-from rbc.core.common import mat_to_itk, merge_3d_to_4d, split_4d
+from rbc.core.common import merge_3d_to_4d, split_4d
+from rbc.core.fsl2itk import mat_to_itk
 
 
 def apply_motion_transforms(

@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING, NamedTuple
 from bids2table import load_bids_metadata
 from niwrap import ants
 
-from rbc.core.common import deoblique_and_reorient, mat_to_itk
+from rbc.core.common import deoblique_and_reorient
+from rbc.core.fsl2itk import mat_to_itk
 from rbc.core.functional import (
     PEPolarFieldmap,
     PhaseDiffFieldmap,
