@@ -176,6 +176,7 @@ def _process_func(
     get_tpl_file = partial(
         get_file_path, df=tpl_df, ses="longitudinal", sub=pipe_ctx.sub, datatype="anat"
     )
+    # Use native space data
     outputs = functional_longitudinal(
         template=get_tpl_file(suffix="T1w"),
         anat_to_template_xfm=get_tpl_file(
@@ -192,11 +193,13 @@ def _process_func(
             ),
             "bold_to_anat_xfm",
         ),
-        sbref=_require_file(_get_func_file(suffix=Suffix.SBREF), Suffix.SBREF),
-        bold=_require_file(
-            _get_func_file(desc="preproc", suffix=Suffix.BOLD), Suffix.BOLD
+        sbref=_require_file(
+            _get_func_file(space=False, suffix=Suffix.SBREF), Suffix.SBREF
         ),
-        bold_mask=_get_func_file(desc="brain", suffix=Suffix.MASK),
+        bold=_require_file(
+            _get_func_file(space=False, desc="preproc", suffix=Suffix.BOLD), Suffix.BOLD
+        ),
+        bold_mask=_get_func_file(space=False, desc="brain", suffix=Suffix.MASK),
     )
     # Save longitudinal outputs
     pipe_ctx.export(
