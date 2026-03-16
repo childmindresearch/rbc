@@ -88,14 +88,14 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
     df: pl.DataFrame,
     *,
     sub: str,
-    ses: str | None,
+    ses: str | bool | None,
     datatype: str | None = None,
-    suffix: str | None = None,
+    suffix: str | bool | None = None,
     desc: str | None = None,
     extension: str = "",
-    task: str | None = None,
-    run: int | None = None,
-    space: str | None = None,
+    task: str | bool | None = None,
+    run: int | bool | None = None,
+    space: str | bool | None = None,
     extra: dict[str, str | int] | None = None,
 ) -> Path:
     """Return existing BIDS-named path matching provided entities.
@@ -122,26 +122,36 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         FileNotFoundError: If no matching rows with provided BIDS entities
         ValueError: If multiple matches found with provided BIDS entities
     """
+
+    def _filter(
+        expr: pl.Expr,
+        col: str,
+        val: str | int | bool | None,  # noqa: FBT001 - bool indicator for b2t entity
+    ) -> pl.Expr:
+        """Helper to filter BIDS entities based on value provided."""
+        if val is None or val is True:
+            return expr
+        if val is False:
+            return expr & pl.col(col).is_null()
+        return expr & (pl.col(col) == val)
+
     expr = pl.col("sub") == sub
-    if ses is not None:
-        expr &= pl.col("ses") == ses
+    expr = _filter(expr, "ses", ses)
     if datatype is not None:
         expr &= pl.col("datatype") == datatype
-    if suffix is not None:
-        expr &= pl.col("suffix") == suffix
-    if desc is not None:
-        expr &= pl.col("desc") == desc
+    expr = _filter(expr, "suffix", suffix)
+    expr = _filter(expr, "desc", desc)
+    expr = _filter(expr, "task", task)
+    expr = _filter(expr, "run", run)
+    expr = _filter(expr, "space", space)
     if extension:
         expr &= pl.col("ext").str.contains(extension)
-    if task is not None:
-        expr &= pl.col("task") == task
-    if run is not None:
-        expr &= pl.col("run") == run
-    if space is not None:
-        expr &= pl.col("space") == space
     if extra:
         for key, val in extra.items():
-            expr &= get_extra_entity(key) == val
+            if val is False:
+                expr &= get_extra_entity(key).is_null()
+            else:
+                expr &= get_extra_entity(key) == val
 
     result = df.filter(expr)
 
@@ -149,7 +159,9 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         case 0:
             raise FileNotFoundError(
                 f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
-                f"datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}"
+                f"datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}, "
+                f"task={task!r}, run={run!r}, space={space!r}, "
+                f"extension={extension!r}, extra={extra!r}"
             )
         case 1:
             row = result.row(0, named=True)
@@ -157,5 +169,7 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         case _:
             raise ValueError(
                 f"Expected 1 match but found {len(result)} for sub={sub!r}, "
-                f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}"
+                f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, "
+                f"desc={desc!r}, task={task!r}, run={run!r}, space={space!r}, "
+                f"extension={extension!r}, extra={extra!r}"
             )
