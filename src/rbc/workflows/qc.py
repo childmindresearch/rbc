@@ -8,6 +8,7 @@ responsibility belongs to the CLI layer.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 import nibabel as nib
@@ -23,6 +24,8 @@ from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+_logger = logging.getLogger("rbc")
 
 
 class QCOutputs(NamedTuple):
@@ -76,6 +79,7 @@ def single_session_qc(
     Returns:
         All QC outputs bundled in a :class:`QCOutputs` tuple.
     """
+    _logger.info("Computing QC metrics")
     # 1. Load motion data
     rms_values = np.loadtxt(rms_rel)
     motion_data = np.loadtxt(motion_params)
