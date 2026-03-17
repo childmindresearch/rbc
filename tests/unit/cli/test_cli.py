@@ -169,6 +169,7 @@ class TestValidation:
             output_dir=output_dir,
             participant_label=[],
             session_label=[],
+            tmp_dir=None,
         )
 
     def test_valid(self, base_args: argparse.Namespace) -> None:
