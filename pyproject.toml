@@ -14,7 +14,7 @@ dependencies = [
   "polars>=1.38.1",
   "scipy>=1.17.0",
   "styxpodman",
-  "tqdm>=4.67.3"
+  "tqdm>=4.67.3",
 ]
 
 [project.scripts]

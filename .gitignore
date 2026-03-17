@@ -173,3 +173,4 @@ cython_debug/
 tests/full_pipeline/.last_run.json
 tests/data/rbc_run/
 CLAUDE.md
+reports
