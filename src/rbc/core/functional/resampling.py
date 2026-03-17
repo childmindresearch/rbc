@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import nibabel as nib
+import numpy as np
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -32,10 +33,11 @@ def _restore_tr(resampled: Path, source: Path) -> None:
     restores the original temporal zoom from the source BOLD.
     """
     src_img = nib.nifti1.load(source)
-    res_img = nib.nifti1.load(resampled, mmap=False)
+    res_img = nib.nifti1.load(resampled)
+    data = np.asarray(res_img.dataobj)
     zooms = res_img.header.get_zooms()[:3] + src_img.header.get_zooms()[3:]
     res_img.header.set_zooms(zooms)
-    nib.save(res_img, resampled)
+    nib.save(nib.Nifti1Image(data, res_img.affine, res_img.header), resampled)
 
 
 def apply_motion_transforms(
