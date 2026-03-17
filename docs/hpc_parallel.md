@@ -114,8 +114,9 @@ Scratch is cleaned up when the job ends, so only final outputs (written to
 
 - **One subject per job** is the recommended granularity. RBC's internal
   processing is sequential per subject, so splitting finer than that won't help.
-- **Memory:** 16 GB per subject is a safe starting point. Increase to 32 GB for
-  data with high spatial resolution or long functional runs.
+- **Memory:** 16 GB per subject is a rough starting point. Increase to 32 GB for
+  data with high spatial resolution or long functional runs. These numbers may
+  be revised after memory profiling (#93).
 - **Walltime:** Expect 1-3 hours per subject depending on the number of
   functional runs and hardware.
 - **Singularity on HPC:** Most clusters don't allow Docker. Use
