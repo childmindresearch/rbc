@@ -8,6 +8,7 @@ paths as an :class:`AnatomicalOutputs` named tuple.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from rbc.core.anatomical import (
@@ -22,6 +23,8 @@ from rbc.core.longitudinal.transform import anat_transform
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+_logger = logging.getLogger("rbc")
 
 
 class AnatomicalOutputs(NamedTuple):
@@ -65,11 +68,15 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     Returns:
         All output paths bundled in an :class:`AnatomicalOutputs` tuple.
     """
+    _logger.info("Deoblique and reorient T1w")
     reoriented_t1w = deoblique_and_reorient(in_file=in_t1w)
+    _logger.info("Brain extraction (ANTs)")
     extracted_t1w = ants_brain_extraction(in_file=reoriented_t1w.out_file)
+    _logger.info("Tissue segmentation (FSL FAST)")
     segmentation = fsl_segmentation(in_file=extracted_t1w.brain)
     tissue_masks = fsl_tissue_masks(fast_result=segmentation)
     wm_bbr = fsl_wm_bbr_mask(fast_result=segmentation)
+    _logger.info("Registration to MNI152 template (ANTs)")
     transforms = ants_registration(in_file=extracted_t1w.brain)
 
     return AnatomicalOutputs(
@@ -137,6 +144,8 @@ def longitudinal_process(
             return None
         return anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
 
+    _logger.info("Transforming anatomical outputs to longitudinal template space")
+    _logger.info("Registration to MNI152 template (ANTs)")
     transforms = ants_registration(in_file=template)
     return AnatomicalLongOutputs(
         brain=anat_transform(

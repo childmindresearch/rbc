@@ -9,6 +9,7 @@ belongs to the CLI layer.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from rbc.core.metrics.alff import compute_alff
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from rbc_resources import AtlasName
+
+_logger = logging.getLogger("rbc")
 
 
 class MetricsOutputs(NamedTuple):
@@ -76,25 +79,30 @@ def single_session_metrics(
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
     """
     # 1. ALFF / fALFF on regressed BOLD (non-bandpassed)
+    _logger.info("Computing ALFF/fALFF")
     alff_path, falff_path = compute_alff(
         regressed_bold, template_brain_mask, tr=tr, method="qm"
     )
 
     # 2. ReHo on bandpass-filtered cleaned BOLD
+    _logger.info("Computing ReHo")
     reho_path = compute_reho(cleaned_bold, template_brain_mask)
 
     # 3. Smooth raw maps
+    _logger.info("Smoothing maps (FWHM=%.1f mm)", fwhm)
     alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm)
     falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm)
     reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm)
 
     # 4. Z-score smoothed maps
+    _logger.info("Z-scoring smoothed maps")
     alff_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)
     falff_zscored_path = compute_zscore(falff_smooth_path, template_brain_mask)
     reho_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
     # bandpass-filtered BOLD
+    _logger.info("Extracting atlas timeseries (%s)", atlas)
     ts_outputs = compute_timeseries(cleaned_bold, get_atlas(atlas))
 
     return MetricsOutputs(

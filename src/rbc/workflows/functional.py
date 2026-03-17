@@ -8,6 +8,7 @@ is performed here -- that responsibility belongs to the CLI layer via
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from bids2table import load_bids_metadata
@@ -38,6 +39,8 @@ from rbc_resources import MNI_TEMPLATES
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Literal
+
+_logger = logging.getLogger("rbc")
 
 
 class FunctionalOutputs(NamedTuple):
@@ -176,12 +179,15 @@ def single_session_preprocess(
     metadata = load_bids_metadata(in_bold)
 
     # 1. Deoblique & reorient
+    _logger.info("Deoblique and reorient BOLD")
     reoriented = deoblique_and_reorient(in_file=in_bold)
 
     # 2. Truncate TRs
+    _logger.info("Truncating first %d TRs", start_tr)
     truncated = truncate_trs(in_file=reoriented.out_file, start_tr=start_tr)
 
     # 3. Despike truncated BOLD
+    _logger.info("Despiking BOLD")
     despiked = despike_bold(in_file=truncated)
 
     # 4. Extract motion reference from despiked BOLD
@@ -190,6 +196,7 @@ def single_session_preprocess(
     # 5. Distortion correction (optional)
     distortion = None
     if isinstance(fieldmap, PhaseDiffFieldmap):
+        _logger.info("Susceptibility distortion correction (phase-diff)")
         distortion = correct_distortion_phasediff(
             bold_ref=motion_ref,
             magnitude=fieldmap.magnitude,
@@ -201,6 +208,7 @@ def single_session_preprocess(
             phase2=fieldmap.phase2,
         )
     elif isinstance(fieldmap, PEPolarFieldmap):
+        _logger.info("Susceptibility distortion correction (PE-polar)")
         distortion = correct_distortion_pepolar(
             bold_ref=motion_ref,
             epi_forward=fieldmap.epi_forward,
@@ -215,11 +223,13 @@ def single_session_preprocess(
     distortion_warp = distortion.warp_field if distortion else None
 
     # 6. MC on despiked (pre-STC)
+    _logger.info("Motion correction (MCFLIRT)")
     # .par -> motion params for nuisance regression + QC
     # .mat -> per-volume affines used in steps 8 and 13
     mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
+    _logger.info("Slice timing correction")
     st_corrected = slice_timing_correction(
         in_file=despiked,
         tr=metadata.get("RepetitionTime"),
@@ -228,6 +238,7 @@ def single_session_preprocess(
 
     # 8. Apply pre-STC motion transforms to STC BOLD ->
     # desc-preproc_bold (native-space MC + STC, exported only)
+    _logger.info("Applying motion transforms to STC BOLD")
     preproc_bold = apply_motion_transforms(
         stc_img=st_corrected,
         motion_mat_dir=mc.mat_dir,
@@ -235,6 +246,7 @@ def single_session_preprocess(
     )
 
     # 9. BOLD brain masking
+    _logger.info("BOLD brain masking")
     masking = bold_masking(
         bold_ref=effective_ref,
         template_mask=MNI_TEMPLATES.brain_mask_2mm,
@@ -242,6 +254,7 @@ def single_session_preprocess(
     )
 
     # 10. BBR coregistration
+    _logger.info("BBR coregistration (BOLD to T1w)")
     bbr = coregister_bold_to_t1w(
         in_file=masking.skull_stripped_bold,
         reference=t1w_brain,
@@ -257,6 +270,7 @@ def single_session_preprocess(
     native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bold_to_anat_itk)
 
     # 12. Compute regressors from motion-corrected BOLD in native space
+    _logger.info("Computing nuisance regressors (%s)", regressor_set)
     regressors = compute_regressors(
         bold_file=preproc_bold,
         brain_mask_file=native_brain,
@@ -269,6 +283,7 @@ def single_session_preprocess(
     # 13. Single-step resampling (STC -> template)
     # All spatial transforms (motion + BBR + anat2template) applied in one
     # interpolation pass per volume to minimize resampling artifacts.
+    _logger.info("Resampling BOLD to template space (single-step)")
     template_bold = resample_bold_to_template(
         stc_bold=st_corrected,
         motion_mat_dir=mc.mat_dir,
@@ -287,6 +302,7 @@ def single_session_preprocess(
 
     # 15. Nuisance regression without bandpass (pre-bandpass residuals
     #     for ALFF/fALFF computation, where full frequency range matters)
+    _logger.info("Nuisance regression (no bandpass)")
     regression = apply_regression(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
@@ -296,6 +312,7 @@ def single_session_preprocess(
     # 16. Simultaneous regression + bandpass filtering (Hallquist 2013).
     #     Regressors are filtered to the same passband before projection,
     #     preventing re-introduction of removed frequencies.
+    _logger.info("Nuisance regression + bandpass filtering")
     cleaned = apply_regression_bandpass(
         bold_file=template_bold,
         brain_mask_file=tmpl_brain,
