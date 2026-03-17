@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rbc.context import PipelineContext
 from rbc.core.bids import bids_safe_label
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestBidsSafeLabel:
@@ -32,12 +35,12 @@ class TestBidsSafeLabel:
 class TestExportBidsEntities:
     """Tests for PipelineContext.export() with acq/dir/rec/echo entities."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def pipe_ctx(self, tmp_path: Path) -> PipelineContext:
         """Create a PipelineContext for testing."""
         return PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
 
-    @pytest.fixture()
+    @pytest.fixture
     def src_file(self, tmp_path: Path) -> Path:
         """Create a dummy source file."""
         src = tmp_path / "input.nii.gz"
