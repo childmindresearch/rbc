@@ -25,6 +25,7 @@ class BaseArgs:
     participant_label: list[str]
     session_label: list[str]
     verbose: int
+    tmp_dir: Path | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> BaseArgs:
@@ -45,6 +46,10 @@ class BaseArgs:
             ):
                 raise ValueError(f"Label must not start with {prefix!r}: {bad!r}")
 
+        tmp_dir: Path | None = getattr(ns, "tmp_dir", None)
+        if tmp_dir is not None and not tmp_dir.is_dir():
+            raise ValueError(f"Temporary directory does not exist: {tmp_dir}")
+
         return cls(
             input_dir=ns.input_dir,
             output_dir=ns.output_dir,
@@ -52,6 +57,7 @@ class BaseArgs:
             participant_label=ns.participant_label,
             session_label=ns.session_label,
             verbose=ns.verbose,
+            tmp_dir=tmp_dir,
         )
 
 

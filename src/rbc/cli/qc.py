@@ -50,7 +50,7 @@ class QCArgs(BaseArgs):
 
 def main(args: QCArgs) -> int:
     """Main entrypoint of QC workflow."""
-    ctx = setup_runner(runner=args.runner, verbose=args.verbose)
+    ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
 
     ctx.logger.info("Preparing to run RBC QC workflow")

@@ -58,6 +58,12 @@ def _global_opts() -> argparse.ArgumentParser:
         type=lambda x: x.lower(),
         help="NiWrap runner to use for executing workflow",
     )
+    global_opts.add_argument(
+        "--tmp-dir",
+        type=Path,
+        default=None,
+        help="Directory for intermediate files (default: system temp)",
+    )
     return global_opts
 
 
