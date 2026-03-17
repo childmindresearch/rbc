@@ -76,7 +76,7 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     segmentation = fsl_segmentation(in_file=extracted_t1w.brain)
     tissue_masks = fsl_tissue_masks(fast_result=segmentation)
     wm_bbr = fsl_wm_bbr_mask(fast_result=segmentation)
-    _logger.info("Registration to MNI152 template (ANTs)")
+    _logger.info("Registration of T1w to MNI152NLin6Asym template (ANTs)")
     transforms = ants_registration(in_file=extracted_t1w.brain)
 
     return AnatomicalOutputs(
@@ -145,7 +145,7 @@ def longitudinal_process(
         return anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
 
     _logger.info("Transforming anatomical outputs to longitudinal template space")
-    _logger.info("Registration to MNI152 template (ANTs)")
+    _logger.info("Registration of longitudinal template to MNI152NLin6Asym (ANTs)")
     transforms = ants_registration(in_file=template)
     return AnatomicalLongOutputs(
         brain=anat_transform(
