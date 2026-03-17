@@ -14,6 +14,9 @@ listing participant labels, then index into it with `$SLURM_ARRAY_TASK_ID`.
 ```bash
 # List all participant labels (without the sub- prefix)
 ls -d /data/bids/sub-* | xargs -n1 basename | sed 's/sub-//' > participants.txt
+
+# Alternative: read from participants.tsv if available
+# tail -n +2 /data/bids/participants.tsv | cut -f1 | sed 's/sub-//' > participants.txt
 ```
 
 ### 2. Write a Slurm batch script
@@ -21,7 +24,7 @@ ls -d /data/bids/sub-* | xargs -n1 basename | sed 's/sub-//' > participants.txt
 ```bash
 #!/bin/bash
 #SBATCH --job-name=rbc
-#SBATCH --array=1-$(wc -l < participants.txt)
+#SBATCH --array=1-$(wc -l < participants.txt)  # 1-based to match sed line numbers
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
@@ -30,7 +33,7 @@ ls -d /data/bids/sub-* | xargs -n1 basename | sed 's/sub-//' > participants.txt
 PARTICIPANT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" participants.txt)
 
 rbc /data/bids /data/output all \
-    --runner docker \
+    --runner singularity \
     --participant-label "$PARTICIPANT"
 ```
 
@@ -58,7 +61,7 @@ If you have a multi-core machine without a scheduler:
 ```bash
 cat participants.txt | parallel -j 4 \
     rbc /data/bids /data/output all \
-        --runner docker \
+        --runner singularity \
         --participant-label {}
 ```
 
@@ -77,7 +80,7 @@ roughly 8-16 GB per subject).
 PARTICIPANT=$(sed -n "${PBS_ARRAY_INDEX}p" participants.txt)
 
 rbc /data/bids /data/output all \
-    --runner docker \
+    --runner singularity \
     --participant-label "$PARTICIPANT"
 ```
 
@@ -119,12 +122,17 @@ Scratch is cleaned up when the job ends, so only final outputs (written to
   be revised after memory profiling (#93).
 - **Walltime:** Expect 1-3 hours per subject depending on the number of
   functional runs and hardware.
-- **Singularity on HPC:** Most clusters don't allow Docker. Use
-  `--runner singularity` instead.
+- **Singularity on HPC:** Most clusters don't allow Docker. The examples above
+  use `--runner singularity` for this reason. Use `--runner docker` if your
+  cluster supports it.
 - **Shared filesystem:** Make sure `input_dir` and `output_dir` are on a
   filesystem accessible to all compute nodes (e.g., Lustre, GPFS, NFS).
 - **Local scratch:** Use `--tmp-dir` to place intermediate files on fast
   node-local storage. This can significantly reduce I/O wait times.
+- **Sessions:** RBC processes all sessions for a subject sequentially within a
+  single job. If you need to parallelize across sessions as well, you can create
+  a list of subject-session pairs and pass both `--participant-label` and
+  `--session-label` per job.
 - **Failed jobs:** Re-run only failed subjects by filtering the participant list:
   ```bash
   # Find subjects without output and re-run
