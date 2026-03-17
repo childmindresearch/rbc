@@ -46,7 +46,7 @@ class BaseArgs:
             ):
                 raise ValueError(f"Label must not start with {prefix!r}: {bad!r}")
 
-        tmp_dir: Path | None = getattr(ns, "tmp_dir", None)
+        tmp_dir: Path | None = ns.tmp_dir
         if tmp_dir is not None and not tmp_dir.is_dir():
             raise ValueError(f"Temporary directory does not exist: {tmp_dir}")
 
