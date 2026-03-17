@@ -125,6 +125,11 @@ def sample_dataframe() -> pl.DataFrame:
             "ses": ["baseline", "baseline", "baseline", "vis2", "baseline"],
             "task": ["rest", "nback", "rest", "rest", "rest"],
             "run": [None, None, None, None, None],
+            "acq": [None, None, None, None, None],
+            "dir": [None, None, None, None, None],
+            "echo": [None, None, None, None, None],
+            "part": [None, None, None, None, None],
+            "rec": [None, None, None, None, None],
             "ext": [".nii.gz"] * 5,
             "root": ["/data"] * 5,
             "path": [

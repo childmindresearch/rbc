@@ -94,7 +94,11 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
     desc: str | None = None,
     extension: str = "",
     task: str | bool | None = None,
+    acq: str | bool | None = None,
+    rec: str | bool | None = None,
+    dir: str | bool | None = None,
     run: int | bool | None = None,
+    echo: int | bool | None = None,
     space: str | bool | None = None,
     extra: dict[str, str | int] | None = None,
 ) -> Path:
@@ -111,7 +115,11 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         desc: Optional ``desc-`` entity.
         extension: File extension (usually empty for directories).
         task: Optional ``task-`` entity.
+        acq: Optional ``acq-`` entity.
+        rec: Optional ``rec-`` entity.
+        dir: Optional ``dir-`` entity.
         run: Optional ``run-`` index.
+        echo: Optional ``echo-`` index.
         space: Optional ``space-`` entity.
         extra: Optional non-standard entities (e.g. ``{"from": "T1w"}``).
 
@@ -142,7 +150,11 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
     expr = _filter(expr, "suffix", suffix)
     expr = _filter(expr, "desc", desc)
     expr = _filter(expr, "task", task)
+    expr = _filter(expr, "acq", acq)
+    expr = _filter(expr, "rec", rec)
+    expr = _filter(expr, "dir", dir)
     expr = _filter(expr, "run", run)
+    expr = _filter(expr, "echo", echo)
     expr = _filter(expr, "space", space)
     if extension:
         expr &= pl.col("ext").str.contains(extension)
@@ -160,7 +172,8 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
             raise FileNotFoundError(
                 f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
                 f"datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}, "
-                f"task={task!r}, run={run!r}, space={space!r}, "
+                f"task={task!r}, acq={acq!r}, rec={rec!r}, dir={dir!r}, "
+                f"run={run!r}, echo={echo!r}, space={space!r}, "
                 f"extension={extension!r}, extra={extra!r}"
             )
         case 1:
@@ -170,6 +183,7 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
             raise ValueError(
                 f"Expected 1 match but found {len(result)} for sub={sub!r}, "
                 f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, "
-                f"desc={desc!r}, task={task!r}, run={run!r}, space={space!r}, "
+                f"desc={desc!r}, task={task!r}, acq={acq!r}, rec={rec!r}, "
+                f"dir={dir!r}, run={run!r}, echo={echo!r}, space={space!r}, "
                 f"extension={extension!r}, extra={extra!r}"
             )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import TYPE_CHECKING
 
 from rbc.cli.query import iter_session_files, load_session
@@ -66,6 +67,9 @@ def main(args: AnatomicalArgs) -> int:
             row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
             t1w_run: int | None = row.get("run")
+            t1w_acq: str | None = row.get("acq")
+            t1w_rec: str | None = row.get("rec")
+            t1w_echo: int | None = row.get("echo")
             ctx.logger.info(f"Processing {t1w_fpath}")
 
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
@@ -73,69 +77,37 @@ def main(args: AnatomicalArgs) -> int:
             pipe_ctx = PipelineContext(
                 sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
             )
-            pipe_ctx.export(
-                outputs.brain,
+            _aex = partial(
+                pipe_ctx.export,
                 datatype=Datatype.ANAT,
-                suffix=Suffix.T1W,
-                desc="brain",
                 run=t1w_run,
+                acq=t1w_acq,
+                rec=t1w_rec,
+                echo=t1w_echo,
             )
-            pipe_ctx.export(
-                outputs.brain_mask,
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="T1w",
-                run=t1w_run,
-            )
-            pipe_ctx.export(
-                outputs.csf_mask,
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="csf",
-                run=t1w_run,
-            )
-            pipe_ctx.export(
-                outputs.gm_mask,
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="gm",
-                run=t1w_run,
-            )
-            pipe_ctx.export(
-                outputs.wm_mask,
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="wm",
-                run=t1w_run,
-            )
-            pipe_ctx.export(
-                outputs.wm_bbr_mask,
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="wmBBR",
-                run=t1w_run,
-            )
-            pipe_ctx.export(
+            _aex(outputs.brain, suffix=Suffix.T1W, desc="brain")
+            _aex(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
+            _aex(outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
+            _aex(outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
+            _aex(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
+            _aex(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
+            _aex(
                 outputs.forward_xfm,
-                datatype=Datatype.ANAT,
                 suffix="xfm",
                 extra={
                     "from": "T1w",
                     "to": TemplateSpace.MNI152NLIN6ASYM,
                     "mode": "image",
                 },
-                run=t1w_run,
             )
-            pipe_ctx.export(
+            _aex(
                 outputs.inverse_xfm,
-                datatype=Datatype.ANAT,
                 suffix="xfm",
                 extra={
                     "from": TemplateSpace.MNI152NLIN6ASYM,
                     "to": "T1w",
                     "mode": "image",
                 },
-                run=t1w_run,
             )
         pipe_ctx.ensure_dataset_description()
 

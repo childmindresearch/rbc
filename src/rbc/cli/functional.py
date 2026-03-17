@@ -85,6 +85,10 @@ def main(args: FunctionalArgs) -> int:
             bold_fpath = Path(row["root"]) / row["path"]
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
+            bold_acq: str | None = row.get("acq")
+            bold_rec: str | None = row.get("rec")
+            bold_dir: str | None = row.get("dir")
+            bold_echo: int | None = row.get("echo")
             ctx.logger.info(f"Processing {bold_fpath}")
 
             get_anat_file = partial(
@@ -112,102 +116,72 @@ def main(args: FunctionalArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            pipe_ctx.export(
-                outputs.sbref,
+            _fex = partial(
+                pipe_ctx.export,
                 datatype=Datatype.FUNC,
-                suffix=Suffix.SBREF,
                 task=bold_task,
                 run=bold_run,
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
-            pipe_ctx.export(
+            _fex(outputs.sbref, suffix=Suffix.SBREF)
+            _fex(
                 outputs.preproc_bold,
-                datatype=Datatype.FUNC,
                 desc="preproc",
                 suffix=Suffix.BOLD,
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.motion_params,
-                datatype=Datatype.FUNC,
                 desc="motionParams",
                 suffix=Suffix.MOTION,
                 extension=".1D",
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.rms_rel,
-                datatype=Datatype.FUNC,
                 desc="relsDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.rms_abs,
-                datatype=Datatype.FUNC,
                 desc="maxDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
-                outputs.bold_mask,
-                datatype=Datatype.FUNC,
-                suffix=Suffix.MASK,
-                desc="brain",
-                task=bold_task,
-                run=bold_run,
-            )
-            pipe_ctx.export(
+            _fex(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+            _fex(
                 outputs.bold_to_anat_matrix,
-                datatype=Datatype.FUNC,
                 suffix="xfm",
                 desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.regressor_file,
-                datatype=Datatype.FUNC,
                 desc=args.regressor,
                 suffix="regressors",
                 extension=".1D",
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.template_bold,
-                datatype=Datatype.FUNC,
                 space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.cleaned_bold,
-                datatype=Datatype.FUNC,
                 space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="preproc",
                 suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
             )
-            pipe_ctx.export(
+            _fex(
                 outputs.template_brain_mask,
-                datatype=Datatype.FUNC,
                 space=TemplateSpace.MNI152NLIN6ASYM,
                 desc="bold",
                 suffix=Suffix.MASK,
-                task=bold_task,
-                run=bold_run,
             )
 
         pipe_ctx.ensure_dataset_description()

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
@@ -206,7 +206,9 @@ def main(args: LongitudinalArgs) -> int:
         if tpl_df.is_empty():
             raise ValueError("No longitudinal template found")
 
-        for func_df, anat_df in iter_session_files(session, groupby=("run", "task")):
+        for func_df, anat_df in iter_session_files(
+            session, groupby=_FUNC_GROUP_ENTITIES
+        ):
             if args.anatomical:
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:

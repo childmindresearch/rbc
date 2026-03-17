@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
@@ -146,11 +146,17 @@ def main(args: AllArgs) -> int:
         )
 
         # --- Functional + Metrics + QC (per BOLD run) ---
-        for func_df, _anat_df in iter_session_files(session, groupby=("run", "task")):
+        for func_df, _anat_df in iter_session_files(
+            session, groupby=_FUNC_GROUP_ENTITIES
+        ):
             row = func_df.row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
+            bold_acq: str | None = row.get("acq")
+            bold_rec: str | None = row.get("rec")
+            bold_dir: str | None = row.get("dir")
+            bold_echo: int | None = row.get("echo")
             ctx.logger.info(f"Functional: {bold_fpath}")
 
             func_outputs = functional_preprocess(
@@ -171,6 +177,10 @@ def main(args: AllArgs) -> int:
                 datatype=Datatype.FUNC,
                 task=bold_task,
                 run=bold_run,
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
             _fex(func_outputs.sbref, suffix=Suffix.SBREF)
             _fex(
@@ -254,9 +264,13 @@ def main(args: AllArgs) -> int:
                 pipe_ctx.export,
                 datatype=Datatype.FUNC,
                 space=TemplateSpace.MNI152NLIN6ASYM,
+                extra=reg_extra,
                 task=bold_task,
                 run=bold_run,
-                extra=reg_extra,
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
             _mex(metrics_outputs.alff, suffix="alff")
             _mex(metrics_outputs.falff, suffix="falff")
@@ -320,9 +334,13 @@ def main(args: AllArgs) -> int:
                 desc="xcp",
                 extension=".tsv",
                 space=TemplateSpace.MNI152NLIN6ASYM,
+                extra={"reg": args.regressor},
                 task=bold_task,
                 run=bold_run,
-                extra={"reg": args.regressor},
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
