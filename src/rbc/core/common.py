@@ -2,7 +2,6 @@
 
 Currently provides:
 - Deobliquing and RPI reorientation (initial preprocessing for T1w and BOLD).
-- Transformation conversion between FSL (.mat) and ITK (.txt) formats.
 - 4D NIfTI splitting and merging utilities.
 """
 
@@ -11,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import nibabel as nib
-from niwrap import afni, c3d, fsl
+from niwrap import afni, fsl
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 
 from rbc.core.fileops import file_tmp_copy
 
-__all__ = ["deoblique_and_reorient", "mat_to_itk", "merge_3d_to_4d", "split_4d"]
+__all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
 
 
 def deoblique_and_reorient(
@@ -45,29 +44,6 @@ def deoblique_and_reorient(
         return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"
         )
-
-
-def mat_to_itk(mat: Path, reference: Path, source: Path, output: str) -> Path:
-    """Convert a .mat affine to ITK compatible .txt format.
-
-    Args:
-        mat: Path to the input FSL-style affine matrix (.mat).
-        reference: Path to the reference (fixed) image volume.
-        source: Path to the source (moving) image volume.
-        output: Filename or path for the resulting ITK transformation file (.txt).
-
-    Returns:
-        ITK-compatible transformation file.
-    """
-    result = c3d.c3d_affine_tool(
-        reference_file=reference,
-        source_file=source,
-        transform_file=mat,
-        out_itk_transform=output,
-        fsl2ras=True,
-    )
-    assert result.itk_transform_outfile is not None  # noqa: S101
-    return result.itk_transform_outfile
 
 
 def split_4d(img_4d: Path) -> list[Path]:
