@@ -44,9 +44,7 @@ class TestExportBidsEntities:
         src.write_bytes(b"\x00")
         return src
 
-    def test_acq_in_filename(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_acq_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify acq entity appears in output filename."""
         result = pipe_ctx.export(
             src_file,
@@ -57,9 +55,7 @@ class TestExportBidsEntities:
         )
         assert "acq-1400" in result.name
 
-    def test_dir_in_filename(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_dir_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify dir entity appears in output filename."""
         result = pipe_ctx.export(
             src_file,
@@ -70,9 +66,7 @@ class TestExportBidsEntities:
         )
         assert "dir-AP" in result.name
 
-    def test_rec_in_filename(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_rec_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify rec entity appears in output filename."""
         result = pipe_ctx.export(
             src_file,
@@ -82,9 +76,7 @@ class TestExportBidsEntities:
         )
         assert "rec-magnitude" in result.name
 
-    def test_echo_in_filename(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_echo_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify echo entity appears in output filename."""
         result = pipe_ctx.export(
             src_file,
@@ -95,9 +87,7 @@ class TestExportBidsEntities:
         )
         assert "echo-1" in result.name
 
-    def test_multiple_entities(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_multiple_entities(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify multiple new entities appear together."""
         result = pipe_ctx.export(
             src_file,
@@ -117,9 +107,7 @@ class TestExportBidsEntities:
         assert "echo-2" in name
         assert "run-1" in name
 
-    def test_entity_ordering(
-        self, pipe_ctx: PipelineContext, src_file: Path
-    ) -> None:
+    def test_entity_ordering(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify BIDS entity ordering: acq before rec before dir before run."""
         result = pipe_ctx.export(
             src_file,
