@@ -20,6 +20,17 @@ if TYPE_CHECKING:
 _RBC_VERSION = version("rbc")
 
 
+def _sanitize_extra(
+    extra: dict[str, str | int] | None,
+) -> dict[str, str | int] | None:
+    """Apply ``bids_safe_label`` to string values in an *extra* dict."""
+    if extra is None:
+        return None
+    return {
+        k: bids_safe_label(v) if isinstance(v, str) else v for k, v in extra.items()
+    }
+
+
 @dataclass
 class PipelineContext:
     """Minimal context for a single pipeline run.
@@ -72,8 +83,8 @@ class PipelineContext:
             run=run,
             desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
-            atlas=atlas,
-            extra=extra,
+            atlas=bids_safe_label(atlas) if atlas is not None else None,
+            extra=_sanitize_extra(extra),
             suffix=suffix,
             extension=extension,
             datatype=datatype,
@@ -119,7 +130,7 @@ class PipelineContext:
             run=run,
             desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
-            atlas=atlas,
+            atlas=bids_safe_label(atlas) if atlas is not None else None,
             suffix=suffix,
             extension=extension,
             datatype=datatype,
