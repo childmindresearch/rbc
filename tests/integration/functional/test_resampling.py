@@ -111,11 +111,18 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     )
     assert template_bold.exists()
 
-    out_voxel_size = nib.nifti1.load(template_bold).header.get_zooms()[:3]
-    in_voxel_size = nib.nifti1.load(stc).header.get_zooms()[:3]
-    template_voxel_size = nib.nifti1.load(template_mni).header.get_zooms()[:3]
+    out_img = nib.nifti1.load(template_bold)
+    in_img = nib.nifti1.load(stc)
+    template_img = nib.nifti1.load(template_mni)
+
+    out_voxel_size = out_img.header.get_zooms()[:3]
+    in_voxel_size = in_img.header.get_zooms()[:3]
+    template_voxel_size = template_img.header.get_zooms()[:3]
 
     # Check that voxel sizes differ between input and output
     assert in_voxel_size != out_voxel_size
     # Check that output voxel size matches template voxel size
     assert out_voxel_size == template_voxel_size
+    # Check that TR is preserved from the source BOLD (not overwritten by the
+    # template's pixdim[4])
+    assert out_img.header.get_zooms()[3] == in_img.header.get_zooms()[3]

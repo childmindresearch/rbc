@@ -14,12 +14,30 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import nibabel as nib
+import numpy as np
+
 if TYPE_CHECKING:
     from pathlib import Path
 
 from niwrap import ants
 
 from rbc.core.common import mat_to_itk, merge_3d_to_4d, split_4d
+
+
+def _restore_tr(resampled: Path, source: Path) -> None:
+    """Copy pixdim[4] (TR) from *source* into *resampled* NIfTI header.
+
+    antsApplyTransforms sets pixdim from the reference image, which for
+    template-space outputs is a 3D template with no meaningful TR.  This
+    restores the original temporal zoom from the source BOLD.
+    """
+    src_img = nib.nifti1.load(source)
+    res_img = nib.nifti1.load(resampled)
+    data = np.asarray(res_img.dataobj)
+    zooms = res_img.header.get_zooms()[:3] + src_img.header.get_zooms()[3:]
+    res_img.header.set_zooms(zooms)
+    nib.save(nib.Nifti1Image(data, res_img.affine, res_img.header), resampled)
 
 
 def apply_motion_transforms(
@@ -82,7 +100,13 @@ def apply_motion_transforms(
         transformed_vols.append(result.output.output_image_outfile)
 
     out_path = transformed_vols[0].parent / "preproc_bold.nii.gz"
-    return merge_3d_to_4d(transformed_vols, out_path)
+    merged = merge_3d_to_4d(transformed_vols, out_path)
+
+    # antsApplyTransforms writes the reference image's pixdim into the output
+    # header, so pixdim[4] (TR) is lost.  Restore it from the source BOLD.
+    _restore_tr(merged, stc_img)
+
+    return merged
 
 
 def resample_bold_to_template(
@@ -165,4 +189,11 @@ def resample_bold_to_template(
         transformed_vols.append(result.output.output_image_outfile)
 
     out_path = transformed_vols[0].parent / "bold_to_template_resampled.nii.gz"
-    return merge_3d_to_4d(transformed_vols, out_path)
+    merged = merge_3d_to_4d(transformed_vols, out_path)
+
+    # antsApplyTransforms writes the reference (template) image's pixdim into
+    # the output header, so pixdim[4] (TR) is lost.  Restore it from the
+    # source BOLD.
+    _restore_tr(merged, stc_bold)
+
+    return merged
