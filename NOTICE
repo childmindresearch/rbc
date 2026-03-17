@@ -1,0 +1,9 @@
+RBC (Reproducible Brain Charts)
+Copyright (c) 2026 CMI DAIR
+
+This project includes code derived from:
+
+  C-PAC - Configurable Pipeline for the Analysis of Connectomes
+  https://github.com/FCP-INDI/C-PAC
+  Copyright (c) 2012-2024 C-PAC Developers
+  Licensed under LGPL-3.0
