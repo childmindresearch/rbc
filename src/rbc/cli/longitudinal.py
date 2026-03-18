@@ -168,43 +168,24 @@ def _process_func(
         bold_mask=_get_func_file(space=False, desc="brain", suffix=Suffix.MASK),
     )
     # Save longitudinal outputs
-    pipe_ctx.export(
-        outputs.sbref,
+    _fex = partial(
+        pipe_ctx.export,
         datatype=Datatype.FUNC,
         space="longitudinal",
-        suffix=Suffix.SBREF,
         task=bold_task,
         run=bold_run,
     )
-    pipe_ctx.export(
-        outputs.bold,
-        datatype=Datatype.FUNC,
-        space="longitudinal",
-        desc="preproc",
-        suffix=Suffix.BOLD,
-        task=bold_task,
-        run=bold_run,
-    )
-    pipe_ctx.export(
+    _fex(outputs.sbref, suffix=Suffix.SBREF)
+    _fex(outputs.bold, desc="preproc", suffix=Suffix.BOLD)
+    _fex(
         outputs.forward_xfm,
-        datatype=Datatype.FUNC,
         suffix="xfm",
         desc="composite",
         extension=Extension.NII_GZ,
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},
-        task=bold_task,
-        run=bold_run,
     )
     if outputs.bold_mask:
-        pipe_ctx.export(
-            outputs.bold_mask,
-            datatype=Datatype.FUNC,
-            space="longitudinal",
-            desc="brain",
-            suffix=Suffix.MASK,
-            task=bold_task,
-            run=bold_run,
-        )
+        _fex(outputs.bold_mask, desc="brain", suffix=Suffix.MASK)
 
 
 def main(args: LongitudinalArgs) -> int:
