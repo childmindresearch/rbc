@@ -261,7 +261,7 @@ def fs_to_ants_xfm(
     (see https://www.mail-archive.com/freesurfer@nmr.mgh.harvard.edu/msg55547.html)
     """
     result = ITKTransforms(transforms=[])
-    for src_file, in_xfm in zip(src_files, in_xfms):
+    for src_file, in_xfm in zip(src_files, in_xfms, strict=True):
         fsl_fname = in_xfm.with_suffix(".mat").name
         lta = freesurfer.lta_convert(in_lta=in_xfm, out_fsl=fsl_fname)
         fsl2itk = c3d.c3d_affine_tool(
