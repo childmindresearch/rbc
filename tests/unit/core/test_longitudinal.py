@@ -36,7 +36,7 @@ def tmp_compose_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     return ref, bold_to_anat, anat_to_tpl
 
 
-class TestAnatomicalLongitudinalTranforms:
+class TestAnatomicalLongitudinalTransforms:
     """Test suite for transformation between anatomical and longitudinal templates."""
 
     def test_missing_in_file(self, tmp_files: tuple[Path, ...]) -> None:

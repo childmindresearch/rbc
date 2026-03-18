@@ -70,7 +70,7 @@ def compose_transform(ref: Path, bold_to_anat_xfm: Path, anat_to_tpl_xfm: Path) 
 
 
 def func_transform(in_file: Path, template: Path, xfm: Path) -> Path:
-    """Apply transformation to funcdtional data using ANTs.
+    """Apply transformation to functional data using ANTs.
 
     Args:
         in_file: Input file path to apply transform to.
