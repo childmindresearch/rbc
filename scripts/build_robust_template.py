@@ -290,6 +290,7 @@ if __name__ == "__main__":
     ctx.runner.environ = {
         "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
         "ANTS_RANDOM_SEED": 77742777,
+        "FSLOUTPUTTYPE": "NIFTI_GZ"  # Needed for FreeSurfer xfm conversion
     }
     ctx.logger.warning(
         "This script is experimental and may be sensitive to input file naming "
