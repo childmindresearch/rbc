@@ -84,7 +84,7 @@ def _process_anat(
         template=_get_tpl_file(suffix=Suffix.T1W),
         subj_to_template_xfm=_get_tpl_file(
             suffix="xfm",
-            extension=".mat",
+            extension=".txt",
             extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
         brain=_require_file(_get_anat_file(suffix=Suffix.T1W, desc="brain"), "brain"),
@@ -94,59 +94,25 @@ def _process_anat(
         wm_mask=_get_anat_file(suffix=Suffix.MASK, desc="wm"),
     )
     # Save longitudinal outputs
-    pipe_ctx.export(
-        outputs.brain,
-        datatype=Datatype.ANAT,
-        space="longitudinal",
-        desc="brain",
-        suffix=Suffix.T1W,
-        run=t1w_run,
+    _aex = partial(
+        pipe_ctx.export, datatype=Datatype.ANAT, space="longitudinal", run=t1w_run
     )
-    pipe_ctx.export(
-        _require_file(outputs.brain_mask, "brain_mask"),
-        datatype=Datatype.ANAT,
-        space="longitudinal",
-        desc="T1w",
-        suffix=Suffix.MASK,
-        run=t1w_run,
+    _aex(outputs.brain, desc="brain", suffix=Suffix.T1W)
+    _aex(
+        _require_file(outputs.brain_mask, "brain_mask"), desc="T1w", suffix=Suffix.MASK
     )
-    pipe_ctx.export(
-        _require_file(outputs.csf_mask, "csf_mask"),
-        datatype=Datatype.ANAT,
-        space="longitudinal",
-        desc="csf",
-        suffix=Suffix.MASK,
-        run=t1w_run,
-    )
-    pipe_ctx.export(
-        _require_file(outputs.gm_mask, "gm_mask"),
-        datatype=Datatype.ANAT,
-        space="longitudinal",
-        desc="gm",
-        suffix=Suffix.MASK,
-        run=t1w_run,
-    )
-    pipe_ctx.export(
-        _require_file(outputs.wm_mask, "wm_mask"),
-        datatype=Datatype.ANAT,
-        space="longitudinal",
-        desc="wm",
-        suffix=Suffix.MASK,
-        run=t1w_run,
-    )
-    pipe_ctx.export(
+    _aex(_require_file(outputs.csf_mask, "csf_mask"), desc="csf", suffix=Suffix.MASK)
+    _aex(_require_file(outputs.csf_mask, "gm_mask"), desc="gm", suffix=Suffix.MASK)
+    _aex(_require_file(outputs.csf_mask, "wm_mask"), desc="wm", suffix=Suffix.MASK)
+    _aex(
         outputs.forward_xfm,
-        datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "longitudinal", "to": "template", "mode": "image"},
-        run=t1w_run,
+        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
     )
-    pipe_ctx.export(
+    _aex(
         outputs.inverse_xfm,
-        datatype=Datatype.ANAT,
         suffix="xfm",
-        extra={"from": "template", "to": "longitudinal", "mode": "image"},
-        run=t1w_run,
+        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
     )
 
 
