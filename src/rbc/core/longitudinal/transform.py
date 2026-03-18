@@ -89,7 +89,7 @@ def func_transform(in_file: Path, template: Path, xfm: Path) -> Path:
         raise FileNotFoundError(f"Transformation not found: {xfm}")
 
     return ants.ants_apply_transforms(
-        dimensionality=4,
+        dimensionality=3,
         reference_image=template,
         input_image=in_file,
         input_image_type=3,
