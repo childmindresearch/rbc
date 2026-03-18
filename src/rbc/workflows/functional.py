@@ -264,7 +264,7 @@ def single_session_preprocess(
     )
 
     # 11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat)
-    bold2anat_fpath_str = str(generate_exec_folder("bold2anat") / "bold2anat.mat")
+    bold2anat_fpath_str = str(generate_exec_folder("bold2anat") / "bold2anat.txt")
     bold_to_anat_itk = mat_to_itk(
         bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, bold2anat_fpath_str
     )
