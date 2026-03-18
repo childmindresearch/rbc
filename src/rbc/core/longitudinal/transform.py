@@ -93,6 +93,36 @@ def func_transform(in_file: Path, template: Path, xfm: Path) -> Path:
         reference_image=template,
         input_image=in_file,
         input_image_type=3,
+        transform=[ants.ants_apply_transforms_transform_file_name(xfm)],
         output=ants.ants_apply_transforms_warped_output("subj_bold_to_template.nii.gz"),
         interpolation=ants.ants_apply_transforms_linear(),
+    ).output.output_image_outfile
+
+
+def mask_transform(mask: Path, template: Path, xfm: Path) -> Path:
+    """Apply transformation to mask using ANTs.
+
+    Args:
+        mask: Mask file path to apply transform to.
+        template: Longitudinal template file path for reference.
+        xfm: Transformation to apply.
+
+    Returns:
+        Path to transformed file.
+
+    Raises:
+        FileNotFoundError: if mask file or transformation not found.
+    """
+    if not mask.exists():
+        raise FileNotFoundError(f"Mask file not found: {mask}")
+    if not xfm.exists():
+        raise FileNotFoundError(f"Transformation not found: {xfm}")
+
+    return ants.ants_apply_transforms(
+        input_image=mask,
+        reference_image=template,
+        transform=[ants.ants_apply_transforms_transform_file_name(xfm)],
+        interpolation=ants.ants_apply_transforms_nearest_neighbor(),
+        dimensionality=3,
+        output=ants.ants_apply_transforms_warped_output("mask_to_template.nii.gz"),
     ).output.output_image_outfile

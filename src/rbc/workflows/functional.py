@@ -35,7 +35,11 @@ from rbc.core.functional import (
     slice_timing_correction,
     truncate_trs,
 )
-from rbc.core.longitudinal.transform import compose_transform, func_transform
+from rbc.core.longitudinal.transform import (
+    compose_transform,
+    func_transform,
+    mask_transform,
+)
 from rbc.core.niwrap import generate_exec_folder
 from rbc_resources import MNI_TEMPLATES
 
@@ -402,14 +406,11 @@ def longitudinal_process(
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
 
-    def _xfm(val: Path | None) -> Path | None:
-        if val is None:
-            return None
-        return func_transform(in_file=val, template=template, xfm=bold_to_tpl_xfm)
-
     return FunctionalLongOutputs(
         sbref=func_transform(in_file=sbref, template=template, xfm=bold_to_tpl_xfm),
         bold=func_transform(in_file=bold, template=template, xfm=bold_to_tpl_xfm),
-        bold_mask=_xfm(val=bold_mask),
+        bold_mask=mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
+        if bold_mask
+        else None,
         forward_xfm=bold_to_tpl_xfm,
     )
