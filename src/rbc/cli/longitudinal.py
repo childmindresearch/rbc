@@ -147,14 +147,14 @@ def _process_func(
         template=get_tpl_file(suffix="T1w"),
         anat_to_template_xfm=get_tpl_file(
             suffix="xfm",
-            extension=".mat",
+            extension=".txt",
             extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
         ),
         bold_to_anat_xfm=_require_file(
             _get_func_file(
                 suffix="xfm",
                 desc="linear",
-                extension=".mat",
+                extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             ),
             "bold_to_anat_xfm",

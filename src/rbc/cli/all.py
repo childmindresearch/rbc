@@ -211,7 +211,7 @@ def main(args: AllArgs) -> int:
                 func_outputs.bold_to_anat_matrix,
                 suffix="xfm",
                 desc="linear",
-                extension=".mat",
+                extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
             _fex(

@@ -558,7 +558,7 @@ class TestProcessFunc:
                 {
                     "suffix": "xfm",
                     "desc": "linear",
-                    "extension": ".mat",
+                    "extension": ".txt",
                     "extra": {"from": "bold", "to": "T1w", "mode": "image"},
                 },
             ),

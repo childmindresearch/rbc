@@ -49,7 +49,7 @@ def _mock_functional_outputs() -> Mock:
     outputs.rms_rel = fake / "rms_rel.rms"
     outputs.rms_abs = fake / "rms_abs.rms"
     outputs.bold_mask = fake / "bold_mask.nii.gz"
-    outputs.bold_to_anat_matrix = fake / "bold_to_anat.mat"
+    outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
     outputs.regressor_file = fake / "regressors.1D"
     return outputs
 

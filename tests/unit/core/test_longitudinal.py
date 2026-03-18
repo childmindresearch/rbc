@@ -17,7 +17,7 @@ def tmp_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     """Create temporary input files for testing."""
     in_file = tmp_path / "brain.nii.gz"
     template = tmp_path / "template.nii.gz"
-    xfm = tmp_path / "subj_to_template.mat"
+    xfm = tmp_path / "subj_to_template.txt"
     in_file.touch()
     template.touch()
     xfm.touch()
@@ -28,8 +28,8 @@ def tmp_files(tmp_path: Path) -> tuple[Path, Path, Path]:
 def tmp_compose_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     """Create temporary input files for compose transform testing."""
     ref = tmp_path / "ref.nii.gz"
-    bold_to_anat = tmp_path / "bold_to_anat.mat"
-    anat_to_tpl = tmp_path / "anat_to_tpl.mat"
+    bold_to_anat = tmp_path / "bold_to_anat.txt"
+    anat_to_tpl = tmp_path / "anat_to_tpl.txt"
     ref.touch()
     bold_to_anat.touch()
     anat_to_tpl.touch()
