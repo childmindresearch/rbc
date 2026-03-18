@@ -35,6 +35,7 @@ from rbc.core.functional import (
     slice_timing_correction,
     truncate_trs,
 )
+from rbc.core.niwrap import generate_exec_folder
 from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
@@ -263,8 +264,9 @@ def single_session_preprocess(
     )
 
     # 11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat)
+    bold2anat_fpath_str = str(generate_exec_folder("bold2anat") / "bold2anat.mat")
     bold_to_anat_itk = mat_to_itk(
-        bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, "bold2anat.txt"
+        bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, bold2anat_fpath_str
     )
     native_brain = _warp_mask_to_bold_space(brain_mask, effective_ref, bold_to_anat_itk)
     native_csf = _warp_mask_to_bold_space(csf_mask, effective_ref, bold_to_anat_itk)
