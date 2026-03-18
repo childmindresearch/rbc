@@ -221,6 +221,11 @@ def sample_dataframe() -> pl.DataFrame:
             ],
             "task": [None, "rest", "nback", None, "rest", None, "rest"],
             "run": [None] * 7,
+            "acq": [None] * 7,
+            "dir": [None] * 7,
+            "echo": [None] * 7,
+            "part": [None] * 7,
+            "rec": [None] * 7,
             "root": ["/data"] * 7,
             "path": [
                 "sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz",

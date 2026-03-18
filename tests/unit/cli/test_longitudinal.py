@@ -154,6 +154,11 @@ def sample_dataframe() -> pl.DataFrame:
             "task": [None] * 6,
             "space": [None] * 6,
             "run": [None] * 6,
+            "acq": [None] * 6,
+            "dir": [None] * 6,
+            "echo": [None] * 6,
+            "part": [None] * 6,
+            "rec": [None] * 6,
             "desc": [None] * 6,
             "root": ["/data"] * 6,
             "path": [

@@ -132,6 +132,11 @@ def sample_dataframe() -> pl.DataFrame:
             "ses": ["baseline", "baseline", "baseline", "vis2", "baseline"],
             "task": ["rest", "nback", "rest", "rest", None],
             "run": [None, None, None, None, None],
+            "acq": [None, None, None, None, None],
+            "dir": [None, None, None, None, None],
+            "echo": [None, None, None, None, None],
+            "part": [None, None, None, None, None],
+            "rec": [None, None, None, None, None],
             "root": ["/data"] * 5,
             "path": [
                 "sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz",

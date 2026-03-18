@@ -54,7 +54,11 @@ class PipelineContext:
         desc: str | None = None,
         extension: str = ".nii.gz",
         task: str | None = None,
+        acq: str | None = None,
+        rec: str | None = None,
+        dir: str | None = None,
         run: int | None = None,
+        echo: int | None = None,
         space: str | None = None,
         atlas: str | None = None,
         extra: dict[str, str | int] | None = None,
@@ -68,7 +72,11 @@ class PipelineContext:
             desc: Optional ``desc-`` entity.
             extension: File extension including leading dot.
             task: Optional ``task-`` entity.
+            acq: Optional ``acq-`` entity.
+            rec: Optional ``rec-`` entity.
+            dir: Optional ``dir-`` entity.
             run: Optional ``run-`` index.
+            echo: Optional ``echo-`` index.
             space: Optional ``space-`` entity.
             atlas: Optional ``atlas-`` entity.
             extra: Non-standard entities (e.g. ``{"from": "T1w"}``).
@@ -80,7 +88,11 @@ class PipelineContext:
             sub=self.sub,
             ses=self.ses,
             task=task,
+            acq=acq,
+            rec=rec,
+            dir=dir,
             run=run,
+            echo=echo,
             desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
             atlas=bids_safe_label(atlas) if atlas is not None else None,
@@ -103,7 +115,11 @@ class PipelineContext:
         desc: str | None = None,
         extension: str = "",
         task: str | None = None,
+        acq: str | None = None,
+        rec: str | None = None,
+        dir: str | None = None,
         run: int | None = None,
+        echo: int | None = None,
         space: str | None = None,
         atlas: str | None = None,
     ) -> Path:
@@ -116,7 +132,11 @@ class PipelineContext:
             desc: Optional ``desc-`` entity.
             extension: File extension (usually empty for directories).
             task: Optional ``task-`` entity.
+            acq: Optional ``acq-`` entity.
+            rec: Optional ``rec-`` entity.
+            dir: Optional ``dir-`` entity.
             run: Optional ``run-`` index.
+            echo: Optional ``echo-`` index.
             space: Optional ``space-`` entity.
             atlas: Optional ``atlas-`` entity.
 
@@ -127,7 +147,11 @@ class PipelineContext:
             sub=self.sub,
             ses=self.ses,
             task=task,
+            acq=acq,
+            rec=rec,
+            dir=dir,
             run=run,
+            echo=echo,
             desc=bids_safe_label(desc) if desc is not None else None,
             space=space,
             atlas=bids_safe_label(atlas) if atlas is not None else None,

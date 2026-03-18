@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import PipelineContext
 from rbc.core.bids import Datatype, Suffix, TemplateSpace
@@ -89,28 +89,40 @@ def main(args: MetricsArgs) -> int:
         )
         get_deriv = partial(get_file_path, df=deriv_df, sub=sub, ses=ses)
 
-        for _, run_group in group.group_by(("run", "task")):
+        for _, run_group in group.group_by(_FUNC_GROUP_ENTITIES):
             row = run_group.row(0, named=True)
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
+            bold_acq: str | None = row.get("acq")
+            bold_rec: str | None = row.get("rec")
+            bold_dir: str | None = row.get("dir")
+            bold_echo: int | None = row.get("echo")
 
             regressed_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
                 desc="regressed",
                 space=TemplateSpace.MNI152NLIN6ASYM,
+                extra={"reg": args.regressor},
                 task=bold_task,
                 run=bold_run,
-                extra={"reg": args.regressor},
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
             cleaned_bold = get_deriv(
                 datatype=Datatype.FUNC,
                 suffix=Suffix.BOLD,
                 desc="preproc",
                 space=TemplateSpace.MNI152NLIN6ASYM,
+                extra={"reg": args.regressor},
                 task=bold_task,
                 run=bold_run,
-                extra={"reg": args.regressor},
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
             template_brain_mask = get_deriv(
                 datatype=Datatype.FUNC,
@@ -119,6 +131,10 @@ def main(args: MetricsArgs) -> int:
                 space=TemplateSpace.MNI152NLIN6ASYM,
                 task=bold_task,
                 run=bold_run,
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
 
             outputs = single_session_metrics(
@@ -134,9 +150,13 @@ def main(args: MetricsArgs) -> int:
                 pipe_ctx.export,
                 datatype=Datatype.FUNC,
                 space=TemplateSpace.MNI152NLIN6ASYM,
+                extra=reg_extra,
                 task=bold_task,
                 run=bold_run,
-                extra=reg_extra,
+                acq=bold_acq,
+                rec=bold_rec,
+                dir=bold_dir,
+                echo=bold_echo,
             )
             _export(outputs.alff, suffix="alff")
             _export(outputs.falff, suffix="falff")
