@@ -24,6 +24,7 @@ from niwrap import ants
 
 from rbc.core.common import merge_3d_to_4d, split_4d
 from rbc.core.fsl2itk import mat_to_itk
+from rbc.core.niwrap import generate_exec_folder
 
 
 def _restore_tr(resampled: Path, source: Path) -> None:
@@ -82,10 +83,13 @@ def apply_motion_transforms(
         )
 
     transformed_vols = []
+    motion_dir = generate_exec_folder(suffix="motionTransforms")
     for idx, (motion_mat, stc_vol) in enumerate(
         zip(motion_mats, stc_vols, strict=True)
     ):
-        motion_itk = mat_to_itk(motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt")
+        motion_itk = mat_to_itk(
+            motion_mat, bold_ref, bold_ref, f"{motion_dir}/motion_{idx:04d}.txt"
+        )
         result = ants.ants_apply_transforms(
             input_image=stc_vol,
             reference_image=bold_ref,  # bold in native space
