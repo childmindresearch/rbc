@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 
-from rbc.core.bids import BIDS_VERSION, bids_path, bids_safe_label
+from rbc.core.bids import BIDS_VERSION, BidsEntities, bids_path, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,12 +51,8 @@ class PipelineContext:
         *,
         datatype: str,
         suffix: str,
-        desc: str | None = None,
+        entities: BidsEntities | None = None, 
         extension: str = ".nii.gz",
-        task: str | None = None,
-        run: int | None = None,
-        space: str | None = None,
-        atlas: str | None = None,
         extra: dict[str, str | int] | None = None,
     ) -> Path:
         """Copy *src* to a BIDS-named derivative path.
@@ -65,25 +61,27 @@ class PipelineContext:
             src: Source file to copy.
             datatype: BIDS datatype directory (e.g. ``"anat"``, ``"func"``).
             suffix: BIDS suffix (e.g. ``"T1w"``, ``"bold"``).
-            desc: Optional ``desc-`` entity.
+            entities: Optional BIDS entities.
             extension: File extension including leading dot.
-            task: Optional ``task-`` entity.
-            run: Optional ``run-`` index.
-            space: Optional ``space-`` entity.
-            atlas: Optional ``atlas-`` entity.
             extra: Non-standard entities (e.g. ``{"from": "T1w"}``).
 
         Returns:
             Path to the copied output file.
         """
+        entities = entities or {}
         rel = bids_path(
             sub=self.sub,
             ses=self.ses,
-            task=task,
-            run=run,
-            desc=bids_safe_label(desc) if desc is not None else None,
-            space=space,
-            atlas=bids_safe_label(atlas) if atlas is not None else None,
+            task=entities.get("task"),
+            run=entities.get("run"),
+            acq=entities.get("acq"),
+            dir=entities.get("dir"),
+            echo=entities.get("echo"),
+            part=entities.get("part"),
+            rec=entities.get("rec"),
+            space=entities.get("space"),
+            atlas=bids_safe_label(entities["atlas"]) if "atlas" in entities else None,
+            desc=bids_safe_label(entities["desc"]) if "desc" in entities else None,
             extra=_sanitize_extra(extra),
             suffix=suffix,
             extension=extension,
@@ -100,12 +98,8 @@ class PipelineContext:
         *,
         datatype: str,
         suffix: str,
-        desc: str | None = None,
+        entities: BidsEntities | None = None,
         extension: str = "",
-        task: str | None = None,
-        run: int | None = None,
-        space: str | None = None,
-        atlas: str | None = None,
     ) -> Path:
         """Copy a directory to a BIDS-named derivative path.
 
@@ -113,24 +107,21 @@ class PipelineContext:
             src_dir: Source directory to copy (e.g. motion ``.mat`` dir).
             datatype: BIDS datatype directory.
             suffix: BIDS suffix.
-            desc: Optional ``desc-`` entity.
+            entities: Optional BIDS entities.
             extension: File extension (usually empty for directories).
-            task: Optional ``task-`` entity.
-            run: Optional ``run-`` index.
-            space: Optional ``space-`` entity.
-            atlas: Optional ``atlas-`` entity.
 
         Returns:
             Path to the copied output directory.
         """
+        entities = entities or {}
         rel = bids_path(
             sub=self.sub,
             ses=self.ses,
-            task=task,
-            run=run,
-            desc=bids_safe_label(desc) if desc is not None else None,
-            space=space,
-            atlas=bids_safe_label(atlas) if atlas is not None else None,
+            task=entities.get("task"),
+            run=entities.get("run"),
+            space=entities.get("space"),
+            desc=bids_safe_label(entities["desc"]) if "desc" in entities else None,
+            atlas=bids_safe_label(entities["atlas"]) if "atlas" in entities else None,
             suffix=suffix,
             extension=extension,
             datatype=datatype,

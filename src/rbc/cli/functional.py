@@ -21,7 +21,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
+from rbc.core.bids import BidsEntities, Datatype, Suffix, TemplateSpace
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.functional import single_session_preprocess
@@ -83,8 +83,9 @@ def main(args: FunctionalArgs) -> int:
         ):
             row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
+            bold_entities: BidsEntities = {
+                k: row[k] for k in _FUNC_GROUP_ENTITIES if row.get(k) is not None
+            }
             ctx.logger.info(f"Processing {bold_fpath}")
 
             get_anat_file = partial(
@@ -116,98 +117,74 @@ def main(args: FunctionalArgs) -> int:
                 outputs.sbref,
                 datatype=Datatype.FUNC,
                 suffix=Suffix.SBREF,
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities,
             )
             pipe_ctx.export(
                 outputs.preproc_bold,
                 datatype=Datatype.FUNC,
-                desc="preproc",
                 suffix=Suffix.BOLD,
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "preproc"},
             )
             pipe_ctx.export(
                 outputs.motion_params,
                 datatype=Datatype.FUNC,
-                desc="motionParams",
                 suffix=Suffix.MOTION,
                 extension=".1D",
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "motionParams"},
             )
             pipe_ctx.export(
                 outputs.rms_rel,
                 datatype=Datatype.FUNC,
-                desc="relsDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "relsDisplacement"},
             )
             pipe_ctx.export(
                 outputs.rms_abs,
                 datatype=Datatype.FUNC,
-                desc="maxDisplacement",
                 suffix=Suffix.MOTION,
                 extension=".rms",
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "maxDisplacement"},
             )
             pipe_ctx.export(
                 outputs.bold_mask,
                 datatype=Datatype.FUNC,
                 suffix=Suffix.MASK,
-                desc="brain",
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "brain"},
             )
             pipe_ctx.export(
                 outputs.bold_to_anat_matrix,
                 datatype=Datatype.FUNC,
                 suffix="xfm",
-                desc="linear",
                 extension=".mat",
+                entities=bold_entities | {"desc": "linear"},
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
-                task=bold_task,
-                run=bold_run,
             )
             pipe_ctx.export(
                 outputs.regressor_file,
                 datatype=Datatype.FUNC,
-                desc=args.regressor,
                 suffix="regressors",
                 extension=".1D",
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": args.regressor},
             )
             pipe_ctx.export(
                 outputs.template_bold,
                 datatype=Datatype.FUNC,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
                 suffix=Suffix.BOLD,
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "preproc", "space": TemplateSpace.MNI152NLIN6ASYM},
             )
             pipe_ctx.export(
                 outputs.cleaned_bold,
                 datatype=Datatype.FUNC,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
                 suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "preproc", "space": TemplateSpace.MNI152NLIN6ASYM},
             )
             pipe_ctx.export(
                 outputs.template_brain_mask,
                 datatype=Datatype.FUNC,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="bold",
                 suffix=Suffix.MASK,
-                task=bold_task,
-                run=bold_run,
+                entities=bold_entities | {"desc": "bold", "space": TemplateSpace.MNI152NLIN6ASYM},
             )
 
         pipe_ctx.ensure_dataset_description()
