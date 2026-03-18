@@ -96,6 +96,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         task=None,
         start_tr=2,
         regressor="36-parameter",
+        tmp_dir=None,
     )
 
 

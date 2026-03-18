@@ -130,6 +130,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         anatomical=True,
         functional=False,
+        tmp_dir=None,
     )
 
 
@@ -185,6 +186,7 @@ class TestLongitudinalArgs:
             session_label=[],
             anatomical=True,
             functional=False,
+            tmp_dir=None,
         )
 
     def test_validate_namespace_anatomical(

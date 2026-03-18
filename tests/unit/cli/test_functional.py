@@ -116,6 +116,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         regressor="36-parameter",
         task=None,
+        tmp_dir=None,
     )
 
 
@@ -161,6 +162,7 @@ class TestFunctionalArgs:
             session_label=[],
             regressor="36-parameter",
             task=None,
+            tmp_dir=None,
         )
 
     def test_validate_namespace(self, func_namespace: argparse.Namespace) -> None:

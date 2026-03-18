@@ -108,6 +108,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         atlas="schaefer_200",
         fwhm=6.0,
         regressor="36-parameter",
+        tmp_dir=None,
     )
 
 

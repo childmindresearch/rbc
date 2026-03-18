@@ -96,6 +96,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         output_dir=output_dir,
         participant_label=[],
         session_label=[],
+        tmp_dir=None,
     )
 
 

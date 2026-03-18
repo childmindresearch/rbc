@@ -52,7 +52,7 @@ class FunctionalArgs(BaseArgs):
 def main(args: FunctionalArgs) -> int:
     """Main entrypoint of functional workflow."""
     # Setup
-    ctx = setup_runner(runner=args.runner, verbose=args.verbose)
+    ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
 
     ctx.logger.info("Preparing to run RBC functional workflow")
