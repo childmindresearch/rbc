@@ -19,18 +19,23 @@ if TYPE_CHECKING:
     from typing import Literal
 
     AtlasName = Literal[
+        "aal",
+        "brodmann",
+        "craddock_200",
+        "craddock_400",
+        "glasser",
+        "harvard_oxford_cortical",
+        "harvard_oxford_subcortical",
+        "juelich",
         "schaefer_200",
         "schaefer_300",
         "schaefer_400",
         "schaefer_1000",
-        "aal",
-        "harvard_oxford_cortical",
-        "harvard_oxford_subcortical",
-        "glasser",
+        "slab907",
         "yeo_7",
+        "yeo_7_liberal",
         "yeo_17",
-        "craddock_200",
-        "craddock_400",
+        "yeo_17_liberal",
     ]
 
 _ROOT = Path(__file__).parent.resolve()
@@ -102,18 +107,23 @@ FSL_RESOURCES = FSL(bbr_schedule=_ROOT / "configs" / "flirt_bbr_schedule.sch")
 _ATLAS_DIR = _ROOT / "atlases"
 
 ATLAS_REGISTRY: dict[AtlasName, str] = {
-    "schaefer_200": "schaefer_200.nii.gz",
-    "schaefer_300": "schaefer_300.nii.gz",
-    "schaefer_400": "schaefer_400.nii.gz",
-    "schaefer_1000": "schaefer_1000.nii.gz",
-    "aal": "aal.nii.gz",
-    "harvard_oxford_cortical": "harvard_oxford_cortical.nii.gz",
-    "harvard_oxford_subcortical": "harvard_oxford_subcortical.nii.gz",
-    "glasser": "glasser.nii.gz",
-    "yeo_7": "yeo_7.nii.gz",
-    "yeo_17": "yeo_17.nii.gz",
-    "craddock_200": "craddock_200.nii.gz",
-    "craddock_400": "craddock_400.nii.gz",
+    "aal": "atlas-AAL_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "brodmann": "atlas-Brodmann_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "craddock_200": "atlas-CC200_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "craddock_400": "atlas-CC400_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "glasser": "atlas-Glasser_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "harvard_oxford_cortical": "atlas-HarvardOxfordcortMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "harvard_oxford_subcortical": "atlas-HarvardOxfordsubMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "juelich": "atlas-Juelich_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "schaefer_200": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-200Parcels17NetworksOrder_dseg.nii.gz",
+    "schaefer_300": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-300Parcels17NetworksOrder_dseg.nii.gz",
+    "schaefer_400": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-400Parcels17NetworksOrder_dseg.nii.gz",
+    "schaefer_1000": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-1000Parcels17NetworksOrder_dseg.nii.gz",
+    "slab907": "atlas-Slab907_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "yeo_7": "atlas-Yeo7_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "yeo_7_liberal": "atlas-Yeo7liberal_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "yeo_17": "atlas-Yeo17_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "yeo_17_liberal": "atlas-Yeo17liberal_space-MNI152NLin6_res-2_dseg.nii.gz",
 }
 
 
