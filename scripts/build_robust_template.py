@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import bids2table as b2t
 import polars as pl
 from niwrap import (
+    c3d,    # uv script dependency with private repo; using c3d to convert transform
     Runner,
     freesurfer,
     get_global_runner,
@@ -251,13 +252,27 @@ class ITKTransforms(NamedTuple):
     transforms: list[Path]
 
 
-def fs_to_ants_xfm(in_xfms: Sequence[Path]) -> list[Path]:
-    """Convert Freesurfer transformations to ANTs compatible format."""
+def fs_to_ants_xfm(
+    ref_file: Path, src_files: Sequence[Path], in_xfms: Sequence[Path]
+) -> list[Path]:
+    """Convert Freesurfer transformations to ANTs compatible format.
+
+    freesurfer -> fsl -> itk
+    (see https://www.mail-archive.com/freesurfer@nmr.mgh.harvard.edu/msg55547.html)
+    """
     result = ITKTransforms(transforms=[])
-    for in_xfm in in_xfms:
-        fname = in_xfm.with_suffix(".mat").name
-        lta = freesurfer.lta_convert(in_lta=in_xfm, out_itk=fname)
-        result.transforms.append(lta.root / fname)
+    for src_file, in_xfm in zip(src_files, in_xfms, strict=True):
+        fsl_fname = in_xfm.with_suffix(".mat").name
+        lta = freesurfer.lta_convert(in_lta=in_xfm, out_fsl=fsl_fname)
+        fsl2itk = c3d.c3d_affine_tool(
+            transform_file=lta.root / fsl_fname,
+            source_file=src_file,
+            reference_file=ref_file,
+            fsl2ras=True,
+            out_itk_transform=in_xfm.with_suffix(".txt").name
+        )
+        assert fsl2itk.itk_transform_outfile
+        result.transforms.append(fsl2itk.itk_transform_outfile)
 
     return result.transforms
 
@@ -275,6 +290,7 @@ if __name__ == "__main__":
     ctx.runner.environ = {
         "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
         "ANTS_RANDOM_SEED": 77742777,
+        "FSLOUTPUTTYPE": "NIFTI_GZ"  # Needed for FreeSurfer xfm conversion
     }
     ctx.logger.warning(
         "This script is experimental and may be sensitive to input file naming "
@@ -321,7 +337,11 @@ if __name__ == "__main__":
 
         # 3. Convert transformations to ANTs compatible format
         ctx.logger.info("Converting Freesurfer transformations to ANTs format")
-        subj_to_temp = fs_to_ants_xfm(robust_template.transforms)
+        subj_to_temp = fs_to_ants_xfm(
+            ref_file=robust_template.template,
+            src_files=in_files,
+            in_xfms=robust_template.transforms
+        )
 
         # 4. Save outputs
         ctx.logger.info("Saving files")
