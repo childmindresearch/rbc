@@ -407,8 +407,12 @@ def longitudinal_process(
     )
 
     return FunctionalLongOutputs(
-        sbref=func_transform(in_file=sbref, template=template, xfm=bold_to_tpl_xfm),
-        bold=func_transform(in_file=bold, template=template, xfm=bold_to_tpl_xfm),
+        sbref=func_transform(  # 3D volume
+            in_file=sbref, template=template, xfm=bold_to_tpl_xfm, strategy="single"
+        ),
+        bold=func_transform(
+            in_file=bold, template=template, xfm=bold_to_tpl_xfm, strategy="chunked"
+        ),
         bold_mask=mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
         if bold_mask
         else None,
