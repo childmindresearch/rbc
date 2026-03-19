@@ -113,12 +113,10 @@ ATLAS_REGISTRY: dict[AtlasName, str] = {
     "craddock_400": "atlas-CC400_space-MNI152NLin6_res-2_dseg.nii.gz",
     "glasser": "atlas-Glasser_space-MNI152NLin6_res-2_dseg.nii.gz",
     "harvard_oxford_cortical": (
-        "atlas-HarvardOxfordcortMaxprobThr25_space-"
-        "MNI152NLin6_res-2_dseg.nii.gz"
+        "atlas-HarvardOxfordcortMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz"
     ),
     "harvard_oxford_subcortical": (
-        "atlas-HarvardOxfordsubMaxprobThr25_space-"
-        "MNI152NLin6_res-2_dseg.nii.gz"
+        "atlas-HarvardOxfordsubMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz"
     ),
     "juelich": "atlas-Juelich_space-MNI152NLin6_res-2_dseg.nii.gz",
     "schaefer_200": (
