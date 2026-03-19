@@ -35,6 +35,11 @@ from rbc.core.functional import (
     slice_timing_correction,
     truncate_trs,
 )
+from rbc.core.longitudinal.transform import (
+    compose_transform,
+    func_transform,
+    mask_transform,
+)
 from rbc.core.niwrap import generate_exec_folder
 from rbc_resources import MNI_TEMPLATES
 
@@ -350,4 +355,66 @@ def single_session_preprocess(
         cleaned_bold=cleaned.regressed_bold,
         regressor_file=filtered_regressors,
         template_brain_mask=tmpl_brain,
+    )
+
+
+class FunctionalLongOutputs(NamedTuple):
+    """Outputs from the functional preprocessing pipeline.
+
+    Attributes:
+        sbref:
+        bold:
+        bold_mask:
+        forward_xfm:
+    """
+
+    forward_xfm: Path
+    sbref: Path
+    bold: Path
+    bold_mask: Path | None = None
+
+
+def longitudinal_process(
+    template: Path,
+    anat_to_template_xfm: Path,
+    *,
+    bold_to_anat_xfm: Path,
+    sbref: Path,
+    bold: Path,
+    bold_mask: Path | None,
+) -> FunctionalLongOutputs:
+    """Transform preprocessed functional outputs to longitudinal template space.
+
+    Assumes a template generated with transforms to anatomical, anatomical data already
+    preprocessed to longitudinal.
+
+    Args:
+        template: Longitudinal template image.
+        anat_to_template_xfm: Transform from subject to template space.
+        bold_to_anat_xfm: Transformation from bold to preprocessed anatomical space.
+        sbref: Motion reference (single-band reference) volume.
+        bold: Preprocessed bold image.
+        bold_mask: Bold brain mask, if available.
+
+    Returns:
+        :class:`FunctionalLongOutputs` with all non-null inputs transformed to template
+            space.
+    """
+    bold_to_tpl_xfm = compose_transform(
+        ref=template,
+        bold_to_anat_xfm=bold_to_anat_xfm,
+        anat_to_tpl_xfm=anat_to_template_xfm,
+    )
+
+    return FunctionalLongOutputs(
+        sbref=func_transform(  # 3D volume
+            in_file=sbref, template=template, xfm=bold_to_tpl_xfm, strategy="single"
+        ),
+        bold=func_transform(
+            in_file=bold, template=template, xfm=bold_to_tpl_xfm, strategy="chunked"
+        ),
+        bold_mask=mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
+        if bold_mask
+        else None,
+        forward_xfm=bold_to_tpl_xfm,
     )
