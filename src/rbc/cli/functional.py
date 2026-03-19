@@ -60,7 +60,9 @@ def main(args: FunctionalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = []
+    # Loose initial filters
+    tpl_spaces = [v for k, v in vars(TemplateSpace).items() if not k.startswith("_")]
+    filters = [~pl.col("space").is_in(tpl_spaces), pl.col("desc").is_null()]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
