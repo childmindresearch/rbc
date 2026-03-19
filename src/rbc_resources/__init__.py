@@ -112,13 +112,25 @@ ATLAS_REGISTRY: dict[AtlasName, str] = {
     "craddock_200": "atlas-CC200_space-MNI152NLin6_res-2_dseg.nii.gz",
     "craddock_400": "atlas-CC400_space-MNI152NLin6_res-2_dseg.nii.gz",
     "glasser": "atlas-Glasser_space-MNI152NLin6_res-2_dseg.nii.gz",
-    "harvard_oxford_cortical": "atlas-HarvardOxfordcortMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
-    "harvard_oxford_subcortical": "atlas-HarvardOxfordsubMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "harvard_oxford_cortical": (
+        "atlas-HarvardOxfordcortMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
+    ),
+    "harvard_oxford_subcortical": (
+        "atlas-HarvardOxfordsubMaxprobThr25_space-MNI152NLin6_res-2_dseg.nii.gz",
+    ),
     "juelich": "atlas-Juelich_space-MNI152NLin6_res-2_dseg.nii.gz",
-    "schaefer_200": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-200Parcels17NetworksOrder_dseg.nii.gz",
-    "schaefer_300": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-300Parcels17NetworksOrder_dseg.nii.gz",
-    "schaefer_400": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-400Parcels17NetworksOrder_dseg.nii.gz",
-    "schaefer_1000": "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-1000Parcels17NetworksOrder_dseg.nii.gz",
+    "schaefer_200": (
+        "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-200Parcels17NetworksOrder_dseg.nii.gz"
+    ),
+    "schaefer_300": (
+        "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-300Parcels17NetworksOrder_dseg.nii.gz"
+    ),
+    "schaefer_400": (
+        "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-400Parcels17NetworksOrder_dseg.nii.gz"
+    ),
+    "schaefer_1000": (
+        "atlas-Schaefer2018_space-MNI152NLin6_res-2_desc-1000Parcels17NetworksOrder_dseg.nii.gz"
+    ),
     "slab907": "atlas-Slab907_space-MNI152NLin6_res-2_dseg.nii.gz",
     "yeo_7": "atlas-Yeo7_space-MNI152NLin6_res-2_dseg.nii.gz",
     "yeo_7_liberal": "atlas-Yeo7liberal_space-MNI152NLin6_res-2_dseg.nii.gz",
