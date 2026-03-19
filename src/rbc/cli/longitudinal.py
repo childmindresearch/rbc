@@ -18,7 +18,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Extension, Suffix
+from rbc.core.bids import Datatype, Extension, Suffix, TemplateSpace
 from rbc.core.bids2table import get_file_path, load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -203,7 +203,11 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [pl.col("ses") != "longitudinal"]
+    tpl_spaces = [v for k, v in vars(TemplateSpace).items() if not k.startswith("_")]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        ~pl.col("space").is_in(tpl_spaces) | (pl.col("space") != "longitudinal"),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
