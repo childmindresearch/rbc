@@ -102,8 +102,8 @@ def _process_anat(
         _require_file(outputs.brain_mask, "brain_mask"), desc="T1w", suffix=Suffix.MASK
     )
     _aex(_require_file(outputs.csf_mask, "csf_mask"), desc="csf", suffix=Suffix.MASK)
-    _aex(_require_file(outputs.csf_mask, "gm_mask"), desc="gm", suffix=Suffix.MASK)
-    _aex(_require_file(outputs.csf_mask, "wm_mask"), desc="wm", suffix=Suffix.MASK)
+    _aex(_require_file(outputs.gm_mask, "gm_mask"), desc="gm", suffix=Suffix.MASK)
+    _aex(_require_file(outputs.wm_mask, "wm_mask"), desc="wm", suffix=Suffix.MASK)
     _aex(
         outputs.forward_xfm,
         suffix="xfm",
