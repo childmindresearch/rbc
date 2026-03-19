@@ -1,0 +1,33 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types:
+    - published
+
+env:
+  UV_FROZEN: true
+
+jobs:
+  pypi-release:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # Necessary for trusted publish on PyPI
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup venv
+      uses: ./.github/actions/setup-venv
+
+    - name: Freeze dependencies and build
+      run: |
+        uv sync --no-dev --no-install-project
+        uv build
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: true
