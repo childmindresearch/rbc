@@ -1,0 +1,2052 @@
+{
+    "MetaData": {
+        "AtlasName": "Schaefer2018_300Parcels17NetworksOrder",
+        "Number of Regions": "134",
+        "Average Volume Per Region": "372.46268656716416",
+        "Year Generated": "2018",
+        "Generation Method": "Resting state fMRI data from 1489 subjects were registered using surface-based alignment. A gradient weighted markov random field approach was employed to identify cortical parcels ranging from 100 to 1000 parcels.",
+        "Source": "https://github.com/ThomasYeoLab/CBIG/tree/v0.22.6-Edit_KRR_LITE_to_only_allow_for_corr_kernel/stable_projects/brain_parcellation/Schaefer2018_LocalGlobal/Parcellations/MNI"
+    },
+    "rois": {
+        "0": {
+            "label": "background",
+            "center": null
+        },
+        "1": {
+            "label": "17Networks_LH_VisCent_ExStr_1",
+            "center": [
+                -35.03349282296651,
+                -64.88516746411483,
+                -16.444976076555022
+            ],
+            "size": 419
+        },
+        "2": {
+            "label": "17Networks_LH_VisCent_ExStr_2",
+            "center": [
+                -22.0,
+                -72.73716012084591,
+                -9.419939577039273
+            ],
+            "size": 358
+        },
+        "3": {
+            "label": "17Networks_LH_VisCent_ExStr_3",
+            "center": [
+                -21.601659751037346,
+                -84.79253112033194,
+                -14.98755186721992
+            ],
+            "size": 485
+        },
+        "4": {
+            "label": "17Networks_LH_VisCent_ExStr_4",
+            "center": [
+                -41.72134831460673,
+                -84.56629213483146,
+                -9.707865168539328
+            ],
+            "size": 446
+        },
+        "5": {
+            "label": "17Networks_LH_VisCent_ExStr_5",
+            "center": [
+                -22.44869565217391,
+                -97.56521739130434,
+                -11.544347826086955
+            ],
+            "size": 582
+        },
+        "6": {
+            "label": "17Networks_LH_VisCent_ExStr_6",
+            "center": [
+                -45.46153846153845,
+                -75.0,
+                3.1615384615384556
+            ],
+            "size": 260
+        },
+        "7": {
+            "label": "17Networks_LH_VisCent_Striate_1",
+            "center": [
+                -5.854285714285709,
+                -94.15428571428572,
+                -4.965714285714284
+            ],
+            "size": 700
+        },
+        "8": {
+            "label": "17Networks_LH_VisCent_ExStr_7",
+            "center": [
+                -27.140311804008903,
+                -94.53006681514476,
+                1.3674832962138055
+            ],
+            "size": 553
+        },
+        "9": {
+            "label": "17Networks_LH_VisCent_ExStr_8",
+            "center": [
+                -38.0,
+                -86.55555555555556,
+                5.666666666666671
+            ],
+            "size": 36
+        },
+        "10": {
+            "label": "17Networks_LH_VisCent_ExStr_9",
+            "center": [
+                -10.5,
+                -98.91666666666667,
+                4.833333333333329
+            ],
+            "size": 26
+        },
+        "11": {
+            "label": "17Networks_LH_VisCent_ExStr_10",
+            "center": null,
+            "size": null
+        },
+        "12": {
+            "label": "17Networks_LH_VisPeri_ExStrInf_1",
+            "center": [
+                -24.444444444444443,
+                -54.32592592592593,
+                -8.256790123456788
+            ],
+            "size": 406
+        },
+        "13": {
+            "label": "17Networks_LH_VisPeri_ExStrInf_2",
+            "center": [
+                -11.926739926739927,
+                -61.17216117216117,
+                -4.593406593406598
+            ],
+            "size": 273
+        },
+        "14": {
+            "label": "17Networks_LH_VisPeri_ExStrInf_3",
+            "center": [
+                -6.863945578231295,
+                -75.73469387755102,
+                -5.673469387755105
+            ],
+            "size": 294
+        },
+        "15": {
+            "label": "17Networks_LH_VisPeri_ExStrInf_4",
+            "center": [
+                -13.909774436090231,
+                -51.35338345864662,
+                -0.872180451127818
+            ],
+            "size": 266
+        },
+        "16": {
+            "label": "17Networks_LH_VisPeri_StriCal_1",
+            "center": [
+                -6.735426008968602,
+                -79.03139013452915,
+                4.1345291479820645
+            ],
+            "size": 223
+        },
+        "17": {
+            "label": "17Networks_LH_VisPeri_ExStrSup_1",
+            "center": [
+                -19.09826589595376,
+                -64.3699421965318,
+                4.427745664739888
+            ],
+            "size": 175
+        },
+        "18": {
+            "label": "17Networks_LH_VisPeri_ExStrSup_2",
+            "center": null,
+            "size": null
+        },
+        "19": {
+            "label": "17Networks_LH_VisPeri_ExStrSup_3",
+            "center": null,
+            "size": null
+        },
+        "20": {
+            "label": "17Networks_LH_VisPeri_ExStrSup_4",
+            "center": null,
+            "size": null
+        },
+        "21": {
+            "label": "17Networks_LH_SomMotA_1",
+            "center": null,
+            "size": null
+        },
+        "22": {
+            "label": "17Networks_LH_SomMotA_2",
+            "center": null,
+            "size": null
+        },
+        "23": {
+            "label": "17Networks_LH_SomMotA_3",
+            "center": null,
+            "size": null
+        },
+        "24": {
+            "label": "17Networks_LH_SomMotA_4",
+            "center": null,
+            "size": null
+        },
+        "25": {
+            "label": "17Networks_LH_SomMotA_5",
+            "center": null,
+            "size": null
+        },
+        "26": {
+            "label": "17Networks_LH_SomMotA_6",
+            "center": null,
+            "size": null
+        },
+        "27": {
+            "label": "17Networks_LH_SomMotA_7",
+            "center": null,
+            "size": null
+        },
+        "28": {
+            "label": "17Networks_LH_SomMotA_8",
+            "center": null,
+            "size": null
+        },
+        "29": {
+            "label": "17Networks_LH_SomMotA_9",
+            "center": null,
+            "size": null
+        },
+        "30": {
+            "label": "17Networks_LH_SomMotA_10",
+            "center": null,
+            "size": null
+        },
+        "31": {
+            "label": "17Networks_LH_SomMotA_11",
+            "center": null,
+            "size": null
+        },
+        "32": {
+            "label": "17Networks_LH_SomMotA_12",
+            "center": [
+                8.0,
+                2.5714285714285836,
+                36.85714285714286
+            ],
+            "size": 18
+        },
+        "33": {
+            "label": "17Networks_LH_SomMotA_13",
+            "center": null,
+            "size": null
+        },
+        "34": {
+            "label": "17Networks_LH_SomMotA_14",
+            "center": null,
+            "size": null
+        },
+        "35": {
+            "label": "17Networks_LH_SomMotA_15",
+            "center": null,
+            "size": null
+        },
+        "36": {
+            "label": "17Networks_LH_SomMotB_Aud_1",
+            "center": [
+                -49.56125356125355,
+                -9.920227920227916,
+                -0.3874643874643908
+            ],
+            "size": 351
+        },
+        "37": {
+            "label": "17Networks_LH_SomMotB_Aud_2",
+            "center": [
+                -54.83333333333334,
+                -18.39393939393939,
+                3.5
+            ],
+            "size": 132
+        },
+        "38": {
+            "label": "17Networks_LH_SomMotB_S2_1",
+            "center": null,
+            "size": null
+        },
+        "39": {
+            "label": "17Networks_LH_SomMotB_S2_2",
+            "center": [
+                -33.5,
+                -26.5,
+                5.5
+            ],
+            "size": 7
+        },
+        "40": {
+            "label": "17Networks_LH_SomMotB_S2_3",
+            "center": null,
+            "size": null
+        },
+        "41": {
+            "label": "17Networks_LH_SomMotB_Aud_3",
+            "center": null,
+            "size": null
+        },
+        "42": {
+            "label": "17Networks_LH_SomMotB_S2_4",
+            "center": null,
+            "size": null
+        },
+        "43": {
+            "label": "17Networks_LH_SomMotB_S2_5",
+            "center": null,
+            "size": null
+        },
+        "44": {
+            "label": "17Networks_LH_SomMotB_S2_6",
+            "center": null,
+            "size": null
+        },
+        "45": {
+            "label": "17Networks_LH_SomMotB_Cent_1",
+            "center": null,
+            "size": null
+        },
+        "46": {
+            "label": "17Networks_LH_SomMotB_Cent_2",
+            "center": null,
+            "size": null
+        },
+        "47": {
+            "label": "17Networks_LH_SomMotB_Cent_3",
+            "center": null,
+            "size": null
+        },
+        "48": {
+            "label": "17Networks_LH_DorsAttnA_TempOcc_1",
+            "center": [
+                -33.15463917525773,
+                -41.26804123711341,
+                -21.077319587628864
+            ],
+            "size": 389
+        },
+        "49": {
+            "label": "17Networks_LH_DorsAttnA_TempOcc_2",
+            "center": [
+                -47.858453473132386,
+                -49.900393184796854,
+                -18.694626474442984
+            ],
+            "size": 763
+        },
+        "50": {
+            "label": "17Networks_LH_DorsAttnA_TempOcc_3",
+            "center": [
+                -45.3836276083467,
+                -67.45425361155698,
+                -8.247191011235955
+            ],
+            "size": 625
+        },
+        "51": {
+            "label": "17Networks_LH_DorsAttnA_ParOcc_1",
+            "center": [
+                -46.33333333333334,
+                -60.66666666666667,
+                6.0
+            ],
+            "size": 11
+        },
+        "52": {
+            "label": "17Networks_LH_DorsAttnA_SPL_1",
+            "center": null,
+            "size": null
+        },
+        "53": {
+            "label": "17Networks_LH_DorsAttnA_SPL_2",
+            "center": null,
+            "size": null
+        },
+        "54": {
+            "label": "17Networks_LH_DorsAttnA_SPL_3",
+            "center": null,
+            "size": null
+        },
+        "55": {
+            "label": "17Networks_LH_DorsAttnA_SPL_4",
+            "center": null,
+            "size": null
+        },
+        "56": {
+            "label": "17Networks_LH_DorsAttnB_TempOcc_1",
+            "center": [
+                -55.39361702127658,
+                -62.148936170212764,
+                0.5904255319148888
+            ],
+            "size": 376
+        },
+        "57": {
+            "label": "17Networks_LH_DorsAttnB_PostC_1",
+            "center": null,
+            "size": null
+        },
+        "58": {
+            "label": "17Networks_LH_DorsAttnB_PostC_2",
+            "center": null,
+            "size": null
+        },
+        "59": {
+            "label": "17Networks_LH_DorsAttnB_PostC_3",
+            "center": null,
+            "size": null
+        },
+        "60": {
+            "label": "17Networks_LH_DorsAttnB_PostC_4",
+            "center": null,
+            "size": null
+        },
+        "61": {
+            "label": "17Networks_LH_DorsAttnB_PostC_5",
+            "center": null,
+            "size": null
+        },
+        "62": {
+            "label": "17Networks_LH_DorsAttnB_FEF_1",
+            "center": null,
+            "size": null
+        },
+        "63": {
+            "label": "17Networks_LH_DorsAttnB_FEF_2",
+            "center": null,
+            "size": null
+        },
+        "64": {
+            "label": "17Networks_LH_SalVentAttnA_ParOper_1",
+            "center": null,
+            "size": null
+        },
+        "65": {
+            "label": "17Networks_LH_SalVentAttnA_ParOper_2",
+            "center": null,
+            "size": null
+        },
+        "66": {
+            "label": "17Networks_LH_SalVentAttnA_Ins_1",
+            "center": [
+                -39.1157894736842,
+                -2.5233082706766936,
+                -4.649624060150373
+            ],
+            "size": 665
+        },
+        "67": {
+            "label": "17Networks_LH_SalVentAttnA_Ins_2",
+            "center": [
+                -32.33333333333333,
+                15.833333333333343,
+                3.8333333333333286
+            ],
+            "size": 41
+        },
+        "68": {
+            "label": "17Networks_LH_SalVentAttnA_Ins_3",
+            "center": null,
+            "size": null
+        },
+        "69": {
+            "label": "17Networks_LH_SalVentAttnA_FrOper_1",
+            "center": [
+                -52.203125,
+                3.078125,
+                1.875
+            ],
+            "size": 128
+        },
+        "70": {
+            "label": "17Networks_LH_SalVentAttnA_ParMed_1",
+            "center": null,
+            "size": null
+        },
+        "71": {
+            "label": "17Networks_LH_SalVentAttnA_ParMed_2",
+            "center": null,
+            "size": null
+        },
+        "72": {
+            "label": "17Networks_LH_SalVentAttnA_FrMed_1",
+            "center": null,
+            "size": null
+        },
+        "73": {
+            "label": "17Networks_LH_SalVentAttnA_FrMed_2",
+            "center": null,
+            "size": null
+        },
+        "74": {
+            "label": "17Networks_LH_SalVentAttnB_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "75": {
+            "label": "17Networks_LH_SalVentAttnB_PFCl_1",
+            "center": null,
+            "size": null
+        },
+        "76": {
+            "label": "17Networks_LH_SalVentAttnB_PFCl_2",
+            "center": null,
+            "size": null
+        },
+        "77": {
+            "label": "17Networks_LH_SalVentAttnB_Ins_1",
+            "center": [
+                -32.885844748858446,
+                24.34703196347033,
+                -1.1598173515981784
+            ],
+            "size": 219
+        },
+        "78": {
+            "label": "17Networks_LH_SalVentAttnB_Ins_2",
+            "center": [
+                -45.448717948717956,
+                11.128205128205138,
+                0.8205128205128176
+            ],
+            "size": 156
+        },
+        "79": {
+            "label": "17Networks_LH_SalVentAttnB_PFCmp_1",
+            "center": null,
+            "size": null
+        },
+        "80": {
+            "label": "17Networks_LH_LimbicB_OFC_1",
+            "center": [
+                -23.679245283018872,
+                22.094339622641513,
+                -19.954716981132073
+            ],
+            "size": 530
+        },
+        "81": {
+            "label": "17Networks_LH_LimbicB_OFC_2",
+            "center": [
+                -7.723502304147459,
+                23.48387096774195,
+                -19.837173579109063
+            ],
+            "size": 655
+        },
+        "82": {
+            "label": "17Networks_LH_LimbicB_OFC_3",
+            "center": [
+                -10.951367781155014,
+                47.48024316109422,
+                -21.069908814589667
+            ],
+            "size": 658
+        },
+        "83": {
+            "label": "17Networks_LH_LimbicB_OFC_4",
+            "center": [
+                -19.268292682926827,
+                62.700143472022944,
+                -7.934002869440462
+            ],
+            "size": 697
+        },
+        "84": {
+            "label": "17Networks_LH_LimbicA_TempPole_1",
+            "center": [
+                -29.367952522255194,
+                -4.296735905044514,
+                -39.89317507418397
+            ],
+            "size": 674
+        },
+        "85": {
+            "label": "17Networks_LH_LimbicA_TempPole_2",
+            "center": [
+                -52.15428571428572,
+                -17.511428571428567,
+                -33.614285714285714
+            ],
+            "size": 704
+        },
+        "86": {
+            "label": "17Networks_LH_LimbicA_TempPole_3",
+            "center": [
+                -39.53159851301115,
+                -20.81412639405204,
+                -27.899628252788105
+            ],
+            "size": 540
+        },
+        "87": {
+            "label": "17Networks_LH_LimbicA_TempPole_4",
+            "center": [
+                -26.898710865561696,
+                9.657458563535897,
+                -33.54696132596685
+            ],
+            "size": 543
+        },
+        "88": {
+            "label": "17Networks_LH_LimbicA_TempPole_5",
+            "center": [
+                -41.959302325581405,
+                6.244186046511629,
+                -18.860465116279073
+            ],
+            "size": 344
+        },
+        "89": {
+            "label": "17Networks_LH_ContA_Temp_1",
+            "center": [
+                -59.611320754716985,
+                -52.1245283018868,
+                -9.362264150943396
+            ],
+            "size": 532
+        },
+        "90": {
+            "label": "17Networks_LH_ContA_IPS_1",
+            "center": null,
+            "size": null
+        },
+        "91": {
+            "label": "17Networks_LH_ContA_IPS_2",
+            "center": null,
+            "size": null
+        },
+        "92": {
+            "label": "17Networks_LH_ContA_IPS_3",
+            "center": null,
+            "size": null
+        },
+        "93": {
+            "label": "17Networks_LH_ContA_IPS_4",
+            "center": null,
+            "size": null
+        },
+        "94": {
+            "label": "17Networks_LH_ContA_PFCd_1",
+            "center": null,
+            "size": null
+        },
+        "95": {
+            "label": "17Networks_LH_ContA_PFClv_1",
+            "center": [
+                -40.77272727272728,
+                44.15909090909091,
+                3.2954545454545467
+            ],
+            "size": 88
+        },
+        "96": {
+            "label": "17Networks_LH_ContA_PFCl_1",
+            "center": [
+                -53.55555555555554,
+                11.333333333333343,
+                3.555555555555557
+            ],
+            "size": 12
+        },
+        "97": {
+            "label": "17Networks_LH_ContA_PFCl_2",
+            "center": null,
+            "size": null
+        },
+        "98": {
+            "label": "17Networks_LH_ContA_PFCl_3",
+            "center": null,
+            "size": null
+        },
+        "99": {
+            "label": "17Networks_LH_ContA_PFCl_4",
+            "center": null,
+            "size": null
+        },
+        "100": {
+            "label": "17Networks_LH_ContA_Cingm_1",
+            "center": null,
+            "size": null
+        },
+        "101": {
+            "label": "17Networks_LH_ContB_Temp_1",
+            "center": [
+                -60.68524590163935,
+                -34.44262295081967,
+                -17.652459016393443
+            ],
+            "size": 610
+        },
+        "102": {
+            "label": "17Networks_LH_ContB_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "103": {
+            "label": "17Networks_LH_ContB_IPL_2",
+            "center": null,
+            "size": null
+        },
+        "104": {
+            "label": "17Networks_LH_ContB_PFClv_1",
+            "center": [
+                -41.938411669367895,
+                49.04051863857376,
+                -6.11993517017828
+            ],
+            "size": 617
+        },
+        "105": {
+            "label": "17Networks_LH_ContB_PFClv_2",
+            "center": [
+                -28.03652968036529,
+                56.78538812785388,
+                0.8310502283105023
+            ],
+            "size": 219
+        },
+        "106": {
+            "label": "17Networks_LH_ContB_PFCmp_1",
+            "center": null,
+            "size": null
+        },
+        "107": {
+            "label": "17Networks_LH_ContC_pCun_1",
+            "center": null,
+            "size": null
+        },
+        "108": {
+            "label": "17Networks_LH_ContC_pCun_2",
+            "center": null,
+            "size": null
+        },
+        "109": {
+            "label": "17Networks_LH_ContC_pCun_3",
+            "center": null,
+            "size": null
+        },
+        "110": {
+            "label": "17Networks_LH_ContC_Cingp_1",
+            "center": null,
+            "size": null
+        },
+        "111": {
+            "label": "17Networks_LH_DefaultA_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "112": {
+            "label": "17Networks_LH_DefaultA_PFCd_1",
+            "center": null,
+            "size": null
+        },
+        "113": {
+            "label": "17Networks_LH_DefaultA_PFCd_2",
+            "center": null,
+            "size": null
+        },
+        "114": {
+            "label": "17Networks_LH_DefaultA_pCunPCC_1",
+            "center": null,
+            "size": null
+        },
+        "115": {
+            "label": "17Networks_LH_DefaultA_pCunPCC_2",
+            "center": null,
+            "size": null
+        },
+        "116": {
+            "label": "17Networks_LH_DefaultA_pCunPCC_3",
+            "center": null,
+            "size": null
+        },
+        "117": {
+            "label": "17Networks_LH_DefaultA_pCunPCC_4",
+            "center": null,
+            "size": null
+        },
+        "118": {
+            "label": "17Networks_LH_DefaultA_pCunPCC_5",
+            "center": null,
+            "size": null
+        },
+        "119": {
+            "label": "17Networks_LH_DefaultA_PFCm_1",
+            "center": [
+                -5.618374558303884,
+                35.54063604240284,
+                -9.89399293286219
+            ],
+            "size": 566
+        },
+        "120": {
+            "label": "17Networks_LH_DefaultA_PFCm_2",
+            "center": [
+                -5.4806378132118425,
+                58.42369020501138,
+                -5.936218678815493
+            ],
+            "size": 439
+        },
+        "121": {
+            "label": "17Networks_LH_DefaultA_PFCm_3",
+            "center": [
+                -5.585657370517936,
+                44.89243027888446,
+                1.1235059760956148
+            ],
+            "size": 251
+        },
+        "122": {
+            "label": "17Networks_LH_DefaultB_Temp_1",
+            "center": [
+                -42.856837606837615,
+                11.529914529914521,
+                -34.16025641025641
+            ],
+            "size": 936
+        },
+        "123": {
+            "label": "17Networks_LH_DefaultB_Temp_2",
+            "center": [
+                -58.1106309420916,
+                -7.821953327571308,
+                -21.27917026793431
+            ],
+            "size": 1157
+        },
+        "124": {
+            "label": "17Networks_LH_DefaultB_Temp_3",
+            "center": [
+                -52.68518518518519,
+                -20.898148148148152,
+                -7.824074074074076
+            ],
+            "size": 217
+        },
+        "125": {
+            "label": "17Networks_LH_DefaultB_Temp_4",
+            "center": [
+                -60.45333333333332,
+                -35.4552380952381,
+                -2.7428571428571473
+            ],
+            "size": 526
+        },
+        "126": {
+            "label": "17Networks_LH_DefaultB_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "127": {
+            "label": "17Networks_LH_DefaultB_IPL_2",
+            "center": null,
+            "size": null
+        },
+        "128": {
+            "label": "17Networks_LH_DefaultB_PFCd_1",
+            "center": [
+                -23.0,
+                68.0,
+                4.0
+            ],
+            "size": 2
+        },
+        "129": {
+            "label": "17Networks_LH_DefaultB_PFCd_2",
+            "center": null,
+            "size": null
+        },
+        "130": {
+            "label": "17Networks_LH_DefaultB_PFCd_3",
+            "center": null,
+            "size": null
+        },
+        "131": {
+            "label": "17Networks_LH_DefaultB_PFCd_4",
+            "center": null,
+            "size": null
+        },
+        "132": {
+            "label": "17Networks_LH_DefaultB_PFCd_5",
+            "center": null,
+            "size": null
+        },
+        "133": {
+            "label": "17Networks_LH_DefaultB_PFCl_1",
+            "center": null,
+            "size": null
+        },
+        "134": {
+            "label": "17Networks_LH_DefaultB_PFCl_2",
+            "center": null,
+            "size": null
+        },
+        "135": {
+            "label": "17Networks_LH_DefaultB_PFCv_1",
+            "center": [
+                -35.08752327746741,
+                20.770949720670387,
+                -13.61638733705773
+            ],
+            "size": 538
+        },
+        "136": {
+            "label": "17Networks_LH_DefaultB_PFCv_2",
+            "center": [
+                -32.22958057395144,
+                40.807947019867555,
+                -13.22737306843267
+            ],
+            "size": 453
+        },
+        "137": {
+            "label": "17Networks_LH_DefaultB_PFCv_3",
+            "center": [
+                -46.134146341463406,
+                30.871951219512198,
+                -9.579268292682926
+            ],
+            "size": 328
+        },
+        "138": {
+            "label": "17Networks_LH_DefaultB_PFCv_4",
+            "center": [
+                -48.32826747720364,
+                28.899696048632222,
+                0.15197568389058347
+            ],
+            "size": 329
+        },
+        "139": {
+            "label": "17Networks_LH_DefaultB_PFCv_5",
+            "center": [
+                -50.934782608695656,
+                17.434782608695656,
+                1.2391304347826093
+            ],
+            "size": 92
+        },
+        "140": {
+            "label": "17Networks_LH_DefaultC_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "141": {
+            "label": "17Networks_LH_DefaultC_Rsp_1",
+            "center": [
+                -10.969230769230762,
+                -49.07692307692308,
+                4.030769230769238
+            ],
+            "size": 131
+        },
+        "142": {
+            "label": "17Networks_LH_DefaultC_Rsp_2",
+            "center": null,
+            "size": null
+        },
+        "143": {
+            "label": "17Networks_LH_DefaultC_PHC_1",
+            "center": [
+                -20.569288389513105,
+                -18.374531835206,
+                -26.749063670411985
+            ],
+            "size": 273
+        },
+        "144": {
+            "label": "17Networks_LH_DefaultC_PHC_2",
+            "center": [
+                -28.47358121330724,
+                -33.36203522504893,
+                -17.127201565557726
+            ],
+            "size": 511
+        },
+        "145": {
+            "label": "17Networks_LH_DefaultC_PHC_3",
+            "center": [
+                -16.108108108108112,
+                -38.61261261261261,
+                -10.810810810810807
+            ],
+            "size": 116
+        },
+        "146": {
+            "label": "17Networks_LH_TempPar_1",
+            "center": [
+                -51.82697201017811,
+                8.132315521628499,
+                -11.994910941475823
+            ],
+            "size": 393
+        },
+        "147": {
+            "label": "17Networks_LH_TempPar_2",
+            "center": [
+                -56.98637602179838,
+                -8.882833787465941,
+                -6.474114441416901
+            ],
+            "size": 367
+        },
+        "148": {
+            "label": "17Networks_LH_TempPar_3",
+            "center": [
+                -59.30656934306569,
+                -27.379562043795616,
+                1.598540145985396
+            ],
+            "size": 274
+        },
+        "149": {
+            "label": "17Networks_LH_TempPar_4",
+            "center": [
+                -53.31937172774869,
+                -42.52356020942409,
+                3.874345549738223
+            ],
+            "size": 191
+        },
+        "150": {
+            "label": "17Networks_LH_TempPar_5",
+            "center": [
+                -60.428571428571416,
+                -51.89285714285714,
+                5.035714285714292
+            ],
+            "size": 56
+        },
+        "151": {
+            "label": "17Networks_RH_VisCent_ExStr_1",
+            "center": [
+                34.40122511485452,
+                -44.63705972434916,
+                -20.177641653905056
+            ],
+            "size": 653
+        },
+        "152": {
+            "label": "17Networks_RH_VisCent_ExStr_2",
+            "center": [
+                25.955473098330245,
+                -54.41558441558442,
+                -8.756957328385901
+            ],
+            "size": 540
+        },
+        "153": {
+            "label": "17Networks_RH_VisCent_ExStr_3",
+            "center": [
+                28.326431181485994,
+                -74.55298416565165,
+                -12.896467722289891
+            ],
+            "size": 821
+        },
+        "154": {
+            "label": "17Networks_RH_VisCent_ExStr_4",
+            "center": [
+                47.24892703862661,
+                -75.71244635193133,
+                -10.622317596566525
+            ],
+            "size": 470
+        },
+        "155": {
+            "label": "17Networks_RH_VisCent_ExStr_5",
+            "center": [
+                6.683229813664596,
+                -87.58385093167702,
+                -9.26086956521739
+            ],
+            "size": 333
+        },
+        "156": {
+            "label": "17Networks_RH_VisCent_ExStr_6",
+            "center": [
+                23.659898477157356,
+                -94.70304568527919,
+                -8.923857868020306
+            ],
+            "size": 790
+        },
+        "157": {
+            "label": "17Networks_RH_VisCent_Striate_1",
+            "center": [
+                10.208201892744484,
+                -94.77602523659306,
+                1.0599369085173578
+            ],
+            "size": 320
+        },
+        "158": {
+            "label": "17Networks_RH_VisCent_ExStr_7",
+            "center": [
+                35.815384615384616,
+                -88.60512820512821,
+                -0.37948717948718524
+            ],
+            "size": 390
+        },
+        "159": {
+            "label": "17Networks_RH_VisCent_ExStr_8",
+            "center": null,
+            "size": null
+        },
+        "160": {
+            "label": "17Networks_RH_VisCent_ExStr_9",
+            "center": [
+                43.24096385542168,
+                -79.20481927710844,
+                3.819277108433738
+            ],
+            "size": 166
+        },
+        "161": {
+            "label": "17Networks_RH_VisCent_ExStr_10",
+            "center": [
+                30.0,
+                -83.0,
+                6.0
+            ],
+            "size": 2
+        },
+        "162": {
+            "label": "17Networks_RH_VisPeri_ExStrInf_1",
+            "center": [
+                17.932773109243698,
+                -36.352941176470594,
+                -12.218487394957982
+            ],
+            "size": 119
+        },
+        "163": {
+            "label": "17Networks_RH_VisPeri_ExStrInf_2",
+            "center": [
+                9.422077922077918,
+                -71.5974025974026,
+                -4.597402597402592
+            ],
+            "size": 311
+        },
+        "164": {
+            "label": "17Networks_RH_VisPeri_ExStrInf_3",
+            "center": [
+                12.870588235294122,
+                -57.55294117647058,
+                -3.4294117647058897
+            ],
+            "size": 340
+        },
+        "165": {
+            "label": "17Networks_RH_VisPeri_ExStrInf_4",
+            "center": [
+                17.16891891891892,
+                -45.14189189189189,
+                -1.3986486486486456
+            ],
+            "size": 297
+        },
+        "166": {
+            "label": "17Networks_RH_VisPeri_StriCal_1",
+            "center": [
+                8.452380952380949,
+                -76.13492063492063,
+                3.69047619047619
+            ],
+            "size": 252
+        },
+        "167": {
+            "label": "17Networks_RH_VisPeri_StriCal_2",
+            "center": [
+                22.009900990099013,
+                -59.56435643564356,
+                4.198019801980195
+            ],
+            "size": 206
+        },
+        "168": {
+            "label": "17Networks_RH_VisPeri_ExStrSup_1",
+            "center": null,
+            "size": null
+        },
+        "169": {
+            "label": "17Networks_RH_VisPeri_ExStrSup_2",
+            "center": null,
+            "size": null
+        },
+        "170": {
+            "label": "17Networks_RH_VisPeri_ExStrSup_3",
+            "center": null,
+            "size": null
+        },
+        "171": {
+            "label": "17Networks_RH_SomMotA_1",
+            "center": null,
+            "size": null
+        },
+        "172": {
+            "label": "17Networks_RH_SomMotA_2",
+            "center": null,
+            "size": null
+        },
+        "173": {
+            "label": "17Networks_RH_SomMotA_3",
+            "center": null,
+            "size": null
+        },
+        "174": {
+            "label": "17Networks_RH_SomMotA_4",
+            "center": null,
+            "size": null
+        },
+        "175": {
+            "label": "17Networks_RH_SomMotA_5",
+            "center": null,
+            "size": null
+        },
+        "176": {
+            "label": "17Networks_RH_SomMotA_6",
+            "center": null,
+            "size": null
+        },
+        "177": {
+            "label": "17Networks_RH_SomMotA_7",
+            "center": null,
+            "size": null
+        },
+        "178": {
+            "label": "17Networks_RH_SomMotA_8",
+            "center": null,
+            "size": null
+        },
+        "179": {
+            "label": "17Networks_RH_SomMotA_9",
+            "center": null,
+            "size": null
+        },
+        "180": {
+            "label": "17Networks_RH_SomMotA_10",
+            "center": null,
+            "size": null
+        },
+        "181": {
+            "label": "17Networks_RH_SomMotA_11",
+            "center": null,
+            "size": null
+        },
+        "182": {
+            "label": "17Networks_RH_SomMotA_12",
+            "center": null,
+            "size": null
+        },
+        "183": {
+            "label": "17Networks_RH_SomMotA_13",
+            "center": null,
+            "size": null
+        },
+        "184": {
+            "label": "17Networks_RH_SomMotA_14",
+            "center": null,
+            "size": null
+        },
+        "185": {
+            "label": "17Networks_RH_SomMotA_15",
+            "center": null,
+            "size": null
+        },
+        "186": {
+            "label": "17Networks_RH_SomMotB_Aud_1",
+            "center": [
+                54.07797270955166,
+                -5.6881091617933635,
+                -0.25730994152047515
+            ],
+            "size": 515
+        },
+        "187": {
+            "label": "17Networks_RH_SomMotB_S2_1",
+            "center": [
+                34.0,
+                -22.0,
+                4.0
+            ],
+            "size": 1
+        },
+        "188": {
+            "label": "17Networks_RH_SomMotB_S2_2",
+            "center": [
+                38.0,
+                -8.0,
+                4.0
+            ],
+            "size": 1
+        },
+        "189": {
+            "label": "17Networks_RH_SomMotB_Aud_2",
+            "center": [
+                61.33333333333333,
+                -18.33333333333333,
+                4.0
+            ],
+            "size": 9
+        },
+        "190": {
+            "label": "17Networks_RH_SomMotB_S2_3",
+            "center": null,
+            "size": null
+        },
+        "191": {
+            "label": "17Networks_RH_SomMotB_S2_4",
+            "center": [
+                61.33333333333333,
+                2.666666666666657,
+                4.0
+            ],
+            "size": 4
+        },
+        "192": {
+            "label": "17Networks_RH_SomMotB_S2_5",
+            "center": null,
+            "size": null
+        },
+        "193": {
+            "label": "17Networks_RH_SomMotB_Cent_1",
+            "center": null,
+            "size": null
+        },
+        "194": {
+            "label": "17Networks_RH_SomMotB_Cent_2",
+            "center": null,
+            "size": null
+        },
+        "195": {
+            "label": "17Networks_RH_DorsAttnA_TempOcc_1",
+            "center": [
+                49.74858223062382,
+                -52.99810964083176,
+                -15.858223062381853
+            ],
+            "size": 1058
+        },
+        "196": {
+            "label": "17Networks_RH_DorsAttnA_ParOcc_1",
+            "center": [
+                49.04938271604938,
+                -64.31687242798354,
+                1.312757201646093
+            ],
+            "size": 486
+        },
+        "197": {
+            "label": "17Networks_RH_DorsAttnA_ParOcc_2",
+            "center": [
+                57.25,
+                -55.25,
+                5.450000000000003
+            ],
+            "size": 41
+        },
+        "198": {
+            "label": "17Networks_RH_DorsAttnA_ParOcc_3",
+            "center": null,
+            "size": null
+        },
+        "199": {
+            "label": "17Networks_RH_DorsAttnA_SPL_1",
+            "center": null,
+            "size": null
+        },
+        "200": {
+            "label": "17Networks_RH_DorsAttnA_SPL_2",
+            "center": null,
+            "size": null
+        },
+        "201": {
+            "label": "17Networks_RH_DorsAttnA_SPL_3",
+            "center": null,
+            "size": null
+        },
+        "202": {
+            "label": "17Networks_RH_DorsAttnA_SPL_4",
+            "center": null,
+            "size": null
+        },
+        "203": {
+            "label": "17Networks_RH_DorsAttnB_PostC_1",
+            "center": null,
+            "size": null
+        },
+        "204": {
+            "label": "17Networks_RH_DorsAttnB_PostC_2",
+            "center": null,
+            "size": null
+        },
+        "205": {
+            "label": "17Networks_RH_DorsAttnB_PostC_3",
+            "center": null,
+            "size": null
+        },
+        "206": {
+            "label": "17Networks_RH_DorsAttnB_PostC_4",
+            "center": null,
+            "size": null
+        },
+        "207": {
+            "label": "17Networks_RH_DorsAttnB_PostC_5",
+            "center": null,
+            "size": null
+        },
+        "208": {
+            "label": "17Networks_RH_DorsAttnB_PostC_6",
+            "center": null,
+            "size": null
+        },
+        "209": {
+            "label": "17Networks_RH_DorsAttnB_FEF_1",
+            "center": null,
+            "size": null
+        },
+        "210": {
+            "label": "17Networks_RH_DorsAttnB_FEF_2",
+            "center": null,
+            "size": null
+        },
+        "211": {
+            "label": "17Networks_RH_SalVentAttnA_ParOper_1",
+            "center": null,
+            "size": null
+        },
+        "212": {
+            "label": "17Networks_RH_SalVentAttnA_ParOper_2",
+            "center": null,
+            "size": null
+        },
+        "213": {
+            "label": "17Networks_RH_SalVentAttnA_ParOper_3",
+            "center": null,
+            "size": null
+        },
+        "214": {
+            "label": "17Networks_RH_SalVentAttnA_ParOper_4",
+            "center": null,
+            "size": null
+        },
+        "215": {
+            "label": "17Networks_RH_SalVentAttnA_PrC_1",
+            "center": null,
+            "size": null
+        },
+        "216": {
+            "label": "17Networks_RH_SalVentAttnA_Ins_1",
+            "center": [
+                39.69547325102881,
+                4.921810699588491,
+                -11.275720164609055
+            ],
+            "size": 245
+        },
+        "217": {
+            "label": "17Networks_RH_SalVentAttnA_Ins_2",
+            "center": [
+                40.60897435897436,
+                -10.839743589743591,
+                -3.288461538461533
+            ],
+            "size": 312
+        },
+        "218": {
+            "label": "17Networks_RH_SalVentAttnA_Ins_3",
+            "center": [
+                40.028571428571425,
+                4.228571428571428,
+                0.7857142857142918
+            ],
+            "size": 140
+        },
+        "219": {
+            "label": "17Networks_RH_SalVentAttnA_FrOper_1",
+            "center": [
+                50.86829268292683,
+                6.663414634146335,
+                1.2975609756097555
+            ],
+            "size": 205
+        },
+        "220": {
+            "label": "17Networks_RH_SalVentAttnA_FrMed_1",
+            "center": null,
+            "size": null
+        },
+        "221": {
+            "label": "17Networks_RH_SalVentAttnA_ParMed_1",
+            "center": null,
+            "size": null
+        },
+        "222": {
+            "label": "17Networks_RH_SalVentAttnA_ParMed_2",
+            "center": null,
+            "size": null
+        },
+        "223": {
+            "label": "17Networks_RH_SalVentAttnA_ParMed_3",
+            "center": null,
+            "size": null
+        },
+        "224": {
+            "label": "17Networks_RH_SalVentAttnA_FrMed_2",
+            "center": null,
+            "size": null
+        },
+        "225": {
+            "label": "17Networks_RH_SalVentAttnA_FrMed_3",
+            "center": null,
+            "size": null
+        },
+        "226": {
+            "label": "17Networks_RH_SalVentAttnB_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "227": {
+            "label": "17Networks_RH_SalVentAttnB_PFClv_1",
+            "center": [
+                45.43646408839779,
+                43.4364640883978,
+                1.6464088397789993
+            ],
+            "size": 181
+        },
+        "228": {
+            "label": "17Networks_RH_SalVentAttnB_PFCl_1",
+            "center": null,
+            "size": null
+        },
+        "229": {
+            "label": "17Networks_RH_SalVentAttnB_PFCl_2",
+            "center": null,
+            "size": null
+        },
+        "230": {
+            "label": "17Networks_RH_SalVentAttnB_Ins_1",
+            "center": [
+                33.711711711711715,
+                20.56756756756758,
+                -8.711711711711715
+            ],
+            "size": 222
+        },
+        "231": {
+            "label": "17Networks_RH_SalVentAttnB_Ins_2",
+            "center": [
+                38.08797653958944,
+                21.337243401759537,
+                0.3167155425219903
+            ],
+            "size": 345
+        },
+        "232": {
+            "label": "17Networks_RH_SalVentAttnB_PFCmp_1",
+            "center": null,
+            "size": null
+        },
+        "233": {
+            "label": "17Networks_RH_SalVentAttnB_PFCmp_2",
+            "center": null,
+            "size": null
+        },
+        "234": {
+            "label": "17Networks_RH_LimbicB_OFC_1",
+            "center": [
+                13.48729792147806,
+                26.129330254041577,
+                -20.97459584295612
+            ],
+            "size": 434
+        },
+        "235": {
+            "label": "17Networks_RH_LimbicB_OFC_2",
+            "center": [
+                25.607287449392715,
+                21.5263157894737,
+                -20.101214574898783
+            ],
+            "size": 494
+        },
+        "236": {
+            "label": "17Networks_RH_LimbicB_OFC_3",
+            "center": [
+                4.4772117962466496,
+                25.297587131367294,
+                -21.25469168900804
+            ],
+            "size": 373
+        },
+        "237": {
+            "label": "17Networks_RH_LimbicB_OFC_4",
+            "center": [
+                10.63858093126386,
+                51.66297117516629,
+                -21.232815964523283
+            ],
+            "size": 451
+        },
+        "238": {
+            "label": "17Networks_RH_LimbicB_OFC_5",
+            "center": [
+                7.236607142857139,
+                63.68303571428572,
+                -7.482142857142861
+            ],
+            "size": 448
+        },
+        "239": {
+            "label": "17Networks_RH_LimbicA_TempPole_1",
+            "center": [
+                35.229729729729726,
+                -0.7668918918918877,
+                -43.601351351351354
+            ],
+            "size": 592
+        },
+        "240": {
+            "label": "17Networks_RH_LimbicA_TempPole_2",
+            "center": [
+                28.75741239892183,
+                11.725067385444731,
+                -34.25876010781671
+            ],
+            "size": 742
+        },
+        "241": {
+            "label": "17Networks_RH_LimbicA_TempPole_3",
+            "center": [
+                25.88720173535792,
+                -8.86334056399133,
+                -32.83297180043384
+            ],
+            "size": 462
+        },
+        "242": {
+            "label": "17Networks_RH_LimbicA_TempPole_4",
+            "center": [
+                52.60126582278481,
+                -14.99683544303798,
+                -33.58860759493671
+            ],
+            "size": 632
+        },
+        "243": {
+            "label": "17Networks_RH_LimbicA_TempPole_5",
+            "center": [
+                41.79139072847682,
+                -20.980132450331126,
+                -27.801324503311257
+            ],
+            "size": 608
+        },
+        "244": {
+            "label": "17Networks_RH_LimbicA_TempPole_6",
+            "center": [
+                46.04338394793926,
+                9.60954446854663,
+                -15.431670281995665
+            ],
+            "size": 461
+        },
+        "245": {
+            "label": "17Networks_RH_ContA_Temp_1",
+            "center": [
+                60.421052631578945,
+                -52.86215538847118,
+                -4.285714285714292
+            ],
+            "size": 399
+        },
+        "246": {
+            "label": "17Networks_RH_ContA_IPS_1",
+            "center": null,
+            "size": null
+        },
+        "247": {
+            "label": "17Networks_RH_ContA_IPS_2",
+            "center": null,
+            "size": null
+        },
+        "248": {
+            "label": "17Networks_RH_ContA_IPS_3",
+            "center": null,
+            "size": null
+        },
+        "249": {
+            "label": "17Networks_RH_ContA_PFCd_1",
+            "center": null,
+            "size": null
+        },
+        "250": {
+            "label": "17Networks_RH_ContA_PFCl_1",
+            "center": [
+                53.75757575757576,
+                13.575757575757564,
+                1.5151515151515156
+            ],
+            "size": 33
+        },
+        "251": {
+            "label": "17Networks_RH_ContA_PFCl_2",
+            "center": null,
+            "size": null
+        },
+        "252": {
+            "label": "17Networks_RH_ContA_PFCl_3",
+            "center": null,
+            "size": null
+        },
+        "253": {
+            "label": "17Networks_RH_ContA_PFCl_4",
+            "center": null,
+            "size": null
+        },
+        "254": {
+            "label": "17Networks_RH_ContA_Cingm_1",
+            "center": null,
+            "size": null
+        },
+        "255": {
+            "label": "17Networks_RH_ContB_Temp_1",
+            "center": [
+                62.27571580063626,
+                -33.348886532343585,
+                -16.748674443266168
+            ],
+            "size": 943
+        },
+        "256": {
+            "label": "17Networks_RH_ContB_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "257": {
+            "label": "17Networks_RH_ContB_IPL_2",
+            "center": null,
+            "size": null
+        },
+        "258": {
+            "label": "17Networks_RH_ContB_IPL_3",
+            "center": null,
+            "size": null
+        },
+        "259": {
+            "label": "17Networks_RH_ContB_PFCld_1",
+            "center": null,
+            "size": null
+        },
+        "260": {
+            "label": "17Networks_RH_ContB_PFCld_2",
+            "center": null,
+            "size": null
+        },
+        "261": {
+            "label": "17Networks_RH_ContB_PFCld_3",
+            "center": null,
+            "size": null
+        },
+        "262": {
+            "label": "17Networks_RH_ContB_PFClv_1",
+            "center": [
+                29.83838383838384,
+                43.033670033670035,
+                -14.141414141414138
+            ],
+            "size": 594
+        },
+        "263": {
+            "label": "17Networks_RH_ContB_PFClv_2",
+            "center": [
+                22.291115311909266,
+                62.967863894139896,
+                -6.96408317580341
+            ],
+            "size": 530
+        },
+        "264": {
+            "label": "17Networks_RH_ContB_PFClv_3",
+            "center": [
+                41.74108818011257,
+                51.48217636022514,
+                -6.589118198874303
+            ],
+            "size": 533
+        },
+        "265": {
+            "label": "17Networks_RH_ContB_PFClv_4",
+            "center": [
+                29.044176706827308,
+                57.13253012048193,
+                0.5943775100401609
+            ],
+            "size": 249
+        },
+        "266": {
+            "label": "17Networks_RH_ContB_PFCmp_1",
+            "center": null,
+            "size": null
+        },
+        "267": {
+            "label": "17Networks_RH_ContC_pCun_1",
+            "center": null,
+            "size": null
+        },
+        "268": {
+            "label": "17Networks_RH_ContC_pCun_2",
+            "center": null,
+            "size": null
+        },
+        "269": {
+            "label": "17Networks_RH_ContC_pCun_3",
+            "center": null,
+            "size": null
+        },
+        "270": {
+            "label": "17Networks_RH_ContC_Cingp_1",
+            "center": null,
+            "size": null
+        },
+        "271": {
+            "label": "17Networks_RH_DefaultA_Temp_1",
+            "center": [
+                59.809876543209874,
+                -6.558024691358028,
+                -21.108641975308643
+            ],
+            "size": 810
+        },
+        "272": {
+            "label": "17Networks_RH_DefaultA_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "273": {
+            "label": "17Networks_RH_DefaultA_IPL_2",
+            "center": null,
+            "size": null
+        },
+        "274": {
+            "label": "17Networks_RH_DefaultA_PFCd_1",
+            "center": null,
+            "size": null
+        },
+        "275": {
+            "label": "17Networks_RH_DefaultA_pCunPCC_1",
+            "center": null,
+            "size": null
+        },
+        "276": {
+            "label": "17Networks_RH_DefaultA_pCunPCC_2",
+            "center": null,
+            "size": null
+        },
+        "277": {
+            "label": "17Networks_RH_DefaultA_pCunPCC_3",
+            "center": null,
+            "size": null
+        },
+        "278": {
+            "label": "17Networks_RH_DefaultA_PFCm_1",
+            "center": [
+                5.216806722689071,
+                38.66218487394957,
+                -10.410084033613444
+            ],
+            "size": 595
+        },
+        "279": {
+            "label": "17Networks_RH_DefaultA_PFCm_2",
+            "center": [
+                7.832214765100673,
+                43.25503355704697,
+                0.10738255033557209
+            ],
+            "size": 298
+        },
+        "280": {
+            "label": "17Networks_RH_DefaultA_PFCm_3",
+            "center": [
+                16.0,
+                65.19999999999999,
+                3.799999999999997
+            ],
+            "size": 10
+        },
+        "281": {
+            "label": "17Networks_RH_DefaultA_PFCm_4",
+            "center": [
+                7.756097560975604,
+                56.29268292682926,
+                2.9512195121951237
+            ],
+            "size": 82
+        },
+        "282": {
+            "label": "17Networks_RH_DefaultA_PFCm_5",
+            "center": null,
+            "size": null
+        },
+        "283": {
+            "label": "17Networks_RH_DefaultB_Temp_1",
+            "center": [
+                63.27391304347826,
+                -28.421739130434787,
+                -4.721739130434784
+            ],
+            "size": 461
+        },
+        "284": {
+            "label": "17Networks_RH_DefaultB_AntTemp_1",
+            "center": [
+                46.77390326209224,
+                12.960629921259851,
+                -31.277840269966255
+            ],
+            "size": 889
+        },
+        "285": {
+            "label": "17Networks_RH_DefaultB_PFCd_1",
+            "center": null,
+            "size": null
+        },
+        "286": {
+            "label": "17Networks_RH_DefaultB_PFCd_2",
+            "center": null,
+            "size": null
+        },
+        "287": {
+            "label": "17Networks_RH_DefaultB_PFCv_1",
+            "center": [
+                42.62796833773087,
+                28.79683377308706,
+                -14.691292875989447
+            ],
+            "size": 379
+        },
+        "288": {
+            "label": "17Networks_RH_DefaultB_PFCv_2",
+            "center": [
+                49.06077348066299,
+                31.790055248618785,
+                -4.679558011049721
+            ],
+            "size": 362
+        },
+        "289": {
+            "label": "17Networks_RH_DefaultB_PFCv_3",
+            "center": [
+                51.76190476190476,
+                23.657142857142844,
+                1.3428571428571416
+            ],
+            "size": 210
+        },
+        "290": {
+            "label": "17Networks_RH_DefaultC_IPL_1",
+            "center": null,
+            "size": null
+        },
+        "291": {
+            "label": "17Networks_RH_DefaultC_Rsp_1",
+            "center": [
+                10.645161290322577,
+                -47.2258064516129,
+                4.806451612903231
+            ],
+            "size": 62
+        },
+        "292": {
+            "label": "17Networks_RH_DefaultC_Rsp_2",
+            "center": null,
+            "size": null
+        },
+        "293": {
+            "label": "17Networks_RH_DefaultC_PHC_1",
+            "center": [
+                28.474308300395258,
+                -28.56126482213439,
+                -19.3399209486166
+            ],
+            "size": 507
+        },
+        "294": {
+            "label": "17Networks_RH_TempPar_1",
+            "center": [
+                54.11353711790393,
+                -0.807860262008731,
+                -12.890829694323145
+            ],
+            "size": 460
+        },
+        "295": {
+            "label": "17Networks_RH_TempPar_2",
+            "center": [
+                49.68,
+                -18.866666666666674,
+                -8.933333333333337
+            ],
+            "size": 150
+        },
+        "296": {
+            "label": "17Networks_RH_TempPar_3",
+            "center": [
+                62.177545691906005,
+                -18.731070496083547,
+                -0.6736292428198425
+            ],
+            "size": 383
+        },
+        "297": {
+            "label": "17Networks_RH_TempPar_4",
+            "center": [
+                50.69714285714286,
+                -31.760000000000005,
+                0.7142857142857082
+            ],
+            "size": 358
+        },
+        "298": {
+            "label": "17Networks_RH_TempPar_5",
+            "center": [
+                59.24050632911393,
+                -45.36708860759494,
+                3.936708860759495
+            ],
+            "size": 158
+        },
+        "299": {
+            "label": "17Networks_RH_TempPar_6",
+            "center": [
+                62.58064516129032,
+                -33.54838709677419,
+                5.483870967741936
+            ],
+            "size": 31
+        },
+        "300": {
+            "label": "17Networks_RH_TempPar_7",
+            "center": null,
+            "size": null
+        }
+    }
+}
