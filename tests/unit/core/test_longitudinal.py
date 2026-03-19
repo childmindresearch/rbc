@@ -89,8 +89,18 @@ class TestFunctionalLongitudinalTransforms:
             func_transform(in_file=in_file, template=template, xfm=xfm)
 
     @patch("rbc.core.longitudinal.transform.ants")
+    @patch("rbc.core.longitudinal.transform.split_4d")
+    @patch("rbc.core.longitudinal.transform.merge_3d_to_4d")
+    @patch("rbc.core.longitudinal.transform._restore_tr")
+    @pytest.mark.parametrize("strategy", ["chunked", "single"])
     def test_returns_output_path(
-        self, mock_ants: MagicMock, tmp_files: tuple[Path, ...]
+        self,
+        mock_restore_tr: MagicMock,
+        mock_merge_3d_to_4d: MagicMock,
+        mock_split_4d: MagicMock,
+        mock_ants: MagicMock,
+        tmp_files: tuple[Path, ...],
+        strategy: str,
     ) -> None:
         """Successful functional transformation to template."""
         in_file, template, xfm = tmp_files
@@ -103,7 +113,17 @@ class TestFunctionalLongitudinalTransforms:
         mock_ants.ants_apply_transforms_linear.return_value = MagicMock()
         mock_ants.ants_apply_transforms_transform_file_name.return_value = MagicMock()
 
-        result = func_transform(in_file=in_file, template=template, xfm=xfm)
+        if strategy == "chunked":
+            mock_split_4d.return_value = [in_file]
+            mock_merge_3d_to_4d.return_value = expected
+            mock_restore_tr.return_value = None
+
+        result = func_transform(
+            in_file=in_file,
+            template=template,
+            xfm=xfm,
+            strategy=strategy,  # type: ignore [arg-type]
+        )
         assert result == expected
 
 
