@@ -2,6 +2,11 @@ name: Full Testing Suite
 
 on:
   push:
+    paths:
+    - src/**
+    - tests/**
+    - pyproject.toml
+    - uv.lock
   workflow_dispatch:
     inputs:
       no_cleanup:
