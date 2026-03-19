@@ -31,7 +31,7 @@ if TYPE_CHECKING:
         "schaefer_300",
         "schaefer_400",
         "schaefer_1000",
-        "slab907",
+        "slab_907",
         "yeo_7",
         "yeo_7_liberal",
         "yeo_17",
@@ -135,7 +135,7 @@ ATLAS_REGISTRY: dict[AtlasName, str] = {
         "atlas-Schaefer2018_space-MNI152NLin6_res-2_"
         "desc-1000Parcels17NetworksOrder_dseg.nii.gz"
     ),
-    "slab907": "atlas-Slab907_space-MNI152NLin6_res-2_dseg.nii.gz",
+    "slab_907": "atlas-Slab907_space-MNI152NLin6_res-2_dseg.nii.gz",
     "yeo_7": "atlas-Yeo7_space-MNI152NLin6_res-2_dseg.nii.gz",
     "yeo_7_liberal": "atlas-Yeo7liberal_space-MNI152NLin6_res-2_dseg.nii.gz",
     "yeo_17": "atlas-Yeo17_space-MNI152NLin6_res-2_dseg.nii.gz",
