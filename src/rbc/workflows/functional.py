@@ -385,13 +385,18 @@ class FunctionalLongOutputs(NamedTuple):
         sbref: Motion reference volume warped to longitudinal template space.
         bold: Preprocessed BOLD warped to longitudinal template space.
         bold_mask: Brain mask warped to longitudinal template space,
-            or *None* if no mask was provided.
+        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD in longitudinal
+            template space. Suitable for ALFF/fALFF.
+        cleaned_bold: Nuisance-regressed + bandpass-filtered BOLD in longitudinal
+            template space (Hallquist 2013).
     """
 
     forward_xfm: Path
     sbref: Path
     bold: Path
-    bold_mask: Path | None = None
+    bold_mask: Path
+    regressed_bold: Path
+    cleaned_bold: Path
 
 
 def longitudinal_process(
@@ -401,7 +406,8 @@ def longitudinal_process(
     bold_to_anat_itk: Path,
     sbref: Path,
     bold: Path,
-    bold_mask: Path | None,
+    bold_mask: Path,
+    regressor_file: Path,
 ) -> FunctionalLongOutputs:
     """Transform preprocessed functional outputs to longitudinal template space.
 
@@ -409,33 +415,72 @@ def longitudinal_process(
     composite warp is available, and anatomical data has already been processed
     to longitudinal template space.
 
+    Regressors are computed once during cross-sectional preprocessing and passed
+    in via ``regressor_file``. Only the regression steps are re-run against the 
+    longitudinal space BOLD.
+ 
+    Steps:
+    1. Compose BOLD-to-anatomical + anatomical-to-longitudinal-template transforms.
+    2. Warp sbref (3D) and preproc BOLD (4D) to longitudinal template space.
+    3. Warp brain mask to longitudinal template space.
+    4. Nuisance regression without bandpass on longitudinal-space BOLD
+       (for ALFF/fALFF).
+    5. Simultaneous nuisance regression + bandpass on longitudinal-space BOLD
+       (Hallquist 2013).
+
     Args:
         template: Longitudinal template image.
         anat_to_template_xfm: T1w-to-longitudinal-template composite warp.
         bold_to_anat_itk: BOLD-to-T1w affine in ITK format.
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
-        bold_mask: Bold brain mask, if available.
+        bold_mask: Bold brain mask in native BOLD space.
+        regressor_file: Nuisance regressor file (.1D) in native BOLD space.
 
     Returns:
         :class:`FunctionalLongOutputs` with all non-null inputs transformed to template
             space.
     """
+    # 1. Compose full BOLD -> longitudinal template transform
     bold_to_tpl_xfm = compose_transform(
         ref=template,
         bold_to_anat_itk=bold_to_anat_itk,
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
 
+    # 2. Warp sbref and preproc BOLD to longitudinal template space
+    warped_sbref = func_transform(
+        in_file=sbref, template=template, xfm=bold_to_tpl_xfm, strategy="single"
+    )
+    warped_bold = func_transform(
+        in_file=bold, template=template, xfm=bold_to_tpl_xfm, strategy="chunked"
+    )
+
+    # 3. Warp brain mask to longitudinal template space
+    warped_mask = mask_transform(
+        mask=bold_mask, template=template, xfm=bold_to_tpl_xfm
+    )
+
+    # 4. Nuisance regression without bandpass (pre-bandpass residuals for
+    #    ALFF/fALFF, where the full frequency range must be preserved)
+    regression = apply_regression(
+        bold_file=warped_bold,
+        brain_mask_file=warped_mask,
+        regressor_file=regressor_file,
+    )
+
+    # 5. Simultaneous regression + bandpass filtering (Hallquist 2013)
+    cleaned = apply_regression_bandpass(
+        bold_file=warped_bold,
+        brain_mask_file=warped_mask,
+        regressor_file=regressor_file,
+    )
+
     return FunctionalLongOutputs(
-        sbref=func_transform(  # 3D volume
-            in_file=sbref, template=template, xfm=bold_to_tpl_xfm, strategy="single"
-        ),
-        bold=func_transform(
-            in_file=bold, template=template, xfm=bold_to_tpl_xfm, strategy="chunked"
-        ),
-        bold_mask=mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
-        if bold_mask
-        else None,
         forward_xfm=bold_to_tpl_xfm,
+        sbref=warped_sbref,
+        bold=warped_bold,
+        bold_mask=warped_mask,
+        regressed_bold=regression.regressed_bold,
+        cleaned_bold=cleaned.regressed_bold,
     )

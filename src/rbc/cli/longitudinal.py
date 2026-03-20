@@ -30,6 +30,7 @@ class LongitudinalArgs(BaseArgs):
 
     anatomical: bool
     functional: bool
+    regressor: Literal["36-parameter", "aCompCor"]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -42,6 +43,7 @@ class LongitudinalArgs(BaseArgs):
             **BaseArgs.validate_namespace(ns).__dict__,
             anatomical=ns.anatomical,
             functional=ns.functional,
+            regressor=ns.regressor,
         )
 
 
@@ -102,7 +104,10 @@ def _process_anat(
 
 
 def _process_func(
-    pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
+    pipe_ctx: PipelineContext, 
+    func_df: pl.DataFrame, 
+    tpl_df: pl.DataFrame, 
+    regressor: Literal["36-parameter", "aCompCor"],
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
@@ -228,6 +233,12 @@ def register_command(
         default=False,
         action="store_true",
         help="Use functional longitudinal pipeline for processing",
+    )
+    parser.add_argument(
+        "--regressor",
+        choices=["36-parameter", "aCompCor"],
+        default="36-parameter",
+        help="Nuisance regression method.",
     )
 
     parser.set_defaults(
