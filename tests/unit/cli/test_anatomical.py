@@ -110,7 +110,9 @@ def sample_dataframe() -> pl.DataFrame:
             "ext": [".nii.gz", ".nii.gz", ".nii.gz", ".nii", ".json", ".nii.gz"],
             "sub": ["01", "01", "01", "02", "01", "01"],
             "ses": ["baseline", "baseline", "baseline", "baseline", "baseline", "vis2"],
-            "run": [None, None, None, None, None, None],
+            "run": [None] * 6,
+            "space": [None] * 6,
+            "desc": [None] * 6,
             "root": ["/data"] * 6,
             "path": [
                 "sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz",
