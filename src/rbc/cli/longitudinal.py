@@ -104,9 +104,9 @@ def _process_anat(
 
 
 def _process_func(
-    pipe_ctx: PipelineContext, 
-    func_df: pl.DataFrame, 
-    tpl_df: pl.DataFrame, 
+    pipe_ctx: PipelineContext,
+    func_df: pl.DataFrame,
+    tpl_df: pl.DataFrame,
     regressor: Literal["36-parameter", "aCompCor"],
 ) -> None:
     """Handle functional longitudinal processing."""

@@ -457,9 +457,7 @@ def longitudinal_process(
     )
 
     # 3. Warp brain mask to longitudinal template space
-    warped_mask = mask_transform(
-        mask=bold_mask, template=template, xfm=bold_to_tpl_xfm
-    )
+    warped_mask = mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
 
     # 4. Nuisance regression without bandpass (pre-bandpass residuals for
     #    ALFF/fALFF, where the full frequency range must be preserved)
