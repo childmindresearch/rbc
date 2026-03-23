@@ -277,6 +277,57 @@ class Bids:
             entities=merged,
         )
 
+    def expect(
+        self,
+        df: pl.DataFrame,
+        *,
+        suffix: str | None = None,
+        extension: str = "",
+        extra: dict[str, str | int] | None = None,
+        has: list[str] | None = None,
+        without: list[str] | None = None,
+        **overrides: str | int | bool,
+    ) -> Path:
+        """Find a single BIDS file, raising if not found.
+
+        Like :meth:`find` but raises :class:`FileNotFoundError` instead
+        of returning ``None``.
+
+        Args:
+            df: bids2table DataFrame to search.
+            suffix: BIDS suffix to match.
+            extension: File extension to match.
+            extra: Non-standard entity filters (merged with session extra).
+            has: Entity keys that must be present (any value).
+            without: Entity keys that must be absent (null).
+            **overrides: Per-call entity filters.
+
+        Returns:
+            Path to the matching BIDS file.
+
+        Raises:
+            FileNotFoundError: If no matching file found.
+            ValueError: If multiple matches found.
+        """
+        result = self.find(
+            df,
+            suffix=suffix,
+            extension=extension,
+            extra=extra,
+            has=has,
+            without=without,
+            **overrides,
+        )
+        if result is None:
+            merged, merged_extra = self._merge_query(extra, has, without, overrides)
+            raise FileNotFoundError(
+                f"Expected BIDS file not found: "
+                f"sub={self._sub!r}, ses={self._ses!r}, "
+                f"datatype={self._datatype!r}, suffix={suffix!r}, "
+                f"entities={merged!r}, extra={merged_extra!r}"
+            )
+        return result
+
     def find_all(
         self,
         df: pl.DataFrame,

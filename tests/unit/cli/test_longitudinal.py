@@ -497,10 +497,10 @@ class TestProcessAnat:
             assert mock_long.call_count == 1
 
     @pytest.mark.parametrize(
-        ("null_field", "side_effect"),
+        ("null_field", "side_effect", "expected_error"),
         [
-            ("brain", _none_for(suffix="T1w", desc="brain")),
-            ("brain_mask", None),
+            ("brain", _none_for(suffix="T1w", desc="brain"), FileNotFoundError),
+            ("brain_mask", None, ValueError),
         ],
         ids=["missing_brain_file", "missing_brain_mask_output"],
     )
@@ -510,6 +510,7 @@ class TestProcessAnat:
         tpl_df: pl.DataFrame,
         null_field: str,
         side_effect,  # noqa: ANN001
+        expected_error: type,
         tmp_path: Path,
     ) -> None:
         """Test error raised if required anatomical outputs missing."""
@@ -528,7 +529,7 @@ class TestProcessAnat:
             patch("rbc.cli.longitudinal.anatomical_longitudinal", return_value=outputs),
             get_patch,
             patch("rbc.core.bids.shutil.copy2"),
-            pytest.raises(ValueError, match=null_field),
+            pytest.raises(expected_error, match=null_field),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
 
@@ -575,7 +576,7 @@ class TestProcessFunc:
         self,
         func_df: pl.DataFrame,
         tpl_df: pl.DataFrame,
-        match_field: str,
+        match_field: str,  # noqa: ARG002
         match_kwargs: dict,
         tmp_path: Path,
     ) -> None:
@@ -590,7 +591,7 @@ class TestProcessFunc:
                 "rbc.core.bids2table.find_file",
                 side_effect=_none_for(**match_kwargs),
             ),
-            pytest.raises(ValueError, match=match_field),
+            pytest.raises(FileNotFoundError),
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
 

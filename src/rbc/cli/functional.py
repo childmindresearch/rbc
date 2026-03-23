@@ -87,40 +87,21 @@ def main(args: FunctionalArgs) -> int:
 
             anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
 
-            def _require(p: Path | None, name: str) -> Path:
-                if p is None:
-                    raise FileNotFoundError(f"Required anat file not found: {name}")
-                return p
-
             outputs = single_session_preprocess(
                 in_bold=bold_fpath,
-                t1w_brain=_require(
-                    anat_q.find(anat_df, suffix=Suffix.T1W, desc="brain"), "T1w brain"
-                ),
-                wm_bbr_mask=_require(
-                    anat_q.find(anat_df, suffix=Suffix.MASK, desc="wmBBR"),
-                    "WM BBR mask",
-                ),
-                brain_mask=_require(
-                    anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"), "brain mask"
-                ),
-                csf_mask=_require(
-                    anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"), "CSF mask"
-                ),
-                wm_mask=_require(
-                    anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"), "WM mask"
-                ),
-                anat_to_template=_require(
-                    anat_q.find(
-                        anat_df,
-                        suffix="xfm",
-                        extra={
-                            "from": TemplateSpace.MNI152NLIN6ASYM,
-                            "to": "T1w",
-                            "mode": "image",
-                        },
-                    ),
-                    "anat-to-template xfm",
+                t1w_brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
+                wm_bbr_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wmBBR"),
+                brain_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="T1w"),
+                csf_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="csf"),
+                wm_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wm"),
+                anat_to_template=anat_q.expect(
+                    anat_df,
+                    suffix="xfm",
+                    extra={
+                        "from": TemplateSpace.MNI152NLIN6ASYM,
+                        "to": "T1w",
+                        "mode": "image",
+                    },
                 ),
                 regressor_set=args.regressor,
             )

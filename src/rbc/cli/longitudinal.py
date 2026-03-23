@@ -62,19 +62,14 @@ def _process_anat(
     tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = anatomical_longitudinal(
-        template=_require_file(tpl_q.find(tpl_df, suffix=Suffix.T1W), "template"),
-        subj_to_template_xfm=_require_file(
-            tpl_q.find(
-                tpl_df,
-                suffix="xfm",
-                extension=".txt",
-                extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
-            ),
-            "subj_to_template_xfm",
+        template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
+        subj_to_template_xfm=tpl_q.expect(
+            tpl_df,
+            suffix="xfm",
+            extension=".txt",
+            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
         ),
-        brain=_require_file(
-            anat_q.find(anat_df, suffix=Suffix.T1W, desc="brain"), "brain"
-        ),
+        brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
         brain_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"),
         csf_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"),
         gm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="gm"),
@@ -116,33 +111,23 @@ def _process_func(
     tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
 
     outputs = functional_longitudinal(
-        template=_require_file(tpl_q.find(tpl_df, suffix="T1w"), "template"),
-        anat_to_template_xfm=_require_file(
-            tpl_q.find(
-                tpl_df,
-                suffix="xfm",
-                extension=".txt",
-                extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
-            ),
-            "anat_to_template_xfm",
+        template=tpl_q.expect(tpl_df, suffix="T1w"),
+        anat_to_template_xfm=tpl_q.expect(
+            tpl_df,
+            suffix="xfm",
+            extension=".txt",
+            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
         ),
-        bold_to_anat_xfm=_require_file(
-            func_q.find(
-                func_df,
-                suffix="xfm",
-                desc="linear",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            ),
-            "bold_to_anat_xfm",
+        bold_to_anat_xfm=func_q.expect(
+            func_df,
+            suffix="xfm",
+            desc="linear",
+            extension=".txt",
+            extra={"from": "bold", "to": "T1w", "mode": "image"},
         ),
-        sbref=_require_file(
-            func_q.find(func_df, suffix=Suffix.SBREF, without=["space"]),
-            Suffix.SBREF,
-        ),
-        bold=_require_file(
-            func_q.find(func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]),
-            Suffix.BOLD,
+        sbref=func_q.expect(func_df, suffix=Suffix.SBREF, without=["space"]),
+        bold=func_q.expect(
+            func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]
         ),
         bold_mask=func_q.find(
             func_df, suffix=Suffix.MASK, desc="brain", without=["space"]

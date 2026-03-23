@@ -24,7 +24,6 @@ from rbc.workflows.qc import single_session_qc
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
-    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -91,65 +90,40 @@ def main(args: QCArgs) -> int:
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
             func_mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
 
-            def _require(p: Path | None, name: str) -> Path:
-                if p is None:
-                    raise FileNotFoundError(f"Required derivative not found: {name}")
-                return p
-
-            template_bold = _require(
-                func_mni.find(deriv_df, suffix=Suffix.BOLD, desc="preproc"),
-                "template bold",
+            template_bold = func_mni.expect(
+                deriv_df, suffix=Suffix.BOLD, desc="preproc"
             )
-            cleaned_bold = _require(
-                func_mni.find(
-                    deriv_df,
-                    suffix=Suffix.BOLD,
-                    desc="preproc",
-                    extra={"reg": args.regressor},
-                ),
-                "cleaned bold",
+            cleaned_bold = func_mni.expect(
+                deriv_df,
+                suffix=Suffix.BOLD,
+                desc="preproc",
+                extra={"reg": args.regressor},
             )
-            motion_params = _require(
-                func.find(
-                    deriv_df,
-                    suffix=Suffix.MOTION,
-                    desc="motionParams",
-                    extension=".1D",
-                ),
-                "motion params",
+            motion_params = func.expect(
+                deriv_df,
+                suffix=Suffix.MOTION,
+                desc="motionParams",
+                extension=".1D",
             )
-            rms_rel = _require(
-                func.find(
-                    deriv_df,
-                    suffix=Suffix.MOTION,
-                    desc="relsDisplacement",
-                    extension=".rms",
-                ),
-                "RMS rel",
+            rms_rel = func.expect(
+                deriv_df,
+                suffix=Suffix.MOTION,
+                desc="relsDisplacement",
+                extension=".rms",
             )
-            bold_mask = _require(
-                func.find(deriv_df, suffix=Suffix.MASK, desc="brain"),
-                "bold mask",
+            bold_mask = func.expect(deriv_df, suffix=Suffix.MASK, desc="brain")
+            brain_mask = pipe_ctx.bids(datatype=Datatype.ANAT).expect(
+                deriv_df, suffix=Suffix.MASK, desc="T1w"
             )
-            brain_mask = _require(
-                pipe_ctx.bids(datatype=Datatype.ANAT).find(
-                    deriv_df, suffix=Suffix.MASK, desc="T1w"
-                ),
-                "brain mask",
+            bold_to_anat_matrix = func.expect(
+                deriv_df,
+                suffix="xfm",
+                desc="linear",
+                extension=".mat",
+                extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            bold_to_anat_matrix = _require(
-                func.find(
-                    deriv_df,
-                    suffix="xfm",
-                    desc="linear",
-                    extension=".mat",
-                    extra={"from": "bold", "to": "T1w", "mode": "image"},
-                ),
-                "bold-to-anat matrix",
-            )
-            template_brain_mask = _require(
-                func_mni.find(deriv_df, suffix=Suffix.MASK, desc="bold"),
-                "template brain mask",
+            template_brain_mask = func_mni.expect(
+                deriv_df, suffix=Suffix.MASK, desc="bold"
             )
 
             bold_task: str | None = row.get("task")

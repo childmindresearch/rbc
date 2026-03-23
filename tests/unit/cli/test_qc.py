@@ -51,13 +51,13 @@ def _patch_qc(
 
     Patches load_table to return filtered_df on first call (primary BOLD
     filtering) and deriv_df on subsequent calls (derivative lookups per
-    sub/ses group). Also patches get_file_path, single_session_qc, and
+    sub/ses group). Also patches find_file, single_session_qc, and
     PipelineContext.
     """
     with (
         patch("rbc.cli.qc.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]),
         patch(
-            "rbc.core.bids2table.get_file_path",
+            "rbc.core.bids2table.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
