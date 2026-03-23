@@ -133,6 +133,35 @@ class Bids:
             _extra=merged_extra,
         )
 
+    def path(
+        self,
+        *,
+        suffix: str,
+        extension: str = ".nii.gz",
+        extra: dict[str, str | int] | None = None,
+        **overrides: str | int,
+    ) -> Path:
+        """Return the resolved BIDS output path without copying.
+
+        Useful for checking expected output locations or verifying
+        naming in tests without file I/O.
+
+        Args:
+            suffix: BIDS suffix (e.g. ``"T1w"``, ``"bold"``).
+            extension: File extension including leading dot.
+            extra: Non-standard entities (merged with session extra).
+            **overrides: Per-call entity overrides (e.g. ``desc="preproc"``).
+
+        Returns:
+            Absolute path where the derivative would be written.
+        """
+        from pathlib import Path as _Path
+
+        rel = self._build_path(
+            suffix=suffix, extension=extension, extra=extra, overrides=overrides
+        )
+        return _Path(self._output_dir / rel)
+
     def save(
         self,
         src: Path,
@@ -154,10 +183,7 @@ class Bids:
         Returns:
             Path to the copied output file.
         """
-        rel = self._build_path(
-            suffix=suffix, extension=extension, extra=extra, overrides=overrides
-        )
-        dest = self._output_dir / rel
+        dest = self.path(suffix=suffix, extension=extension, extra=extra, **overrides)
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
         return dest
@@ -183,10 +209,7 @@ class Bids:
         Returns:
             Path to the copied output directory.
         """
-        rel = self._build_path(
-            suffix=suffix, extension=extension, extra=extra, overrides=overrides
-        )
-        dest = self._output_dir / rel
+        dest = self.path(suffix=suffix, extension=extension, extra=extra, **overrides)
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest

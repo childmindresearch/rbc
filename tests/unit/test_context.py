@@ -134,3 +134,21 @@ class TestBids:
         assert "sub-01" in result.name
         assert "ses-baseline" in result.name
         assert "desc-brain" in result.name
+
+    def test_path_returns_expected_location(self, pipe_ctx: PipelineContext) -> None:
+        """Verify .path() returns the resolved path without copying."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest", "run": 1})
+        result = func.path(suffix="bold", desc="preproc")
+        assert "sub-01" in result.name
+        assert "task-rest" in result.name
+        assert "run-1" in result.name
+        assert "desc-preproc" in result.name
+        assert "bold.nii.gz" in result.name
+        assert not result.exists()  # no file copied
+
+    def test_path_matches_save(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify .path() and .save() resolve to the same location."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest"})
+        path_result = func.path(suffix="bold", desc="preproc")
+        save_result = func.save(src_file, suffix="bold", desc="preproc")
+        assert path_result == save_result
