@@ -150,19 +150,21 @@ def get_file_path(
 
     match len(result):
         case 0:
+            ent_str = ", ".join(f"{k}={v!r}" for k, v in (entities or {}).items())
             raise FileNotFoundError(
                 f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
                 f"datatype={datatype!r}, suffix={suffix!r}, "
                 f"extension={extension!r}, extra={extra!r}, "
-                f"entities={entities!r}"
+                f"{ent_str}"
             )
         case 1:
             row = result.row(0, named=True)
             return Path(row["root"]) / row["path"]
         case _:
+            ent_str = ", ".join(f"{k}={v!r}" for k, v in (entities or {}).items())
             raise ValueError(
                 f"Expected 1 match but found {len(result)} for sub={sub!r}, "
                 f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, "
                 f"extension={extension!r}, extra={extra!r}, "
-                f"entities={entities!r}"
+                f"{ent_str}"
             )

@@ -189,8 +189,8 @@ def main(args: AllArgs) -> int:
 
             # --- Metrics ---
             ctx.logger.info(
-                f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task')} "
-                f"run-{ents.get('run')}"
+                f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                f"run-{ents.get('run', 0)}"
             )
             metrics_outputs = metrics_pipeline(
                 regressed_bold=func_outputs.regressed_bold,
@@ -227,7 +227,8 @@ def main(args: AllArgs) -> int:
 
             # --- QC ---
             ctx.logger.info(
-                f"QC: sub-{pipe_ctx.sub} task-{ents.get('task')} run-{ents.get('run')}"
+                f"QC: sub-{pipe_ctx.sub} "
+                f"task-{ents.get('task', '')} run-{ents.get('run', 0)}"
             )
             qc_outputs = qc_pipeline(
                 template_bold=func_outputs.template_bold,
@@ -240,8 +241,8 @@ def main(args: AllArgs) -> int:
                 template_brain_mask=func_outputs.template_brain_mask,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses or "",
-                task=ents.get("task") or "",
-                run=ents.get("run") or 0,
+                task=ents.get("task", ""),
+                run=ents.get("run", 0),
                 start_tr=args.start_tr,
                 regressor_set=args.regressor,
             )
@@ -256,8 +257,8 @@ def main(args: AllArgs) -> int:
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             ctx.logger.info(
-                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task')} "
-                f"run-{ents.get('run')}"
+                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                f"run-{ents.get('run', 0)}"
             )
         pipe_ctx.ensure_dataset_description()
 

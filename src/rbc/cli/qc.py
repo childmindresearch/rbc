@@ -87,37 +87,39 @@ def main(args: QCArgs) -> int:
             row = run_group.row(0, named=True)
             ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
 
-            func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-            mni_q = func_q.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            func_mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
 
-            template_bold = mni_q.find(deriv_df, suffix=Suffix.BOLD, desc="preproc")
-            cleaned_bold = mni_q.find(
+            template_bold = func_mni.find(deriv_df, suffix=Suffix.BOLD, desc="preproc")
+            cleaned_bold = func_mni.find(
                 deriv_df,
                 suffix=Suffix.BOLD,
                 desc="preproc",
                 extra={"reg": args.regressor},
             )
-            motion_params = func_q.find(
+            motion_params = func.find(
                 deriv_df, suffix=Suffix.MOTION, desc="motionParams", extension=".1D"
             )
-            rms_rel = func_q.find(
+            rms_rel = func.find(
                 deriv_df,
                 suffix=Suffix.MOTION,
                 desc="relsDisplacement",
                 extension=".rms",
             )
-            bold_mask = func_q.find(deriv_df, suffix=Suffix.MASK, desc="brain")
+            bold_mask = func.find(deriv_df, suffix=Suffix.MASK, desc="brain")
             brain_mask = pipe_ctx.bids(datatype=Datatype.ANAT).find(
                 deriv_df, suffix=Suffix.MASK, desc="T1w"
             )
-            bold_to_anat_matrix = func_q.find(
+            bold_to_anat_matrix = func.find(
                 deriv_df,
                 suffix="xfm",
                 desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            template_brain_mask = mni_q.find(deriv_df, suffix=Suffix.MASK, desc="bold")
+            template_brain_mask = func_mni.find(
+                deriv_df, suffix=Suffix.MASK, desc="bold"
+            )
 
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
@@ -139,7 +141,7 @@ def main(args: QCArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            mni_q.save(
+            func_mni.save(
                 qc_outputs.qc_file,
                 suffix="quality",
                 desc="xcp",
