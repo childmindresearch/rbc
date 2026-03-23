@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING
 
 from rbc.cli.query import iter_session_files, load_session
@@ -20,7 +19,7 @@ from tqdm import tqdm
 from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
+from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
@@ -66,10 +65,7 @@ def main(args: AnatomicalArgs) -> int:
         for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
             row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
-            t1w_run: int | None = row.get("run")
-            t1w_acq: str | None = row.get("acq")
-            t1w_rec: str | None = row.get("rec")
-            t1w_echo: int | None = row.get("echo")
+            ents = extract_entities(row, ["run", "acq", "rec", "echo"])
             ctx.logger.info(f"Processing {t1w_fpath}")
 
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
@@ -77,21 +73,14 @@ def main(args: AnatomicalArgs) -> int:
             pipe_ctx = PipelineContext(
                 sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
             )
-            _aex = partial(
-                pipe_ctx.export,
-                datatype=Datatype.ANAT,
-                run=t1w_run,
-                acq=t1w_acq,
-                rec=t1w_rec,
-                echo=t1w_echo,
-            )
-            _aex(outputs.brain, suffix=Suffix.T1W, desc="brain")
-            _aex(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
-            _aex(outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
-            _aex(outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
-            _aex(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
-            _aex(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
-            _aex(
+            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
+            anat.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
+            anat.save(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
+            anat.save(outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
+            anat.save(outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
+            anat.save(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
+            anat.save(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
+            anat.save(
                 outputs.forward_xfm,
                 suffix="xfm",
                 extra={
@@ -100,7 +89,7 @@ def main(args: AnatomicalArgs) -> int:
                     "mode": "image",
                 },
             )
-            _aex(
+            anat.save(
                 outputs.inverse_xfm,
                 suffix="xfm",
                 extra={

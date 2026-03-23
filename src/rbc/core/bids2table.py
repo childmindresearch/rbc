@@ -84,78 +84,59 @@ def get_extra_entity(key: str) -> pl.Expr:
     )
 
 
-def get_file_path(  # noqa: C901 - handling multiple BIDS entities
+def _filter(
+    expr: pl.Expr,
+    col: str,
+    val: str | int | bool | None,  # noqa: FBT001 - bool indicator for b2t entity
+) -> pl.Expr:
+    """Helper to filter BIDS entities based on value provided."""
+    if val is None or val is True:
+        return expr
+    if val is False:
+        return expr & pl.col(col).is_null()
+    return expr & (pl.col(col) == val)
+
+
+def get_file_path(
     df: pl.DataFrame,
     *,
     sub: str,
     ses: str | bool | None,
     datatype: str | None = None,
     suffix: str | bool | None = None,
-    desc: str | None = None,
     extension: str = "",
-    task: str | bool | None = None,
-    acq: str | bool | None = None,
-    rec: str | bool | None = None,
-    dir: str | bool | None = None,
-    run: int | bool | None = None,
-    echo: int | bool | None = None,
-    space: str | bool | None = None,
     extra: dict[str, str | int] | None = None,
+    entities: dict[str, str | int | bool] | None = None,
 ) -> Path:
     """Return existing BIDS-named path matching provided entities.
 
-    Keyword arguments mirror :class:`~rbc.core.bids.BidsEntities`.
-
     Args:
-        df: bids2table to filter
-        sub: ``sub-`` entity
-        ses: Optional ``ses-``entity
+        df: bids2table to filter.
+        sub: ``sub-`` entity.
+        ses: ``ses-`` entity.
         datatype: BIDS datatype directory.
         suffix: BIDS suffix.
-        desc: Optional ``desc-`` entity.
-        extension: File extension (usually empty for directories).
-        task: Optional ``task-`` entity.
-        acq: Optional ``acq-`` entity.
-        rec: Optional ``rec-`` entity.
-        dir: Optional ``dir-`` entity.
-        run: Optional ``run-`` index.
-        echo: Optional ``echo-`` index.
-        space: Optional ``space-`` entity.
-        extra: Optional non-standard entities (e.g. ``{"from": "T1w"}``).
+        extension: File extension.
+        extra: Non-standard entity filters (e.g. ``{"from": "T1w"}``).
+        entities: Entity filters. Values may be ``str``/``int`` for exact
+            match, ``True`` for any value, or ``False`` to require null.
 
     Returns:
-        Path to the BIDS named file.
+        Path to the matching BIDS file.
 
     Raises:
-        FileNotFoundError: If no matching rows with provided BIDS entities
-        ValueError: If multiple matches found with provided BIDS entities
+        FileNotFoundError: If no matching rows found.
+        ValueError: If multiple matches found.
     """
-
-    def _filter(
-        expr: pl.Expr,
-        col: str,
-        val: str | int | bool | None,  # noqa: FBT001 - bool indicator for b2t entity
-    ) -> pl.Expr:
-        """Helper to filter BIDS entities based on value provided."""
-        if val is None or val is True:
-            return expr
-        if val is False:
-            return expr & pl.col(col).is_null()
-        return expr & (pl.col(col) == val)
-
     expr = pl.col("sub") == sub
     expr = _filter(expr, "ses", ses)
     if datatype is not None:
         expr &= pl.col("datatype") == datatype
     expr = _filter(expr, "suffix", suffix)
-    expr = _filter(expr, "desc", desc)
-    expr = _filter(expr, "task", task)
-    expr = _filter(expr, "acq", acq)
-    expr = _filter(expr, "rec", rec)
-    expr = _filter(expr, "dir", dir)
-    expr = _filter(expr, "run", run)
-    expr = _filter(expr, "echo", echo)
-    expr = _filter(expr, "space", space)
+
+    for col, val in (entities or {}).items():
+        expr = _filter(expr, col, val)
+
     if extension:
         expr &= pl.col("ext").str.contains(extension)
     if extra:
@@ -171,10 +152,9 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
         case 0:
             raise FileNotFoundError(
                 f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
-                f"datatype={datatype!r}, suffix={suffix!r}, desc={desc!r}, "
-                f"task={task!r}, acq={acq!r}, rec={rec!r}, dir={dir!r}, "
-                f"run={run!r}, echo={echo!r}, space={space!r}, "
-                f"extension={extension!r}, extra={extra!r}"
+                f"datatype={datatype!r}, suffix={suffix!r}, "
+                f"extension={extension!r}, extra={extra!r}, "
+                f"entities={entities!r}"
             )
         case 1:
             row = result.row(0, named=True)
@@ -183,7 +163,6 @@ def get_file_path(  # noqa: C901 - handling multiple BIDS entities
             raise ValueError(
                 f"Expected 1 match but found {len(result)} for sub={sub!r}, "
                 f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, "
-                f"desc={desc!r}, task={task!r}, acq={acq!r}, rec={rec!r}, "
-                f"dir={dir!r}, run={run!r}, echo={echo!r}, space={space!r}, "
-                f"extension={extension!r}, extra={extra!r}"
+                f"extension={extension!r}, extra={extra!r}, "
+                f"entities={entities!r}"
             )

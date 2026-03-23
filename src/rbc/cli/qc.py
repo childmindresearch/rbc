@@ -8,7 +8,6 @@ per-run XCP-D-format TSVs with pass/fail flags.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING, Literal
 
 import polars as pl
@@ -17,8 +16,8 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
-from rbc.core.bids2table import get_file_path, load_table
+from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.qc import single_session_qc
 
@@ -83,107 +82,45 @@ def main(args: QCArgs) -> int:
         deriv_df = load_table(
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
         )
-        get_deriv = partial(get_file_path, df=deriv_df, sub=sub, ses=ses)
 
         for _, run_group in group.group_by(_FUNC_GROUP_ENTITIES):
             row = run_group.row(0, named=True)
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
-            bold_acq: str | None = row.get("acq")
-            bold_rec: str | None = row.get("rec")
-            bold_dir: str | None = row.get("dir")
-            bold_echo: int | None = row.get("echo")
+            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
 
-            template_bold = get_deriv(
-                datatype=Datatype.FUNC,
+            func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            mni_q = func_q.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+
+            template_bold = mni_q.find(deriv_df, suffix=Suffix.BOLD, desc="preproc")
+            cleaned_bold = mni_q.find(
+                deriv_df,
                 suffix=Suffix.BOLD,
                 desc="preproc",
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
-            cleaned_bold = get_deriv(
-                datatype=Datatype.FUNC,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                space=TemplateSpace.MNI152NLIN6ASYM,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
-            motion_params = get_deriv(
-                datatype=Datatype.FUNC,
-                suffix=Suffix.MOTION,
-                desc="motionParams",
-                extension=".1D",
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
+            motion_params = func_q.find(
+                deriv_df, suffix=Suffix.MOTION, desc="motionParams", extension=".1D"
             )
-            rms_rel = get_deriv(
-                datatype=Datatype.FUNC,
+            rms_rel = func_q.find(
+                deriv_df,
                 suffix=Suffix.MOTION,
                 desc="relsDisplacement",
                 extension=".rms",
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
-            bold_mask = get_deriv(
-                datatype=Datatype.FUNC,
-                suffix=Suffix.MASK,
-                desc="brain",
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
+            bold_mask = func_q.find(deriv_df, suffix=Suffix.MASK, desc="brain")
+            brain_mask = pipe_ctx.bids(datatype=Datatype.ANAT).find(
+                deriv_df, suffix=Suffix.MASK, desc="T1w"
             )
-            brain_mask = get_deriv(
-                datatype=Datatype.ANAT,
-                suffix=Suffix.MASK,
-                desc="T1w",
-            )
-            bold_to_anat_matrix = get_deriv(
-                datatype=Datatype.FUNC,
+            bold_to_anat_matrix = func_q.find(
+                deriv_df,
                 suffix="xfm",
                 desc="linear",
                 extension=".mat",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
-            template_brain_mask = get_deriv(
-                datatype=Datatype.FUNC,
-                suffix=Suffix.MASK,
-                desc="bold",
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
+            template_brain_mask = mni_q.find(deriv_df, suffix=Suffix.MASK, desc="bold")
+
+            bold_task: str | None = row.get("task")
+            bold_run: int | None = row.get("run")
 
             qc_outputs = single_session_qc(
                 template_bold=template_bold,
@@ -202,20 +139,12 @@ def main(args: QCArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            pipe_ctx.export(
+            mni_q.save(
                 qc_outputs.qc_file,
-                datatype=Datatype.FUNC,
                 suffix="quality",
                 desc="xcp",
                 extension=".tsv",
-                space=TemplateSpace.MNI152NLIN6ASYM,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"

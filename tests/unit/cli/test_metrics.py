@@ -67,7 +67,7 @@ def _patch_metrics(
             "rbc.cli.metrics.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]
         ),
         patch(
-            "rbc.cli.metrics.get_file_path",
+            "rbc.core.bids2table.get_file_path",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
@@ -340,7 +340,9 @@ class TestMetricsExports:
             mock_pipe_ctx = Mock(sub="01", ses="baseline")
             mock_ctx_cls.return_value = mock_pipe_ctx
             metrics.main(args)
-            assert mock_pipe_ctx.export.call_count == 11
+            bids_mock = mock_pipe_ctx.bids.return_value
+            save_mock = bids_mock.derive.return_value.save
+            assert save_mock.call_count == 11
 
     def test_export_uses_correct_space(
         self,

@@ -21,7 +21,7 @@ from pathlib import Path
 from bidsschematools.schema import load_schema
 
 ROOT = Path(__file__).resolve().parent.parent
-OUTPUT_MODULE = ROOT / "src" / "rbc" / "core" / "bids.py"
+OUTPUT_MODULE = ROOT / "src" / "rbc" / "core" / "bids" / "_schema.py"
 OUTPUT_TESTS = ROOT / "tests" / "unit" / "test_bids.py"
 
 GENERATED_HEADER = (
@@ -131,7 +131,10 @@ def generate_module(  # noqa: C901
     w("import re")
     w("from dataclasses import dataclass")
     w("from pathlib import PurePath")
-    w("from typing import Literal, TypedDict")
+    w("from typing import TYPE_CHECKING, Literal, TypedDict")
+    w()
+    w("if TYPE_CHECKING:")
+    w("    from collections.abc import Sequence")
     w()
     w(f'BIDS_VERSION = "{bids_version}"')
     w()
@@ -251,6 +254,38 @@ def generate_module(  # noqa: C901
     w()
     w()
 
+    # Keys excluded from entity kwargs TypedDicts because they are handled
+    # as explicit parameters (sub/ses from PipelineContext, desc/space/atlas
+    # vary per-call rather than per-session).
+    _EXCLUDED_ENTITY_KEYS = {"sub", "ses", "desc", "space", "atlas"}
+
+    # -- EntityKwargs TypedDict (for pipeline entity plumbing) --
+    w("class EntityKwargs(TypedDict, total=False):")
+    w('    """BIDS entity keyword arguments for pipeline functions.')
+    w()
+    w("    Contains standard BIDS entities that identify an input file")
+    w("    (e.g. ``task``, ``run``, ``acq``). Entities that vary per-call")
+    w("    (``desc``, ``space``, ``atlas``) and structural fields")
+    w("    (``sub``, ``ses``) are handled as explicit parameters.")
+    w('    """')
+    w()
+    for e in entities:
+        key = str(e["key"])
+        if key in _EXCLUDED_ENTITY_KEYS:
+            continue
+        fmt = str(e["format"])
+        enum = e["enum"]
+        if enum is not None:
+            lit = "Literal[" + ", ".join(q(str(v)) for v in enum) + "]"  # type: ignore[union-attr,attr-defined]
+            hint = lit
+        elif fmt == "index":
+            hint = "int"
+        else:
+            hint = "str"
+        w(f"    {key}: {hint}")
+    w()
+    w()
+
     # -- Internal validation helper --
     w("def _format_entity(key: str, val: str | int) -> str:")
     w('    """Validate and format a single entity key-value pair."""')
@@ -364,6 +399,55 @@ def generate_module(  # noqa: C901
     w()
     w()
 
+    # -- bids_name_from_entities --
+    w("def bids_name_from_entities(")
+    w("    entities: dict[str, str | int | None],")
+    w("    *,")
+    w("    suffix: str,")
+    w("    extension: str,")
+    w("    extra: dict[str, str | int] | None = None,")
+    w(") -> str:")
+    w('    """Build a BIDS-compliant filename from an entities dict.')
+    w()
+    w("    Equivalent to :func:`bids_name` but accepts entities as a")
+    w("    dictionary. Useful for forwarding entity groups through the")
+    w("    pipeline without unpacking.")
+    w()
+    w("    Args:")
+    w("        entities: BIDS entity key-value pairs. Keys must be valid")
+    w("            entity names. ``None`` values are skipped.")
+    w('        suffix: File suffix (e.g. "T1w", "bold").')
+    w("        extension: File extension with leading dot")
+    w('            (e.g. ".nii.gz").')
+    w("        extra: Non-standard entities inserted before ``desc``.")
+    w()
+    w("    Returns:")
+    w("        A BIDS-compliant filename string.")
+    w('    """')
+    w("    _entities: list[tuple[str, str | int | None]] = [")
+    for key, _, _, _ in params_before_desc:
+        w(f'        ("{key}", entities.get("{key}")),')
+    w("    ]")
+    w("    parts: list[str] = []")
+    w("    for _key, _val in _entities:")
+    w("        if _val is not None:")
+    w("            parts.append(_format_entity(_key, _val))")
+    w("    if extra is not None:")
+    w("        _overlap = set(extra) & _STANDARD_ENTITIES")
+    w("        if _overlap:")
+    w("            raise ValueError(")
+    w('                f"Standard entities passed via extra: {_overlap}. "')
+    w('                "Use the corresponding keyword argument instead."')
+    w("            )")
+    w("        for _key, _val in extra.items():")
+    w("            parts.append(_format_entity(_key, _val))")
+    w('    _desc = entities.get("desc")')
+    w("    if _desc is not None:")
+    w('        parts.append(_format_entity("desc", _desc))')
+    w('    return "_".join([*parts, suffix]) + extension')
+    w()
+    w()
+
     # -- bids_path --
     w("def bids_path(")
     w("    *,")
@@ -412,6 +496,46 @@ def generate_module(  # noqa: C901
     w()
     w()
 
+    # -- bids_path_from_entities --
+    w("def bids_path_from_entities(")
+    w("    entities: dict[str, str | int | None],")
+    w("    *,")
+    w("    suffix: str,")
+    w("    extension: str,")
+    w("    datatype: str,")
+    w("    extra: dict[str, str | int] | None = None,")
+    w(") -> PurePath:")
+    w('    """Build a BIDS-compliant relative path from an entities dict.')
+    w()
+    w("    Equivalent to :func:`bids_path` but accepts entities as a")
+    w("    dictionary.")
+    w()
+    w("    Args:")
+    w("        entities: BIDS entity key-value pairs.")
+    w('        suffix: File suffix (e.g. "T1w", "bold").')
+    w("        extension: File extension with leading dot")
+    w('            (e.g. ".nii.gz").')
+    w('        datatype: BIDS datatype directory (e.g. "anat", "func").')
+    w("        extra: Non-standard entities inserted before ``desc``.")
+    w()
+    w("    Returns:")
+    w("        A BIDS-compliant relative path.")
+    w('    """')
+    w("    filename = bids_name_from_entities(")
+    w("        entities, suffix=suffix, extension=extension, extra=extra,")
+    w("    )")
+    w("    dirs: list[str] = []")
+    w('    _sub = entities.get("sub")')
+    w("    if _sub is not None:")
+    w('        dirs.append(f"sub-{_sub}")')
+    w('    _ses = entities.get("ses")')
+    w("    if _ses is not None:")
+    w('        dirs.append(f"ses-{_ses}")')
+    w("    dirs.append(datatype)")
+    w("    return PurePath(*dirs, filename)")
+    w()
+    w()
+
     # -- parse_bids_name --
     w("def parse_bids_name(filename: str) -> BIDSFile:")
     w('    """Parse a BIDS filename into its components.')
@@ -447,6 +571,30 @@ def generate_module(  # noqa: C901
     w("        if value:")
     w("            entities[key] = value")
     w("    return BIDSFile(entities=entities, suffix=suffix, extension=extension)")
+    w()
+    w()
+
+    # -- extract_entities --
+    w("def extract_entities(")
+    w("    row: dict[str, object],")
+    w("    keys: Sequence[str] | None = None,")
+    w(") -> EntityKwargs:")
+    w('    """Extract BIDS entities from a bids2table row.')
+    w()
+    w("    Args:")
+    w("        row: A named row from a bids2table DataFrame.")
+    w("        keys: Entity keys to extract. If ``None``, extracts all")
+    w("            standard entities present in the row.")
+    w()
+    w("    Returns:")
+    w("        Dictionary of non-None entity values.")
+    w('    """')
+    w("    _keys = _STANDARD_ENTITIES if keys is None else frozenset(keys)")
+    w("    result: EntityKwargs = {}")
+    w("    for k, v in row.items():")
+    w("        if k in _keys and v is not None:")
+    w("            result[k] = v  # type: ignore[literal-required]")
+    w("    return result")
     w()
 
     return "\n".join(lines)
@@ -490,8 +638,11 @@ def generate_tests(
     w("    Suffix,")
     w("    TemplateSpace,")
     w("    bids_name,")
+    w("    bids_name_from_entities,")
     w("    bids_path,")
+    w("    bids_path_from_entities,")
     w("    bids_safe_label,")
+    w("    extract_entities,")
     w("    parse_bids_name,")
     w(")")
     w()

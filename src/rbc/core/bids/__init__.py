@@ -1,0 +1,270 @@
+"""BIDS schema constants, utilities, and path builder.
+
+Re-exports auto-generated schema definitions from ``_schema`` and provides
+the :class:`Bids` builder for composing BIDS entity specifications.
+"""
+
+from __future__ import annotations
+
+import shutil
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+from rbc.core.bids._schema import (
+    _STANDARD_ENTITIES,
+    BIDS_VERSION,
+    BidsEntities,
+    BIDSFile,
+    Datatype,
+    EntityKwargs,
+    Extension,
+    Modality,
+    Suffix,
+    TemplateSpace,
+    bids_name,
+    bids_name_from_entities,
+    bids_path,
+    bids_path_from_entities,
+    bids_safe_label,
+    extract_entities,
+    parse_bids_name,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import polars as pl
+
+__all__ = [
+    "BIDS_VERSION",
+    "_STANDARD_ENTITIES",
+    "BIDSFile",
+    "Bids",
+    "BidsEntities",
+    "Datatype",
+    "EntityKwargs",
+    "Extension",
+    "Modality",
+    "Suffix",
+    "TemplateSpace",
+    "bids_name",
+    "bids_name_from_entities",
+    "bids_path",
+    "bids_path_from_entities",
+    "bids_safe_label",
+    "extract_entities",
+    "parse_bids_name",
+]
+
+
+def _sanitize_extra(
+    extra: dict[str, str | int] | None,
+) -> dict[str, str | int] | None:
+    """Apply ``bids_safe_label`` to string values in an *extra* dict."""
+    if extra is None:
+        return None
+    return {
+        k: bids_safe_label(v) if isinstance(v, str) else v for k, v in extra.items()
+    }
+
+
+@dataclass(frozen=True)
+class Bids:
+    """Immutable BIDS entity accumulator for export and query.
+
+    Build up a BIDS specification via :meth:`derive`, then resolve it
+    with :meth:`save` (export a file), :meth:`save_dir` (export a directory),
+    or :meth:`find` (query a bids2table DataFrame).
+
+    Examples::
+
+        func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+        func.save(outputs.sbref, suffix=Suffix.SBREF)
+        func.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
+
+        mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+        mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
+
+        anat = pipe_ctx.bids(datatype=Datatype.ANAT)
+        t1w = anat.find(anat_df, suffix=Suffix.T1W, desc="brain")
+    """
+
+    _sub: str
+    _ses: str | None
+    _output_dir: Path
+    _datatype: str | None = None
+    _entities: dict[str, str | int] = field(default_factory=dict)
+    _extra: dict[str, str | int] | None = None
+
+    def derive(
+        self,
+        *,
+        datatype: str | None = None,
+        extra: dict[str, str | int] | None = None,
+        entities: EntityKwargs | None = None,
+        **overrides: str | int,
+    ) -> Bids:
+        """Derive a new builder inheriting all state, merging overrides.
+
+        Args:
+            datatype: Override the BIDS datatype directory.
+            extra: Non-standard entities to merge with existing extra.
+            entities: Bulk entity dict to merge (e.g. from
+                :func:`extract_entities`).
+            **overrides: Individual entity overrides (e.g. ``space="MNI152"``).
+
+        Returns:
+            A new :class:`Bids` with merged state.
+        """
+        merged: dict[str, str | int] = {
+            **self._entities,
+            **(entities or {}),  # type: ignore[dict-item]
+            **overrides,
+        }
+        merged_extra = (
+            {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
+        )
+        return Bids(
+            _sub=self._sub,
+            _ses=self._ses,
+            _output_dir=self._output_dir,
+            _datatype=datatype or self._datatype,
+            _entities=merged,
+            _extra=merged_extra,
+        )
+
+    def save(
+        self,
+        src: Path,
+        *,
+        suffix: str,
+        extension: str = ".nii.gz",
+        extra: dict[str, str | int] | None = None,
+        **overrides: str | int,
+    ) -> Path:
+        """Copy *src* to a BIDS-named derivative path.
+
+        Args:
+            src: Source file to copy.
+            suffix: BIDS suffix (e.g. ``"T1w"``, ``"bold"``).
+            extension: File extension including leading dot.
+            extra: Non-standard entities (merged with session extra).
+            **overrides: Per-call entity overrides (e.g. ``desc="preproc"``).
+
+        Returns:
+            Path to the copied output file.
+        """
+        rel = self._build_path(
+            suffix=suffix, extension=extension, extra=extra, overrides=overrides
+        )
+        dest = self._output_dir / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        return dest
+
+    def save_dir(
+        self,
+        src_dir: Path,
+        *,
+        suffix: str,
+        extension: str = "",
+        extra: dict[str, str | int] | None = None,
+        **overrides: str | int,
+    ) -> Path:
+        """Copy a directory to a BIDS-named derivative path.
+
+        Args:
+            src_dir: Source directory to copy.
+            suffix: BIDS suffix.
+            extension: File extension (usually empty for directories).
+            extra: Non-standard entities (merged with session extra).
+            **overrides: Per-call entity overrides.
+
+        Returns:
+            Path to the copied output directory.
+        """
+        rel = self._build_path(
+            suffix=suffix, extension=extension, extra=extra, overrides=overrides
+        )
+        dest = self._output_dir / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(src_dir, dest, dirs_exist_ok=True)
+        return dest
+
+    def find(
+        self,
+        df: pl.DataFrame,
+        *,
+        suffix: str | None = None,
+        extension: str = "",
+        extra: dict[str, str | int] | None = None,
+        has: list[str] | None = None,
+        without: list[str] | None = None,
+        **overrides: str | int | bool,
+    ) -> Path:
+        """Find a BIDS file matching accumulated entities.
+
+        Args:
+            df: bids2table DataFrame to search.
+            suffix: BIDS suffix to match.
+            extension: File extension to match.
+            extra: Non-standard entity filters (merged with session extra).
+            has: Entity keys that must be present (any value).
+            without: Entity keys that must be absent (null).
+            **overrides: Per-call entity filters.
+
+        Returns:
+            Path to the matching BIDS file.
+
+        Raises:
+            FileNotFoundError: If no matching file found.
+            ValueError: If multiple matches found.
+        """
+        from rbc.core.bids2table import get_file_path
+
+        merged = {**self._entities, **overrides}
+        if has:
+            for key in has:
+                if key not in merged:
+                    merged[key] = True
+        if without:
+            for key in without:
+                merged[key] = False
+        merged_extra = (
+            {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
+        )
+        return get_file_path(
+            df,
+            sub=self._sub,
+            ses=self._ses,
+            datatype=self._datatype,
+            suffix=suffix,
+            extension=extension,
+            extra=merged_extra,
+            entities=merged,
+        )
+
+    def _build_path(
+        self,
+        *,
+        suffix: str,
+        extension: str,
+        extra: dict[str, str | int] | None,
+        overrides: dict[str, str | int],
+    ) -> str:
+        """Build BIDS relative path from accumulated + per-call state."""
+        ents: dict[str, str | int | None] = {"sub": self._sub, "ses": self._ses}
+        ents.update(self._entities)
+        ents.update(overrides)
+        merged_extra = (
+            {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
+        )
+        return str(
+            bids_path_from_entities(
+                ents,
+                suffix=suffix,
+                extension=extension,
+                datatype=self._datatype or "",
+                extra=_sanitize_extra(merged_extra),
+            )
+        )

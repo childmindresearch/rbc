@@ -57,7 +57,8 @@ def _patch_qc(
     with (
         patch("rbc.cli.qc.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]),
         patch(
-            "rbc.cli.qc.get_file_path", return_value=Path("fake_workdir/file.nii.gz")
+            "rbc.core.bids2table.get_file_path",
+            return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
             "rbc.cli.qc.single_session_qc",
@@ -358,10 +359,11 @@ class TestQCOutputs:
             mock_pipe_ctx = Mock(sub="01", ses="baseline")
             mock_ctx_cls.return_value = mock_pipe_ctx
             qc.main(args)
-            assert mock_pipe_ctx.export.call_count == 1
-            export_kwargs = mock_pipe_ctx.export.call_args[1]
-            assert export_kwargs["suffix"] == "quality"
-            assert export_kwargs["desc"] == "xcp"
+            save_mock = mock_pipe_ctx.bids.return_value.derive.return_value.save
+            assert save_mock.call_count == 1
+            save_kwargs = save_mock.call_args[1]
+            assert save_kwargs["suffix"] == "quality"
+            assert save_kwargs["desc"] == "xcp"
 
 
 class TestRunnerSetup:

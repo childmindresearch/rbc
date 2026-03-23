@@ -65,10 +65,14 @@ def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
 
 
 def _raise_for(**match: str) -> Callable[..., Path]:
-    """Return side-effect that raises FileNotFoundError for matched kwargs."""
+    """Return side-effect that raises FileNotFoundError for matched kwargs.
+
+    Checks both top-level kwargs and the ``entities`` dict.
+    """
 
     def _side_effect(**kwargs) -> Path:  # noqa: ANN003
-        if all(kwargs.get(k) == v for k, v in match.items()):
+        merged = {**kwargs, **(kwargs.get("entities") or {})}
+        if all(merged.get(k) == v for k, v in match.items()):
             raise FileNotFoundError
         return Path("fake_workdir/file.nii.gz")
 
@@ -602,4 +606,5 @@ class TestProcessFunc:
             ),
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-            assert pipe_ctx.export.call_count == 3
+            save_mock = pipe_ctx.bids.return_value.save
+            assert save_mock.call_count == 3

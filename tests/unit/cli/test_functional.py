@@ -77,7 +77,7 @@ def _patch_functional(
             side_effect=list(sub_ses_groups.values()),
         ),
         patch(
-            "rbc.cli.functional.get_file_path",
+            "rbc.core.bids2table.get_file_path",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(

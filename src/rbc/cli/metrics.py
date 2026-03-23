@@ -7,7 +7,6 @@ ReHo, smoothing, z-scoring, and atlas-based timeseries extraction.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING, Literal
 
 import polars as pl
@@ -16,8 +15,8 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
-from rbc.core.bids2table import get_file_path, load_table
+from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.metrics import single_session_metrics
 
@@ -87,55 +86,29 @@ def main(args: MetricsArgs) -> int:
         deriv_df = load_table(
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
         )
-        get_deriv = partial(get_file_path, df=deriv_df, sub=sub, ses=ses)
 
         for _, run_group in group.group_by(_FUNC_GROUP_ENTITIES):
             row = run_group.row(0, named=True)
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
-            bold_acq: str | None = row.get("acq")
-            bold_rec: str | None = row.get("rec")
-            bold_dir: str | None = row.get("dir")
-            bold_echo: int | None = row.get("echo")
+            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
 
-            regressed_bold = get_deriv(
+            mni_q = pipe_ctx.bids(
                 datatype=Datatype.FUNC,
+                entities=ents,
+                space=TemplateSpace.MNI152NLIN6ASYM,
+            )
+            regressed_bold = mni_q.find(
+                deriv_df,
                 suffix=Suffix.BOLD,
                 desc="regressed",
-                space=TemplateSpace.MNI152NLIN6ASYM,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
-            cleaned_bold = get_deriv(
-                datatype=Datatype.FUNC,
+            cleaned_bold = mni_q.find(
+                deriv_df,
                 suffix=Suffix.BOLD,
                 desc="preproc",
-                space=TemplateSpace.MNI152NLIN6ASYM,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
-            template_brain_mask = get_deriv(
-                datatype=Datatype.FUNC,
-                suffix=Suffix.MASK,
-                desc="bold",
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
+            template_brain_mask = mni_q.find(deriv_df, suffix=Suffix.MASK, desc="bold")
 
             outputs = single_session_metrics(
                 regressed_bold=regressed_bold,
@@ -146,35 +119,24 @@ def main(args: MetricsArgs) -> int:
             )
 
             reg_extra: dict[str, str | int] = {"reg": args.regressor}
-            _export = partial(
-                pipe_ctx.export,
-                datatype=Datatype.FUNC,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                extra=reg_extra,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
-            _export(outputs.alff, suffix="alff")
-            _export(outputs.falff, suffix="falff")
-            _export(outputs.alff_smooth, suffix="alff", desc="smooth")
-            _export(outputs.falff_smooth, suffix="falff", desc="smooth")
-            _export(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-            _export(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
-            _export(outputs.reho, suffix="reho")
-            _export(outputs.reho_smooth, suffix="reho", desc="smooth")
-            _export(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-            _export(
+            mex = mni_q.derive(extra=reg_extra)
+            mex.save(outputs.alff, suffix="alff")
+            mex.save(outputs.falff, suffix="falff")
+            mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
+            mex.save(outputs.falff_smooth, suffix="falff", desc="smooth")
+            mex.save(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
+            mex.save(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
+            mex.save(outputs.reho, suffix="reho")
+            mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
+            mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
+            mex.save(
                 outputs.timeseries,
                 suffix="timeseries",
                 desc="mean",
                 extension=".tsv",
                 atlas=args.atlas,
             )
-            _export(
+            mex.save(
                 outputs.correlation_matrix,
                 suffix="correlations",
                 desc="pearson",
