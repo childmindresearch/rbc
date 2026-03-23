@@ -257,7 +257,7 @@ def generate_module(  # noqa: C901
     # Keys excluded from entity kwargs TypedDicts because they are handled
     # as explicit parameters (sub/ses from PipelineContext, desc/space/atlas
     # vary per-call rather than per-session).
-    _EXCLUDED_ENTITY_KEYS = {"sub", "ses", "desc", "space", "atlas"}
+    excluded_entity_keys = {"sub", "ses", "desc", "space", "atlas"}
 
     # -- EntityKwargs TypedDict (for pipeline entity plumbing) --
     w("class EntityKwargs(TypedDict, total=False):")
@@ -271,7 +271,7 @@ def generate_module(  # noqa: C901
     w()
     for e in entities:
         key = str(e["key"])
-        if key in _EXCLUDED_ENTITY_KEYS:
+        if key in excluded_entity_keys:
             continue
         fmt = str(e["format"])
         enum = e["enum"]
