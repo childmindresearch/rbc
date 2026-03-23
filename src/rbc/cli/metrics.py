@@ -23,6 +23,7 @@ from rbc.workflows.metrics import single_session_metrics
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
     from rbc_resources import AtlasName
 
@@ -96,19 +97,34 @@ def main(args: MetricsArgs) -> int:
                 entities=ents,
                 space=TemplateSpace.MNI152NLIN6ASYM,
             )
-            regressed_bold = mni_q.find(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="regressed",
-                extra={"reg": args.regressor},
+
+            def _require(p: Path | None, name: str) -> Path:
+                if p is None:
+                    raise FileNotFoundError(f"Required derivative not found: {name}")
+                return p
+
+            regressed_bold = _require(
+                mni_q.find(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="regressed",
+                    extra={"reg": args.regressor},
+                ),
+                "regressed bold",
             )
-            cleaned_bold = mni_q.find(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
+            cleaned_bold = _require(
+                mni_q.find(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": args.regressor},
+                ),
+                "cleaned bold",
             )
-            template_brain_mask = mni_q.find(deriv_df, suffix=Suffix.MASK, desc="bold")
+            template_brain_mask = _require(
+                mni_q.find(deriv_df, suffix=Suffix.MASK, desc="bold"),
+                "template brain mask",
+            )
 
             outputs = single_session_metrics(
                 regressed_bold=regressed_bold,

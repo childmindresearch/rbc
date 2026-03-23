@@ -214,6 +214,27 @@ class Bids:
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest
 
+    def _merge_query(
+        self,
+        extra: dict[str, str | int] | None,
+        has: list[str] | None,
+        without: list[str] | None,
+        overrides: dict[str, str | int | bool],
+    ) -> tuple[dict[str, str | int | bool], dict[str, str | int] | None]:
+        """Merge entity filters and extra dicts for find/find_all."""
+        merged: dict[str, str | int | bool] = {**self._entities, **overrides}
+        if has:
+            for key in has:
+                if key not in merged:
+                    merged[key] = True
+        if without:
+            for key in without:
+                merged[key] = False
+        merged_extra = (
+            {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
+        )
+        return merged, merged_extra
+
     def find(
         self,
         df: pl.DataFrame,
@@ -224,8 +245,8 @@ class Bids:
         has: list[str] | None = None,
         without: list[str] | None = None,
         **overrides: str | int | bool,
-    ) -> Path:
-        """Find a BIDS file matching accumulated entities.
+    ) -> Path | None:
+        """Find a single BIDS file matching accumulated entities.
 
         Args:
             df: bids2table DataFrame to search.
@@ -237,26 +258,54 @@ class Bids:
             **overrides: Per-call entity filters.
 
         Returns:
-            Path to the matching BIDS file.
+            Path to the matching file, or ``None`` if no match found.
 
         Raises:
-            FileNotFoundError: If no matching file found.
             ValueError: If multiple matches found.
         """
-        from rbc.core.bids2table import get_file_path
+        from rbc.core.bids2table import find_file
 
-        merged = {**self._entities, **overrides}
-        if has:
-            for key in has:
-                if key not in merged:
-                    merged[key] = True
-        if without:
-            for key in without:
-                merged[key] = False
-        merged_extra = (
-            {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
+        merged, merged_extra = self._merge_query(extra, has, without, overrides)
+        return find_file(
+            df,
+            sub=self._sub,
+            ses=self._ses,
+            datatype=self._datatype,
+            suffix=suffix,
+            extension=extension,
+            extra=merged_extra,
+            entities=merged,
         )
-        return get_file_path(
+
+    def find_all(
+        self,
+        df: pl.DataFrame,
+        *,
+        suffix: str | None = None,
+        extension: str = "",
+        extra: dict[str, str | int] | None = None,
+        has: list[str] | None = None,
+        without: list[str] | None = None,
+        **overrides: str | int | bool,
+    ) -> list[Path]:
+        """Find all BIDS files matching accumulated entities.
+
+        Args:
+            df: bids2table DataFrame to search.
+            suffix: BIDS suffix to match.
+            extension: File extension to match.
+            extra: Non-standard entity filters (merged with session extra).
+            has: Entity keys that must be present (any value).
+            without: Entity keys that must be absent (null).
+            **overrides: Per-call entity filters.
+
+        Returns:
+            List of matching file paths (may be empty).
+        """
+        from rbc.core.bids2table import find_files
+
+        merged, merged_extra = self._merge_query(extra, has, without, overrides)
+        return find_files(
             df,
             sub=self._sub,
             ses=self._ses,

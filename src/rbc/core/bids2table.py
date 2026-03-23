@@ -97,8 +97,7 @@ def _filter(
     return expr & (pl.col(col) == val)
 
 
-def get_file_path(
-    df: pl.DataFrame,
+def _build_filter(
     *,
     sub: str,
     ses: str | bool | None,
@@ -107,27 +106,8 @@ def get_file_path(
     extension: str = "",
     extra: dict[str, str | int] | None = None,
     entities: dict[str, str | int | bool] | None = None,
-) -> Path:
-    """Return existing BIDS-named path matching provided entities.
-
-    Args:
-        df: bids2table to filter.
-        sub: ``sub-`` entity.
-        ses: ``ses-`` entity.
-        datatype: BIDS datatype directory.
-        suffix: BIDS suffix.
-        extension: File extension.
-        extra: Non-standard entity filters (e.g. ``{"from": "T1w"}``).
-        entities: Entity filters. Values may be ``str``/``int`` for exact
-            match, ``True`` for any value, or ``False`` to require null.
-
-    Returns:
-        Path to the matching BIDS file.
-
-    Raises:
-        FileNotFoundError: If no matching rows found.
-        ValueError: If multiple matches found.
-    """
+) -> pl.Expr:
+    """Build a polars filter expression from BIDS query parameters."""
     expr = pl.col("sub") == sub
     expr = _filter(expr, "ses", ses)
     if datatype is not None:
@@ -146,25 +126,173 @@ def get_file_path(
             else:
                 expr &= get_extra_entity(key) == val
 
+    return expr
+
+
+def _format_query(
+    *,
+    sub: str,
+    ses: str | bool | None,
+    datatype: str | None,
+    suffix: str | bool | None,
+    extension: str,
+    extra: dict[str, str | int] | None,
+    entities: dict[str, str | int | bool] | None,
+) -> str:
+    """Format query parameters for error messages."""
+    parts = [
+        f"sub={sub!r}",
+        f"ses={ses!r}",
+        f"datatype={datatype!r}",
+        f"suffix={suffix!r}",
+    ]
+    for k, v in (entities or {}).items():
+        parts.append(f"{k}={v!r}")
+    if extension:
+        parts.append(f"extension={extension!r}")
+    if extra:
+        parts.append(f"extra={extra!r}")
+    return ", ".join(parts)
+
+
+def find_file(
+    df: pl.DataFrame,
+    *,
+    sub: str,
+    ses: str | bool | None,
+    datatype: str | None = None,
+    suffix: str | bool | None = None,
+    extension: str = "",
+    extra: dict[str, str | int] | None = None,
+    entities: dict[str, str | int | bool] | None = None,
+) -> Path | None:
+    """Find a single BIDS file matching the given entities.
+
+    Args:
+        df: bids2table to filter.
+        sub: ``sub-`` entity.
+        ses: ``ses-`` entity.
+        datatype: BIDS datatype directory.
+        suffix: BIDS suffix.
+        extension: File extension.
+        extra: Non-standard entity filters (e.g. ``{"from": "T1w"}``).
+        entities: Entity filters. Values may be ``str``/``int`` for exact
+            match, ``True`` for any value, or ``False`` to require null.
+
+    Returns:
+        Path to the matching file, or ``None`` if no match found.
+
+    Raises:
+        ValueError: If multiple matches found.
+    """
+    expr = _build_filter(
+        sub=sub,
+        ses=ses,
+        datatype=datatype,
+        suffix=suffix,
+        extension=extension,
+        extra=extra,
+        entities=entities,
+    )
     result = df.filter(expr)
 
     match len(result):
         case 0:
-            ent_str = ", ".join(f"{k}={v!r}" for k, v in (entities or {}).items())
-            raise FileNotFoundError(
-                f"No BIDS file found for sub={sub!r}, ses={ses!r}, "
-                f"datatype={datatype!r}, suffix={suffix!r}, "
-                f"extension={extension!r}, extra={extra!r}, "
-                f"{ent_str}"
-            )
+            return None
         case 1:
             row = result.row(0, named=True)
             return Path(row["root"]) / row["path"]
         case _:
-            ent_str = ", ".join(f"{k}={v!r}" for k, v in (entities or {}).items())
-            raise ValueError(
-                f"Expected 1 match but found {len(result)} for sub={sub!r}, "
-                f"ses={ses!r}, datatype={datatype!r}, suffix={suffix!r}, "
-                f"extension={extension!r}, extra={extra!r}, "
-                f"{ent_str}"
+            query_str = _format_query(
+                sub=sub,
+                ses=ses,
+                datatype=datatype,
+                suffix=suffix,
+                extension=extension,
+                extra=extra,
+                entities=entities,
             )
+            raise ValueError(
+                f"Expected 0 or 1 match but found {len(result)} for {query_str}"
+            )
+
+
+def find_files(
+    df: pl.DataFrame,
+    *,
+    sub: str,
+    ses: str | bool | None,
+    datatype: str | None = None,
+    suffix: str | bool | None = None,
+    extension: str = "",
+    extra: dict[str, str | int] | None = None,
+    entities: dict[str, str | int | bool] | None = None,
+) -> list[Path]:
+    """Find all BIDS files matching the given entities.
+
+    Args:
+        df: bids2table to filter.
+        sub: ``sub-`` entity.
+        ses: ``ses-`` entity.
+        datatype: BIDS datatype directory.
+        suffix: BIDS suffix.
+        extension: File extension.
+        extra: Non-standard entity filters (e.g. ``{"from": "T1w"}``).
+        entities: Entity filters. Values may be ``str``/``int`` for exact
+            match, ``True`` for any value, or ``False`` to require null.
+
+    Returns:
+        List of matching file paths (may be empty).
+    """
+    expr = _build_filter(
+        sub=sub,
+        ses=ses,
+        datatype=datatype,
+        suffix=suffix,
+        extension=extension,
+        extra=extra,
+        entities=entities,
+    )
+    result = df.filter(expr)
+    return [Path(row["root"]) / row["path"] for row in result.iter_rows(named=True)]
+
+
+# Keep for backward compatibility with tests that patch this name.
+def get_file_path(
+    df: pl.DataFrame,
+    *,
+    sub: str,
+    ses: str | bool | None,
+    datatype: str | None = None,
+    suffix: str | bool | None = None,
+    extension: str = "",
+    extra: dict[str, str | int] | None = None,
+    entities: dict[str, str | int | bool] | None = None,
+) -> Path:
+    """Return existing BIDS-named path matching provided entities.
+
+    Raises :class:`FileNotFoundError` on no match. Prefer :func:`find_file`
+    for new code.
+    """
+    result = find_file(
+        df,
+        sub=sub,
+        ses=ses,
+        datatype=datatype,
+        suffix=suffix,
+        extension=extension,
+        extra=extra,
+        entities=entities,
+    )
+    if result is None:
+        query_str = _format_query(
+            sub=sub,
+            ses=ses,
+            datatype=datatype,
+            suffix=suffix,
+            extension=extension,
+            extra=extra,
+            entities=entities,
+        )
+        raise FileNotFoundError(f"No BIDS file found for {query_str}")
+    return result
