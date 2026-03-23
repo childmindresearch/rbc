@@ -8,7 +8,6 @@ between stages.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -19,7 +18,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
+from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess as anatomical_preprocess
@@ -96,51 +95,20 @@ def main(args: AllArgs) -> int:
 
         anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
 
-        pipe_ctx.export(
-            anat_outputs.brain,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.T1W,
-            desc="brain",
-        )
-        pipe_ctx.export(
-            anat_outputs.brain_mask,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.MASK,
-            desc="T1w",
-        )
-        pipe_ctx.export(
-            anat_outputs.csf_mask,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.MASK,
-            desc="csf",
-        )
-        pipe_ctx.export(
-            anat_outputs.gm_mask,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.MASK,
-            desc="gm",
-        )
-        pipe_ctx.export(
-            anat_outputs.wm_mask,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.MASK,
-            desc="wm",
-        )
-        pipe_ctx.export(
-            anat_outputs.wm_bbr_mask,
-            datatype=Datatype.ANAT,
-            suffix=Suffix.MASK,
-            desc="wmBBR",
-        )
-        pipe_ctx.export(
+        anat = pipe_ctx.bids(datatype=Datatype.ANAT)
+        anat.save(anat_outputs.brain, suffix=Suffix.T1W, desc="brain")
+        anat.save(anat_outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
+        anat.save(anat_outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
+        anat.save(anat_outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
+        anat.save(anat_outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
+        anat.save(anat_outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
+        anat.save(
             anat_outputs.forward_xfm,
-            datatype=Datatype.ANAT,
             suffix="xfm",
             extra={"from": "T1w", "to": TemplateSpace.MNI152NLIN6ASYM, "mode": "image"},
         )
-        pipe_ctx.export(
+        anat.save(
             anat_outputs.inverse_xfm,
-            datatype=Datatype.ANAT,
             suffix="xfm",
             extra={"from": TemplateSpace.MNI152NLIN6ASYM, "to": "T1w", "mode": "image"},
         )
@@ -151,12 +119,7 @@ def main(args: AllArgs) -> int:
         ):
             row = func_df.row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
-            bold_acq: str | None = row.get("acq")
-            bold_rec: str | None = row.get("rec")
-            bold_dir: str | None = row.get("dir")
-            bold_echo: int | None = row.get("echo")
+            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
             ctx.logger.info(f"Functional: {bold_fpath}")
 
             func_outputs = functional_preprocess(
@@ -172,84 +135,62 @@ def main(args: AllArgs) -> int:
             )
 
             # Export functional outputs
-            _fex = partial(
-                pipe_ctx.export,
-                datatype=Datatype.FUNC,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
-            _fex(func_outputs.sbref, suffix=Suffix.SBREF)
-            _fex(
-                func_outputs.preproc_bold,
-                desc="preproc",
-                suffix=Suffix.BOLD,
-            )
-            _fex(
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            func.save(func_outputs.sbref, suffix=Suffix.SBREF)
+            func.save(func_outputs.preproc_bold, suffix=Suffix.BOLD, desc="preproc")
+            func.save(
                 func_outputs.motion_params,
-                desc="motionParams",
                 suffix=Suffix.MOTION,
+                desc="motionParams",
                 extension=".1D",
             )
-            _fex(
+            func.save(
                 func_outputs.rms_rel,
+                suffix=Suffix.MOTION,
                 desc="relsDisplacement",
-                suffix=Suffix.MOTION,
                 extension=".rms",
             )
-            _fex(
+            func.save(
                 func_outputs.rms_abs,
-                desc="maxDisplacement",
                 suffix=Suffix.MOTION,
+                desc="maxDisplacement",
                 extension=".rms",
             )
-            _fex(func_outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
-            _fex(
+            func.save(func_outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+            func.save(
                 func_outputs.bold_to_anat_matrix,
                 suffix="xfm",
                 desc="linear",
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            _fex(
+            func.save(
                 func_outputs.regressor_file,
-                desc=args.regressor,
                 suffix="regressors",
+                desc=args.regressor,
                 extension=".1D",
             )
-            _fex(
-                func_outputs.template_bold,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
-                suffix=Suffix.BOLD,
-            )
-            _fex(
+
+            mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+            mni.save(func_outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
+            mni.save(
                 func_outputs.regressed_bold,
-                space=TemplateSpace.MNI152NLIN6ASYM,
+                suffix=Suffix.BOLD,
                 desc="regressed",
-                suffix=Suffix.BOLD,
                 extra={"reg": args.regressor},
             )
-            _fex(
+            mni.save(
                 func_outputs.cleaned_bold,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
                 suffix=Suffix.BOLD,
+                desc="preproc",
                 extra={"reg": args.regressor},
             )
-            _fex(
-                func_outputs.template_brain_mask,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="bold",
-                suffix=Suffix.MASK,
-            )
+            mni.save(func_outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 
             # --- Metrics ---
             ctx.logger.info(
-                f"Metrics: sub-{pipe_ctx.sub} task-{bold_task} run-{bold_run}"
+                f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                f"run-{ents.get('run', 0)}"
             )
             metrics_outputs = metrics_pipeline(
                 regressed_bold=func_outputs.regressed_bold,
@@ -259,48 +200,24 @@ def main(args: AllArgs) -> int:
                 fwhm=args.fwhm,
             )
 
-            reg_extra: dict[str, str | int] = {"reg": args.regressor}
-            _mex = partial(
-                pipe_ctx.export,
-                datatype=Datatype.FUNC,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                extra=reg_extra,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
-            _mex(metrics_outputs.alff, suffix="alff")
-            _mex(metrics_outputs.falff, suffix="falff")
-            _mex(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
-            _mex(metrics_outputs.falff_smooth, suffix="falff", desc="smooth")
-            _mex(
-                metrics_outputs.alff_zscored,
-                suffix="alff",
-                desc="smoothZstd",
-            )
-            _mex(
-                metrics_outputs.falff_zscored,
-                suffix="falff",
-                desc="smoothZstd",
-            )
-            _mex(metrics_outputs.reho, suffix="reho")
-            _mex(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
-            _mex(
-                metrics_outputs.reho_zscored,
-                suffix="reho",
-                desc="smoothZstd",
-            )
-            _mex(
+            mex = mni.derive(extra={"reg": args.regressor})
+            mex.save(metrics_outputs.alff, suffix="alff")
+            mex.save(metrics_outputs.falff, suffix="falff")
+            mex.save(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
+            mex.save(metrics_outputs.falff_smooth, suffix="falff", desc="smooth")
+            mex.save(metrics_outputs.alff_zscored, suffix="alff", desc="smoothZstd")
+            mex.save(metrics_outputs.falff_zscored, suffix="falff", desc="smoothZstd")
+            mex.save(metrics_outputs.reho, suffix="reho")
+            mex.save(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
+            mex.save(metrics_outputs.reho_zscored, suffix="reho", desc="smoothZstd")
+            mex.save(
                 metrics_outputs.timeseries,
                 suffix="timeseries",
                 desc="mean",
                 extension=".tsv",
                 atlas=args.atlas,
             )
-            _mex(
+            mex.save(
                 metrics_outputs.correlation_matrix,
                 suffix="correlations",
                 desc="pearson",
@@ -309,7 +226,10 @@ def main(args: AllArgs) -> int:
             )
 
             # --- QC ---
-            ctx.logger.info(f"QC: sub-{pipe_ctx.sub} task-{bold_task} run-{bold_run}")
+            ctx.logger.info(
+                f"QC: sub-{pipe_ctx.sub} "
+                f"task-{ents.get('task', '')} run-{ents.get('run', 0)}"
+            )
             qc_outputs = qc_pipeline(
                 template_bold=func_outputs.template_bold,
                 cleaned_bold=func_outputs.cleaned_bold,
@@ -321,31 +241,24 @@ def main(args: AllArgs) -> int:
                 template_brain_mask=func_outputs.template_brain_mask,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses or "",
-                task=bold_task or "",
-                run=bold_run or 0,
+                task=ents.get("task", ""),
+                run=ents.get("run", 0),
                 start_tr=args.start_tr,
                 regressor_set=args.regressor,
             )
 
-            pipe_ctx.export(
+            mni.save(
                 qc_outputs.qc_file,
-                datatype=Datatype.FUNC,
                 suffix="quality",
                 desc="xcp",
                 extension=".tsv",
-                space=TemplateSpace.MNI152NLIN6ASYM,
                 extra={"reg": args.regressor},
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
             )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             ctx.logger.info(
-                f"QC {status} for sub-{pipe_ctx.sub} task-{bold_task} run-{bold_run}"
+                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                f"run-{ents.get('run', 0)}"
             )
         pipe_ctx.ensure_dataset_description()
 

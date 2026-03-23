@@ -48,7 +48,7 @@ omit = ["src/rbc_resources/"]
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/rbc/core/bids\\.py$", "tests/unit/test_bids\\.py$"]
+exclude = ["src/rbc/core/bids/_schema\\.py$", "tests/unit/test_bids\\.py$"]
 
 [tool.ruff]
 line-length = 88
@@ -56,7 +56,7 @@ indent-width = 4
 src = ["src"]
 target-version = "py312"
 extend-exclude = [
-  "src/rbc/core/bids.py",
+  "src/rbc/core/bids/_schema.py",
   "tests/unit/test_bids.py",
   "scripts/visualize_pipeline.py",
   "scripts/build_robust_template.py"

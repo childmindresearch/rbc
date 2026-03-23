@@ -1,4 +1,4 @@
-"""Unit tests for rbc.context."""
+"""Unit tests for rbc.context and rbc.core.bids.Bids."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rbc.context import PipelineContext
-from rbc.core.bids import bids_safe_label
+from rbc.core.bids import Bids, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -32,8 +32,8 @@ class TestBidsSafeLabel:
         assert bids_safe_label(raw) == expected
 
 
-class TestExportBidsEntities:
-    """Tests for PipelineContext.export() with acq/dir/rec/echo entities."""
+class TestBids:
+    """Tests for the Bids builder."""
 
     @pytest.fixture
     def pipe_ctx(self, tmp_path: Path) -> PipelineContext:
@@ -47,124 +47,108 @@ class TestExportBidsEntities:
         src.write_bytes(b"\x00")
         return src
 
-    def test_acq_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify acq entity appears in output filename."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            acq="1400",
-        )
-        assert "acq-1400" in result.name
+    def test_bids_factory_returns_bids(self, pipe_ctx: PipelineContext) -> None:
+        """Verify bids() factory returns a Bids instance."""
+        b = pipe_ctx.bids(datatype="anat")
+        assert isinstance(b, Bids)
 
-    def test_dir_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify dir entity appears in output filename."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            dir="AP",
-        )
-        assert "dir-AP" in result.name
+    def test_save_copies_file(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify .save() copies source to BIDS-named path."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest", "run": 1})
+        result = func.save(src_file, suffix="bold", desc="preproc")
+        assert result.exists()
+        assert "task-rest" in result.name
+        assert "run-1" in result.name
+        assert "desc-preproc" in result.name
 
-    def test_rec_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify rec entity appears in output filename."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="anat",
-            suffix="T1w",
-            rec="magnitude",
-        )
-        assert "rec-magnitude" in result.name
-
-    def test_echo_in_filename(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify echo entity appears in output filename."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            echo=1,
-        )
-        assert "echo-1" in result.name
-
-    def test_multiple_entities(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify multiple new entities appear together."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            acq="1400",
-            dir="AP",
-            rec="magnitude",
-            echo=2,
-            run=1,
-        )
-        name = result.name
-        assert "acq-1400" in name
-        assert "dir-AP" in name
-        assert "rec-magnitude" in name
-        assert "echo-2" in name
-        assert "run-1" in name
-
-    def test_entity_ordering(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
-        """Verify BIDS entity ordering: acq before rec before dir before run."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            acq="1400",
-            rec="magnitude",
-            dir="AP",
-            run=1,
-        )
-        name = result.name
-        acq_pos = name.index("acq-")
-        rec_pos = name.index("rec-")
-        dir_pos = name.index("dir-")
-        run_pos = name.index("run-")
-        assert acq_pos < rec_pos < dir_pos < run_pos
-
-    def test_none_values_backward_compat(
+    def test_derive_inherits_entities(
         self, pipe_ctx: PipelineContext, src_file: Path
     ) -> None:
-        """Verify None values produce same output as before (no extra entities)."""
-        result = pipe_ctx.export(
-            src_file,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            acq=None,
-            rec=None,
-            dir=None,
-            echo=None,
-        )
-        name = result.name
-        assert "acq-" not in name
-        assert "rec-" not in name
-        assert "dir-" not in name
-        assert "echo-" not in name
+        """Verify derive() carries forward parent entities."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest"})
+        mni = func.derive(space="MNI152")
+        result = mni.save(src_file, suffix="bold")
+        assert "task-rest" in result.name
+        assert "space-MNI152" in result.name
 
-    def test_export_dir_with_entities(
-        self, pipe_ctx: PipelineContext, tmp_path: Path
+    def test_derive_overrides(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify derive() overrides parent values."""
+        func = pipe_ctx.bids(datatype="func", space="native")
+        mni = func.derive(space="MNI152")
+        result = mni.save(src_file, suffix="bold")
+        assert "space-MNI152" in result.name
+        assert "space-native" not in result.name
+
+    def test_save_overrides(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify per-call overrides on save()."""
+        func = pipe_ctx.bids(datatype="func")
+        result = func.save(src_file, suffix="bold", space="MNI152", desc="preproc")
+        assert "space-MNI152" in result.name
+        assert "desc-preproc" in result.name
+
+    def test_extra_merges_on_derive(
+        self, pipe_ctx: PipelineContext, src_file: Path
     ) -> None:
-        """Verify export_dir also supports the new entities."""
+        """Verify extra dicts merge on derive()."""
+        func = pipe_ctx.bids(datatype="func", extra={"reg": "36parameter"})
+        derived = func.derive(extra={"mode": "image"})
+        result = derived.save(src_file, suffix="bold")
+        assert "reg-36parameter" in result.name
+        assert "mode-image" in result.name
+
+    def test_extra_merges_on_save(
+        self, pipe_ctx: PipelineContext, src_file: Path
+    ) -> None:
+        """Verify per-call extra merges with session extra."""
+        func = pipe_ctx.bids(datatype="func", extra={"reg": "36parameter"})
+        result = func.save(src_file, suffix="bold", extra={"mode": "image"})
+        assert "reg-36parameter" in result.name
+        assert "mode-image" in result.name
+
+    def test_entity_ordering(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify BIDS entity ordering in output filename."""
+        func = pipe_ctx.bids(
+            datatype="func",
+            entities={"task": "rest", "acq": "1400", "rec": "magnitude", "dir": "AP"},
+        )
+        result = func.save(src_file, suffix="bold")
+        name = result.name
+        assert name.index("acq-") < name.index("rec-") < name.index("dir-")
+
+    def test_save_dir(self, pipe_ctx: PipelineContext, tmp_path: Path) -> None:
+        """Verify .save_dir() copies directory."""
         src_dir = tmp_path / "src_dir"
         src_dir.mkdir()
         (src_dir / "dummy.txt").write_text("test")
 
-        result = pipe_ctx.export_dir(
-            src_dir,
-            datatype="func",
-            suffix="bold",
-            task="rest",
-            acq="1400",
-            dir="AP",
-        )
-        name = result.name
-        assert "acq-1400" in name
-        assert "dir-AP" in name
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest", "run": 1})
+        result = func.save_dir(src_dir, suffix="motion")
+        assert result.exists()
+        assert result.is_dir()
+        assert "task-rest" in result.name
+
+    def test_no_entities(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify save works with no entities (just sub/ses/datatype)."""
+        anat = pipe_ctx.bids(datatype="anat")
+        result = anat.save(src_file, suffix="T1w", desc="brain")
+        assert "sub-01" in result.name
+        assert "ses-baseline" in result.name
+        assert "desc-brain" in result.name
+
+    def test_path_returns_expected_location(self, pipe_ctx: PipelineContext) -> None:
+        """Verify .path() returns the resolved path without copying."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest", "run": 1})
+        result = func.path(suffix="bold", desc="preproc")
+        assert "sub-01" in result.name
+        assert "task-rest" in result.name
+        assert "run-1" in result.name
+        assert "desc-preproc" in result.name
+        assert "bold.nii.gz" in result.name
+        assert not result.exists()  # no file copied
+
+    def test_path_matches_save(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
+        """Verify .path() and .save() resolve to the same location."""
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest"})
+        path_result = func.path(suffix="bold", desc="preproc")
+        save_result = func.save(src_file, suffix="bold", desc="preproc")
+        assert path_result == save_result

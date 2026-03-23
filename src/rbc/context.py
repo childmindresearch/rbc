@@ -1,34 +1,23 @@
 """Pipeline context for BIDS-compliant derivative export.
 
-Holds subject identity and output directory, providing ``export()`` and
-``export_dir()`` helpers that copy processing results to BIDS-named paths.
+Holds subject identity and output directory, providing a :meth:`bids` factory
+that returns a :class:`~rbc.core.bids.Bids` builder for composing exports
+and queries.
 """
 
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import dataclass
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 
-from rbc.core.bids import BIDS_VERSION, bids_path, bids_safe_label
+from rbc.core.bids import BIDS_VERSION, Bids, EntityKwargs
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 _RBC_VERSION = version("rbc")
-
-
-def _sanitize_extra(
-    extra: dict[str, str | int] | None,
-) -> dict[str, str | int] | None:
-    """Apply ``bids_safe_label`` to string values in an *extra* dict."""
-    if extra is None:
-        return None
-    return {
-        k: bids_safe_label(v) if isinstance(v, str) else v for k, v in extra.items()
-    }
 
 
 @dataclass
@@ -45,124 +34,35 @@ class PipelineContext:
     ses: str | None
     output_dir: Path
 
-    def export(
+    def bids(
         self,
-        src: Path,
         *,
-        datatype: str,
-        suffix: str,
-        desc: str | None = None,
-        extension: str = ".nii.gz",
-        task: str | None = None,
-        acq: str | None = None,
-        rec: str | None = None,
-        dir: str | None = None,
-        run: int | None = None,
-        echo: int | None = None,
-        space: str | None = None,
-        atlas: str | None = None,
+        datatype: str | None = None,
+        entities: EntityKwargs | None = None,
         extra: dict[str, str | int] | None = None,
-    ) -> Path:
-        """Copy *src* to a BIDS-named derivative path.
+        **overrides: str | int,
+    ) -> Bids:
+        """Create a :class:`~rbc.core.bids.Bids` builder bound to this context.
 
         Args:
-            src: Source file to copy.
             datatype: BIDS datatype directory (e.g. ``"anat"``, ``"func"``).
-            suffix: BIDS suffix (e.g. ``"T1w"``, ``"bold"``).
-            desc: Optional ``desc-`` entity.
-            extension: File extension including leading dot.
-            task: Optional ``task-`` entity.
-            acq: Optional ``acq-`` entity.
-            rec: Optional ``rec-`` entity.
-            dir: Optional ``dir-`` entity.
-            run: Optional ``run-`` index.
-            echo: Optional ``echo-`` index.
-            space: Optional ``space-`` entity.
-            atlas: Optional ``atlas-`` entity.
-            extra: Non-standard entities (e.g. ``{"from": "T1w"}``).
+            entities: Identity entities from the input file.
+            extra: Non-standard entity defaults.
+            **overrides: Individual entity overrides.
 
         Returns:
-            Path to the copied output file.
+            A :class:`~rbc.core.bids.Bids` builder ready for
+            ``.derive()`` / ``.save()`` / ``.find()`` calls.
         """
-        rel = bids_path(
-            sub=self.sub,
-            ses=self.ses,
-            task=task,
-            acq=acq,
-            rec=rec,
-            dir=dir,
-            run=run,
-            echo=echo,
-            desc=bids_safe_label(desc) if desc is not None else None,
-            space=space,
-            atlas=bids_safe_label(atlas) if atlas is not None else None,
-            extra=_sanitize_extra(extra),
-            suffix=suffix,
-            extension=extension,
-            datatype=datatype,
+        merged: dict[str, str | int] = {**(entities or {}), **overrides}  # type: ignore[dict-item]
+        return Bids(
+            _sub=self.sub,
+            _ses=self.ses,
+            _output_dir=self.output_dir,
+            _datatype=datatype,
+            _entities=merged,
+            _extra=extra,
         )
-        dest = self.output_dir / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-        return dest
-
-    def export_dir(
-        self,
-        src_dir: Path,
-        *,
-        datatype: str,
-        suffix: str,
-        desc: str | None = None,
-        extension: str = "",
-        task: str | None = None,
-        acq: str | None = None,
-        rec: str | None = None,
-        dir: str | None = None,
-        run: int | None = None,
-        echo: int | None = None,
-        space: str | None = None,
-        atlas: str | None = None,
-    ) -> Path:
-        """Copy a directory to a BIDS-named derivative path.
-
-        Args:
-            src_dir: Source directory to copy (e.g. motion ``.mat`` dir).
-            datatype: BIDS datatype directory.
-            suffix: BIDS suffix.
-            desc: Optional ``desc-`` entity.
-            extension: File extension (usually empty for directories).
-            task: Optional ``task-`` entity.
-            acq: Optional ``acq-`` entity.
-            rec: Optional ``rec-`` entity.
-            dir: Optional ``dir-`` entity.
-            run: Optional ``run-`` index.
-            echo: Optional ``echo-`` index.
-            space: Optional ``space-`` entity.
-            atlas: Optional ``atlas-`` entity.
-
-        Returns:
-            Path to the copied output directory.
-        """
-        rel = bids_path(
-            sub=self.sub,
-            ses=self.ses,
-            task=task,
-            acq=acq,
-            rec=rec,
-            dir=dir,
-            run=run,
-            echo=echo,
-            desc=bids_safe_label(desc) if desc is not None else None,
-            space=space,
-            atlas=bids_safe_label(atlas) if atlas is not None else None,
-            suffix=suffix,
-            extension=extension,
-            datatype=datatype,
-        )
-        dest = self.output_dir / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(src_dir, dest, dirs_exist_ok=True)
-        return dest
 
     def ensure_dataset_description(self) -> None:
         """Create dataset_description.json in output directory if it doesn't exist."""

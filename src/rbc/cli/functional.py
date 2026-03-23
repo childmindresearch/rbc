@@ -10,7 +10,6 @@ warping depend on the anatomical outputs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -21,8 +20,8 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace
-from rbc.core.bids2table import get_file_path, load_table
+from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.functional import single_session_preprocess
 
@@ -83,29 +82,20 @@ def main(args: FunctionalArgs) -> int:
         ):
             row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
-            bold_acq: str | None = row.get("acq")
-            bold_rec: str | None = row.get("rec")
-            bold_dir: str | None = row.get("dir")
-            bold_echo: int | None = row.get("echo")
+            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
             ctx.logger.info(f"Processing {bold_fpath}")
 
-            get_anat_file = partial(
-                get_file_path,
-                df=anat_df,
-                sub=pipe_ctx.sub,
-                ses=pipe_ctx.ses,
-                datatype=Datatype.ANAT,
-            )
+            anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+
             outputs = single_session_preprocess(
                 in_bold=bold_fpath,
-                t1w_brain=get_anat_file(suffix=Suffix.T1W, desc="brain"),
-                wm_bbr_mask=get_anat_file(suffix=Suffix.MASK, desc="wmBBR"),
-                brain_mask=get_anat_file(suffix=Suffix.MASK, desc="T1w"),
-                csf_mask=get_anat_file(suffix=Suffix.MASK, desc="csf"),
-                wm_mask=get_anat_file(suffix=Suffix.MASK, desc="wm"),
-                anat_to_template=get_anat_file(
+                t1w_brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
+                wm_bbr_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wmBBR"),
+                brain_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="T1w"),
+                csf_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="csf"),
+                wm_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wm"),
+                anat_to_template=anat_q.expect(
+                    anat_df,
                     suffix="xfm",
                     extra={
                         "from": TemplateSpace.MNI152NLIN6ASYM,
@@ -116,73 +106,51 @@ def main(args: FunctionalArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            _fex = partial(
-                pipe_ctx.export,
-                datatype=Datatype.FUNC,
-                task=bold_task,
-                run=bold_run,
-                acq=bold_acq,
-                rec=bold_rec,
-                dir=bold_dir,
-                echo=bold_echo,
-            )
-            _fex(outputs.sbref, suffix=Suffix.SBREF)
-            _fex(
-                outputs.preproc_bold,
-                desc="preproc",
-                suffix=Suffix.BOLD,
-            )
-            _fex(
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            func.save(outputs.sbref, suffix=Suffix.SBREF)
+            func.save(outputs.preproc_bold, suffix=Suffix.BOLD, desc="preproc")
+            func.save(
                 outputs.motion_params,
-                desc="motionParams",
                 suffix=Suffix.MOTION,
+                desc="motionParams",
                 extension=".1D",
             )
-            _fex(
+            func.save(
                 outputs.rms_rel,
+                suffix=Suffix.MOTION,
                 desc="relsDisplacement",
-                suffix=Suffix.MOTION,
                 extension=".rms",
             )
-            _fex(
+            func.save(
                 outputs.rms_abs,
-                desc="maxDisplacement",
                 suffix=Suffix.MOTION,
+                desc="maxDisplacement",
                 extension=".rms",
             )
-            _fex(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
-            _fex(
+            func.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+            func.save(
                 outputs.bold_to_anat_matrix,
                 suffix="xfm",
                 desc="linear",
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            _fex(
+            func.save(
                 outputs.regressor_file,
-                desc=args.regressor,
                 suffix="regressors",
+                desc=args.regressor,
                 extension=".1D",
             )
-            _fex(
-                outputs.template_bold,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
-                suffix=Suffix.BOLD,
-            )
-            _fex(
+
+            mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+            mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
+            mni.save(
                 outputs.cleaned_bold,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="preproc",
                 suffix=Suffix.BOLD,
+                desc="preproc",
                 extra={"reg": args.regressor},
             )
-            _fex(
-                outputs.template_brain_mask,
-                space=TemplateSpace.MNI152NLIN6ASYM,
-                desc="bold",
-                suffix=Suffix.MASK,
-            )
+            mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 
         pipe_ctx.ensure_dataset_description()
 

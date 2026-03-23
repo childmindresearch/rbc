@@ -10,6 +10,7 @@ import polars as pl
 import pytest
 
 from rbc.cli.longitudinal import LongitudinalArgs, _process_anat, _process_func, main
+from rbc.context import PipelineContext
 
 _SCHEMA = [
     "datatype",
@@ -64,12 +65,16 @@ def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
     return m
 
 
-def _raise_for(**match: str) -> Callable[..., Path]:
-    """Return side-effect that raises FileNotFoundError for matched kwargs."""
+def _none_for(**match: str) -> Callable[..., Path | None]:
+    """Return side-effect that returns None for matched kwargs.
 
-    def _side_effect(**kwargs) -> Path:  # noqa: ANN003
-        if all(kwargs.get(k) == v for k, v in match.items()):
-            raise FileNotFoundError
+    Checks both top-level kwargs and the ``entities`` dict.
+    """
+
+    def _side_effect(*_args: object, **kwargs: object) -> Path | None:
+        merged = {**kwargs, **(kwargs.get("entities") or {})}  # type: ignore[dict-item]
+        if all(merged.get(k) == v for k, v in match.items()):
+            return None
         return Path("fake_workdir/file.nii.gz")
 
     return _side_effect
@@ -133,7 +138,7 @@ def _patch_main(
             side_effect=_build_iter_side_effect(groups),
         ),
         patch(
-            "rbc.cli.longitudinal.get_file_path",
+            "rbc.core.bids2table.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
@@ -473,28 +478,29 @@ class TestProcessAnat:
     """Tests for _process_anat helper."""
 
     def test_calls_anatomical_longitudinal(
-        self, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
+        self, anat_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
         """Test anatomical longitudinal is called."""
-        pipe_ctx = Mock(sub="01", ses="baseline")
+        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.anatomical_longitudinal",
                 return_value=_mock_anat_outputs(),
             ) as mock_long,
             patch(
-                "rbc.cli.longitudinal.get_file_path",
+                "rbc.core.bids2table.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             ),
+            patch("rbc.core.bids.shutil.copy2"),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             assert mock_long.call_count == 1
 
     @pytest.mark.parametrize(
-        ("null_field", "side_effect"),
+        ("null_field", "side_effect", "expected_error"),
         [
-            ("brain", _raise_for(suffix="T1w", desc="brain")),
-            ("brain_mask", None),
+            ("brain", _none_for(suffix="T1w", desc="brain"), FileNotFoundError),
+            ("brain_mask", None, ValueError),
         ],
         ids=["missing_brain_file", "missing_brain_mask_output"],
     )
@@ -504,25 +510,26 @@ class TestProcessAnat:
         tpl_df: pl.DataFrame,
         null_field: str,
         side_effect,  # noqa: ANN001
+        expected_error: type,
+        tmp_path: Path,
     ) -> None:
         """Test error raised if required anatomical outputs missing."""
-        pipe_ctx = Mock(sub="01", ses="baseline")
+        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
         outputs = _mock_anat_outputs()
         if side_effect is None:
             setattr(outputs, null_field, None)
             get_patch = patch(
-                "rbc.cli.longitudinal.get_file_path",
+                "rbc.core.bids2table.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             )
         else:
-            get_patch = patch(
-                "rbc.cli.longitudinal.get_file_path", side_effect=side_effect
-            )
+            get_patch = patch("rbc.core.bids2table.find_file", side_effect=side_effect)
 
         with (
             patch("rbc.cli.longitudinal.anatomical_longitudinal", return_value=outputs),
             get_patch,
-            pytest.raises(ValueError, match=null_field),
+            patch("rbc.core.bids.shutil.copy2"),
+            pytest.raises(expected_error, match=null_field),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
 
@@ -531,19 +538,20 @@ class TestProcessFunc:
     """Tests for _process_func helper."""
 
     def test_calls_functional_longitudinal(
-        self, func_df: pl.DataFrame, tpl_df: pl.DataFrame
+        self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
         """Test functional longitudinal is called."""
-        pipe_ctx = Mock(sub="01", ses="baseline")
+        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ) as mock_func,
             patch(
-                "rbc.cli.longitudinal.get_file_path",
+                "rbc.core.bids2table.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             ),
+            patch("rbc.core.bids.shutil.copy2"),
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
             assert mock_func.call_count == 1
@@ -568,38 +576,40 @@ class TestProcessFunc:
         self,
         func_df: pl.DataFrame,
         tpl_df: pl.DataFrame,
-        match_field: str,
+        match_field: str,  # noqa: ARG002
         match_kwargs: dict,
+        tmp_path: Path,
     ) -> None:
         """Test missing required functional outputs raises error."""
-        pipe_ctx = Mock(sub="01", ses="baseline")
+        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ),
             patch(
-                "rbc.cli.longitudinal.get_file_path",
-                side_effect=_raise_for(**match_kwargs),
+                "rbc.core.bids2table.find_file",
+                side_effect=_none_for(**match_kwargs),
             ),
-            pytest.raises(ValueError, match=match_field),
+            pytest.raises(FileNotFoundError),
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
 
     def test_optional_bold_mask_file_not_found(
-        self, func_df: pl.DataFrame, tpl_df: pl.DataFrame
+        self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
-        """FileNotFoundError on optional bold_mask is caught; 3 exports emitted."""
-        pipe_ctx = Mock(sub="01", ses="baseline")
+        """Optional bold_mask not found is caught; 3 exports emitted."""
+        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(with_bold_mask=False),
             ),
             patch(
-                "rbc.cli.longitudinal.get_file_path",
-                side_effect=_raise_for(suffix="mask", desc="brain"),
+                "rbc.core.bids2table.find_file",
+                side_effect=_none_for(suffix="mask", desc="brain"),
             ),
+            patch("rbc.core.bids.shutil.copy2") as mock_copy,
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-            assert pipe_ctx.export.call_count == 3
+            assert mock_copy.call_count == 3

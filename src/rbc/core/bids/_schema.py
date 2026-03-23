@@ -11,7 +11,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import PurePath
-from typing import Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 BIDS_VERSION = "1.11.1"
 
@@ -713,6 +716,47 @@ class BidsEntities(TypedDict, total=False):
     extra: dict[str, str | int]
 
 
+class EntityKwargs(TypedDict, total=False):
+    """BIDS entity keyword arguments for pipeline functions.
+
+    Contains standard BIDS entities that identify an input file
+    (e.g. ``task``, ``run``, ``acq``). Entities that vary per-call
+    (``desc``, ``space``, ``atlas``) and structural fields
+    (``sub``, ``ses``) are handled as explicit parameters.
+    """
+
+    tpl: str
+    cohort: str
+    sample: str
+    task: str
+    tracksys: str
+    acq: str
+    nuc: str
+    voi: str
+    ce: str
+    trc: str
+    stain: str
+    rec: str
+    dir: str
+    run: int
+    mod: str
+    echo: int
+    flip: int
+    inv: int
+    mt: Literal["on", "off"]
+    part: Literal["mag", "phase", "real", "imag"]
+    proc: str
+    hemi: Literal["L", "R"]
+    split: int
+    recording: str
+    chunk: int
+    seg: str
+    scale: str
+    res: str
+    den: str
+    label: str
+
+
 def _format_entity(key: str, val: str | int) -> str:
     """Validate and format a single entity key-value pair."""
     if isinstance(val, int):
@@ -963,6 +1007,85 @@ def bids_name(
     return "_".join([*parts, suffix]) + extension
 
 
+def bids_name_from_entities(
+    entities: dict[str, str | int | None],
+    *,
+    suffix: str,
+    extension: str,
+    extra: dict[str, str | int] | None = None,
+) -> str:
+    """Build a BIDS-compliant filename from an entities dict.
+
+    Equivalent to :func:`bids_name` but accepts entities as a
+    dictionary. Useful for forwarding entity groups through the
+    pipeline without unpacking.
+
+    Args:
+        entities: BIDS entity key-value pairs. Keys must be valid
+            entity names. ``None`` values are skipped.
+        suffix: File suffix (e.g. "T1w", "bold").
+        extension: File extension with leading dot
+            (e.g. ".nii.gz").
+        extra: Non-standard entities inserted before ``desc``.
+
+    Returns:
+        A BIDS-compliant filename string.
+    """
+    _entities: list[tuple[str, str | int | None]] = [
+        ("sub", entities.get("sub")),
+        ("tpl", entities.get("tpl")),
+        ("ses", entities.get("ses")),
+        ("cohort", entities.get("cohort")),
+        ("sample", entities.get("sample")),
+        ("task", entities.get("task")),
+        ("tracksys", entities.get("tracksys")),
+        ("acq", entities.get("acq")),
+        ("nuc", entities.get("nuc")),
+        ("voi", entities.get("voi")),
+        ("ce", entities.get("ce")),
+        ("trc", entities.get("trc")),
+        ("stain", entities.get("stain")),
+        ("rec", entities.get("rec")),
+        ("dir", entities.get("dir")),
+        ("run", entities.get("run")),
+        ("mod", entities.get("mod")),
+        ("echo", entities.get("echo")),
+        ("flip", entities.get("flip")),
+        ("inv", entities.get("inv")),
+        ("mt", entities.get("mt")),
+        ("part", entities.get("part")),
+        ("proc", entities.get("proc")),
+        ("hemi", entities.get("hemi")),
+        ("space", entities.get("space")),
+        ("split", entities.get("split")),
+        ("recording", entities.get("recording")),
+        ("chunk", entities.get("chunk")),
+        ("atlas", entities.get("atlas")),
+        ("seg", entities.get("seg")),
+        ("scale", entities.get("scale")),
+        ("res", entities.get("res")),
+        ("den", entities.get("den")),
+        ("label", entities.get("label")),
+    ]
+    parts: list[str] = []
+    for _key, _val in _entities:
+        if _val is not None:
+            parts.append(_format_entity(_key, _val))
+    if extra is not None:
+        _overlap = set(extra) & _STANDARD_ENTITIES
+        if _overlap:
+            raise ValueError(
+                f"Standard entities passed via extra: {_overlap}. "
+                "Use the corresponding keyword argument instead."
+            )
+        for _key, _val in extra.items():
+            parts.append(_format_entity(_key, _val))
+    _desc = entities.get("desc")
+    if _desc is not None:
+        parts.append(_format_entity("desc", _desc))
+    return "_".join([*parts, suffix]) + extension
+
+
 def bids_path(
     *,
     sub: str | None = None,
@@ -1149,6 +1272,47 @@ def bids_path(
     return PurePath(*dirs, filename)
 
 
+def bids_path_from_entities(
+    entities: dict[str, str | int | None],
+    *,
+    suffix: str,
+    extension: str,
+    datatype: str,
+    extra: dict[str, str | int] | None = None,
+) -> PurePath:
+    """Build a BIDS-compliant relative path from an entities dict.
+
+    Equivalent to :func:`bids_path` but accepts entities as a
+    dictionary.
+
+    Args:
+        entities: BIDS entity key-value pairs.
+        suffix: File suffix (e.g. "T1w", "bold").
+        extension: File extension with leading dot
+            (e.g. ".nii.gz").
+        datatype: BIDS datatype directory (e.g. "anat", "func").
+        extra: Non-standard entities inserted before ``desc``.
+
+    Returns:
+        A BIDS-compliant relative path.
+    """
+    filename = bids_name_from_entities(
+        entities,
+        suffix=suffix,
+        extension=extension,
+        extra=extra,
+    )
+    dirs: list[str] = []
+    _sub = entities.get("sub")
+    if _sub is not None:
+        dirs.append(f"sub-{_sub}")
+    _ses = entities.get("ses")
+    if _ses is not None:
+        dirs.append(f"ses-{_ses}")
+    dirs.append(datatype)
+    return PurePath(*dirs, filename)
+
+
 def parse_bids_name(filename: str) -> BIDSFile:
     """Parse a BIDS filename into its components.
 
@@ -1183,3 +1347,25 @@ def parse_bids_name(filename: str) -> BIDSFile:
         if value:
             entities[key] = value
     return BIDSFile(entities=entities, suffix=suffix, extension=extension)
+
+
+def extract_entities(
+    row: dict[str, object],
+    keys: Sequence[str] | None = None,
+) -> EntityKwargs:
+    """Extract BIDS entities from a bids2table row.
+
+    Args:
+        row: A named row from a bids2table DataFrame.
+        keys: Entity keys to extract. If ``None``, extracts all
+            standard entities present in the row.
+
+    Returns:
+        Dictionary of non-None entity values.
+    """
+    _keys = _STANDARD_ENTITIES if keys is None else frozenset(keys)
+    result: EntityKwargs = {}
+    for k, v in row.items():
+        if k in _keys and v is not None:
+            result[k] = v  # type: ignore[literal-required]
+    return result

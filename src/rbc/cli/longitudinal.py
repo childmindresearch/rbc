@@ -1,9 +1,8 @@
-"""CLI subcommand for anatomical processing."""
+"""CLI subcommand for longitudinal processing."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -18,8 +17,8 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Extension, Suffix
-from rbc.core.bids2table import get_file_path, load_table
+from rbc.core.bids import Datatype, Extension, Suffix, extract_entities
+from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal
@@ -57,59 +56,44 @@ def _process_anat(
 ) -> None:
     """Handle anatomical longitudinal processing."""
     row = anat_df.filter(suffix="T1w").row(0, named=True)
-    t1w_run: int | None = row.get("run")
+    ents = extract_entities(row, ["run"])
 
-    # Grab files
-    def _get_anat_file(**kwargs) -> Path | None:  # noqa: ANN003 - bids arguments
-        try:
-            return get_file_path(
-                df=anat_df,
-                sub=pipe_ctx.sub,
-                ses=pipe_ctx.ses,
-                datatype=Datatype.ANAT,
-                **kwargs,
-            )
-        except FileNotFoundError:
-            return None
-
-    _get_tpl_file = partial(
-        get_file_path,
-        df=tpl_df,
-        sub=pipe_ctx.sub,
-        ses="longitudinal",
-        datatype=Datatype.ANAT,
-    )
+    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = anatomical_longitudinal(
-        template=_get_tpl_file(suffix=Suffix.T1W),
-        subj_to_template_xfm=_get_tpl_file(
+        template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
+        subj_to_template_xfm=tpl_q.expect(
+            tpl_df,
             suffix="xfm",
             extension=".txt",
-            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
+            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
         ),
-        brain=_require_file(_get_anat_file(suffix=Suffix.T1W, desc="brain"), "brain"),
-        brain_mask=_get_anat_file(suffix=Suffix.MASK, desc="T1w"),
-        csf_mask=_get_anat_file(suffix=Suffix.MASK, desc="csf"),
-        gm_mask=_get_anat_file(suffix=Suffix.MASK, desc="gm"),
-        wm_mask=_get_anat_file(suffix=Suffix.MASK, desc="wm"),
+        brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
+        brain_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"),
+        csf_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"),
+        gm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="gm"),
+        wm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
     )
-    # Save longitudinal outputs
-    _aex = partial(
-        pipe_ctx.export, datatype=Datatype.ANAT, space="longitudinal", run=t1w_run
+
+    aex = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents, space="longitudinal")
+    aex.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
+    aex.save(
+        _require_file(outputs.brain_mask, "brain_mask"),
+        suffix=Suffix.MASK,
+        desc="T1w",
     )
-    _aex(outputs.brain, desc="brain", suffix=Suffix.T1W)
-    _aex(
-        _require_file(outputs.brain_mask, "brain_mask"), desc="T1w", suffix=Suffix.MASK
+    aex.save(
+        _require_file(outputs.csf_mask, "csf_mask"), suffix=Suffix.MASK, desc="csf"
     )
-    _aex(_require_file(outputs.csf_mask, "csf_mask"), desc="csf", suffix=Suffix.MASK)
-    _aex(_require_file(outputs.gm_mask, "gm_mask"), desc="gm", suffix=Suffix.MASK)
-    _aex(_require_file(outputs.wm_mask, "wm_mask"), desc="wm", suffix=Suffix.MASK)
-    _aex(
+    aex.save(_require_file(outputs.gm_mask, "gm_mask"), suffix=Suffix.MASK, desc="gm")
+    aex.save(_require_file(outputs.wm_mask, "wm_mask"), suffix=Suffix.MASK, desc="wm")
+    aex.save(
         outputs.forward_xfm,
         suffix="xfm",
         extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
     )
-    _aex(
+    aex.save(
         outputs.inverse_xfm,
         suffix="xfm",
         extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
@@ -121,63 +105,39 @@ def _process_func(
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
-    bold_task: str | None = row.get("task")
-    bold_run: int | None = row.get("run")
+    ents = extract_entities(row, ["task", "run"])
 
-    # Grab files
-    def _get_func_file(**kwargs) -> Path | None:  # noqa: ANN003 - bids arguments
-        try:
-            return get_file_path(
-                df=func_df,
-                sub=pipe_ctx.sub,
-                ses=pipe_ctx.ses,
-                datatype=Datatype.FUNC,
-                run=bold_run,
-                task=bold_task,
-                **kwargs,
-            )
-        except FileNotFoundError:
-            return None
+    func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+    tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
 
-    get_tpl_file = partial(
-        get_file_path, df=tpl_df, ses="longitudinal", sub=pipe_ctx.sub, datatype="anat"
-    )
-    # Use native space data
     outputs = functional_longitudinal(
-        template=get_tpl_file(suffix="T1w"),
-        anat_to_template_xfm=get_tpl_file(
+        template=tpl_q.expect(tpl_df, suffix="T1w"),
+        anat_to_template_xfm=tpl_q.expect(
+            tpl_df,
             suffix="xfm",
             extension=".txt",
-            extra={"from": pipe_ctx.ses},  # type: ignore [dict-item]
+            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
         ),
-        bold_to_anat_xfm=_require_file(
-            _get_func_file(
-                suffix="xfm",
-                desc="linear",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            ),
-            "bold_to_anat_xfm",
+        bold_to_anat_xfm=func_q.expect(
+            func_df,
+            suffix="xfm",
+            desc="linear",
+            extension=".txt",
+            extra={"from": "bold", "to": "T1w", "mode": "image"},
         ),
-        sbref=_require_file(
-            _get_func_file(space=False, suffix=Suffix.SBREF), Suffix.SBREF
+        sbref=func_q.expect(func_df, suffix=Suffix.SBREF, without=["space"]),
+        bold=func_q.expect(
+            func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]
         ),
-        bold=_require_file(
-            _get_func_file(space=False, desc="preproc", suffix=Suffix.BOLD), Suffix.BOLD
+        bold_mask=func_q.find(
+            func_df, suffix=Suffix.MASK, desc="brain", without=["space"]
         ),
-        bold_mask=_get_func_file(space=False, desc="brain", suffix=Suffix.MASK),
     )
-    # Save longitudinal outputs
-    _fex = partial(
-        pipe_ctx.export,
-        datatype=Datatype.FUNC,
-        space="longitudinal",
-        task=bold_task,
-        run=bold_run,
-    )
-    _fex(outputs.sbref, suffix=Suffix.SBREF)
-    _fex(outputs.bold, desc="preproc", suffix=Suffix.BOLD)
-    _fex(
+
+    fex = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents, space="longitudinal")
+    fex.save(outputs.sbref, suffix=Suffix.SBREF)
+    fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
+    fex.save(
         outputs.forward_xfm,
         suffix="xfm",
         desc="composite",
@@ -185,7 +145,7 @@ def _process_func(
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},
     )
     if outputs.bold_mask:
-        _fex(outputs.bold_mask, desc="brain", suffix=Suffix.MASK)
+        fex.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
 
 
 def main(args: LongitudinalArgs) -> int:
