@@ -31,15 +31,16 @@ if TYPE_CHECKING:
 class MetricsArgs(BaseArgs):
     """Arguments for the metrics CLI."""
 
-    atlas: AtlasName
+    atlas: Sequence[AtlasName]
     fwhm: float
     task: str | None
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
-        _validate_atlas(ns.atlas)
+        for atlas in ns.atlas:
+            _validate_atlas(atlas)
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
         return cls(
@@ -133,20 +134,21 @@ def main(args: MetricsArgs) -> int:
                 mex.save(outputs.reho, suffix="reho")
                 mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
                 mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-                mex.save(
-                    outputs.timeseries,
-                    suffix="timeseries",
-                    desc="mean",
-                    extension=".tsv",
-                    atlas=args.atlas,
-                )
-                mex.save(
-                    outputs.correlation_matrix,
-                    suffix="correlations",
-                    desc="pearson",
-                    extension=".tsv",
-                    atlas=args.atlas,
-                )
+                for atlas in args.atlas:
+                    mex.save(
+                        outputs.timeseries[atlas],
+                        suffix="timeseries",
+                        desc="mean",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
+                    mex.save(
+                        outputs.correlation_matrix[atlas],
+                        suffix="correlations",
+                        desc="pearson",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC metrics workflow complete")
@@ -166,6 +168,7 @@ def register_command(
     )
     parser.add_argument(
         "--atlas",
+        nargs="+",
         choices=[
             "schaefer_200",
             "schaefer_300",
@@ -173,8 +176,8 @@ def register_command(
             "schaefer_1000",
             "aal",
         ],
-        default="schaefer_200",
-        help="Atlas for timeseries extraction.",
+        default=["schaefer_200"],
+        help="Space-delimited atlas(es) for timeseries extraction.",
     )
     parser.add_argument(
         "--fwhm",
