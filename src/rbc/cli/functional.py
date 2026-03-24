@@ -142,26 +142,18 @@ def main(args: FunctionalArgs) -> int:
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            func.save(
-                outputs.regressor_file,
-                suffix="regressors",
-                desc=args.regressor,
-                extension=".1D",
-            )
+            for regressor in args.regressor:
+                func.save(
+                    outputs.regressor_file[regressor],
+                    suffix="regressors",
+                    desc=regressor,
+                    extension=".1D",
+                )
 
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
-            # Save regressors
-            for regressor, regressor_file, cleaned_bold in zip(
-                args.regressor,
-                outputs.regressor_file,
-                outputs.cleaned_bold,
-                strict=True,
-            ):
-                func.save(
-                    regressor_file, suffix="regressors", desc=regressor, extension=".1D"
-                )
+            for regressor in args.regressor:
                 mni.save(
-                    cleaned_bold,
+                    outputs.cleaned_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="preproc",
                     extra={"reg": regressor},

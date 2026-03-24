@@ -1,7 +1,7 @@
 """Unit tests for Functional CLI module."""
 
 import argparse
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -39,7 +39,7 @@ def _make_groups(
     return filtered_df, groups
 
 
-def _mock_functional_outputs() -> Mock:
+def _mock_functional_outputs(regressor: Sequence[str] = ["36-parameter"]) -> Mock:
     """Create a mock FunctionalOutputs with fake paths."""
     fake = Path("fake_workdir")
     outputs = Mock()
@@ -50,8 +50,8 @@ def _mock_functional_outputs() -> Mock:
     outputs.rms_abs = fake / "rms_abs.rms"
     outputs.bold_mask = fake / "bold_mask.nii.gz"
     outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
-    outputs.cleaned_bold = [fake / "cleaned_bold.nii.gz"]
-    outputs.regressor_file = [fake / "regressors.1D"]
+    outputs.cleaned_bold = dict.fromkeys(regressor, fake / "cleaned_bold.nii.gz")
+    outputs.regressor_file = dict.fromkeys(regressor, fake / "regressors.1D")
     return outputs
 
 

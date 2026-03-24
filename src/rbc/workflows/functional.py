@@ -9,7 +9,6 @@ is performed here -- that responsibility belongs to the CLI layer via
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, NamedTuple
 
 from bids2table import load_bids_metadata
@@ -55,16 +54,6 @@ if TYPE_CHECKING:
     )
 
 _logger = logging.getLogger("rbc")
-
-
-@dataclass
-class _RegressorOutputs:
-    """Per regressor outputs for regressors."""
-
-    regressors: dict[str, ComputeRegressorsOutputs] = field(default_factory=dict)
-    regression: dict[str, ApplyRegressionOutputs] = field(default_factory=dict)
-    cleaned: dict[str, ApplyRegressionOutputs] = field(default_factory=dict)
-    filtered_regressors: dict[str, Path] = field(default_factory=dict)
 
 
 class FunctionalOutputs(NamedTuple):
@@ -114,9 +103,9 @@ class FunctionalOutputs(NamedTuple):
     bold_to_anat_matrix: Path
     bold_to_anat_itk: Path
     template_bold: Path
-    regressed_bold: list[Path]
-    cleaned_bold: list[Path]
-    regressor_file: list[Path]
+    regressed_bold: dict[str, Path]
+    cleaned_bold: dict[str, Path]
+    regressor_file: dict[str, Path]
     template_brain_mask: Path
 
 
@@ -297,10 +286,10 @@ def single_session_preprocess(
     native_wm = _warp_mask_to_bold_space(wm_mask, effective_ref, bold_to_anat_itk)
 
     # 12. Compute regressors from motion-corrected BOLD in native space
-    _nuisance_outputs = _RegressorOutputs()
+    regressors: dict[str, ComputeRegressorsOutputs] = {}
     for regressor in regressor_set:
         _logger.info("Computing nuisance regressors (%s)", regressor)
-        _nuisance_outputs.regressors[regressor] = compute_regressors(
+        regressors[regressor] = compute_regressors(
             bold_file=preproc_bold,
             brain_mask_file=native_brain,
             csf_mask_file=native_csf,
@@ -329,34 +318,34 @@ def single_session_preprocess(
         brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
     )
 
+    regression: dict[str, ApplyRegressionOutputs] = {}
+    cleaned: dict[str, ApplyRegressionOutputs] = {}
+    filtered_regressors: dict[str, Path] = {}
     for regressor in regressor_set:
         # 15. Nuisance regression without bandpass (pre-bandpass residuals
         #     for ALFF/fALFF computation, where full frequency range matters)
         _logger.info("%s nuisance regression (no bandpass)", regressor)
-        _nuisance_outputs.regression[regressor] = apply_regression(
+        regression[regressor] = apply_regression(
             bold_file=template_bold,
             brain_mask_file=tmpl_brain,
-            regressor_file=_nuisance_outputs.regressors[regressor].regressor_file,
+            regressor_file=regressors[regressor].regressor_file,
         )
 
         # 16. Simultaneous regression + bandpass filtering (Hallquist 2013).
         #     Regressors are filtered to the same passband before projection,
         #     preventing re-introduction of removed frequencies.
         _logger.info("%s nuisance regression + bandpass filtering", regressor)
-        _nuisance_outputs.cleaned[regressor] = apply_regression_bandpass(
+        cleaned[regressor] = apply_regression_bandpass(
             bold_file=template_bold,
             brain_mask_file=tmpl_brain,
-            regressor_file=_nuisance_outputs.regressors[regressor].regressor_file,
+            regressor_file=regressors[regressor].regressor_file,
         )
 
         # 17. Export bandpass-filtered regressors (matches what 3dTproject
         #     actually applied; raw regressors still in compute_regressors output)
         tr = metadata.get("RepetitionTime")
-        _nuisance_outputs.filtered_regressors[regressor] = bandpass_regressor_file(
-            _nuisance_outputs.regressors[regressor].regressor_file,
-            tr=tr,
-            f_low=0.01,
-            f_high=0.1,
+        filtered_regressors[regressor] = bandpass_regressor_file(
+            regressors[regressor].regressor_file, tr=tr, f_low=0.01, f_high=0.1
         )
 
     return FunctionalOutputs(
@@ -377,11 +366,9 @@ def single_session_preprocess(
         bold_to_anat_matrix=bbr.out_matrix_file,
         bold_to_anat_itk=bold_to_anat_itk,
         template_bold=template_bold,
-        regressed_bold=[
-            val.regressed_bold for val in _nuisance_outputs.regression.values()
-        ],
-        cleaned_bold=[val.regressed_bold for val in _nuisance_outputs.cleaned.values()],
-        regressor_file=list(_nuisance_outputs.filtered_regressors.values()),
+        regressed_bold={r: regression[r].regressed_bold for r in regressor_set},
+        cleaned_bold={r: cleaned[r].regressed_bold for r in regressor_set},
+        regressor_file=filtered_regressors,
         template_brain_mask=tmpl_brain,
     )
 
