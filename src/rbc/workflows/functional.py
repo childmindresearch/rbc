@@ -378,10 +378,12 @@ def longitudinal_process(
     template: Path,
     anat_to_template_xfm: Path,
     *,
+    t1w: Path,
     bold_to_anat_xfm: Path,
     sbref: Path,
     bold: Path,
     bold_mask: Path | None,
+    skull_stripped_bold: Path,
 ) -> FunctionalLongOutputs:
     """Transform preprocessed functional outputs to longitudinal template space.
 
@@ -391,18 +393,24 @@ def longitudinal_process(
     Args:
         template: Longitudinal template image.
         anat_to_template_xfm: Transform from subject to template space.
+        t1w: Preprocessed anatomical T1w.
         bold_to_anat_xfm: Transformation from bold to preprocessed anatomical space.
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask, if available.
+        skull_stripped_bold: Intensity-uniformized BOLD reference with mask applied.
 
     Returns:
         :class:`FunctionalLongOutputs` with all non-null inputs transformed to template
             space.
     """
+    bold2anat_fpath_str = str(generate_exec_folder("bold2anat") / "bold2anat_long.txt")
+    bold_to_anat_itk = mat_to_itk(
+        bold_to_anat_xfm, t1w, skull_stripped_bold, bold2anat_fpath_str
+    )
     bold_to_tpl_xfm = compose_transform(
         ref=template,
-        bold_to_anat_xfm=bold_to_anat_xfm,
+        bold_to_anat_xfm=bold_to_anat_itk,
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
 

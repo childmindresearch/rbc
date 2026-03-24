@@ -128,6 +128,7 @@ def main(args: FunctionalArgs) -> int:
                 extension=".rms",
             )
             func.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+            func.save(outputs.skull_stripped_bold, suffix=Suffix.SBREF, desc="brain")
             func.save(
                 outputs.bold_to_anat_matrix,
                 suffix="xfm",

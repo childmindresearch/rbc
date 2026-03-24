@@ -101,17 +101,22 @@ def _process_anat(
 
 
 def _process_func(
-    pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
+    pipe_ctx: PipelineContext,
+    anat_df: pl.DataFrame,
+    func_df: pl.DataFrame,
+    tpl_df: pl.DataFrame,
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
 
+    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
+    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = functional_longitudinal(
         template=tpl_q.expect(tpl_df, suffix="T1w"),
+        t1w=anat_q.expect(anat_df, suffix=Suffix.T1W),
         anat_to_template_xfm=tpl_q.expect(
             tpl_df,
             suffix="xfm",
@@ -131,6 +136,9 @@ def _process_func(
         ),
         bold_mask=func_q.find(
             func_df, suffix=Suffix.MASK, desc="brain", without=["space"]
+        ),
+        skull_stripped_bold=func_q.expect(
+            func_df, suffix=Suffix.SBREF, desc="brain", without=["space"]
         ),
     )
 
@@ -201,7 +209,9 @@ def main(args: LongitudinalArgs) -> int:
                 )
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:
-                _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+                _process_func(
+                    pipe_ctx=pipe_ctx, func_df=func_df, anat_df=anat_df, tpl_df=tpl_df
+                )
         pipe_ctx.ensure_dataset_description()
 
     return 0
