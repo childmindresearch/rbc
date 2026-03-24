@@ -105,6 +105,8 @@ def _patch_all(
             "suffix": ["T1w"],
             "ext": [".nii.gz"],
             "run": [None],
+            "space": [None],
+            "desc": [None],
             "root": ["/data"],
             "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
         }
@@ -226,6 +228,8 @@ def sample_dataframe() -> pl.DataFrame:
             "echo": [None] * 7,
             "part": [None] * 7,
             "rec": [None] * 7,
+            "space": [None] * 7,
+            "desc": [None] * 7,
             "root": ["/data"] * 7,
             "path": [
                 "sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz",

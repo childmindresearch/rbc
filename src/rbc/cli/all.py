@@ -70,7 +70,7 @@ def main(args: AllArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = []
+    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:

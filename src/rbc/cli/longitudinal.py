@@ -163,7 +163,11 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [pl.col("ses") != "longitudinal"]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null(),
+        pl.col("desc").is_null(),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -196,9 +200,6 @@ def main(args: LongitudinalArgs) -> int:
             session, groupby=_FUNC_GROUP_ENTITIES
         ):
             if args.anatomical:
-                anat_df = anat_df.filter(
-                    pl.col("space").is_null() | (pl.col("space") != "longitudinal")
-                )
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             if args.functional:
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
