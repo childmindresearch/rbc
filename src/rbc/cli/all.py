@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 class AllArgs(BaseArgs):
     """Arguments for the combined pipeline CLI."""
 
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
-    atlas: AtlasName
+    atlas: Sequence[AtlasName]
     fwhm: float
     start_tr: int
 
@@ -47,7 +47,8 @@ class AllArgs(BaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
         """Validate all-workflow arguments."""
         _validate_task(ns.task)
-        _validate_atlas(ns.atlas)
+        for atlas in ns.atlas:
+            _validate_atlas(atlas)
         _validate_positive(ns.fwhm, "FWHM")
         _validate_positive(ns.start_tr, "Start TR")
         return cls(
@@ -60,7 +61,7 @@ class AllArgs(BaseArgs):
         )
 
 
-def main(args: AllArgs) -> int:
+def main(args: AllArgs) -> int:  # noqa: C901
     """Main entrypoint of combined pipeline."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
@@ -171,66 +172,74 @@ def main(args: AllArgs) -> int:
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            func.save(
-                func_outputs.regressor_file,
-                suffix="regressors",
-                desc=args.regressor,
-                extension=".1D",
-            )
+            for regressor in args.regressor:
+                func.save(
+                    func_outputs.regressor_file[regressor],
+                    suffix="regressors",
+                    desc=regressor,
+                    extension=".1D",
+                )
 
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+            # Save regressors
+            for regressor in args.regressor:
+                mni.save(
+                    func_outputs.regressed_bold[regressor],
+                    suffix=Suffix.BOLD,
+                    desc="regressed",
+                    extra={"reg": regressor},
+                )
+                mni.save(
+                    func_outputs.cleaned_bold[regressor],
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
+
             mni.save(func_outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
-            mni.save(
-                func_outputs.regressed_bold,
-                suffix=Suffix.BOLD,
-                desc="regressed",
-                extra={"reg": args.regressor},
-            )
-            mni.save(
-                func_outputs.cleaned_bold,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
             mni.save(func_outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 
             # --- Metrics ---
-            ctx.logger.info(
-                f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
-                f"run-{ents.get('run', 0)}"
-            )
-            metrics_outputs = metrics_pipeline(
-                regressed_bold=func_outputs.regressed_bold,
-                cleaned_bold=func_outputs.cleaned_bold,
-                template_brain_mask=func_outputs.template_brain_mask,
-                atlas=args.atlas,
-                fwhm=args.fwhm,
-            )
+            for regressor in args.regressor:
+                ctx.logger.info(
+                    f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                    f"run-{ents.get('run', 0)} regressor-{regressor}"
+                )
+                metrics_outputs = metrics_pipeline(
+                    regressed_bold=func_outputs.regressed_bold[regressor],
+                    cleaned_bold=func_outputs.cleaned_bold[regressor],
+                    template_brain_mask=func_outputs.template_brain_mask,
+                    atlas=args.atlas,
+                    fwhm=args.fwhm,
+                )
 
-            mex = mni.derive(extra={"reg": args.regressor})
-            mex.save(metrics_outputs.alff, suffix="alff")
-            mex.save(metrics_outputs.falff, suffix="falff")
-            mex.save(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
-            mex.save(metrics_outputs.falff_smooth, suffix="falff", desc="smooth")
-            mex.save(metrics_outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-            mex.save(metrics_outputs.falff_zscored, suffix="falff", desc="smoothZstd")
-            mex.save(metrics_outputs.reho, suffix="reho")
-            mex.save(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
-            mex.save(metrics_outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-            mex.save(
-                metrics_outputs.timeseries,
-                suffix="timeseries",
-                desc="mean",
-                extension=".tsv",
-                atlas=args.atlas,
-            )
-            mex.save(
-                metrics_outputs.correlation_matrix,
-                suffix="correlations",
-                desc="pearson",
-                extension=".tsv",
-                atlas=args.atlas,
-            )
+                mex = mni.derive(extra={"reg": regressor})
+                mex.save(metrics_outputs.alff, suffix="alff")
+                mex.save(metrics_outputs.falff, suffix="falff")
+                mex.save(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
+                mex.save(metrics_outputs.falff_smooth, suffix="falff", desc="smooth")
+                mex.save(metrics_outputs.alff_zscored, suffix="alff", desc="smoothZstd")
+                mex.save(
+                    metrics_outputs.falff_zscored, suffix="falff", desc="smoothZstd"
+                )
+                mex.save(metrics_outputs.reho, suffix="reho")
+                mex.save(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
+                mex.save(metrics_outputs.reho_zscored, suffix="reho", desc="smoothZstd")
+                for atlas in args.atlas:
+                    mex.save(
+                        metrics_outputs.timeseries[atlas],
+                        suffix="timeseries",
+                        desc="mean",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
+                    mex.save(
+                        metrics_outputs.correlation_matrix[atlas],
+                        suffix="correlations",
+                        desc="pearson",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
 
             # --- QC ---
             ctx.logger.info(
@@ -254,19 +263,20 @@ def main(args: AllArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            mni.save(
-                qc_outputs.qc_file,
-                suffix="quality",
-                desc="xcp",
-                extension=".tsv",
-                extra={"reg": args.regressor},
-            )
+            for regressor in args.regressor:
+                mni.save(
+                    qc_outputs.qc_file[regressor],
+                    suffix="quality",
+                    desc="xcp",
+                    extension=".tsv",
+                    extra={"reg": regressor},
+                )
 
-            status = "PASSED" if qc_outputs.passed else "FAILED"
-            ctx.logger.info(
-                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
-                f"run-{ents.get('run', 0)}"
-            )
+                status = "PASSED" if qc_outputs.passed[regressor] else "FAILED"
+                ctx.logger.info(
+                    f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                    f"run-{ents.get('run', 0)} regressor-{regressor}"
+                )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC full pipeline complete")
@@ -286,8 +296,9 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
+        default=["36-parameter"],
         help="Nuisance regression method.",
     )
     parser.add_argument(
@@ -297,6 +308,7 @@ def register_command(
     )
     parser.add_argument(
         "--atlas",
+        nargs="+",
         choices=[
             "schaefer_200",
             "schaefer_300",
@@ -304,7 +316,7 @@ def register_command(
             "schaefer_1000",
             "aal",
         ],
-        default="schaefer_200",
+        default=["schaefer_200"],
         help="Atlas for timeseries extraction.",
     )
     parser.add_argument(
