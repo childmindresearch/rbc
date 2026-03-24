@@ -538,7 +538,11 @@ class TestProcessFunc:
     """Tests for _process_func helper."""
 
     def test_calls_functional_longitudinal(
-        self, anat_df: pl.DataFrame, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
+        self,
+        anat_df: pl.DataFrame,
+        func_df: pl.DataFrame,
+        tpl_df: pl.DataFrame,
+        tmp_path: Path,
     ) -> None:
         """Test functional longitudinal is called."""
         pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
@@ -553,7 +557,9 @@ class TestProcessFunc:
             ),
             patch("rbc.core.bids.shutil.copy2"),
         ):
-            _process_func(pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df)
+            _process_func(
+                pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df
+            )
             assert mock_func.call_count == 1
 
     @pytest.mark.parametrize(
@@ -594,10 +600,16 @@ class TestProcessFunc:
             ),
             pytest.raises(FileNotFoundError),
         ):
-            _process_func(pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df)
+            _process_func(
+                pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df
+            )
 
     def test_optional_bold_mask_file_not_found(
-        self, anat_df: pl.DataFrame, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
+        self,
+        anat_df: pl.DataFrame,
+        func_df: pl.DataFrame,
+        tpl_df: pl.DataFrame,
+        tmp_path: Path,
     ) -> None:
         """Optional bold_mask not found is caught; 3 exports emitted."""
         pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
@@ -612,5 +624,7 @@ class TestProcessFunc:
             ),
             patch("rbc.core.bids.shutil.copy2") as mock_copy,
         ):
-            _process_func(pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df)
+            _process_func(
+                pipe_ctx=pipe_ctx, anat_df=anat_df, func_df=func_df, tpl_df=tpl_df
+            )
             assert mock_copy.call_count == 3
