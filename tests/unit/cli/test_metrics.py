@@ -107,7 +107,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         task=None,
         atlas="schaefer_200",
         fwhm=6.0,
-        regressor="36-parameter",
+        regressor=["36-parameter"],
         tmp_dir=None,
     )
 
@@ -177,7 +177,7 @@ class TestMetricsArgs:
         assert args.atlas == "schaefer_200"
         assert args.fwhm == 6.0
         assert args.task is None
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
         assert args.session_label == []
 
@@ -186,9 +186,9 @@ class TestMetricsArgs:
         self, base_args: argparse.Namespace, regressor: str
     ) -> None:
         """Both supported regressor options pass validation."""
-        base_args.regressor = regressor
+        base_args.regressor = [regressor]
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.regressor == regressor
+        assert args.regressor == [regressor]
 
     @pytest.mark.parametrize(
         "atlas",
@@ -448,7 +448,7 @@ class TestMetricsRegistration:
         """Test metrics subparser includes --regressor argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "metrics"])
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
 
     def test_metrics_parser_task_default_none(self) -> None:
         """Test metrics subparser --task defaults to None."""
