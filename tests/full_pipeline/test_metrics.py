@@ -20,7 +20,9 @@ def test_single_session_metrics(
         cleaned_bold=pipeline_data.func.cleaned_bold,
         template_brain_mask=pipeline_data.template_brain_mask,
     )
-    for path in result:
-        assert Path(path).exists()
+    for output in result:
+        paths = output.values() if isinstance(output, dict) else [output]
+        for path in paths:
+            assert Path(path).exists()
 
     manifest["metrics"] = {k: str(v) for k, v in result._asdict().items()}
