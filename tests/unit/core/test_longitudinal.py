@@ -136,10 +136,10 @@ class TestComposeTransform:
         ref.unlink()
         with pytest.raises(FileNotFoundError, match="not found"):
             compose_transform(
-                ref=ref, bold_to_anat_xfm=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
+                ref=ref, bold_to_anat_itk=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
             )
 
-    def test_missing_bold_to_anat_xfm(
+    def test_missing_bold_to_anat_itk(
         self, tmp_compose_files: tuple[Path, ...]
     ) -> None:
         """Raises error if bold-to-anatomical transformation does not exist."""
@@ -147,7 +147,7 @@ class TestComposeTransform:
         bold_to_anat.unlink()
         with pytest.raises(FileNotFoundError, match="not found"):
             compose_transform(
-                ref=ref, bold_to_anat_xfm=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
+                ref=ref, bold_to_anat_itk=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
             )
 
     def test_missing_anat_to_tpl_xfm(self, tmp_compose_files: tuple[Path, ...]) -> None:
@@ -156,7 +156,7 @@ class TestComposeTransform:
         anat_to_tpl.unlink()
         with pytest.raises(FileNotFoundError, match="not found"):
             compose_transform(
-                ref=ref, bold_to_anat_xfm=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
+                ref=ref, bold_to_anat_itk=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
             )
 
     @patch("rbc.core.longitudinal.transform.ants")
@@ -176,6 +176,6 @@ class TestComposeTransform:
         mock_ants.ants_apply_transforms_transform_file_name.return_value = MagicMock()
 
         result = compose_transform(
-            ref=ref, bold_to_anat_xfm=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
+            ref=ref, bold_to_anat_itk=bold_to_anat, anat_to_tpl_xfm=anat_to_tpl
         )
         assert result == expected
