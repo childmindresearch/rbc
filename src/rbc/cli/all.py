@@ -165,6 +165,13 @@ def main(args: AllArgs) -> int:
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
             func.save(
+                func_outputs.bold_to_anat_itk,
+                suffix="xfm",
+                desc="linearITK",
+                extension=".txt",
+                extra={"from": "bold", "to": "T1w", "mode": "image"},
+            )
+            func.save(
                 func_outputs.regressor_file,
                 suffix="regressors",
                 desc=args.regressor,

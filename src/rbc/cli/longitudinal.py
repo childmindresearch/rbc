@@ -118,10 +118,10 @@ def _process_func(
             extension=".txt",
             extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
         ),
-        bold_to_anat_xfm=func_q.expect(
+        bold_to_anat_itk=func_q.expect(
             func_df,
             suffix="xfm",
-            desc="linear",
+            desc="linearITK",
             extension=".txt",
             extra={"from": "bold", "to": "T1w", "mode": "image"},
         ),

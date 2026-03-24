@@ -72,6 +72,7 @@ class FunctionalOutputs(NamedTuple):
         bold_mask: Final binary BOLD brain mask.
         skull_stripped_bold: Skull-stripped BOLD reference.
         bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
+        bold_to_anat_itk: BOLD-to-T1w affine in ITK format (for ANTs warping).
         template_bold: BOLD resampled to template space.
         regressed_bold: Nuisance-regressed (non-bandpassed) BOLD.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
@@ -94,6 +95,7 @@ class FunctionalOutputs(NamedTuple):
     bold_mask: Path
     skull_stripped_bold: Path
     bold_to_anat_matrix: Path
+    bold_to_anat_itk: Path
     template_bold: Path
     regressed_bold: Path
     cleaned_bold: Path
@@ -350,6 +352,7 @@ def single_session_preprocess(
         bold_mask=masking.final_mask,
         skull_stripped_bold=masking.skull_stripped_bold,
         bold_to_anat_matrix=bbr.out_matrix_file,
+        bold_to_anat_itk=bold_to_anat_itk,
         template_bold=template_bold,
         regressed_bold=regression.regressed_bold,
         cleaned_bold=cleaned.regressed_bold,
@@ -378,7 +381,7 @@ def longitudinal_process(
     template: Path,
     anat_to_template_xfm: Path,
     *,
-    bold_to_anat_xfm: Path,
+    bold_to_anat_itk: Path,
     sbref: Path,
     bold: Path,
     bold_mask: Path | None,
@@ -391,7 +394,7 @@ def longitudinal_process(
     Args:
         template: Longitudinal template image.
         anat_to_template_xfm: Transform from subject to template space.
-        bold_to_anat_xfm: Transformation from bold to preprocessed anatomical space.
+        bold_to_anat_itk: Transformation from bold to preprocessed anatomical space.
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask, if available.
@@ -402,7 +405,7 @@ def longitudinal_process(
     """
     bold_to_tpl_xfm = compose_transform(
         ref=template,
-        bold_to_anat_xfm=bold_to_anat_xfm,
+        bold_to_anat_itk=bold_to_anat_itk,
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
 
