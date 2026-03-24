@@ -158,12 +158,16 @@ def main(args: AllArgs) -> int:
             )
             func.save(func_outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
             func.save(
-                func_outputs.skull_stripped_bold, suffix=Suffix.SBREF, desc="brain"
-            )
-            func.save(
                 func_outputs.bold_to_anat_matrix,
                 suffix="xfm",
                 desc="linear",
+                extension=".txt",
+                extra={"from": "bold", "to": "T1w", "mode": "image"},
+            )
+            func.save(
+                func_outputs.bold_to_anat_itk,
+                suffix="xfm",
+                desc="linearITK",
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )

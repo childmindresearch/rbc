@@ -41,12 +41,12 @@ def anat_transform(in_file: Path, template: Path, xfm: Path) -> Path:
     ).output.output_image_outfile
 
 
-def compose_transform(ref: Path, bold_to_anat_xfm: Path, anat_to_tpl_xfm: Path) -> Path:
+def compose_transform(ref: Path, bold_to_anat_itk: Path, anat_to_tpl_xfm: Path) -> Path:
     """Compose single transformation from bold to template with ANTs.
 
     Args:
         ref: Reference image.
-        bold_to_anat_xfm: Transformation from bold to anatomical space.
+        bold_to_anat_itk: Transformation from bold to anatomical space.
         anat_to_tpl_xfm: Transformation from anatomical to longitudinal template space.
 
     Returns:
@@ -55,14 +55,14 @@ def compose_transform(ref: Path, bold_to_anat_xfm: Path, anat_to_tpl_xfm: Path) 
     Raises:
         FileNotFoundError: if a transformation is not found.
     """
-    for fpath in (ref, bold_to_anat_xfm, anat_to_tpl_xfm):
+    for fpath in (ref, bold_to_anat_itk, anat_to_tpl_xfm):
         if not fpath.exists():
             raise FileNotFoundError(f"{fpath} not found")
 
     return ants.ants_apply_transforms(
         reference_image=ref,
         transform=[
-            ants.ants_apply_transforms_transform_file_name(bold_to_anat_xfm),
+            ants.ants_apply_transforms_transform_file_name(bold_to_anat_itk),
             ants.ants_apply_transforms_transform_file_name(anat_to_tpl_xfm),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
