@@ -50,7 +50,8 @@ def _mock_functional_outputs() -> Mock:
     outputs.rms_abs = fake / "rms_abs.rms"
     outputs.bold_mask = fake / "bold_mask.nii.gz"
     outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
-    outputs.regressor_file = fake / "regressors.1D"
+    outputs.cleaned_bold = [fake / "cleaned_bold.nii.gz"]
+    outputs.regressor_file = [fake / "regressors.1D"]
     return outputs
 
 
@@ -114,7 +115,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         output_dir=output_dir,
         participant_label=[],
         session_label=[],
-        regressor="36-parameter",
+        regressor=["36-parameter"],
         task=None,
         tmp_dir=None,
     )
@@ -167,7 +168,7 @@ class TestFunctionalArgs:
             output_dir=output_dir,
             participant_label=[],
             session_label=[],
-            regressor="36-parameter",
+            regressor=["36-parameter"],
             task=None,
             tmp_dir=None,
         )
@@ -176,14 +177,14 @@ class TestFunctionalArgs:
         """Test FunctionalArgs validates successfully with valid args."""
         args = FunctionalArgs.validate_namespace(func_namespace)
         assert isinstance(args, FunctionalArgs)
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.task is None
 
     def test_validate_with_regressor(self, func_namespace: argparse.Namespace) -> None:
         """Test FunctionalArgs preserves regressor choice."""
-        func_namespace.regressor = "aCompCor"
+        func_namespace.regressor = ["aCompCor"]
         args = FunctionalArgs.validate_namespace(func_namespace)
-        assert args.regressor == "aCompCor"
+        assert args.regressor == ["aCompCor"]
 
     def test_validate_with_task(self, func_namespace: argparse.Namespace) -> None:
         """Test FunctionalArgs preserves task filter."""
@@ -194,7 +195,7 @@ class TestFunctionalArgs:
     def test_defaults(self, func_namespace: argparse.Namespace) -> None:
         """Test default values for regressor and task."""
         args = FunctionalArgs.validate_namespace(func_namespace)
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.task is None
         assert args.participant_label == []
         assert args.session_label == []

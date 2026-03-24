@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 class FunctionalArgs(BaseArgs):
     """Arguments for single-session functional CLI."""
 
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
 
     @classmethod
@@ -150,13 +150,23 @@ def main(args: FunctionalArgs) -> int:
             )
 
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
-            mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
-            mni.save(
+            # Save regressors
+            for regressor, regressor_file, cleaned_bold in zip(
+                args.regressor,
+                outputs.regressor_file,
                 outputs.cleaned_bold,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
+                strict=True,
+            ):
+                func.save(
+                    regressor_file, suffix="regressors", desc=regressor, extension=".1D"
+                )
+                mni.save(
+                    cleaned_bold,
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
+            mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
             mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 
         pipe_ctx.ensure_dataset_description()
@@ -178,9 +188,10 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
-        help="Nuisance regression method.",
+        default=["36-parameter"],
+        help="Space-delimited nuisance regression method(s) to apply.",
     )
     parser.add_argument(
         "--task",
