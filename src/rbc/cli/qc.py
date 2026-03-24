@@ -93,12 +93,15 @@ def main(args: QCArgs) -> int:
             template_bold = func_mni.expect(
                 deriv_df, suffix=Suffix.BOLD, desc="preproc"
             )
-            cleaned_bold = func_mni.expect(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
+            cleaned_bold = {
+                regressor: func_mni.expect(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
+                for regressor in args.regressor
+            }
             motion_params = func.expect(
                 deriv_df,
                 suffix=Suffix.MOTION,
@@ -146,18 +149,20 @@ def main(args: QCArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            func_mni.save(
-                qc_outputs.qc_file,
-                suffix="quality",
-                desc="xcp",
-                extension=".tsv",
-                extra={"reg": args.regressor},
-            )
+            for regressor in args.regressor:
+                func_mni.save(
+                    qc_outputs.qc_file[regressor],
+                    suffix="quality",
+                    desc="xcp",
+                    extension=".tsv",
+                    extra={"reg": regressor},
+                )
 
-            status = "PASSED" if qc_outputs.passed else "FAILED"
-            ctx.logger.info(
-                f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} run-{bold_run}"
-            )
+                status = "PASSED" if qc_outputs.passed[regressor] else "FAILED"
+                ctx.logger.info(
+                    f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} "
+                    f"run-{bold_run} regressor-{regressor}"
+                )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC QC workflow complete")
@@ -188,9 +193,13 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
-        help="Nuisance regression method used in functional preprocessing.",
+        default=["36-parameter"],
+        help=(
+            "Space-delimited nuisance regression method(s) used in "
+            "functional preprocessing."
+        ),
     )
 
     parser.set_defaults(func=lambda args: main(QCArgs.validate_namespace(args)))

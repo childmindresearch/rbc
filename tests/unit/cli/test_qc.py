@@ -12,6 +12,8 @@ import pytest
 from rbc.cli import qc
 from rbc.cli.main import cli, create_parser
 from rbc.cli.qc import QCArgs
+from rbc.core.qc.xcp import XCPQCMetrics
+from rbc.workflows.qc import QCOutputs
 
 
 def _make_filtered_df(
@@ -32,12 +34,15 @@ def _make_filtered_df(
     )
 
 
-def _mock_qc_outputs(*, passed: bool = True) -> Mock:
+def _mock_qc_outputs(
+    *, regressor: str = "36-parameter", passed: bool = True
+) -> QCOutputs:
     """Create a mock QCOutputs with a fake qc_file path and pass/fail status."""
-    outputs = Mock()
-    outputs.qc_file = Path("fake_workdir") / "qc.tsv"
-    outputs.passed = passed
-    return outputs
+    return QCOutputs(
+        metrics={regressor: Mock(spec=XCPQCMetrics)},
+        qc_file={regressor: Path("fake_workdir") / "qc.tsv"},
+        passed={regressor: passed},
+    )
 
 
 @contextmanager
@@ -96,7 +101,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         task=None,
         start_tr=2,
-        regressor="36-parameter",
+        regressor=["36-parameter"],
         tmp_dir=None,
     )
 
@@ -162,7 +167,7 @@ class TestQCArgs:
         args = QCArgs.validate_namespace(base_args)
         assert args.task is None
         assert args.start_tr == 2
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
         assert args.session_label == []
 
@@ -189,9 +194,9 @@ class TestQCArgs:
         self, base_args: argparse.Namespace, regressor: str
     ) -> None:
         """Both supported regressor options pass validation."""
-        base_args.regressor = regressor
+        base_args.regressor = [regressor]
         args = QCArgs.validate_namespace(base_args)
-        assert args.regressor == regressor
+        assert args.regressor == [regressor]
 
     def test_task_preserved(self, base_args: argparse.Namespace) -> None:
         """Provided task label is preserved through validation."""
@@ -417,7 +422,7 @@ class TestQCRegistration:
         """Test QC subparser includes --regressor argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "qc"])
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
 
     def test_qc_parser_task_default_none(self) -> None:
         """Test QC subparser --task defaults to None."""
