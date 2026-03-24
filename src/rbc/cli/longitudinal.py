@@ -110,7 +110,7 @@ def _process_func(
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
 
-    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
     tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
