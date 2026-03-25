@@ -13,8 +13,8 @@ dependencies = [
   "numpy>=2.4.2",
   "polars>=1.38.1",
   "scipy>=1.17.0",
-  "styxpodman",
-  "tqdm>=4.67.3",
+  "styxpodman@git+https://github.com/styx-api/styxpodman.git@1382977",
+  "tqdm>=4.67.3"
 ]
 
 [project.scripts]
@@ -111,9 +111,6 @@ convention = "google"
 "src/rbc/core/qc/xcp.py" = [
   "N815"
 ]  # camelCase field names required by XCP-D TSV spec
-
-[tool.uv.sources]
-styxpodman = {git = "https://github.com/styx-api/styxpodman.git", rev = "1382977"}
 
 [tool.uv.build-backend]
 module-name = ["rbc", "rbc_resources"]
