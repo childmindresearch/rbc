@@ -51,6 +51,7 @@ def _mock_functional_outputs(regressor: Sequence[str] = ["36-parameter"]) -> Moc
     outputs.bold_mask = fake / "bold_mask.nii.gz"
     outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
     outputs.cleaned_bold = dict.fromkeys(regressor, fake / "cleaned_bold.nii.gz")
+    outputs.regressed_bold = dict.fromkeys(regressor, fake / "regressed_bold.nii.gz")
     outputs.regressor_file = dict.fromkeys(regressor, fake / "regressors.1D")
     return outputs
 

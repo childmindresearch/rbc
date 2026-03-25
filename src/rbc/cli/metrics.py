@@ -123,8 +123,7 @@ def main(args: MetricsArgs) -> int:
                     fwhm=args.fwhm,
                 )
 
-                reg_extra: dict[str, str | int] = {"reg": regressor}
-                mex = mni_q.derive(extra=reg_extra)
+                mex = mni_q.derive(extra={"reg": regressor})
                 mex.save(outputs.alff, suffix="alff")
                 mex.save(outputs.falff, suffix="falff")
                 mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")

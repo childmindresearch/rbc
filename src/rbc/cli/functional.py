@@ -153,6 +153,12 @@ def main(args: FunctionalArgs) -> int:
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
             for regressor in args.regressor:
                 mni.save(
+                    outputs.regressed_bold[regressor],
+                    suffix=Suffix.BOLD,
+                    desc="regressed",
+                    extra={"reg": regressor},
+                )
+                mni.save(
                     outputs.cleaned_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="preproc",
