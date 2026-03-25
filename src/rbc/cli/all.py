@@ -272,11 +272,11 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     extra={"reg": regressor},
                 )
 
-                status = "PASSED" if qc_outputs.passed[regressor] else "FAILED"
-                ctx.logger.info(
-                    f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
-                    f"run-{ents.get('run', 0)} regressor-{regressor}"
-                )
+            status = "PASSED" if qc_outputs.passed else "FAILED"
+            ctx.logger.info(
+                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
+                f"run-{ents.get('run', 0)}"
+            )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC full pipeline complete")

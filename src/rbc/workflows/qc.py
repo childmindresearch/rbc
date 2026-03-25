@@ -42,7 +42,7 @@ class QCOutputs:
 
     metrics: dict[str, XCPQCMetrics] = field(default_factory=dict)
     qc_file: dict[str, Path] = field(default_factory=dict)
-    passed: dict[str, bool] = field(default_factory=dict)
+    passed: bool = field(default=False)  # Set default to fail
 
 
 def single_session_qc(
@@ -157,7 +157,7 @@ def single_session_qc(
             / f"sub-{sub}_ses-{ses}_task-{task}_run-{run}_reg-{regressor}_qc.tsv",
         )
 
-        # 10. RBC pass/fail
-        qc_outputs.passed[regressor] = passes_rbc_qc(fd, norm.cross_corr)
+    # 10. RBC pass/fail
+    qc_outputs.passed = passes_rbc_qc(fd, norm.cross_corr)
 
     return qc_outputs

@@ -41,7 +41,7 @@ def _mock_qc_outputs(
     return QCOutputs(
         metrics={regressor: Mock(spec=XCPQCMetrics)},
         qc_file={regressor: Path("fake_workdir") / "qc.tsv"},
-        passed={regressor: passed},
+        passed=passed,
     )
 
 

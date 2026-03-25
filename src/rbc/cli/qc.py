@@ -159,11 +159,10 @@ def main(args: QCArgs) -> int:
                     extra={"reg": regressor},
                 )
 
-                status = "PASSED" if qc_outputs.passed[regressor] else "FAILED"
-                ctx.logger.info(
-                    f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} "
-                    f"run-{bold_run} regressor-{regressor}"
-                )
+            status = "PASSED" if qc_outputs.passed else "FAILED"
+            ctx.logger.info(
+                f"QC {status} for sub-{sub} ses-{ses} task-{bold_task} run-{bold_run}"
+            )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC QC workflow complete")

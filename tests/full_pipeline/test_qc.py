@@ -34,13 +34,13 @@ def test_single_session_qc(
     )
     assert all(isinstance(v, XCPQCMetrics) for v in result.metrics.values())
     assert all(path.exists() for path in result.qc_file.values())
-    assert all(isinstance(v, bool) for v in result.passed.values())
+    assert isinstance(result.passed, bool)
 
     manifest["qc"] = {
         regressor: {
             "qc_file": str(result.qc_file[regressor]),
-            "passed": result.passed[regressor],
+            "passed": result.passed,
             "metrics": result.metrics[regressor]._asdict(),
         }
-        for regressor in result.passed
+        for regressor in result.metrics
     }
