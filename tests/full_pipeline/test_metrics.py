@@ -12,12 +12,14 @@ if TYPE_CHECKING:
 
 
 def test_single_session_metrics(
-    pipeline_data: PipelineData, manifest: dict[str, object]
+    pipeline_data: PipelineData,
+    manifest: dict[str, object],
 ) -> None:
     """All 11 MetricsOutputs paths must exist on disk."""
+    regressor = "36-parameter"  # default regressor
     result = metrics_pipeline(
-        regressed_bold=pipeline_data.func.regressed_bold,
-        cleaned_bold=pipeline_data.func.cleaned_bold,
+        regressed_bold=pipeline_data.func.regressed_bold[regressor],
+        cleaned_bold=pipeline_data.func.cleaned_bold[regressor],
         template_brain_mask=pipeline_data.template_brain_mask,
     )
     for output in result:
