@@ -181,7 +181,6 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 )
 
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
-            # Save regressors
             for regressor in args.regressor:
                 mni.save(
                     func_outputs.regressed_bold[regressor],
