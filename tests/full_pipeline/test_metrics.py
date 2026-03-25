@@ -12,15 +12,19 @@ if TYPE_CHECKING:
 
 
 def test_single_session_metrics(
-    pipeline_data: PipelineData, manifest: dict[str, object]
+    pipeline_data: PipelineData,
+    manifest: dict[str, object],
 ) -> None:
     """All 11 MetricsOutputs paths must exist on disk."""
+    regressor = "36-parameter"  # default regressor
     result = metrics_pipeline(
-        regressed_bold=pipeline_data.func.regressed_bold,
-        cleaned_bold=pipeline_data.func.cleaned_bold,
+        regressed_bold=pipeline_data.func.regressed_bold[regressor],
+        cleaned_bold=pipeline_data.func.cleaned_bold[regressor],
         template_brain_mask=pipeline_data.template_brain_mask,
     )
-    for path in result:
-        assert Path(path).exists()
+    for output in result:
+        paths = output.values() if isinstance(output, dict) else [output]
+        for path in paths:
+            assert Path(path).exists()
 
     manifest["metrics"] = {k: str(v) for k, v in result._asdict().items()}

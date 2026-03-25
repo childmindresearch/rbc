@@ -9,7 +9,8 @@ responsibility belongs to the CLI layer.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import nibabel as nib
 import numpy as np
@@ -23,13 +24,15 @@ from rbc.core.qc.xcp import XCPQCMetrics, generate_xcp_qc, passes_rbc_qc, write_
 from rbc_resources import MNI_TEMPLATES
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
 _logger = logging.getLogger("rbc")
 
 
-class QCOutputs(NamedTuple):
-    """Outputs from the QC metrics workflow.
+@dataclass
+class QCOutputs:
+    """QC outputs from the metrics workflow.
 
     Attributes:
         metrics: All 24 XCP-style QC fields for the run.
@@ -37,14 +40,14 @@ class QCOutputs(NamedTuple):
         passed: Whether the run passes RBC QC thresholds.
     """
 
-    metrics: XCPQCMetrics
-    qc_file: Path
-    passed: bool
+    metrics: dict[str, XCPQCMetrics] = field(default_factory=dict)
+    qc_file: dict[str, Path] = field(default_factory=dict)
+    passed: bool = field(default=False)  # Set default to fail
 
 
 def single_session_qc(
     template_bold: Path,
-    cleaned_bold: Path,
+    cleaned_bold: Mapping[str, Path],
     motion_params: Path,
     rms_rel: Path,
     bold_mask: Path,
@@ -56,7 +59,7 @@ def single_session_qc(
     task: str,
     run: int,
     start_tr: int = 2,
-    regressor_set: str = "36-parameter",
+    regressor_set: Sequence[str] = ("36-parameter",),
 ) -> QCOutputs:
     """Compute all QC metrics for a single functional run.
 
@@ -97,12 +100,7 @@ def single_session_qc(
     tmpl_mask = tmpl_mask_img.get_fdata()
     dvars_init = dvars_qc_metrics(pre_data, tmpl_mask, fd)
 
-    # 5. Post-denoising DVARS
-    post_img = nib.nifti1.load(cleaned_bold)
-    post_data = post_img.get_fdata()
-    dvars_final = dvars_qc_metrics(post_data, tmpl_mask, fd)
-
-    # 6. Coregistration overlap (BOLD mask warped to anat space vs anat brain mask)
+    # 5. Coregistration overlap (BOLD mask warped to anat space vs anat brain mask)
     bold_mask_in_anat = fsl.flirt(
         in_file=bold_mask,
         reference=brain_mask,
@@ -116,7 +114,7 @@ def single_session_qc(
     brain_mask_arr = nib.nifti1.load(brain_mask).get_fdata()
     coreg = registration_qc_metrics(bold_mask_arr, brain_mask_arr)
 
-    # 7. Normalization overlap (template brain mask vs MNI brain mask)
+    # 6. Normalization overlap (template brain mask vs MNI brain mask)
     #    Resample MNI mask to template grid if shapes differ.
     tmpl_brain_img = nib.nifti1.load(template_brain_mask)
     mni_mask_img = nib.nifti1.load(MNI_TEMPLATES.brain_mask_2mm)
@@ -128,30 +126,38 @@ def single_session_qc(
     tmpl_brain_arr = tmpl_brain_img.get_fdata()
     norm = registration_qc_metrics(tmpl_brain_arr, mni_mask_arr)
 
-    # 8. Assemble XCP QC row
-    metrics = generate_xcp_qc(
-        sub=sub,
-        ses=ses,
-        task=task,
-        run=run,
-        desc="RBC",
-        regressors=regressor_set,
-        space=TemplateSpace.MNI152NLIN2009CASYM,
-        motion=motion,
-        dvars_init=dvars_init,
-        dvars_final=dvars_final,
-        n_vols_removed=start_tr,
-        coreg=coreg,
-        norm=norm,
-    )
+    qc_outputs = QCOutputs()
+    for regressor in regressor_set:
+        # 7. Post-denoising DVARS
+        post_img = nib.nifti1.load(cleaned_bold[regressor])
+        post_data = post_img.get_fdata()
+        dvars_final = dvars_qc_metrics(post_data, tmpl_mask, fd)
 
-    # 9. Write QC TSV
-    qc_file = write_xcp_qc(
-        metrics,
-        template_bold.parent / f"sub-{sub}_ses-{ses}_task-{task}_run-{run}_qc.tsv",
-    )
+        # 8. Assemble XCP QC row
+        qc_outputs.metrics[regressor] = generate_xcp_qc(
+            sub=sub,
+            ses=ses,
+            task=task,
+            run=run,
+            desc="RBC",
+            regressors=regressor,
+            space=TemplateSpace.MNI152NLIN2009CASYM,
+            motion=motion,
+            dvars_init=dvars_init,
+            dvars_final=dvars_final,
+            n_vols_removed=start_tr,
+            coreg=coreg,
+            norm=norm,
+        )
+
+        # 9. Write QC TSV
+        qc_outputs.qc_file[regressor] = write_xcp_qc(
+            qc_outputs.metrics[regressor],
+            template_bold.parent
+            / f"sub-{sub}_ses-{ses}_task-{task}_run-{run}_reg-{regressor}_qc.tsv",
+        )
 
     # 10. RBC pass/fail
-    passed = passes_rbc_qc(fd, norm.cross_corr)
+    qc_outputs.passed = passes_rbc_qc(fd, norm.cross_corr)
 
-    return QCOutputs(metrics=metrics, qc_file=qc_file, passed=passed)
+    return qc_outputs

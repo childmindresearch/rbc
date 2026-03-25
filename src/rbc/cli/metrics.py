@@ -31,15 +31,16 @@ if TYPE_CHECKING:
 class MetricsArgs(BaseArgs):
     """Arguments for the metrics CLI."""
 
-    atlas: AtlasName
+    atlas: Sequence[AtlasName]
     fwhm: float
     task: str | None
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
-        _validate_atlas(ns.atlas)
+        for atlas in ns.atlas:
+            _validate_atlas(atlas)
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
         return cls(
@@ -97,55 +98,57 @@ def main(args: MetricsArgs) -> int:
                 space=TemplateSpace.MNI152NLIN6ASYM,
             )
 
-            regressed_bold = mni_q.expect(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="regressed",
-                extra={"reg": args.regressor},
-            )
-            cleaned_bold = mni_q.expect(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
             template_brain_mask = mni_q.expect(
                 deriv_df, suffix=Suffix.MASK, desc="bold"
             )
+            for regressor in args.regressor:
+                regressed_bold = mni_q.expect(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="regressed",
+                    extra={"reg": regressor},
+                )
+                cleaned_bold = mni_q.expect(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
 
-            outputs = single_session_metrics(
-                regressed_bold=regressed_bold,
-                cleaned_bold=cleaned_bold,
-                template_brain_mask=template_brain_mask,
-                atlas=args.atlas,
-                fwhm=args.fwhm,
-            )
+                outputs = single_session_metrics(
+                    regressed_bold=regressed_bold,
+                    cleaned_bold=cleaned_bold,
+                    template_brain_mask=template_brain_mask,
+                    atlas=args.atlas,
+                    fwhm=args.fwhm,
+                )
 
-            reg_extra: dict[str, str | int] = {"reg": args.regressor}
-            mex = mni_q.derive(extra=reg_extra)
-            mex.save(outputs.alff, suffix="alff")
-            mex.save(outputs.falff, suffix="falff")
-            mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
-            mex.save(outputs.falff_smooth, suffix="falff", desc="smooth")
-            mex.save(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-            mex.save(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
-            mex.save(outputs.reho, suffix="reho")
-            mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
-            mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-            mex.save(
-                outputs.timeseries,
-                suffix="timeseries",
-                desc="mean",
-                extension=".tsv",
-                atlas=args.atlas,
-            )
-            mex.save(
-                outputs.correlation_matrix,
-                suffix="correlations",
-                desc="pearson",
-                extension=".tsv",
-                atlas=args.atlas,
-            )
+                reg_extra: dict[str, str | int] = {"reg": regressor}
+                mex = mni_q.derive(extra=reg_extra)
+                mex.save(outputs.alff, suffix="alff")
+                mex.save(outputs.falff, suffix="falff")
+                mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
+                mex.save(outputs.falff_smooth, suffix="falff", desc="smooth")
+                mex.save(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
+                mex.save(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
+                mex.save(outputs.reho, suffix="reho")
+                mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
+                mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
+                for atlas in args.atlas:
+                    mex.save(
+                        outputs.timeseries[atlas],
+                        suffix="timeseries",
+                        desc="mean",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
+                    mex.save(
+                        outputs.correlation_matrix[atlas],
+                        suffix="correlations",
+                        desc="pearson",
+                        extension=".tsv",
+                        atlas=atlas,
+                    )
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC metrics workflow complete")
@@ -165,6 +168,7 @@ def register_command(
     )
     parser.add_argument(
         "--atlas",
+        nargs="+",
         choices=[
             "schaefer_200",
             "schaefer_300",
@@ -172,8 +176,8 @@ def register_command(
             "schaefer_1000",
             "aal",
         ],
-        default="schaefer_200",
-        help="Atlas for timeseries extraction.",
+        default=["schaefer_200"],
+        help="Space-delimited atlas(es) for timeseries extraction.",
     )
     parser.add_argument(
         "--fwhm",
@@ -188,9 +192,13 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
-        help="Nuisance regression method used in functional preprocessing.",
+        default=["36-parameter"],
+        help=(
+            "Space-delimited nuisance regression method(s) used in "
+            "functional preprocessing."
+        ),
     )
 
     parser.set_defaults(func=lambda args: main(MetricsArgs.validate_namespace(args)))

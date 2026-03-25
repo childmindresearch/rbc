@@ -1,7 +1,7 @@
 """Unit tests for All (combined pipeline) CLI module."""
 
 import argparse
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -12,6 +12,9 @@ import pytest
 from rbc.cli import all as all_cli
 from rbc.cli.all import AllArgs
 from rbc.cli.main import cli, create_parser
+from rbc.core.qc.xcp import XCPQCMetrics
+from rbc.workflows.metrics import MetricsOutputs
+from rbc.workflows.qc import QCOutputs
 
 
 def _make_filtered_df(
@@ -43,7 +46,7 @@ def _mock_anat_outputs() -> Mock:
     return outputs
 
 
-def _mock_func_outputs() -> Mock:
+def _mock_func_outputs(regressor: Sequence[str] = ["36-parameter"]) -> Mock:
     """Create a mock FunctionalOutputs with fake paths."""
     fake = Path("fake_workdir")
     outputs = Mock()
@@ -54,37 +57,42 @@ def _mock_func_outputs() -> Mock:
     outputs.rms_abs = fake / "rms_abs.rms"
     outputs.bold_mask = fake / "bold_mask.nii.gz"
     outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
-    outputs.regressor_file = fake / "regressors.1D"
     outputs.template_bold = fake / "template_bold.nii.gz"
-    outputs.cleaned_bold = fake / "cleaned_bold.nii.gz"
+    outputs.regressor_file = dict.fromkeys(regressor, fake / "regressors.1D")
+    outputs.cleaned_bold = dict.fromkeys(regressor, fake / "cleaned_bold.nii.gz")
+    outputs.regressed_bold = dict.fromkeys(regressor, fake / "regressed_bold.nii.gz")
     outputs.template_brain_mask = fake / "template_brain_mask.nii.gz"
     return outputs
 
 
-def _mock_metrics_outputs() -> Mock:
+def _mock_metrics_outputs(atlases: list[str] | None = None) -> MetricsOutputs:
     """Create a mock MetricsOutputs with fake paths."""
     fake = Path("fake_workdir")
-    outputs = Mock()
-    outputs.alff = fake / "alff.nii.gz"
-    outputs.falff = fake / "falff.nii.gz"
-    outputs.alff_smooth = fake / "alff_smooth.nii.gz"
-    outputs.falff_smooth = fake / "falff_smooth.nii.gz"
-    outputs.alff_zscored = fake / "alff_zscored.nii.gz"
-    outputs.falff_zscored = fake / "falff_zscored.nii.gz"
-    outputs.reho = fake / "reho.nii.gz"
-    outputs.reho_smooth = fake / "reho_smooth.nii.gz"
-    outputs.reho_zscored = fake / "reho_zscored.nii.gz"
-    outputs.timeseries = fake / "timeseries.tsv"
-    outputs.correlation_matrix = fake / "correlations.tsv"
-    return outputs
+    atlases = atlases or ["schaefer_200"]
+    return MetricsOutputs(
+        alff=fake / "alff.nii.gz",
+        falff=fake / "falff.nii.gz",
+        alff_smooth=fake / "alff_smooth.nii.gz",
+        falff_smooth=fake / "falff_smooth.nii.gz",
+        alff_zscored=fake / "alff_zscored.nii.gz",
+        falff_zscored=fake / "falff_zscored.nii.gz",
+        reho=fake / "reho.nii.gz",
+        reho_smooth=fake / "reho_smooth.nii.gz",
+        reho_zscored=fake / "reho_zscored.nii.gz",
+        timeseries={atl: fake / f"{atl}_timeseries.tsv" for atl in atlases},
+        correlation_matrix={atl: fake / f"{atl}_correlations.tsv" for atl in atlases},
+    )
 
 
-def _mock_qc_outputs(*, passed: bool = True) -> Mock:
+def _mock_qc_outputs(
+    *, regressor: str = "36-parameter", passed: bool = True
+) -> QCOutputs:
     """Create a mock QCOutputs with a fake qc_file path and pass/fail status."""
-    outputs = Mock()
-    outputs.qc_file = Path("fake_workdir") / "qc.tsv"
-    outputs.passed = passed
-    return outputs
+    return QCOutputs(
+        metrics={regressor: Mock(spec=XCPQCMetrics)},
+        qc_file={regressor: Path("fake_workdir") / "qc.tsv"},
+        passed=passed,
+    )
 
 
 @contextmanager
@@ -112,7 +120,6 @@ def _patch_all(
         }
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
-
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
         patch("rbc.cli.all.load_session", return_value=mock_session),
@@ -127,7 +134,8 @@ def _patch_all(
             "rbc.cli.all.metrics_pipeline", return_value=_mock_metrics_outputs()
         ) as mock_metrics,
         patch(
-            "rbc.cli.all.qc_pipeline", return_value=_mock_qc_outputs(passed=qc_passed)
+            "rbc.cli.all.qc_pipeline",
+            return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
         patch("rbc.cli.all.PipelineContext") as mock_ctx_cls,
     ):
@@ -188,9 +196,9 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         output_dir=output_dir,
         participant_label=[],
         session_label=[],
-        regressor="36-parameter",
+        regressor=["36-parameter"],
         task=None,
-        atlas="schaefer_200",
+        atlas=["schaefer_200"],
         fwhm=6.0,
         start_tr=2,
         tmp_dir=None,
@@ -260,9 +268,9 @@ class TestAllArgs:
     def test_defaults(self, base_args: argparse.Namespace) -> None:
         """Default values for all fields are preserved through validation."""
         args = AllArgs.validate_namespace(base_args)
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.task is None
-        assert args.atlas == "schaefer_200"
+        assert args.atlas == ["schaefer_200"]
         assert args.fwhm == 6.0
         assert args.start_tr == 2
         assert args.participant_label == []
@@ -273,9 +281,9 @@ class TestAllArgs:
         self, base_args: argparse.Namespace, regressor: str
     ) -> None:
         """Both supported regressor options pass validation."""
-        base_args.regressor = regressor
+        base_args.regressor = [regressor]
         args = AllArgs.validate_namespace(base_args)
-        assert args.regressor == regressor
+        assert args.regressor == [regressor]
 
     @pytest.mark.parametrize(
         "atlas",
@@ -283,9 +291,9 @@ class TestAllArgs:
     )
     def test_valid_atlases(self, base_args: argparse.Namespace, atlas: str) -> None:
         """All supported atlas options pass validation."""
-        base_args.atlas = atlas
+        base_args.atlas = [atlas]
         args = AllArgs.validate_namespace(base_args)
-        assert args.atlas == atlas
+        assert args.atlas == [atlas]
 
     def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
         """Unsupported atlas name raises ValueError."""
@@ -522,7 +530,7 @@ class TestAllRegistration:
         """Test all subparser includes --regressor argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "all"])
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
 
     def test_all_parser_has_task(self) -> None:
         """Test all subparser includes --task argument."""
@@ -534,13 +542,13 @@ class TestAllRegistration:
         """Test all subparser includes --atlas argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "all"])
-        assert args.atlas == "schaefer_200"
+        assert args.atlas == ["schaefer_200"]
 
     def test_all_parser_atlas_choices(self) -> None:
         """Test all subparser accepts valid atlas choices."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "all", "--atlas", "aal"])
-        assert args.atlas == "aal"
+        assert args.atlas == ["aal"]
 
     def test_all_parser_has_fwhm(self) -> None:
         """Test all subparser includes --fwhm argument."""

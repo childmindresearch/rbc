@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 class FunctionalArgs(BaseArgs):
     """Arguments for single-session functional CLI."""
 
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
 
     @classmethod
@@ -142,21 +142,23 @@ def main(args: FunctionalArgs) -> int:
                 extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
-            func.save(
-                outputs.regressor_file,
-                suffix="regressors",
-                desc=args.regressor,
-                extension=".1D",
-            )
+            for regressor in args.regressor:
+                func.save(
+                    outputs.regressor_file[regressor],
+                    suffix="regressors",
+                    desc=regressor,
+                    extension=".1D",
+                )
 
             mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+            for regressor in args.regressor:
+                mni.save(
+                    outputs.cleaned_bold[regressor],
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
             mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
-            mni.save(
-                outputs.cleaned_bold,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
             mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 
         pipe_ctx.ensure_dataset_description()
@@ -178,9 +180,10 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
-        help="Nuisance regression method.",
+        default=["36-parameter"],
+        help="Space-delimited nuisance regression method(s) to apply.",
     )
     parser.add_argument(
         "--task",

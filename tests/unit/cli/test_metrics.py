@@ -12,6 +12,7 @@ import pytest
 from rbc.cli import metrics
 from rbc.cli.main import cli, create_parser
 from rbc.cli.metrics import MetricsArgs
+from rbc.workflows.metrics import MetricsOutputs
 
 
 def _make_filtered_df(
@@ -32,22 +33,23 @@ def _make_filtered_df(
     )
 
 
-def _mock_metrics_outputs() -> Mock:
-    """Create a mock MetricsOutputs with fake output paths."""
+def _mock_metrics_outputs(atlases: list[str] | None = None) -> MetricsOutputs:
+    """Create a MetricsOutputs with fake output paths."""
     fake = Path("fake_workdir")
-    outputs = Mock()
-    outputs.alff = fake / "alff.nii.gz"
-    outputs.falff = fake / "falff.nii.gz"
-    outputs.alff_smooth = fake / "alff_smooth.nii.gz"
-    outputs.falff_smooth = fake / "falff_smooth.nii.gz"
-    outputs.alff_zscored = fake / "alff_zscored.nii.gz"
-    outputs.falff_zscored = fake / "falff_zscored.nii.gz"
-    outputs.reho = fake / "reho.nii.gz"
-    outputs.reho_smooth = fake / "reho_smooth.nii.gz"
-    outputs.reho_zscored = fake / "reho_zscored.nii.gz"
-    outputs.timeseries = fake / "timeseries.tsv"
-    outputs.correlation_matrix = fake / "correlations.tsv"
-    return outputs
+    atlases = atlases or ["schaefer_200"]
+    return MetricsOutputs(
+        alff=fake / "alff.nii.gz",
+        falff=fake / "falff.nii.gz",
+        alff_smooth=fake / "alff_smooth.nii.gz",
+        falff_smooth=fake / "falff_smooth.nii.gz",
+        alff_zscored=fake / "alff_zscored.nii.gz",
+        falff_zscored=fake / "falff_zscored.nii.gz",
+        reho=fake / "reho.nii.gz",
+        reho_smooth=fake / "reho_smooth.nii.gz",
+        reho_zscored=fake / "reho_zscored.nii.gz",
+        timeseries={atl: fake / f"{atl}_timeseries.tsv" for atl in atlases},
+        correlation_matrix={atl: fake / f"{atl}_correlations.tsv" for atl in atlases},
+    )
 
 
 @contextmanager
@@ -105,9 +107,9 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         participant_label=[],
         session_label=[],
         task=None,
-        atlas="schaefer_200",
+        atlas=["schaefer_200"],
         fwhm=6.0,
-        regressor="36-parameter",
+        regressor=["36-parameter"],
         tmp_dir=None,
     )
 
@@ -174,10 +176,10 @@ class TestMetricsArgs:
     def test_defaults(self, base_args: argparse.Namespace) -> None:
         """Default values for all fields are preserved through validation."""
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.atlas == "schaefer_200"
+        assert args.atlas == ["schaefer_200"]
         assert args.fwhm == 6.0
         assert args.task is None
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
         assert args.session_label == []
 
@@ -186,9 +188,9 @@ class TestMetricsArgs:
         self, base_args: argparse.Namespace, regressor: str
     ) -> None:
         """Both supported regressor options pass validation."""
-        base_args.regressor = regressor
+        base_args.regressor = [regressor]
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.regressor == regressor
+        assert args.regressor == [regressor]
 
     @pytest.mark.parametrize(
         "atlas",
@@ -196,9 +198,9 @@ class TestMetricsArgs:
     )
     def test_valid_atlases(self, base_args: argparse.Namespace, atlas: str) -> None:
         """All supported atlas options pass validation."""
-        base_args.atlas = atlas
+        base_args.atlas = [atlas]
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.atlas == atlas
+        assert args.atlas == [atlas]
 
     def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
         """Unsupported atlas name raises ValueError."""
@@ -424,13 +426,13 @@ class TestMetricsRegistration:
         """Test metrics subparser includes --atlas argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "metrics"])
-        assert args.atlas == "schaefer_200"
+        assert args.atlas == ["schaefer_200"]
 
     def test_metrics_parser_atlas_choices(self) -> None:
         """Test metrics subparser accepts valid atlas choices."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "metrics", "--atlas", "aal"])
-        assert args.atlas == "aal"
+        assert args.atlas == ["aal"]
 
     def test_metrics_parser_has_fwhm(self) -> None:
         """Test metrics subparser includes --fwhm argument."""
@@ -448,7 +450,7 @@ class TestMetricsRegistration:
         """Test metrics subparser includes --regressor argument."""
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "metrics"])
-        assert args.regressor == "36-parameter"
+        assert args.regressor == ["36-parameter"]
 
     def test_metrics_parser_task_default_none(self) -> None:
         """Test metrics subparser --task defaults to None."""

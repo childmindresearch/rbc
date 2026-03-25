@@ -24,6 +24,7 @@ from rbc.workflows.qc import single_session_qc
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,7 @@ class QCArgs(BaseArgs):
 
     task: str | None
     start_tr: int
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> QCArgs:
@@ -93,12 +94,15 @@ def main(args: QCArgs) -> int:
             template_bold = func_mni.expect(
                 deriv_df, suffix=Suffix.BOLD, desc="preproc"
             )
-            cleaned_bold = func_mni.expect(
-                deriv_df,
-                suffix=Suffix.BOLD,
-                desc="preproc",
-                extra={"reg": args.regressor},
-            )
+            cleaned_bold: dict[str, Path] = {
+                regressor: func_mni.expect(
+                    deriv_df,
+                    suffix=Suffix.BOLD,
+                    desc="preproc",
+                    extra={"reg": regressor},
+                )
+                for regressor in args.regressor
+            }
             motion_params = func.expect(
                 deriv_df,
                 suffix=Suffix.MOTION,
@@ -146,13 +150,14 @@ def main(args: QCArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            func_mni.save(
-                qc_outputs.qc_file,
-                suffix="quality",
-                desc="xcp",
-                extension=".tsv",
-                extra={"reg": args.regressor},
-            )
+            for regressor in args.regressor:
+                func_mni.save(
+                    qc_outputs.qc_file[regressor],
+                    suffix="quality",
+                    desc="xcp",
+                    extension=".tsv",
+                    extra={"reg": regressor},
+                )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             ctx.logger.info(
@@ -188,9 +193,13 @@ def register_command(
     )
     parser.add_argument(
         "--regressor",
+        nargs="+",
         choices=["36-parameter", "aCompCor"],
-        default="36-parameter",
-        help="Nuisance regression method used in functional preprocessing.",
+        default=["36-parameter"],
+        help=(
+            "Space-delimited nuisance regression method(s) used in "
+            "functional preprocessing."
+        ),
     )
 
     parser.set_defaults(func=lambda args: main(QCArgs.validate_namespace(args)))

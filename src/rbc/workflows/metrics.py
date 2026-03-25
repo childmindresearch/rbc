@@ -20,6 +20,7 @@ from rbc.core.metrics.timeseries import compute_timeseries
 from rbc_resources import get_atlas
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from rbc_resources import AtlasName
@@ -53,8 +54,8 @@ class MetricsOutputs(NamedTuple):
     reho: Path
     reho_smooth: Path
     reho_zscored: Path
-    timeseries: Path
-    correlation_matrix: Path
+    timeseries: dict[str, Path]
+    correlation_matrix: dict[str, Path]
 
 
 def single_session_metrics(
@@ -62,7 +63,7 @@ def single_session_metrics(
     cleaned_bold: Path,
     template_brain_mask: Path,
     tr: float | None = None,
-    atlas: AtlasName = "schaefer_200",
+    atlas: Sequence[AtlasName] = ("schaefer_200",),
     fwhm: float = 6.0,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
@@ -102,8 +103,10 @@ def single_session_metrics(
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
     # bandpass-filtered BOLD
-    _logger.info("Extracting atlas timeseries (%s)", atlas)
-    ts_outputs = compute_timeseries(cleaned_bold, get_atlas(atlas))
+    ts_outputs = {}
+    for atl in atlas:
+        _logger.info("Extracting atlas timeseries (%s)", atl)
+        ts_outputs[atl] = compute_timeseries(cleaned_bold, get_atlas(atl))
 
     return MetricsOutputs(
         alff=alff_path,
@@ -115,6 +118,8 @@ def single_session_metrics(
         reho=reho_path,
         reho_smooth=reho_smooth_path,
         reho_zscored=reho_zscored_path,
-        timeseries=ts_outputs.timeseries,
-        correlation_matrix=ts_outputs.correlation_matrix,
+        timeseries={atl: ts.timeseries for atl, ts in ts_outputs.items()},
+        correlation_matrix={
+            atl: ts.correlation_matrix for atl, ts in ts_outputs.items()
+        },
     )

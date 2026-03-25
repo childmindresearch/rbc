@@ -32,12 +32,15 @@ def test_single_session_qc(
         task="balloonanalogrisktask",
         run=1,
     )
-    assert isinstance(result.metrics, XCPQCMetrics)
-    assert result.qc_file.exists()
+    assert all(isinstance(v, XCPQCMetrics) for v in result.metrics.values())
+    assert all(path.exists() for path in result.qc_file.values())
     assert isinstance(result.passed, bool)
 
     manifest["qc"] = {
-        "qc_file": str(result.qc_file),
-        "passed": result.passed,
-        "metrics": result.metrics._asdict(),
+        regressor: {
+            "qc_file": str(result.qc_file[regressor]),
+            "passed": result.passed,
+            "metrics": result.metrics[regressor]._asdict(),
+        }
+        for regressor in result.metrics
     }
