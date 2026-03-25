@@ -61,7 +61,9 @@ def _mock_func_outputs(regressor: Sequence[str] = ["36-parameter"]) -> Mock:
     outputs.regressor_file = dict.fromkeys(regressor, fake / "regressors.1D")
     outputs.cleaned_bold = dict.fromkeys(regressor, fake / "cleaned_bold.nii.gz")
     outputs.regressed_bold = dict.fromkeys(regressor, fake / "regressed_bold.nii.gz")
-    outputs.template_brain_mask = dict.fromkeys(regressor, fake / "regressors.1D")
+    outputs.template_brain_mask = dict.fromkeys(
+        regressor, fake / "template_brain_mask.nii.gz"
+    )
     return outputs
 
 

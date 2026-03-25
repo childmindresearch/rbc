@@ -38,7 +38,7 @@ def test_single_session_qc(
 
     manifest["qc"] = {
         regressor: {
-            "qc_file": str(result.qc_file),
+            "qc_file": str(result.qc_file[regressor]),
             "passed": result.passed[regressor],
             "metrics": result.metrics[regressor]._asdict(),
         }

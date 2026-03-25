@@ -32,7 +32,7 @@ _logger = logging.getLogger("rbc")
 
 @dataclass
 class QCOutputs:
-    """Per regressor QC outputs from the metrics workflow.
+    """QC outputs from the metrics workflow.
 
     Attributes:
         metrics: All 24 XCP-style QC fields for the run.

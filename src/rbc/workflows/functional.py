@@ -146,7 +146,7 @@ def single_session_preprocess(
     wm_mask: Path,
     anat_to_template: Path,
     start_tr: int = 2,
-    regressor_set: Sequence[Literal["36-parameter", "aCompCor"]] = ["36-parameter"],
+    regressor_set: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
     fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.

@@ -24,6 +24,7 @@ from rbc.workflows.qc import single_session_qc
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,7 @@ class QCArgs(BaseArgs):
 
     task: str | None
     start_tr: int
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> QCArgs:
@@ -93,7 +94,7 @@ def main(args: QCArgs) -> int:
             template_bold = func_mni.expect(
                 deriv_df, suffix=Suffix.BOLD, desc="preproc"
             )
-            cleaned_bold = {
+            cleaned_bold: dict[str, Path] = {
                 regressor: func_mni.expect(
                     deriv_df,
                     suffix=Suffix.BOLD,
