@@ -59,7 +59,7 @@ def single_session_qc(
     task: str,
     run: int,
     start_tr: int = 2,
-    regressor_set: Sequence[str] = ["36-parameter"],
+    regressor_set: Sequence[str] = ("36-parameter",),
 ) -> QCOutputs:
     """Compute all QC metrics for a single functional run.
 

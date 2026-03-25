@@ -63,7 +63,7 @@ def single_session_metrics(
     cleaned_bold: Path,
     template_brain_mask: Path,
     tr: float | None = None,
-    atlas: Sequence[AtlasName] = ["schaefer_200"],
+    atlas: Sequence[AtlasName] = ("schaefer_200",),
     fwhm: float = 6.0,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
