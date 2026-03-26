@@ -162,7 +162,7 @@ def single_session_preprocess(
     6.  Motion correction on despiked BOLD (pre-STC):
         produces per-volume .mat affines and .par motion parameters.
     7.  Slice timing correction on despiked BOLD.
-    8.  Apply motion .mat affines to STC BOLD -> desc-preproc_bold 
+    8.  Apply motion .mat affines to STC BOLD -> desc-preproc_bold
         (native-space MC + STC, exported and used in step 12 for
         nuisance regressor computation).
     9.  BOLD brain masking on motion reference volume.
@@ -176,7 +176,7 @@ def single_session_preprocess(
     14. Warp brain mask to template space.
     15. Nuisance regression without bandpass on template-space BOLD
         (full frequency range preserved for ALFF/fALFF computation).
-    16. Nuisance regression with simultaneous bandpass filtering 
+    16. Nuisance regression with simultaneous bandpass filtering
         (0.01-0.1 Hz) on template-space BOLD (Hallquist 2013).
     17. Export bandpass-filtered regressors.
 
@@ -258,7 +258,7 @@ def single_session_preprocess(
         tpattern=metadata.get("SliceTiming"),
     )
 
-    # 8. Apply pre-STC motion transforms to STC BOLD -> 
+    # 8. Apply pre-STC motion transforms to STC BOLD ->
     # native-space MC + STC desc-preproc_bold
     # used in step 12 for nuisance regressor computation
     _logger.info("Applying motion transforms to STC BOLD")
@@ -387,7 +387,7 @@ class FunctionalLongOutputs(NamedTuple):
     Attributes:
         sbref: Motion reference volume warped to longitudinal template space.
         bold: Preprocessed BOLD warped to longitudinal template space.
-        bold_mask: Brain mask warped to longitudinal template space, 
+        bold_mask: Brain mask warped to longitudinal template space,
             or *None* if no mask was provided.
         forward_xfm: BOLD-to-longitudinal-template composite transform.
     """
