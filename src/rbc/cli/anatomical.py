@@ -74,14 +74,14 @@ def main(args: AnatomicalArgs) -> int:
                 sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
             )
             anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
-            anat.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
-            anat.save(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
-            anat.save(outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
-            anat.save(outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
-            anat.save(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
-            anat.save(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
+            anat.save(outputs.native.brain, suffix=Suffix.T1W, desc="brain")
+            anat.save(outputs.native.brain_mask, suffix=Suffix.MASK, desc="T1w")
+            anat.save(outputs.native.csf_mask, suffix=Suffix.MASK, desc="csf")
+            anat.save(outputs.native.gm_mask, suffix=Suffix.MASK, desc="gm")
+            anat.save(outputs.native.wm_mask, suffix=Suffix.MASK, desc="wm")
+            anat.save(outputs.native.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
             anat.save(
-                outputs.forward_xfm,
+                outputs.native.forward_xfm,
                 suffix="xfm",
                 extra={
                     "from": "T1w",
@@ -90,7 +90,7 @@ def main(args: AnatomicalArgs) -> int:
                 },
             )
             anat.save(
-                outputs.inverse_xfm,
+                outputs.native.inverse_xfm,
                 suffix="xfm",
                 extra={
                     "from": TemplateSpace.MNI152NLIN6ASYM,

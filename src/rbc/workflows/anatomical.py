@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 _logger = logging.getLogger("rbc")
 
 
-class AnatomicalOutputs(NamedTuple):
-    """Outputs from the anatomical preprocessing pipeline.
+class AnatomicalNative(NamedTuple):
+    """Specific outputs in native space from anatomical preprocessing pipeline.
 
     Attributes:
         brain: Skull-stripped T1w brain.
@@ -49,6 +49,38 @@ class AnatomicalOutputs(NamedTuple):
     wm_bbr_mask: Path
     forward_xfm: Path
     inverse_xfm: Path
+
+
+class AnatomicalTemplate(NamedTuple):
+    """Specific outputs in template space from anatomical preprocessing pipeline.
+
+    Attributes:
+        brain: Skull-stripped T1w brain.
+        brain_mask: Binary brain mask.
+        csf_mask: CSF tissue mask.
+        gm_mask: GM tissue mask.
+        wm_mask: WM tissue mask.
+        wm_bbr_mask: WM boundary mask for BBR co-registration.
+    """
+
+    brain: Path
+    brain_mask: Path
+    csf_mask: Path
+    gm_mask: Path
+    wm_mask: Path
+    wm_bbr_mask: Path
+
+
+class AnatomicalOutputs(NamedTuple):
+    """Outputs from the anatomical preprocessing pipeline.
+
+    Attributes:
+        native: Outputs in native space.
+        template: Outputs in template space.
+    """
+
+    native: AnatomicalNative
+    template: AnatomicalTemplate | None = None
 
 
 def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
@@ -80,14 +112,16 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     transforms = ants_registration(in_file=extracted_t1w.brain)
 
     return AnatomicalOutputs(
-        brain=extracted_t1w.brain,
-        brain_mask=extracted_t1w.brain_mask,
-        csf_mask=tissue_masks.csf,
-        gm_mask=tissue_masks.gm,
-        wm_mask=tissue_masks.wm,
-        wm_bbr_mask=wm_bbr,
-        forward_xfm=transforms.forward,
-        inverse_xfm=transforms.inverse,
+        native=AnatomicalNative(
+            brain=extracted_t1w.brain,
+            brain_mask=extracted_t1w.brain_mask,
+            csf_mask=tissue_masks.csf,
+            gm_mask=tissue_masks.gm,
+            wm_mask=tissue_masks.wm,
+            wm_bbr_mask=wm_bbr,
+            forward_xfm=transforms.forward,
+            inverse_xfm=transforms.inverse,
+        )
     )
 
 
