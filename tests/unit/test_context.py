@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -86,6 +87,19 @@ class TestBids:
         assert "space-MNI152" in result.name
         assert "desc-preproc" in result.name
 
+    def test_save_overwrites_file(
+        self,
+        pipe_ctx: PipelineContext,
+        src_file: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Verify per-call overrides on save()."""
+        func = pipe_ctx.bids(datatype="func")
+        func.save(src_file, suffix="bold", space="MNI152", desc="preproc")
+        with caplog.at_level(logging.WARNING):
+            func.save(src_file, suffix="bold", space="MNI152", desc="preproc")
+        assert any("already exists" in msg for msg in caplog.messages)
+
     def test_extra_merges_on_derive(
         self, pipe_ctx: PipelineContext, src_file: Path
     ) -> None:
@@ -126,6 +140,23 @@ class TestBids:
         assert result.exists()
         assert result.is_dir()
         assert "task-rest" in result.name
+
+    def test_save_overwrites_dir(
+        self,
+        pipe_ctx: PipelineContext,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Verify .save_dir() copies directory."""
+        src_dir = tmp_path / "src_dir"
+        src_dir.mkdir()
+        (src_dir / "dummy.txt").write_text("test")
+
+        func = pipe_ctx.bids(datatype="func", entities={"task": "rest", "run": 1})
+        func.save_dir(src_dir, suffix="motion")
+        with caplog.at_level(logging.WARNING):
+            func.save_dir(src_dir, suffix="motion")
+        assert any("already exists" in msg for msg in caplog.messages)
 
     def test_no_entities(self, pipe_ctx: PipelineContext, src_file: Path) -> None:
         """Verify save works with no entities (just sub/ses/datatype)."""
