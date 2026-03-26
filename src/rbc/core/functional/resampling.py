@@ -151,7 +151,10 @@ def resample_bold_to_template(
     if not motion_mats:
         raise FileNotFoundError(f"No motion .mat files found in {motion_mat_dir}")
 
-    bold2anat_itk = mat_to_itk(bold_to_anat, t1w_brain, bold_ref, "bold2anat.txt")
+    resample_dir = generate_exec_folder(suffix="boldToTemplateResample")
+    bold2anat_itk = mat_to_itk(
+        bold_to_anat, t1w_brain, bold_ref, f"{resample_dir}/bold2anat.txt"
+    )
 
     stc_vols = split_4d(stc_bold)
 
@@ -171,7 +174,9 @@ def resample_bold_to_template(
     for idx, (motion_mat, stc_vol) in enumerate(
         zip(motion_mats, stc_vols, strict=True)
     ):
-        motion_itk = mat_to_itk(motion_mat, bold_ref, bold_ref, f"motion_{idx:04d}.txt")
+        motion_itk = mat_to_itk(
+            motion_mat, bold_ref, bold_ref, f"{resample_dir}/motion_{idx:04d}.txt"
+        )
         transforms: list[
             ants.AntsApplyTransformsTransformFileNameParamsDictTagged
             | ants.AntsApplyTransformsUseInverseParamsDictTagged
