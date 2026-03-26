@@ -88,7 +88,7 @@ def apply_motion_transforms(
         zip(motion_mats, stc_vols, strict=True)
     ):
         motion_itk = mat_to_itk(
-            motion_mat, bold_ref, bold_ref, f"{motion_dir}/motion_{idx:04d}.txt"
+            motion_mat, bold_ref, bold_ref, motion_dir / f"motion_{idx:04d}.txt"
         )
         result = ants.ants_apply_transforms(
             input_image=stc_vol,
@@ -153,7 +153,7 @@ def resample_bold_to_template(
 
     resample_dir = generate_exec_folder(suffix="boldToTemplateResample")
     bold2anat_itk = mat_to_itk(
-        bold_to_anat, t1w_brain, bold_ref, f"{resample_dir}/bold2anat.txt"
+        bold_to_anat, t1w_brain, bold_ref, resample_dir / "bold2anat.txt"
     )
 
     stc_vols = split_4d(stc_bold)
@@ -175,7 +175,7 @@ def resample_bold_to_template(
         zip(motion_mats, stc_vols, strict=True)
     ):
         motion_itk = mat_to_itk(
-            motion_mat, bold_ref, bold_ref, f"{resample_dir}/motion_{idx:04d}.txt"
+            motion_mat, bold_ref, bold_ref, resample_dir / f"motion_{idx:04d}.txt"
         )
         transforms: list[
             ants.AntsApplyTransformsTransformFileNameParamsDictTagged
