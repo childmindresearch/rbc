@@ -20,7 +20,13 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids import (
+    Datatype,
+    Suffix,
+    TemplateSpace,
+    bids_safe_label,
+    extract_entities,
+)
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.functional import single_session_preprocess
@@ -146,7 +152,7 @@ def main(args: FunctionalArgs) -> int:
                 func.save(
                     outputs.regressor_file[regressor],
                     suffix="regressors",
-                    desc=regressor,
+                    desc=bids_safe_label(regressor),
                     extension=".1D",
                 )
 
