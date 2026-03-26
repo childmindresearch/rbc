@@ -6,6 +6,7 @@ the :class:`Bids` builder for composing BIDS entity specifications.
 
 from __future__ import annotations
 
+import logging
 import shutil
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -55,6 +56,8 @@ __all__ = [
     "extract_entities",
     "parse_bids_name",
 ]
+
+_logger = logging.getLogger(__name__)
 
 
 def _sanitize_extra(
@@ -185,6 +188,8 @@ class Bids:
         """
         dest = self.path(suffix=suffix, extension=extension, extra=extra, **overrides)
         dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():
+            _logger.warning(f"{str(dest)!r} already exists, file will be overwritten")
         shutil.copy2(src, dest)
         return dest
 
@@ -211,6 +216,10 @@ class Bids:
         """
         dest = self.path(suffix=suffix, extension=extension, extra=extra, **overrides)
         dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():
+            _logger.warning(
+                f"{str(dest)!r} already exists, directory contents may be overwritten"
+            )
         shutil.copytree(src_dir, dest, dirs_exist_ok=True)
         return dest
 
