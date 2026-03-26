@@ -70,7 +70,8 @@ class FunctionalOutputs(NamedTuple):
             *None* if no fieldmap data was provided.
         stc_bold: Slice-timing corrected BOLD.
         preproc_bold: Motion-corrected + STC BOLD in native space
-            (exported as desc-preproc_bold, not consumed downstream).
+            (exported as desc-preproc_bold, consumed by nuisance
+            regressor computation in step 12).
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
         rms_abs: Volume-to-reference absolute RMS displacement.
@@ -154,24 +155,30 @@ def single_session_preprocess(
     Pipeline steps:
 
     1.  Deoblique & reorient BOLD to RPI.
-    2.  Truncate initial TRs.
+    2.  Truncate initial TRs (default: first 2).
     3.  Despike BOLD.
     4.  Extract motion reference from despiked BOLD.
     5.  Susceptibility distortion correction (optional, requires fieldmaps).
-    6.  Motion correction on despiked BOLD (pre-STC, for .par estimates
-        and per-volume .mat affines).
+    6.  Motion correction on despiked BOLD (pre-STC):
+        produces per-volume .mat affines and .par motion parameters.
     7.  Slice timing correction on despiked BOLD.
-    8.  Apply motion .mat to STC volumes -> desc-preproc_bold (native-space
-        MC + STC output, exported but not consumed by later steps).
-    9.  BOLD brain masking (on motion reference volume).
-    10. BBR coregistration (skull-stripped BOLD ref -> T1w).
-    11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat).
+    8.  Apply motion .mat affines to STC BOLD -> desc-preproc_bold 
+        (native-space MC + STC, exported and used in step 12 for
+        nuisance regressor computation).
+    9.  BOLD brain masking on motion reference volume.
+    10. BBR coregistration of skull-stripped BOLD reference to T1w.
+    11. Warp T1w tissue masks (brain, CSF, WM) to BOLD space
+        using inverse of BOLD-to-T1w affine.
     12. Compute nuisance regressors from native-space BOLD.
-    13. Single-step resampling: STC volumes -> template space (motion +
-        BBR + anat2template in one interpolation pass per volume).
+    13. Single-step resampling of STC BOLD to template space: motion +
+        BBR + T1w-to-template transforms applied in one interpolation pass
+        per volume to minimize resampling artifacts.
     14. Warp brain mask to template space.
-    15. Nuisance regression without bandpass (for ALFF/fALFF).
-    16. Simultaneous regression + bandpass (Hallquist 2013).
+    15. Nuisance regression without bandpass on template-space BOLD
+        (full frequency range preserved for ALFF/fALFF computation).
+    16. Nuisance regression with simultaneous bandpass filtering 
+        (0.01-0.1 Hz) on template-space BOLD (Hallquist 2013).
+    17. Export bandpass-filtered regressors.
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -251,8 +258,9 @@ def single_session_preprocess(
         tpattern=metadata.get("SliceTiming"),
     )
 
-    # 8. Apply pre-STC motion transforms to STC BOLD ->
-    # desc-preproc_bold (native-space MC + STC, exported only)
+    # 8. Apply pre-STC motion transforms to STC BOLD -> 
+    # native-space MC + STC desc-preproc_bold
+    # used in step 12 for nuisance regressor computation
     _logger.info("Applying motion transforms to STC BOLD")
     preproc_bold = apply_motion_transforms(
         stc_img=st_corrected,
@@ -374,13 +382,14 @@ def single_session_preprocess(
 
 
 class FunctionalLongOutputs(NamedTuple):
-    """Outputs from the functional preprocessing pipeline.
+    """Outputs from the longitudinal functional preprocessing pipeline.
 
     Attributes:
-        sbref:
-        bold:
-        bold_mask:
-        forward_xfm:
+        sbref: Motion reference volume warped to longitudinal template space.
+        bold: Preprocessed BOLD warped to longitudinal template space.
+        bold_mask: Brain mask warped to longitudinal template space, 
+            or *None* if no mask was provided.
+        forward_xfm: BOLD-to-longitudinal-template composite transform.
     """
 
     forward_xfm: Path

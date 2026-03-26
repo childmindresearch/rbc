@@ -57,8 +57,14 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     Pipeline steps:
 
     1. Deoblique and reorient T1w to RPI.
-    2. ANTs brain extraction (N4 bias correction + skull-stripping).
-    3. FSL FAST tissue segmentation (CSF / GM / WM masks).
+    2. ANTs brain extraction (via OASIS template):
+        a. N4 bias field correction
+        b. Registration to OASIS template
+        c. Warp brain probability mask to subject space
+        d. Atropos tissue segmentation and morphological refinement -> brain mask
+        e. Apply mask to N4-corrected image -> skull-stripped brain
+    3. FSL FAST tissue segmentation on skull-stripped brain (CSF / GM / WM
+       partial volume maps, thresholded at 0.95 for binary masks).
     4. WM boundary mask for BBR coregistration.
     5. ANTs registration to MNI152 template (forward + inverse transforms).
 
