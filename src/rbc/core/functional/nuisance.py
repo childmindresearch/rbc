@@ -193,7 +193,7 @@ def compute_regressors(
 
     # 5. Assemble regressors
     if regressor_set == "36-parameter":
-        global_signal = extract_mean_signal(bold_data, brain_eroded)
+        global_signal = extract_mean_signal(bold_data, brain_mask)
         matrix, column_names = assemble_36param_regressors(
             motion_params_data, csf_signal, wm_signal, global_signal
         )
