@@ -158,7 +158,6 @@ def main(args: LongitudinalArgs) -> int:
     """Main entrypoint of longitudinal workflow."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
-    ctx.runner.image_overrides = {"antsx/ants:v2.5.3": "antsx/ants:latest"}
 
     ctx.logger.warning(
         "This workflow is experimental and may be sensitive to input file "
