@@ -7,6 +7,8 @@ on:
     - tests/**
     - pyproject.toml
     - uv.lock
+    - .github/workflows/test_local.yaml
+    - .github/actions/setup-venv/action.yaml
   workflow_dispatch:
     inputs:
       no_cleanup:
