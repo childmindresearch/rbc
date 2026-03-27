@@ -10,12 +10,6 @@ on:
     - main
   pull_request:
   workflow_dispatch:
-    inputs:
-      e2e:
-        description: Run end-to-end tests
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   unit:
@@ -36,10 +30,11 @@ jobs:
       run: >
         uv run pytest \
           -m "unit" \
-          --junitxml=pytest-quick.xml \
-          --cov=src tests \
+          --junitxml=pytest.xml \
+          --cov=src \
           --log-level=DEBUG \
-          --verbose
+          --verbose tests
+
     - name: Run ubuntu quick tests
       id: run-quick-ubuntu-tests
       if: matrix.os == 'ubuntu-latest'
@@ -47,36 +42,11 @@ jobs:
       run: >
         uv run pytest \
           -m "not slow and not full_pipeline" \
-          --runner=docker \
-          --junitxml=pytest-quick.xml \
-          --cov=src tests \
+          --junitxml=pytest.xml \
+          --cov=src  \
+          --cov-report=xml \
           --log-level=DEBUG \
-          --verbose
-
-    - name: Run full pipeline tests
-      if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch' && inputs.e2e == true
-      shell: bash
-      run: >
-        uv run pytest \
-          -m "full_pipeline" \
-          --runner=docker \
-          --junitxml=pytest-full.xml \
-          --cov-report=xml:coverage.xml \
-          --cov=src tests \
-          --cov-append \
-          --verbose
-
-    - name: Generate combined coverage report
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: >
-        uv run coverage xml -o coverage.xml
-
-    - name: Merge JUnitXml files
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: >
-        uv run scripts/merge_cov_junitxml.py
+          --verbose tests
 
     - name: Pytest coverage comment
       if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
