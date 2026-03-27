@@ -74,6 +74,8 @@ COLD_HOT_CMAP = LinearSegmentedColormap.from_list(
 # Core helpers
 # ---------------------------------------------------------------------------
 
+_TEST_REGRESSOR = "36-parameter"
+_TEST_ATLAS = "schaefer_200"
 
 def _load_vol(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Load a NIfTI file and return (3D data, pixdim).
@@ -621,7 +623,7 @@ def plot_functional_bold(
 
     # Cleaned BOLD temporal std
     ax_clean = fig.add_subplot(gs[row, :])
-    std_data, _ = _load_vol_std(func["cleaned_bold"]["36-parameter"])
+    std_data, _ = _load_vol_std(func["cleaned_bold"][_TEST_REGRESSOR])
     _render_lightbox(
         ax_clean,
         std_data,
@@ -737,7 +739,7 @@ def _guess_atlas_name(n_rois: int) -> str:
 
 def plot_correlation_matrix(manifest: dict, ax: plt.Axes) -> None:
     """Plot the FC correlation matrix with dark theme."""
-    corr = np.loadtxt(manifest["metrics"]["correlation_matrix"], delimiter="\t")
+    corr = np.loadtxt(manifest["metrics"]["correlation_matrix"][_TEST_ATLAS], delimiter="\t")
     n_rois = corr.shape[0]
     atlas_name = _guess_atlas_name(n_rois)
     im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1, aspect="equal")
