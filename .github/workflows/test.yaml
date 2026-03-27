@@ -43,7 +43,7 @@ jobs:
         uv run pytest \
           -m "not slow and not full_pipeline" \
           --junitxml=pytest.xml \
-          --cov=src  \
+          --cov=src \
           --cov-report=xml \
           --log-level=DEBUG \
           --verbose tests
