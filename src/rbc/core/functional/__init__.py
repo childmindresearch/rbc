@@ -19,13 +19,7 @@ from .distortion import (
     correct_distortion_phasediff,
     is_valid_pe_direction,
 )
-from .erosion import (
-    erode_brain_mask,
-    erode_csf_mask,
-    erode_mask_by_distance,
-    erode_mask_to_proportion,
-    erode_wm_mask,
-)
+from .erosion import erode_mask_by_distance, erode_mask_to_proportion
 from .initialization import scale_bold, truncate_trs
 from .masking import bold_masking
 from .motion import extract_motion_reference, fsl_motion_correction
@@ -66,11 +60,8 @@ __all__ = [
     "correct_distortion_pepolar",
     "correct_distortion_phasediff",
     "despike_bold",
-    "erode_brain_mask",
-    "erode_csf_mask",
     "erode_mask_by_distance",
     "erode_mask_to_proportion",
-    "erode_wm_mask",
     "expand_motion_params",
     "extract_mean_signal",
     "extract_motion_reference",

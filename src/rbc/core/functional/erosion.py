@@ -1,14 +1,7 @@
 """Binary mask erosion primitives.
 
-Provides iterative and distance-based erosion of 3-D binary masks.
-Convenience wrappers apply C-PAC default parameters for CSF, WM, and
-brain masks used during nuisance regression.
-
-Note:
-    C-PAC's RBC pipeline config (``pipeline_config_rbc-options.yml``)
-    sets ``erode_mask: Off`` for all tissue regressors. The erosion
-    functions here are retained as general-purpose utilities and for
-    optional use when erosion is explicitly enabled.
+Provides iterative (proportion-based) and distance-based erosion of
+3-D binary masks.
 """
 
 from __future__ import annotations
@@ -95,37 +88,3 @@ def erode_mask_by_distance(
     mask_bool = mask > 0
     dist = distance_transform_edt(mask_bool, sampling=voxel_sizes)
     return dist >= distance_mm
-
-
-def erode_csf_mask(mask: np.ndarray) -> np.ndarray:
-    """Erode a CSF mask to 90 % of its original volume.
-
-    Matches C-PAC default ``csf_erosion_prop: 0.9``.  Note that
-    Ciric et al. (2017) used 1-voxel erosion and Behzadi et al. (2007)
-    applied no CSF erosion.
-    """
-    return erode_mask_to_proportion(mask, target_proportion=0.9)
-
-
-def erode_wm_mask(mask: np.ndarray) -> np.ndarray:
-    """Erode a WM mask to 60 % of its original volume.
-
-    Matches C-PAC default ``wm_erosion_prop: 0.6``.  Note that
-    Ciric et al. (2017) used 2-voxel erosion and Behzadi et al. (2007)
-    used 2-voxel erosion with a partial-volume threshold of 0.99.
-    """
-    return erode_mask_to_proportion(mask, target_proportion=0.6)
-
-
-def erode_brain_mask(
-    mask: np.ndarray,
-    voxel_sizes: tuple[float, float, float],
-) -> np.ndarray:
-    """Erode a brain mask by 30 mm.
-
-    Matches C-PAC default ``brain_mask_erosion_mm: 30``.  This erosion
-    is only relevant for tCompCor (Behzadi et al. 2007), which is not
-    currently implemented in RBC.  It should *not* be used for global
-    signal extraction (Ciric et al. 2017 use the uneroded brain mask).
-    """
-    return erode_mask_by_distance(mask, voxel_sizes, distance_mm=30.0)

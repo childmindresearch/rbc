@@ -21,10 +21,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import numpy as np
 from niwrap import afni
 
-from rbc.core.functional.erosion import (
-    erode_csf_mask,
-    erode_wm_mask,
-)
+from rbc.core.functional.erosion import erode_mask_to_proportion
 from rbc.core.functional.regressors import (
     assemble_36param_regressors,
     assemble_acompcor_regressors,
@@ -194,9 +191,10 @@ def compute_regressors(
     wm_mask = nib.nifti1.load(wm_mask_file).get_fdata()
 
     # 2. Optionally erode tissue masks
+    #    C-PAC defaults: csf_erosion_prop=0.9, wm_erosion_prop=0.6
     if erode_tissue_masks:
-        csf_effective = erode_csf_mask(csf_mask)
-        wm_effective = erode_wm_mask(wm_mask)
+        csf_effective = erode_mask_to_proportion(csf_mask, target_proportion=0.9)
+        wm_effective = erode_mask_to_proportion(wm_mask, target_proportion=0.6)
         eroded = ErodedTissueMasks(csf=csf_effective, wm=wm_effective)
     else:
         csf_effective = csf_mask > 0
