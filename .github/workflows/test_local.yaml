@@ -4,6 +4,7 @@ on:
   push:
     paths:
     - src/**
+    - scripts/**
     - tests/**
     - pyproject.toml
     - uv.lock
