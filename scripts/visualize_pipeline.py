@@ -621,7 +621,7 @@ def plot_functional_bold(
 
     # Cleaned BOLD temporal std
     ax_clean = fig.add_subplot(gs[row, :])
-    std_data, _ = _load_vol_std(func["cleaned_bold"])
+    std_data, _ = _load_vol_std(func["cleaned_bold"]["36-parameter"])
     _render_lightbox(
         ax_clean,
         std_data,
