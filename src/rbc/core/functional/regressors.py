@@ -4,6 +4,15 @@ Provides functions to compute derivatives, expand motion parameters to
 24 columns, extract mean tissue signals, compute aCompCor components,
 and assemble full regressor matrices for 36-parameter and aCompCor
 nuisance regression.
+
+References:
+    - Satterthwaite et al. (2013). An improved framework for confound
+      regression and filtering. *NeuroImage*, 64, 240-256.
+    - Ciric et al. (2017). Benchmarking of participant-level confound
+      regression strategies. *NeuroImage*, 154, 174-187.
+    - Behzadi et al. (2007). A component based noise correction method
+      (CompCor) for BOLD and perfusion based fMRI. *NeuroImage*, 37(1),
+      90-101.
 """
 
 from __future__ import annotations
@@ -120,13 +129,19 @@ def compute_acompcor(
 ) -> np.ndarray:
     """Compute anatomical CompCor (aCompCor) components via DetrendPC.
 
-    Matches C-PAC's ``calc_compcor_components``:
+    Implements the anatomical CompCor method from Behzadi et al. (2007),
+    matching C-PAC's ``calc_compcor_components``:
 
     1. Linear detrend each masked voxel timeseries
     2. Mean-center each voxel
     3. Z-score normalize each voxel (divide by std)
     4. SVD on the (T, n_voxels) matrix
     5. Return the first *n_components* left singular vectors
+
+    Note:
+        Behzadi et al. (2007) used a broken-stick method to determine the
+        number of significant components (averaging ~6.3 for BOLD). This
+        implementation uses a fixed count matching C-PAC's default.
 
     Args:
         data: 4-D array ``(X, Y, Z, T)``.
@@ -207,6 +222,8 @@ def assemble_36param_regressors(
     """Assemble the 36-parameter regressor matrix.
 
     24 motion (6 params x 4 expansions) + 4 CSF + 4 WM + 4 global = 36.
+    Originally proposed by Satterthwaite et al. (2013) and benchmarked
+    by Ciric et al. (2017).
 
     Args:
         motion: (T, 6) motion parameters.

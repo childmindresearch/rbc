@@ -128,6 +128,7 @@ def test_nuisance_36param(test_subject: TestSubjectData) -> None:
     assert nifti_num_volumes(result.regressed_bold) == 50
     assert result.regressor_file.exists()
     assert len(result.column_names) == 36
+    assert result.eroded_masks is not None
     assert result.eroded_masks.csf.any()
     assert result.eroded_masks.wm.any()
 
@@ -150,5 +151,6 @@ def test_nuisance_acompcor(test_subject: TestSubjectData) -> None:
     assert nifti_num_volumes(result.regressed_bold) == 50
     assert result.regressor_file.exists()
     assert len(result.column_names) == 37
+    assert result.eroded_masks is not None
     assert result.eroded_masks.csf.any()
     assert result.eroded_masks.wm.any()

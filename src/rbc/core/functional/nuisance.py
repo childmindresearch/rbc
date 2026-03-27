@@ -2,6 +2,15 @@
 
 Orchestrates mask erosion, regressor assembly, and AFNI ``3dTproject``
 to remove confound signals from BOLD timeseries.
+
+References:
+    - Satterthwaite et al. (2013). An improved framework for confound
+      regression and filtering. *NeuroImage*, 64, 240-256.
+    - Ciric et al. (2017). Benchmarking of participant-level confound
+      regression strategies. *NeuroImage*, 154, 174-187.
+    - Behzadi et al. (2007). A component based noise correction method
+      (CompCor) for BOLD and perfusion based fMRI. *NeuroImage*, 37(1),
+      90-101.
 """
 
 from __future__ import annotations
@@ -12,11 +21,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import numpy as np
 from niwrap import afni
 
-from rbc.core.functional.mask_utils import (
-    create_union_mask as create_union_mask,
-)
-from rbc.core.functional.mask_utils import (
-    erode_brain_mask,
+from rbc.core.functional.erosion import (
     erode_csf_mask,
     erode_wm_mask,
 )
@@ -33,12 +38,11 @@ if TYPE_CHECKING:
     from typing import Literal
 
 
-class ErodedMaskArrays(NamedTuple):
-    """In-memory eroded masks produced during nuisance regression."""
+class ErodedTissueMasks(NamedTuple):
+    """In-memory eroded tissue masks produced during nuisance regression."""
 
     csf: np.ndarray
     wm: np.ndarray
-    brain: np.ndarray
 
 
 class ComputeRegressorsOutputs(NamedTuple):
@@ -46,7 +50,7 @@ class ComputeRegressorsOutputs(NamedTuple):
 
     regressor_file: Path
     column_names: list[str]
-    eroded_masks: ErodedMaskArrays
+    eroded_masks: ErodedTissueMasks | None
 
 
 class ApplyRegressionOutputs(NamedTuple):
@@ -61,7 +65,7 @@ class NuisanceRegressionOutputs(NamedTuple):
     regressed_bold: Path
     regressor_file: Path
     column_names: list[str]
-    eroded_masks: ErodedMaskArrays
+    eroded_masks: ErodedTissueMasks | None
 
 
 def bandpass_regressor_file(
@@ -134,18 +138,29 @@ def compute_regressors(
     wm_mask_file: str | Path,
     motion_params: str | Path,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
+    *,
+    erode_tissue_masks: bool = True,
 ) -> ComputeRegressorsOutputs:
     """Compute nuisance regressors from BOLD and tissue masks.
 
-    Extracts tissue mean signals from (optionally eroded) masks and assembles
-    the regressor matrix. Intended to run on native-space BOLD so that tissue
-    signals are estimated before any template-resampling interpolation.
+    Extracts tissue mean signals and assembles the regressor matrix.
+    Intended to run on native-space BOLD so that tissue signals are
+    estimated before any template-resampling interpolation.
+
+    The 36-parameter model (Satterthwaite et al. 2013, Ciric et al. 2017)
+    expands 6 motion parameters, CSF, WM, and global signal each into
+    [original, derivative, squared, derivative-squared] for 36 total
+    regressors. Global signal is extracted from the whole (uneroded)
+    brain mask (Ciric et al. 2017).
+
+    The aCompCor model (Behzadi et al. 2007) extracts principal components
+    from the union of CSF and WM voxels as noise regressors.
 
     Steps:
         1. Load BOLD and tissue masks as numpy arrays
-        2. Erode masks (CSF 90%, WM 60%, brain 30 mm)
+        2. Optionally erode CSF/WM masks (C-PAC default: off)
         3. Load motion parameters from ``.1D`` file
-        4. Extract tissue mean signals from eroded masks
+        4. Extract tissue mean signals
         5. Assemble regressor matrix (36-param or aCompCor)
         6. Write ``.1D`` regressor file
 
@@ -156,10 +171,13 @@ def compute_regressors(
         wm_mask_file: 3-D WM tissue mask (in BOLD space).
         motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
         regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
+        erode_tissue_masks: If True, erode CSF (90 % volume) and WM
+            (60 % volume) masks before signal extraction. C-PAC's RBC
+            pipeline config sets this to False.
 
     Returns:
         :class:`ComputeRegressorsOutputs` with regressor file path,
-        column names, and eroded masks.
+        column names, and (optionally) eroded tissue masks.
     """
     import nibabel as nib
 
@@ -175,21 +193,22 @@ def compute_regressors(
     csf_mask = nib.nifti1.load(csf_mask_file).get_fdata()
     wm_mask = nib.nifti1.load(wm_mask_file).get_fdata()
 
-    # 2. Erode masks
-    csf_eroded = erode_csf_mask(csf_mask)
-    wm_eroded = erode_wm_mask(wm_mask)
-
-    voxel_sizes = tuple(float(v) for v in bold_img.header.get_zooms()[:3])
-    brain_eroded = erode_brain_mask(brain_mask, voxel_sizes)  # type: ignore[arg-type]
-
-    eroded = ErodedMaskArrays(csf=csf_eroded, wm=wm_eroded, brain=brain_eroded)
+    # 2. Optionally erode tissue masks
+    if erode_tissue_masks:
+        csf_effective = erode_csf_mask(csf_mask)
+        wm_effective = erode_wm_mask(wm_mask)
+        eroded = ErodedTissueMasks(csf=csf_effective, wm=wm_effective)
+    else:
+        csf_effective = csf_mask > 0
+        wm_effective = wm_mask > 0
+        eroded = None
 
     # 3. Load motion parameters
     motion_params_data = np.loadtxt(motion_params)
 
     # 4. Extract tissue mean signals
-    csf_signal = extract_mean_signal(bold_data, csf_eroded)
-    wm_signal = extract_mean_signal(bold_data, wm_eroded)
+    csf_signal = extract_mean_signal(bold_data, csf_effective)
+    wm_signal = extract_mean_signal(bold_data, wm_effective)
 
     # 5. Assemble regressors
     if regressor_set == "36-parameter":
@@ -198,7 +217,7 @@ def compute_regressors(
             motion_params_data, csf_signal, wm_signal, global_signal
         )
     elif regressor_set == "aCompCor":
-        union_mask = (csf_eroded | wm_eroded).astype(np.uint8)
+        union_mask = (csf_effective | wm_effective).astype(np.uint8)
         acompcor_components = compute_acompcor(bold_data, union_mask)
         matrix, column_names = assemble_acompcor_regressors(
             motion_params_data, csf_signal, wm_signal, acompcor_components
@@ -296,6 +315,8 @@ def nuisance_regression(
     wm_mask_file: str | Path,
     motion_params: str | Path,
     regressor_set: Literal["36-parameter", "aCompCor"] = "36-parameter",
+    *,
+    erode_tissue_masks: bool = True,
 ) -> NuisanceRegressionOutputs:
     """Run nuisance regression via AFNI 3dTproject.
 
@@ -310,10 +331,12 @@ def nuisance_regression(
         wm_mask_file: 3-D WM tissue mask.
         motion_params: AFNI-format ``.1D`` file (T rows x 6 columns).
         regressor_set: ``"36-parameter"`` or ``"aCompCor"``.
+        erode_tissue_masks: If True, erode CSF/WM masks before signal
+            extraction.  See :func:`compute_regressors` for details.
 
     Returns:
         :class:`NuisanceRegressionOutputs` with regressed BOLD path,
-        regressor file path, column names, and eroded masks.
+        regressor file path, column names, and (optionally) eroded masks.
     """
     regressors = compute_regressors(
         bold_file=bold_file,
@@ -322,6 +345,7 @@ def nuisance_regression(
         wm_mask_file=wm_mask_file,
         motion_params=motion_params,
         regressor_set=regressor_set,
+        erode_tissue_masks=erode_tissue_masks,
     )
 
     regression = apply_regression(
