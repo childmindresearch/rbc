@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import nibabel as nib
+import pytest
 
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import despike_bold
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
     from conftest import TestSubjectData
 
 
+@pytest.mark.slow
 def test_despike(test_subject: TestSubjectData) -> None:
     """Test that despike runs successfully and produces output."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
@@ -21,6 +23,7 @@ def test_despike(test_subject: TestSubjectData) -> None:
     assert despiked.exists()
 
 
+@pytest.mark.slow
 def test_despike_reduces_single_outlier(test_subject: TestSubjectData) -> None:
     """Test that despike attenuates an artificial spike in a single voxel."""
     img = nib.nifti1.load(test_subject.bold)
@@ -52,6 +55,7 @@ def test_despike_reduces_single_outlier(test_subject: TestSubjectData) -> None:
     )
 
 
+@pytest.mark.slow
 def test_despike_multiple_spikes(test_subject: TestSubjectData) -> None:
     """Test that despike attenuates multiple scattered spikes across volumes."""
     img = nib.nifti1.load(test_subject.bold)

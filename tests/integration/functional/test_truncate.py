@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional import truncate_trs
 from rbc.core.nifti import nifti_num_volumes
@@ -12,6 +14,7 @@ if TYPE_CHECKING:
     from conftest import TestSubjectData
 
 
+@pytest.mark.slow
 def test_truncate_trs(test_subject: TestSubjectData) -> None:
     """Test truncating initial TRs from BOLD timeseries."""
     original_count = nifti_num_volumes(test_subject.bold)
@@ -27,6 +30,7 @@ def test_truncate_trs(test_subject: TestSubjectData) -> None:
     assert nifti_num_volumes(truncated_bold) == original_count - start_tr
 
 
+@pytest.mark.slow
 def test_truncate_to_min_volume(test_subject: TestSubjectData) -> None:
     """Test truncating to minimum volume count of 1."""
     original_count = nifti_num_volumes(test_subject.bold)

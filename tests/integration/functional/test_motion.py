@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from conftest import TestSubjectData
 
 
+@pytest.mark.slow
 def test_motion_reference_volume_count(test_subject: TestSubjectData) -> None:
     """Test motion reference volume count is 1."""
     reference = extract_motion_reference(in_file=test_subject.bold)
@@ -26,6 +27,7 @@ def test_motion_reference_volume_count(test_subject: TestSubjectData) -> None:
     assert nifti_num_volumes(reference) == 1
 
 
+@pytest.mark.slow
 def test_motion_reference_short_series_fallback(test_subject: TestSubjectData) -> None:
     """Test fallback to all volumes when timeseries is < 40 volumes."""
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)

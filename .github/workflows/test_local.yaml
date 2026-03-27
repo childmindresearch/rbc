@@ -43,8 +43,10 @@ jobs:
           --runner=podman \
           --basetemp=$JOB_TMP/pytest-tmp \
           --cov-report= \
-          --cov=src tests \
-          --verbose
+          --cov=src \
+          --durations=0 \
+          --log-level=DEBUG \
+          --verbose tests
 
     - name: Generate pipeline report
       if: always()
