@@ -59,21 +59,25 @@ def main(args: FunctionalArgs) -> int:
     # Setup
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
+    ctx.runner.image_overrides = {"antsx/ants:v2.5.3": "antsx/ants:latest"}
 
     ctx.logger.info("Preparing to run RBC functional workflow")
-    df = load_table(
+    full_df = load_table(
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null(),
+        pl.col("desc").is_null(),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
     if args.task is not None:
         filters.append(pl.col("task") == args.task)
-    if filters:
-        df = df.filter(pl.all_horizontal(filters))
+    df = full_df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
         pipe_ctx = PipelineContext(
@@ -81,7 +85,8 @@ def main(args: FunctionalArgs) -> int:
             ses=sub_ses_group["ses"][0] or None,
             output_dir=args.output_dir,
         )
-        session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
+
+        session = load_session(full_df, pipe_ctx.sub, pipe_ctx.ses)
 
         for func_df, anat_df in iter_session_files(
             session, groupby=_FUNC_GROUP_ENTITIES
