@@ -22,7 +22,7 @@ import numpy as np
 _LPS_TO_RAS = np.diag([-1.0, -1.0, 1.0, 1.0])
 
 
-def mat_to_itk(mat: Path, reference: Path, source: Path, output: str) -> Path:
+def mat_to_itk(mat: Path, reference: Path, source: Path, output: str | Path) -> Path:
     """Convert an FSL .mat affine to ITK compatible .txt format.
 
     Args:
