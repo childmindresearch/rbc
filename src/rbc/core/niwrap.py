@@ -75,6 +75,8 @@ def setup_runner(
             )
 
     styx_runner = niwrap.get_global_runner()
+    if tmp_dir is not None:
+        Path(tmp_dir).mkdir(parents=True, exist_ok=True)
     styx_runner.data_dir = Path(tempfile.mkdtemp(dir=tmp_dir))
     styx_logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
