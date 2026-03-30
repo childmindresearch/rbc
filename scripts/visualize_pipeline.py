@@ -772,8 +772,8 @@ def plot_correlation_matrix(manifest: dict, ax: plt.Axes) -> None:
 def plot_qc(manifest: dict, ax: plt.Axes) -> None:
     """Render QC metrics as a summary table with dark theme."""
     qc = manifest["qc"]
-    metrics = qc["metrics"]
-    passed = qc["passed"]
+    metrics = qc[_TEST_REGRESSOR]["metrics"]
+    passed = qc[_TEST_REGRESSOR]["passed"]
 
     groups = [
         (
