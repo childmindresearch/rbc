@@ -76,6 +76,7 @@ def manifest() -> Generator[dict[str, object], None, None]:
 
 
 def _to_dict(obj: object) -> dict | str | None:
+    """Convert workflow NamedTuple object to dict recursively."""
     if hasattr(obj, "_asdict"):
         return {k: _to_dict(v) for k, v in obj._asdict().items()}
     if isinstance(obj, dict):

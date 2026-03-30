@@ -11,6 +11,15 @@ if TYPE_CHECKING:
     from full_pipeline.conftest import PipelineData
 
 
+def _to_dict(obj: object) -> dict | str | None:
+    """Convert workflow NamedTuple object to dict recursively."""
+    if hasattr(obj, "_asdict"):
+        return {k: _to_dict(v) for k, v in obj._asdict().items()}
+    if isinstance(obj, dict):
+        return {k: _to_dict(v) for k, v in obj.items()}
+    return str(obj) if obj is not None else None
+
+
 def test_single_session_metrics(
     pipeline_data: PipelineData,
     manifest: dict[str, object],
@@ -27,4 +36,4 @@ def test_single_session_metrics(
         for path in paths:
             assert Path(path).exists()
 
-    manifest["metrics"] = {k: str(v) for k, v in result._asdict().items()}
+    manifest["metrics"] = _to_dict(result)
