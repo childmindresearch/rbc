@@ -317,7 +317,8 @@ def generate_module(  # noqa: C901
     w('    if extension and not extension.startswith("."):')
     w("        raise ValueError(")
     w('            f"Invalid extension: {extension!r}. "')
-    w('            "Must be empty or start with \'.\'"')
+    w("            \"Must be empty or start with '.'\"")
+
     w("        )")
     w()
     w()

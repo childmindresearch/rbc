@@ -62,7 +62,6 @@ _logger = logging.getLogger(__name__)
 _SENTINEL: str | None = object()  # type: ignore[assignment]
 
 
-
 @dataclass(frozen=True)
 class Bids:
     """Immutable BIDS entity accumulator for export and query.
