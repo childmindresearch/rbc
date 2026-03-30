@@ -770,6 +770,26 @@ def _format_entity(key: str, val: str | int) -> str:
     return f"{key}-{val}"
 
 
+def _validate_suffix(suffix: str) -> None:
+    """Validate a BIDS suffix value."""
+    if not _LABEL_RE.fullmatch(suffix):
+        raise ValueError(f"Invalid suffix: {suffix!r}. Must match: [0-9a-zA-Z+]+")
+
+
+def _validate_extension(extension: str) -> None:
+    """Validate a BIDS extension value."""
+    if extension and not extension.startswith("."):
+        raise ValueError(
+            f"Invalid extension: {extension!r}. Must be empty or start with '.'"
+        )
+
+
+def _validate_datatype(datatype: str) -> None:
+    """Validate a BIDS datatype value."""
+    if not _LABEL_RE.fullmatch(datatype):
+        raise ValueError(f"Invalid datatype: {datatype!r}. Must match: [0-9a-zA-Z+]+")
+
+
 _STANDARD_ENTITIES: frozenset[str] = frozenset(
     {
         "sub",
@@ -953,6 +973,8 @@ def bids_name(
         ValueError: If a label value is invalid or an
             index is negative.
     """
+    _validate_suffix(suffix)
+    _validate_extension(extension)
     _entities: list[tuple[str, str | int | None]] = [
         ("sub", sub),
         ("tpl", tpl),
@@ -1031,6 +1053,8 @@ def bids_name_from_entities(
     Returns:
         A BIDS-compliant filename string.
     """
+    _validate_suffix(suffix)
+    _validate_extension(extension)
     _entities: list[tuple[str, str | int | None]] = [
         ("sub", entities.get("sub")),
         ("tpl", entities.get("tpl")),
@@ -1223,6 +1247,7 @@ def bids_path(
     Returns:
         A BIDS-compliant relative path.
     """
+    _validate_datatype(datatype)
     filename = bids_name(
         sub=sub,
         tpl=tpl,
@@ -1296,6 +1321,7 @@ def bids_path_from_entities(
     Returns:
         A BIDS-compliant relative path.
     """
+    _validate_datatype(datatype)
     filename = bids_name_from_entities(
         entities,
         suffix=suffix,
