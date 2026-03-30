@@ -76,7 +76,6 @@ def main(args: AllArgs) -> int:  # noqa: C901
     """Main entrypoint of combined pipeline."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
-    ctx.runner.image_overrides = {"antsx/ants:v2.5.3": "antsx/ants:latest"}
 
     ctx.logger.info("Preparing to run RBC full pipeline")
     df = load_table(
@@ -97,7 +96,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
     df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        sorted(df.group_by(_SUB_SES_QUERY)), disable=not ctx.verbose
+        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
@@ -107,7 +106,6 @@ def main(args: AllArgs) -> int:  # noqa: C901
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         # --- Anatomical (once per session, first T1w) ---
-        anat_outputs = None
         for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
             anat_row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
@@ -141,9 +139,6 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     "mode": "image",
                 },
             )
-
-        if anat_outputs is None:
-            raise ValueError(f"No T1w found for sub-{pipe_ctx.sub} ses-{pipe_ctx.ses}")
 
         # --- Functional + Metrics + QC (per BOLD run) ---
         for func_df, _anat_df in iter_session_files(

@@ -58,7 +58,7 @@ def main(args: AnatomicalArgs) -> int:
     df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        sorted(df.group_by(_SUB_SES_QUERY)), disable=not ctx.verbose
+        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
