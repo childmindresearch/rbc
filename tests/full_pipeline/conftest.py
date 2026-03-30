@@ -75,6 +75,14 @@ def manifest() -> Generator[dict[str, object], None, None]:
     MANIFEST_PATH.write_text(json.dumps(data, indent=2))
 
 
+def _to_dict(obj: object) -> dict | str | None:
+    if hasattr(obj, "_asdict"):
+        return {k: _to_dict(v) for k, v in obj._asdict().items()}
+    if isinstance(obj, dict):
+        return {k: _to_dict(v) for k, v in obj.items()}
+    return str(obj) if obj is not None else None
+
+
 @pytest.fixture(scope="session")
 def pipeline_data(
     test_subject: TestSubjectData,
@@ -95,7 +103,7 @@ def pipeline_data(
     template_brain_mask = _warp_mask_to_template(
         anat.brain_mask, MNI_TEMPLATES.brain_2mm, anat.forward_xfm
     )
-    manifest["anat"] = {k: str(v) for k, v in anat._asdict().items()}
-    manifest["func"] = {k: str(v) for k, v in func._asdict().items()}
+    manifest["anat"] = _to_dict(anat)
+    manifest["func"] = _to_dict(func)
     manifest["template_brain_mask"] = str(template_brain_mask)
     return PipelineData(anat=anat, func=func, template_brain_mask=template_brain_mask)
