@@ -46,15 +46,20 @@ def main(args: AnatomicalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null(),
+        pl.col("desc").is_null(),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
-    if filters:
-        df = df.filter(pl.all_horizontal(filters))
+    df = df.filter(pl.all_horizontal(filters))
 
-    for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+    for _, sub_ses_group in tqdm(
+        sorted(df.group_by(_SUB_SES_QUERY)), disable=not ctx.verbose
+    ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
