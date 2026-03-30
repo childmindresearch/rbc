@@ -59,16 +59,8 @@ __all__ = [
 
 _logger = logging.getLogger(__name__)
 
+_SENTINEL: str | None = object()  # type: ignore[assignment]
 
-def _sanitize_extra(
-    extra: dict[str, str | int] | None,
-) -> dict[str, str | int] | None:
-    """Apply ``bids_safe_label`` to string values in an *extra* dict."""
-    if extra is None:
-        return None
-    return {
-        k: bids_safe_label(v) if isinstance(v, str) else v for k, v in extra.items()
-    }
 
 
 @dataclass(frozen=True)
@@ -102,7 +94,10 @@ class Bids:
     def derive(
         self,
         *,
-        datatype: str | None = None,
+        sub: str | None = None,
+        ses: str | None = _SENTINEL,
+        output_dir: Path | None = None,
+        datatype: str | None = _SENTINEL,
         extra: dict[str, str | int] | None = None,
         entities: EntityKwargs | None = None,
         **overrides: str | int,
@@ -110,6 +105,9 @@ class Bids:
         """Derive a new builder inheriting all state, merging overrides.
 
         Args:
+            sub: Override the BIDS subject label.
+            ses: Override the BIDS session label (pass ``None`` to clear).
+            output_dir: Override the output directory.
             datatype: Override the BIDS datatype directory.
             extra: Non-standard entities to merge with existing extra.
             entities: Bulk entity dict to merge (e.g. from
@@ -128,10 +126,10 @@ class Bids:
             {**(self._extra or {}), **(extra or {})} if self._extra or extra else None
         )
         return Bids(
-            _sub=self._sub,
-            _ses=self._ses,
-            _output_dir=self._output_dir,
-            _datatype=datatype or self._datatype,
+            _sub=sub if sub is not None else self._sub,
+            _ses=ses if ses is not _SENTINEL else self._ses,
+            _output_dir=output_dir if output_dir is not None else self._output_dir,
+            _datatype=datatype if datatype is not _SENTINEL else self._datatype,
             _entities=merged,
             _extra=merged_extra,
         )
@@ -385,6 +383,11 @@ class Bids:
         overrides: dict[str, str | int],
     ) -> str:
         """Build BIDS relative path from accumulated + per-call state."""
+        if self._datatype is None:
+            raise ValueError(
+                "Cannot build a BIDS path without a datatype. "
+                "Set datatype when creating or deriving the Bids builder."
+            )
         ents: dict[str, str | int | None] = {"sub": self._sub, "ses": self._ses}
         ents.update(self._entities)
         ents.update(overrides)
@@ -396,7 +399,7 @@ class Bids:
                 ents,
                 suffix=suffix,
                 extension=extension,
-                datatype=self._datatype or "",
-                extra=_sanitize_extra(merged_extra),
+                datatype=self._datatype,
+                extra=merged_extra,
             )
         )
