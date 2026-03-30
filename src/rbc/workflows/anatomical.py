@@ -38,6 +38,7 @@ class AnatomicalOutputs(NamedTuple):
     Attributes:
         brain: Skull-stripped T1w brain.
         brain_mask: Binary brain mask.
+        brain_tpl: Skull-stripped T1w brain in template space.
         csf_mask: CSF tissue mask.
         gm_mask: GM tissue mask.
         wm_mask: WM tissue mask.
@@ -48,6 +49,7 @@ class AnatomicalOutputs(NamedTuple):
 
     brain: Path
     brain_mask: Path
+    brain_tpl: Path
     csf_mask: Path
     gm_mask: Path
     wm_mask: Path
@@ -105,6 +107,7 @@ def single_session_preprocess(
     return AnatomicalOutputs(
         brain=extracted_t1w.brain,
         brain_mask=extracted_t1w.brain_mask,
+        brain_tpl=transforms.brain,
         csf_mask=tissue_masks.csf,
         gm_mask=tissue_masks.gm,
         wm_mask=tissue_masks.wm,
