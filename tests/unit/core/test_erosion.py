@@ -1,11 +1,11 @@
-"""Unit tests for rbc.core.functional.mask_utils."""
+"""Unit tests for rbc.core.functional.erosion."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from rbc.core.functional.mask_utils import (
+from rbc.core.functional.erosion import (
     erode_mask_by_distance,
     erode_mask_to_proportion,
 )
