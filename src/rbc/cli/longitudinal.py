@@ -22,6 +22,7 @@ from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal
+from rbc_resources import MNI_TEMPLATES
 
 
 @dataclass(frozen=True)
@@ -52,7 +53,10 @@ def _require_file(path: Path | None, field: str) -> Path:
 
 
 def _process_anat(
-    pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
+    pipe_ctx: PipelineContext,
+    anat_df: pl.DataFrame,
+    tpl_df: pl.DataFrame,
+    anat_template: Path = MNI_TEMPLATES.brain_1mm,
 ) -> None:
     """Handle anatomical longitudinal processing."""
     row = anat_df.filter(suffix="T1w").row(0, named=True)
@@ -74,6 +78,7 @@ def _process_anat(
         csf_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"),
         gm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="gm"),
         wm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
+        anat_template=anat_template,
     )
 
     aex = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents, space="longitudinal")
@@ -200,7 +205,12 @@ def main(args: LongitudinalArgs) -> int:
             session, groupby=_FUNC_GROUP_ENTITIES
         ):
             if args.anatomical:
-                _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
+                _process_anat(
+                    pipe_ctx=pipe_ctx,
+                    anat_df=anat_df,
+                    tpl_df=tpl_df,
+                    anat_template=args.templates.brain_1mm,
+                )
             if args.functional:
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
         pipe_ctx.ensure_dataset_description()

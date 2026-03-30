@@ -170,6 +170,14 @@ class TestValidation:
             participant_label=[],
             session_label=[],
             tmp_dir=None,
+            brain_extraction_template=None,
+            brain_extraction_prob_mask=None,
+            brain_extraction_reg_mask=None,
+            anat_template=None,
+            func_template=None,
+            func_template_mask=None,
+            func_template_ref=None,
+            custom_atlas=None,
         )
 
     def test_valid(self, base_args: argparse.Namespace) -> None:
@@ -200,6 +208,146 @@ class TestValidation:
         base_args.session_label = ["ses-01"]
         with pytest.raises(ValueError, match="Label must not start with"):
             cli.BaseArgs.validate_namespace(base_args)
+
+
+class TestCustomTemplates:
+    """Tests for custom template resolution and validation."""
+
+    @pytest.fixture
+    def base_ns(self, tmp_path: Path) -> argparse.Namespace:
+        """Namespace with all template fields set to None."""
+        input_dir = tmp_path / "input"
+        input_dir.touch()
+        return argparse.Namespace(
+            runner="local",
+            verbose=False,
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            participant_label=[],
+            session_label=[],
+            tmp_dir=None,
+            brain_extraction_template=None,
+            brain_extraction_prob_mask=None,
+            brain_extraction_reg_mask=None,
+            anat_template=None,
+            func_template=None,
+            func_template_mask=None,
+            func_template_ref=None,
+            custom_atlas=None,
+        )
+
+    def test_defaults_to_bundled(self, base_ns: argparse.Namespace) -> None:
+        """All-None flags resolve to bundled templates."""
+        from rbc_resources import MNI_TEMPLATES, OASIS_TEMPLATES
+
+        args = cli.BaseArgs.validate_namespace(base_ns)
+        assert args.brain_extraction_templates == OASIS_TEMPLATES
+        assert args.templates == MNI_TEMPLATES
+        assert args.custom_atlases == {}
+
+    def test_custom_anat_template(
+        self, base_ns: argparse.Namespace, tmp_path: Path
+    ) -> None:
+        """Custom anat template replaces brain_1mm."""
+        from rbc_resources import MNI_TEMPLATES
+
+        fake = tmp_path / "custom_1mm.nii.gz"
+        fake.touch()
+        base_ns.anat_template = fake
+        with patch("rbc.cli.base._warn_voxel_spacing"):
+            args = cli.BaseArgs.validate_namespace(base_ns)
+        assert args.templates.brain_1mm == fake
+        assert args.templates.brain_2mm == MNI_TEMPLATES.brain_2mm
+
+    def test_missing_template_file(
+        self, base_ns: argparse.Namespace,
+    ) -> None:
+        """Non-existent template path raises FileNotFoundError."""
+        base_ns.anat_template = Path("/nonexistent/template.nii.gz")
+        with pytest.raises(FileNotFoundError, match="--anat-template"):
+            cli.BaseArgs.validate_namespace(base_ns)
+
+    def test_brain_extraction_partial_warning(
+        self,
+        base_ns: argparse.Namespace,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Providing only some brain extraction templates logs a warning."""
+        import logging
+
+        fake = tmp_path / "template.nii.gz"
+        fake.touch()
+        base_ns.brain_extraction_template = fake
+        with (
+            caplog.at_level(logging.WARNING, logger="rbc"),
+            patch("rbc.cli.base._warn_voxel_spacing"),
+        ):
+            cli.BaseArgs.validate_namespace(base_ns)
+        assert "Only 1 of 3 brain extraction templates" in caplog.text
+
+
+class TestCustomAtlasParsing:
+    """Tests for --custom-atlas parsing logic."""
+
+    def test_name_equals_path(self, tmp_path: Path) -> None:
+        """name=path format parses correctly."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        atlas = tmp_path / "my_atlas.nii.gz"
+        atlas.touch()
+        result = _parse_custom_atlases([f"myatlas={atlas}"])
+        assert "myatlas" in result
+        assert result["myatlas"] == atlas
+
+    def test_path_only(self, tmp_path: Path) -> None:
+        """Path-only derives label from filename stem."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        atlas = tmp_path / "CustomParcellation.nii.gz"
+        atlas.touch()
+        result = _parse_custom_atlases([str(atlas)])
+        assert "CustomParcellation" in result
+
+    def test_windows_drive_path(self, tmp_path: Path) -> None:
+        """Paths with colons (Windows drives) are handled as path-only."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        atlas = tmp_path / "atlas.nii.gz"
+        atlas.touch()
+        result = _parse_custom_atlases([str(atlas)])
+        assert len(result) == 1
+
+    def test_missing_file_raises(self) -> None:
+        """Non-existent atlas path raises FileNotFoundError."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        with pytest.raises(FileNotFoundError, match="--custom-atlas"):
+            _parse_custom_atlases(["/nonexistent/atlas.nii.gz"])
+
+    def test_empty_label_raises(self, tmp_path: Path) -> None:
+        """Entry that produces empty BIDS label raises ValueError."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        atlas = tmp_path / "----.nii.gz"
+        atlas.touch()
+        with pytest.raises(ValueError, match="Cannot derive"):
+            _parse_custom_atlases([str(atlas)])
+
+    def test_collision_with_builtin_raises(self, tmp_path: Path) -> None:
+        """Label colliding with a built-in atlas raises ValueError."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        atlas = tmp_path / "aal.nii.gz"
+        atlas.touch()
+        with pytest.raises(ValueError, match="conflicts with a built-in atlas"):
+            _parse_custom_atlases([f"aal={atlas}"])
+
+    def test_none_input(self) -> None:
+        """None input returns empty dict."""
+        from rbc.cli.base import _parse_custom_atlases
+
+        assert _parse_custom_atlases(None) == {}
 
 
 class TestMain:

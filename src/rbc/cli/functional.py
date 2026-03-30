@@ -110,6 +110,7 @@ def main(args: FunctionalArgs) -> int:
                     },
                 ),
                 regressor_set=args.regressor,
+                templates=args.templates,
             )
 
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)

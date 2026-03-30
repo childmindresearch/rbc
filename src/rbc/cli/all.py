@@ -100,7 +100,11 @@ def main(args: AllArgs) -> int:  # noqa: C901
         t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
         ctx.logger.info(f"Anatomical: {t1w_fpath}")
 
-        anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
+        anat_outputs = anatomical_preprocess(
+            in_t1w=t1w_fpath,
+            brain_extraction_templates=args.brain_extraction_templates,
+            anat_template=args.templates.brain_1mm,
+        )
 
         anat = pipe_ctx.bids(datatype=Datatype.ANAT)
         anat.save(anat_outputs.brain, suffix=Suffix.T1W, desc="brain")
@@ -139,6 +143,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 anat_to_template=anat_outputs.inverse_xfm,
                 start_tr=args.start_tr,
                 regressor_set=args.regressor,
+                templates=args.templates,
             )
 
             # Export functional outputs
@@ -216,6 +221,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     template_brain_mask=func_outputs.template_brain_mask,
                     atlas=args.atlas,
                     fwhm=args.fwhm,
+                    custom_atlases=args.custom_atlases,
                 )
 
                 mex = mni.derive(extra={"reg": regressor})
@@ -230,7 +236,8 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 mex.save(metrics_outputs.reho, suffix="reho")
                 mex.save(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
                 mex.save(metrics_outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-                for atlas in args.atlas:
+                all_atlas_labels = list(args.atlas) + list(args.custom_atlases)
+                for atlas in all_atlas_labels:
                     mex.save(
                         metrics_outputs.timeseries[atlas],
                         suffix="timeseries",

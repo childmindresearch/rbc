@@ -121,6 +121,7 @@ def main(args: MetricsArgs) -> int:
                     template_brain_mask=template_brain_mask,
                     atlas=args.atlas,
                     fwhm=args.fwhm,
+                    custom_atlases=args.custom_atlases,
                 )
 
                 mex = mni_q.derive(extra={"reg": regressor})
@@ -133,7 +134,8 @@ def main(args: MetricsArgs) -> int:
                 mex.save(outputs.reho, suffix="reho")
                 mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
                 mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-                for atlas in args.atlas:
+                all_atlas_labels = list(args.atlas) + list(args.custom_atlases)
+                for atlas in all_atlas_labels:
                     mex.save(
                         outputs.timeseries[atlas],
                         suffix="timeseries",

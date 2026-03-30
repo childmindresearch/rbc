@@ -64,6 +64,61 @@ def _global_opts() -> argparse.ArgumentParser:
         default=None,
         help="Directory for intermediate files (default: system temp)",
     )
+
+    # Custom template overrides
+    global_opts.add_argument(
+        "--anat-template",
+        type=Path,
+        default=None,
+        help="Custom anatomical registration target (~1 mm brain). "
+        "Default: bundled MNI152NLin6Asym.",
+    )
+    global_opts.add_argument(
+        "--func-template",
+        type=Path,
+        default=None,
+        help="Custom functional resampling target (~2 mm brain). "
+        "Default: bundled MNI152NLin6Asym.",
+    )
+    global_opts.add_argument(
+        "--func-template-mask",
+        type=Path,
+        default=None,
+        help="Custom functional brain mask (~2 mm). Default: bundled MNI152NLin6Asym.",
+    )
+    global_opts.add_argument(
+        "--func-template-ref",
+        type=Path,
+        default=None,
+        help="Custom BOLD reference in template space (~2 mm). "
+        "Default: bundled MNI152NLin6Asym.",
+    )
+    global_opts.add_argument(
+        "--brain-extraction-template",
+        type=Path,
+        default=None,
+        help="Custom brain extraction template. Default: bundled OASIS.",
+    )
+    global_opts.add_argument(
+        "--brain-extraction-prob-mask",
+        type=Path,
+        default=None,
+        help="Custom brain extraction probability mask. Default: bundled OASIS.",
+    )
+    global_opts.add_argument(
+        "--brain-extraction-reg-mask",
+        type=Path,
+        default=None,
+        help="Custom brain extraction registration mask. Default: bundled OASIS.",
+    )
+    global_opts.add_argument(
+        "--custom-atlas",
+        nargs="+",
+        default=None,
+        help="Custom atlas NIfTI(s) for timeseries extraction. "
+        "Format: 'name=/path/to/atlas.nii.gz' or just a path "
+        "(label derived from filename).",
+    )
     return global_opts
 
 

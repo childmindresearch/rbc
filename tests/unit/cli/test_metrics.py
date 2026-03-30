@@ -111,6 +111,14 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         fwhm=6.0,
         regressor=["36-parameter"],
         tmp_dir=None,
+        brain_extraction_template=None,
+        brain_extraction_prob_mask=None,
+        brain_extraction_reg_mask=None,
+        anat_template=None,
+        func_template=None,
+        func_template_mask=None,
+        func_template_ref=None,
+        custom_atlas=None,
     )
 
 

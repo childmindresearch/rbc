@@ -46,7 +46,7 @@ _ROOT = Path(__file__).parent.resolve()
 # ---------------------------------------------------------------------------
 
 
-class OasisTemplates(NamedTuple):
+class BrainExtractionTemplates(NamedTuple):
     """Paths to OASIS brain-extraction templates.
 
     Attributes:
@@ -60,7 +60,7 @@ class OasisTemplates(NamedTuple):
     registration_mask: Path
 
 
-class MniTemplates(NamedTuple):
+class RegistrationTemplates(NamedTuple):
     """Paths to MNI152 standard-space templates.
 
     Attributes:
@@ -84,13 +84,13 @@ class FSL(NamedTuple):
 
 _TEMPLATES = _ROOT / "templates"
 
-OASIS_TEMPLATES = OasisTemplates(
+OASIS_TEMPLATES = BrainExtractionTemplates(
     template=_TEMPLATES / "oasis_template.nii.gz",
     probability_mask=_TEMPLATES / "oasis_probability_mask.nii.gz",
     registration_mask=_TEMPLATES / "oasis_registration_mask.nii.gz",
 )
 
-MNI_TEMPLATES = MniTemplates(
+MNI_TEMPLATES = RegistrationTemplates(
     brain_1mm=_TEMPLATES / "mni152_T1w_1mm_brain.nii.gz",
     brain_2mm=_TEMPLATES / "mni152_T1w_2mm_brain.nii.gz",
     brain_mask_2mm=_TEMPLATES / "mni152_T1w_2mm_brain_mask.nii.gz",
@@ -172,5 +172,7 @@ __all__ = [
     "FSL_RESOURCES",
     "MNI_TEMPLATES",
     "OASIS_TEMPLATES",
+    "BrainExtractionTemplates",
+    "RegistrationTemplates",
     "get_atlas",
 ]

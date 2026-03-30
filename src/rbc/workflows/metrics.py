@@ -16,7 +16,7 @@ from rbc.core.metrics.alff import compute_alff
 from rbc.core.metrics.reho import compute_reho
 from rbc.core.metrics.smoothing import smooth
 from rbc.core.metrics.standardization import compute_zscore
-from rbc.core.metrics.timeseries import compute_timeseries
+from rbc.core.metrics.timeseries import TimeseriesOutputs, compute_timeseries
 from rbc_resources import get_atlas
 
 if TYPE_CHECKING:
@@ -65,6 +65,7 @@ def single_session_metrics(
     tr: float | None = None,
     atlas: Sequence[AtlasName] = ("schaefer_200",),
     fwhm: float = 6.0,
+    custom_atlases: dict[str, Path] | None = None,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
 
@@ -75,6 +76,8 @@ def single_session_metrics(
         tr: Repetition time in seconds; if *None*, read from NIfTI header.
         atlas: Atlas short name for timeseries extraction.
         fwhm: Smoothing kernel FWHM in mm.
+        custom_atlases: Optional mapping of {label: path} for user-provided
+            atlas parcellations. Used alongside bundled atlases.
 
     Returns:
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
@@ -103,10 +106,13 @@ def single_session_metrics(
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
     # bandpass-filtered BOLD
-    ts_outputs = {}
+    ts_outputs: dict[str, TimeseriesOutputs] = {}
     for atl in atlas:
         _logger.info("Extracting atlas timeseries (%s)", atl)
         ts_outputs[atl] = compute_timeseries(cleaned_bold, get_atlas(atl))
+    for label, atlas_path in (custom_atlases or {}).items():
+        _logger.info("Extracting atlas timeseries (custom: %s)", label)
+        ts_outputs[label] = compute_timeseries(cleaned_bold, atlas_path)
 
     return MetricsOutputs(
         alff=alff_path,

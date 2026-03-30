@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from niwrap import ants, fsl
 
-from rbc_resources import OASIS_TEMPLATES
+from rbc_resources import OASIS_TEMPLATES, BrainExtractionTemplates
 
 _SEG_PREFIX = "tissue_seg"
 
@@ -43,6 +43,7 @@ class TissueMasks(NamedTuple):
 
 def ants_brain_extraction(
     in_file: Path,
+    brain_extraction_templates: BrainExtractionTemplates = OASIS_TEMPLATES,
 ) -> BrainExtractionOutputs:
     """Skull-strip a T1w image using ANTs ``antsBrainExtraction.sh``.
 
@@ -54,6 +55,8 @@ def ants_brain_extraction(
     Args:
         in_file: Input anatomical T1w image to perform brain extraction on.
             In RBC this is the reoriented (RPI) T1w.
+        brain_extraction_templates: Brain extraction templates (template,
+            probability mask, registration mask). Defaults to bundled OASIS.
 
     Returns:
         Brain extraction outputs (brain image and brain mask).
@@ -61,9 +64,9 @@ def ants_brain_extraction(
     result = ants.ants_brain_extraction_sh(
         image_dimension=3,
         anatomical_image=in_file,
-        template=OASIS_TEMPLATES.template,
-        probability_mask=OASIS_TEMPLATES.probability_mask,
-        brain_extraction_registration_mask=OASIS_TEMPLATES.registration_mask,
+        template=brain_extraction_templates.template,
+        probability_mask=brain_extraction_templates.probability_mask,
+        brain_extraction_registration_mask=brain_extraction_templates.registration_mask,
         output_prefix="ants_be",
         image_file_suffix="nii.gz",
         random_seeding=False,

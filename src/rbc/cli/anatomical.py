@@ -68,7 +68,11 @@ def main(args: AnatomicalArgs) -> int:
             ents = extract_entities(row, ["run", "acq", "rec", "echo"])
             ctx.logger.info(f"Processing {t1w_fpath}")
 
-            outputs = single_session_preprocess(in_t1w=t1w_fpath)
+            outputs = single_session_preprocess(
+                in_t1w=t1w_fpath,
+                brain_extraction_templates=args.brain_extraction_templates,
+                anat_template=args.templates.brain_1mm,
+            )
 
             pipe_ctx = PipelineContext(
                 sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir

@@ -41,7 +41,7 @@ from rbc.core.longitudinal.transform import (
     mask_transform,
 )
 from rbc.core.niwrap import generate_exec_folder
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import MNI_TEMPLATES, RegistrationTemplates
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -148,6 +148,7 @@ def single_session_preprocess(
     start_tr: int = 2,
     regressor_set: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
     fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
+    templates: RegistrationTemplates = MNI_TEMPLATES,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
 
@@ -187,6 +188,8 @@ def single_session_preprocess(
             Pass a :class:`PhaseDiffFieldmap` for B0 fieldmap correction or a
             :class:`PEPolarFieldmap` for opposite phase-encoding correction.
             *None* skips distortion correction.
+        templates: Template images for BOLD masking and resampling.
+            Defaults to bundled MNI152NLin6Asym.
 
     Returns:
         All output paths bundled in a :class:`FunctionalOutputs` tuple.
@@ -264,8 +267,8 @@ def single_session_preprocess(
     _logger.info("BOLD brain masking")
     masking = bold_masking(
         bold_ref=effective_ref,
-        template_mask=MNI_TEMPLATES.brain_mask_2mm,
-        template_ref=MNI_TEMPLATES.bold_ref,
+        template_mask=templates.brain_mask_2mm,
+        template_ref=templates.bold_ref,
     )
 
     # 10. BBR coregistration
@@ -308,14 +311,14 @@ def single_session_preprocess(
         bold_to_anat=bbr.out_matrix_file,
         anat_to_template=anat_to_template,
         bold_ref=masking.skull_stripped_bold,
-        template=MNI_TEMPLATES.brain_2mm,
+        template=templates.brain_2mm,
         t1w_brain=t1w_brain,
         distortion_warp=distortion_warp,
     )
 
     # 14. Warp brain mask to template space (needed for regression + bandpass)
     tmpl_brain = _warp_mask_to_template(
-        brain_mask, MNI_TEMPLATES.brain_2mm, anat_to_template
+        brain_mask, templates.brain_2mm, anat_to_template
     )
 
     regression: dict[str, ApplyRegressionOutputs] = {}
