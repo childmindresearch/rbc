@@ -60,10 +60,7 @@ def _process_anat(
     ents = extract_entities(row, ["run"])
 
     anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-    tpl_pipe_ctx = PipelineContext(
-        sub=pipe_ctx.sub, ses="longitudinal", output_dir=pipe_ctx.output_dir
-    )
-    tpl_q = tpl_pipe_ctx.bids(datatype=Datatype.ANAT)
+    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = anatomical_longitudinal(
         template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
@@ -112,10 +109,7 @@ def _process_func(
     ents = extract_entities(row, ["task", "run"])
 
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_pipe_ctx = PipelineContext(
-        sub=pipe_ctx.sub, ses="longitudinal", output_dir=pipe_ctx.output_dir
-    )
-    tpl_q = tpl_pipe_ctx.bids(datatype=Datatype.ANAT)
+    tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
 
     outputs = functional_longitudinal(
         template=tpl_q.expect(tpl_df, suffix="T1w"),
