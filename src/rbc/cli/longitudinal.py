@@ -55,6 +55,7 @@ def _process_anat(
     pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
+    anat_df = anat_df.filter(pl.col("space").is_null())
     row = anat_df.filter(suffix="T1w").row(0, named=True)
     ents = extract_entities(row, ["run"])
 
@@ -107,6 +108,7 @@ def _process_func(
     pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle functional longitudinal processing."""
+    func_df = func_df.filter(pl.col("space").is_null())
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
 
@@ -158,6 +160,7 @@ def main(args: LongitudinalArgs) -> int:
     """Main entrypoint of longitudinal workflow."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
+    ctx.runner.image_overrides = {"antsx/ants:v2.5.3": "antsx/ants:latest"}
 
     ctx.logger.warning(
         "This workflow is experimental and may be sensitive to input file "
@@ -169,11 +172,7 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [
-        pl.col("ses") != "longitudinal",
-        pl.col("space").is_null(),
-        pl.col("desc").is_null(),
-    ]
+    filters = [pl.col("ses") != "longitudinal"]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -181,7 +180,7 @@ def main(args: LongitudinalArgs) -> int:
     group_df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        group_df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose
+        sorted(group_df.group_by(_SUB_SES_QUERY)), disable=not ctx.verbose
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
@@ -192,7 +191,7 @@ def main(args: LongitudinalArgs) -> int:
             raise ValueError(
                 "No session data - unable to perform longitudinal processing"
             )
-        session = load_session(df, pipe_ctx.sub, pipe_ctx.ses)
+        session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         tpl_df = df.filter(
             pl.all_horizontal(
                 pl.col("sub") == pipe_ctx.sub, pl.col("ses") == "longitudinal"

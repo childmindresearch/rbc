@@ -120,10 +120,14 @@ def _patch_all(
         }
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
+    iter_calls = []
+    for session_group in groups:
+        iter_calls.append([(mock_anat_df, mock_anat_df)])  # anat call
+        iter_calls.append(session_group)  # func call
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
         patch("rbc.cli.all.load_session", return_value=mock_session),
-        patch("rbc.cli.all.iter_session_files", side_effect=groups),
+        patch("rbc.cli.all.iter_session_files", side_effect=iter_calls),
         patch(
             "rbc.cli.all.anatomical_preprocess", return_value=_mock_anat_outputs()
         ) as mock_anat,
@@ -165,7 +169,7 @@ def _make_groups(
         )
         key = (row["sub"], row["ses"])
         sub_ses_groups.setdefault(key, [])
-        sub_ses_groups[key].append((func_group, pl.DataFrame()))
+        sub_ses_groups[key].append((func_group, pl.DataFrame({"space": [], "desc": []})))
 
     full_df = _make_filtered_df(sample_dataframe, participant, session, task)
     return full_df, list(sub_ses_groups.values())
