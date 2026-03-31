@@ -4,7 +4,10 @@ Provides utilities for setting up and tearing down runners. Allows us to use run
 of choice depending on what is available on the system.
 """
 
+from __future__ import annotations
+
 import logging
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Literal, NamedTuple
@@ -13,6 +16,14 @@ import niwrap
 from styxpodman import PodmanRunner
 
 _LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
+
+RunnerType = Literal["local", "docker", "podman", "singularity"]
+
+_RUNNER_EXECUTABLES: list[tuple[RunnerType, list[str]]] = [
+    ("docker", ["docker"]),
+    ("podman", ["podman"]),
+    ("singularity", ["apptainer", "singularity"]),
+]
 
 
 class StyxContext(NamedTuple):
@@ -23,8 +34,32 @@ class StyxContext(NamedTuple):
     verbose: bool
 
 
+def resolve_runner(
+    runner: RunnerType | Literal["auto"] = "auto",
+) -> tuple[RunnerType, str]:
+    """Resolve runner selection, auto-detecting if needed.
+
+    When runner is "auto", checks for available container runtimes on PATH
+    in order of preference: docker > podman > apptainer/singularity > local.
+
+    Args:
+        runner: Runner type or "auto" for auto-detection.
+
+    Returns:
+        Tuple of (runner_type, executable_name).
+    """
+    if runner != "auto":
+        return runner, runner
+
+    for runner_type, executables in _RUNNER_EXECUTABLES:
+        for exe in executables:
+            if shutil.which(exe):
+                return runner_type, exe
+    return "local", "local"
+
+
 def setup_runner(
-    runner: Literal["local", "docker", "podman", "singularity"] = "local",
+    runner: RunnerType | Literal["auto"] = "auto",
     tmp_dir: str | Path | None = None,
     image_overrides: dict[str, str] | None = None,
     verbose: int = 0,
@@ -33,8 +68,8 @@ def setup_runner(
     """Setup Styx with appropriate runner for NiWrap.
 
     Args:
-        runner: Type of runner to use - choices include
-            ['local', 'docker', 'podman', 'singularity']
+        runner: Type of runner to use. "auto" detects the first available
+            container runtime, falling back to "local".
         tmp_dir: Working directory to output to
         image_overrides: Dictionary containing overrides for container tags.
         verbose: Verbosity level (0=WARNING, 1=INFO, 2+=DEBUG)
@@ -43,7 +78,9 @@ def setup_runner(
     Returns:
         Configured logger instance and initialized runner
     """
-    match runner_exec := runner.lower():
+    runner_type, runner_exec = resolve_runner(runner)
+
+    match runner_type:
         case "local":
             niwrap.use_local()
         case "docker":
@@ -71,7 +108,7 @@ def setup_runner(
         case _:
             raise NotImplementedError(
                 f"Unknown runner selection '{runner}' - please select one of "
-                "'local', 'docker', or 'singularity'"
+                "'auto', 'local', 'docker', 'podman', or 'singularity'"
             )
 
     styx_runner = niwrap.get_global_runner()
