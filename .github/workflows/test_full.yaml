@@ -91,4 +91,5 @@ jobs:
       shell: bash
       run: |
         echo "Cleaning up job temp directory: $JOB_TMP"
+        echo "Temp directory size: $(du -sh $JOB_TMP 2>/dev/null | cut -f1)"
         rm -rf $JOB_TMP
