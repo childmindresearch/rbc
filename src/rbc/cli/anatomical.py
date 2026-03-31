@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.cli.query import iter_session_files, load_session
+from rbc.cli.query import load_session
 
 if TYPE_CHECKING:
     import argparse
@@ -67,7 +67,9 @@ def main(args: AnatomicalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
+        for _, anat_df in session.anat.group_by(
+            _ANAT_GROUP_ENTITIES, maintain_order=True
+        ):
             row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
             ents = extract_entities(row, ["run", "acq", "rec", "echo"])
@@ -75,9 +77,6 @@ def main(args: AnatomicalArgs) -> int:
 
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
 
-            pipe_ctx = PipelineContext(
-                sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
-            )
             anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
             anat.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
             anat.save(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")

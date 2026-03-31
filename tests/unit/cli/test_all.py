@@ -113,6 +113,12 @@ def _patch_all(
             "suffix": ["T1w"],
             "ext": [".nii.gz"],
             "run": [None],
+            "acq": [None],
+            "part": [None],
+            "echo": [None],
+            "ce": [None],
+            "rec": [None],
+            "inv": [None],
             "space": [None],
             "desc": [None],
             "root": ["/data"],
@@ -122,7 +128,6 @@ def _patch_all(
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     iter_calls = []
     for session_group in groups:
-        iter_calls.append([(mock_anat_df, mock_anat_df)])  # anat call
         iter_calls.append(session_group)  # func call
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),

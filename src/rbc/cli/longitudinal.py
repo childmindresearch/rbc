@@ -60,7 +60,7 @@ def _process_anat(
     ents = extract_entities(row, ["run"])
 
     anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
+    tpl_q = anat_q.derive(ses="longitudinal")
 
     outputs = anatomical_longitudinal(
         template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
@@ -77,7 +77,7 @@ def _process_anat(
         wm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
     )
 
-    aex = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents, space="longitudinal")
+    aex = anat_q.derive(entities=ents, space="longitudinal")
     aex.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
     aex.save(
         _require_file(outputs.brain_mask, "brain_mask"),
@@ -109,7 +109,7 @@ def _process_func(
     ents = extract_entities(row, ["task", "run"])
 
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
+    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = functional_longitudinal(
         template=tpl_q.expect(tpl_df, suffix="T1w"),
@@ -135,7 +135,7 @@ def _process_func(
         ),
     )
 
-    fex = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents, space="longitudinal")
+    fex = func_q.derive(space="longitudinal")
     fex.save(outputs.sbref, suffix=Suffix.SBREF)
     fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
     fex.save(
@@ -192,12 +192,16 @@ def main(args: LongitudinalArgs) -> int:
         if tpl_df.is_empty():
             raise ValueError("No longitudinal template found")
 
-        for func_df, anat_df in iter_session_files(
-            session, groupby=_FUNC_GROUP_ENTITIES
-        ):
-            if args.anatomical:
+        if args.anatomical:
+            for _, anat_df in session.anat.group_by(
+                ("run", "acq"), maintain_order=True
+            ):
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
-            if args.functional:
+
+        if args.functional:
+            for func_df, _anat_df in iter_session_files(
+                session, groupby=_FUNC_GROUP_ENTITIES
+            ):
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
         pipe_ctx.ensure_dataset_description()
 

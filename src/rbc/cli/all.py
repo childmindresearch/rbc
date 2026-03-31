@@ -106,7 +106,9 @@ def main(args: AllArgs) -> int:  # noqa: C901
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         # --- Anatomical (once per session, first T1w) ---
-        for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
+        for _, anat_df in session.anat.group_by(
+            _ANAT_GROUP_ENTITIES, maintain_order=True
+        ):
             anat_row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
             ents = extract_entities(anat_row, ["run", "acq", "rec", "echo"])
