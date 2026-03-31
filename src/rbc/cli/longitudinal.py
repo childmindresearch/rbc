@@ -199,9 +199,7 @@ def main(args: LongitudinalArgs) -> int:
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
 
         if args.functional:
-            for func_df, _ in iter_session_files(
-                session, groupby=_FUNC_GROUP_ENTITIES
-            ):
+            for func_df, _ in iter_session_files(session, groupby=_FUNC_GROUP_ENTITIES):
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
         pipe_ctx.ensure_dataset_description()
 

@@ -65,7 +65,7 @@ def main(args: FunctionalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("ses") != "longitudinal"]
+    filters = [pl.col("ses") != "longitudinal", pl.col("space").is_null()]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
@@ -88,11 +88,7 @@ def main(args: FunctionalArgs) -> int:
         for func_df, anat_df in iter_session_files(
             session, groupby=_FUNC_GROUP_ENTITIES
         ):
-            func_df = func_df.filter(
-                pl.col("space").is_null(),
-                pl.col("desc").is_null(),
-            )
-            anat_df = anat_df.filter(pl.col("space").is_null())
+            func_df = func_df.filter(pl.col("desc").is_null())
             row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
             ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
