@@ -33,7 +33,7 @@ jobs:
     - name: Run all tests
       shell: bash
       run: |
-        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
+        export JOB_TMP="/dev/shm/rbc_test_$(date +%s%N)"
         mkdir -p $JOB_TMP
         echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
         echo "Job temp directory: $JOB_TMP"
