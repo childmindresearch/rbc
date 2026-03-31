@@ -56,7 +56,7 @@ def _process_anat(
 ) -> None:
     """Handle anatomical longitudinal processing."""
     anat_df = anat_df.filter(pl.col("space").is_null())
-    row = anat_df.filter(suffix="T1w").row(0, named=True)
+    row = anat_df.row(0, named=True)
     ents = extract_entities(row, ["run"])
 
     anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
@@ -193,7 +193,7 @@ def main(args: LongitudinalArgs) -> int:
             raise ValueError("No longitudinal template found")
 
         if args.anatomical:
-            for _, anat_df in session.anat.group_by(
+            for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
                 ("run", "acq"), maintain_order=True
             ):
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)

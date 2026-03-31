@@ -67,10 +67,10 @@ def main(args: AnatomicalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for _, anat_df in session.anat.group_by(
+        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
             _ANAT_GROUP_ENTITIES, maintain_order=True
         ):
-            row = anat_df.filter(suffix="T1w").row(0, named=True)
+            row = anat_df.row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
             ents = extract_entities(row, ["run", "acq", "rec", "echo"])
             ctx.logger.info(f"Processing {t1w_fpath}")
