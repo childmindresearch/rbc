@@ -14,7 +14,12 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
+from rbc.cli import (
+    _ANAT_GROUP_ENTITIES,
+    _DEFAULT_ENV_VARS,
+    _FUNC_GROUP_ENTITIES,
+    _SUB_SES_QUERY,
+)
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
@@ -77,17 +82,22 @@ def main(args: AllArgs) -> int:  # noqa: C901
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null(),
+        pl.col("desc").is_null(),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
     if args.task is not None:
         filters.append(pl.col("task") == args.task)
-    if filters:
-        df = df.filter(pl.all_horizontal(filters))
+    df = df.filter(pl.all_horizontal(filters))
 
-    for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+    for _, sub_ses_group in tqdm(
+        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+    ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
@@ -96,29 +106,41 @@ def main(args: AllArgs) -> int:  # noqa: C901
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         # --- Anatomical (once per session, first T1w) ---
-        anat_row = session.anat.row(0, named=True)
-        t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
-        ctx.logger.info(f"Anatomical: {t1w_fpath}")
+        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
+            _ANAT_GROUP_ENTITIES, maintain_order=True
+        ):
+            anat_row = anat_df.filter(suffix="T1w").row(0, named=True)
+            t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
+            ents = extract_entities(anat_row, ["run", "acq", "rec", "echo"])
+            ctx.logger.info(f"Anatomical: {t1w_fpath}")
 
-        anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
+            anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
 
-        anat = pipe_ctx.bids(datatype=Datatype.ANAT)
-        anat.save(anat_outputs.brain, suffix=Suffix.T1W, desc="brain")
-        anat.save(anat_outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
-        anat.save(anat_outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
-        anat.save(anat_outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
-        anat.save(anat_outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
-        anat.save(anat_outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
-        anat.save(
-            anat_outputs.forward_xfm,
-            suffix="xfm",
-            extra={"from": "T1w", "to": TemplateSpace.MNI152NLIN6ASYM, "mode": "image"},
-        )
-        anat.save(
-            anat_outputs.inverse_xfm,
-            suffix="xfm",
-            extra={"from": TemplateSpace.MNI152NLIN6ASYM, "to": "T1w", "mode": "image"},
-        )
+            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
+            anat.save(anat_outputs.brain, suffix=Suffix.T1W, desc="brain")
+            anat.save(anat_outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
+            anat.save(anat_outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
+            anat.save(anat_outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
+            anat.save(anat_outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
+            anat.save(anat_outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
+            anat.save(
+                anat_outputs.forward_xfm,
+                suffix="xfm",
+                extra={
+                    "from": "T1w",
+                    "to": TemplateSpace.MNI152NLIN6ASYM,
+                    "mode": "image",
+                },
+            )
+            anat.save(
+                anat_outputs.inverse_xfm,
+                suffix="xfm",
+                extra={
+                    "from": TemplateSpace.MNI152NLIN6ASYM,
+                    "to": "T1w",
+                    "mode": "image",
+                },
+            )
 
         # --- Functional + Metrics + QC (per BOLD run) ---
         for func_df, _anat_df in iter_session_files(

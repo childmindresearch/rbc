@@ -32,7 +32,7 @@ def _make_groups(
                 pl.col("ses") == row["ses"],
                 pl.col("task") == row["task"],
             ),
-            pl.DataFrame(),  # anat_df placeholder
+            pl.DataFrame({"space": [], "desc": []}),  # anat_df placeholder
         )
         for row in filtered_df.unique(["sub", "ses", "task"]).iter_rows(named=True)
     ]

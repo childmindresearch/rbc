@@ -53,15 +53,32 @@ def _mock_anatomical_outputs() -> Mock:
 
 @contextmanager
 def _patch_anatomical(
-    filtered_df: pl.DataFrame, groups: list[tuple]
+    filtered_df: pl.DataFrame,
 ) -> Generator[tuple[Mock, Mock], None, None]:
     """Common context manager patches for anatomical tests."""
+    from rbc.cli.query import SessionTables
+
+    mock_anat_df = pl.DataFrame(
+        {
+            "suffix": ["T1w"],
+            "ext": [".nii.gz"],
+            "run": [None],
+            "acq": [None],
+            "part": [None],
+            "echo": [None],
+            "ce": [None],
+            "rec": [None],
+            "inv": [None],
+            "space": [None],
+            "desc": [None],
+            "root": ["/data"],
+            "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
+        }
+    )
+    mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
         patch("rbc.cli.anatomical.load_table", return_value=filtered_df),
-        patch("rbc.cli.anatomical.load_session", return_value=Mock()),
-        patch(
-            "rbc.cli.anatomical.iter_session_files", side_effect=[[g] for g in groups]
-        ),
+        patch("rbc.cli.anatomical.load_session", return_value=mock_session),
         patch(
             "rbc.cli.anatomical.single_session_preprocess",
             return_value=_mock_anatomical_outputs(),
@@ -171,9 +188,9 @@ class TestAnatomical:
         base_args.participant_label = participant
         base_args.session_label = session
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, participant, session)
+        filtered_df, _ = _make_groups(sample_dataframe, participant, session)
 
-        with _patch_anatomical(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
+        with _patch_anatomical(filtered_df) as (mock_preprocess, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             result = anatomical.main(args)
             assert result == 0
@@ -190,9 +207,9 @@ class TestAnatomical:
         base_args.participant_label = participant
         base_args.session_label = session
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, participant, session)
+        filtered_df, _ = _make_groups(sample_dataframe, participant, session)
 
-        with _patch_anatomical(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
+        with _patch_anatomical(filtered_df) as (mock_preprocess, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             anatomical.main(args)
             assert mock_preprocess.call_count == 1
@@ -211,11 +228,11 @@ class TestRunnerSetup:
         from rbc.core import CPAC_ANTS_SEED
 
         args = anatomical.AnatomicalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, [], [])
+        filtered_df, _ = _make_groups(sample_dataframe, [], [])
 
         with (
             patch("rbc.cli.anatomical.setup_runner") as mock_setup,
-            _patch_anatomical(filtered_df, groups) as (_, mock_ctx_cls),
+            _patch_anatomical(filtered_df) as (_, mock_ctx_cls),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             ctx = Mock()

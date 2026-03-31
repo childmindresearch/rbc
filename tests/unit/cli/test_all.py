@@ -98,7 +98,7 @@ def _mock_qc_outputs(
 @contextmanager
 def _patch_all(
     filtered_df: pl.DataFrame,
-    groups: list[list[str]],
+    groups: list[list[tuple[pl.DataFrame, pl.DataFrame]]],
     *,
     qc_passed: bool = True,
 ) -> Generator[tuple[Mock, Mock, Mock, Mock, Mock], None, None]:
@@ -113,6 +113,12 @@ def _patch_all(
             "suffix": ["T1w"],
             "ext": [".nii.gz"],
             "run": [None],
+            "acq": [None],
+            "part": [None],
+            "echo": [None],
+            "ce": [None],
+            "rec": [None],
+            "inv": [None],
             "space": [None],
             "desc": [None],
             "root": ["/data"],
@@ -120,10 +126,11 @@ def _patch_all(
         }
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
+    iter_calls = list(groups)
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
         patch("rbc.cli.all.load_session", return_value=mock_session),
-        patch("rbc.cli.all.iter_session_files", side_effect=groups),
+        patch("rbc.cli.all.iter_session_files", side_effect=iter_calls),
         patch(
             "rbc.cli.all.anatomical_preprocess", return_value=_mock_anat_outputs()
         ) as mock_anat,
@@ -147,7 +154,7 @@ def _make_groups(
     participant: list[str],
     session: list[str],
     task: str | None = None,
-) -> tuple[pl.DataFrame, list[list[str]]]:
+) -> tuple[pl.DataFrame, list[list[tuple[pl.DataFrame, pl.DataFrame]]]]:
     """Filter sample dataframe and build iter_session_files groups."""
     filtered_df = sample_dataframe.filter(
         pl.col("suffix") == "bold",
@@ -165,7 +172,9 @@ def _make_groups(
         )
         key = (row["sub"], row["ses"])
         sub_ses_groups.setdefault(key, [])
-        sub_ses_groups[key].append((func_group, pl.DataFrame()))
+        sub_ses_groups[key].append(
+            (func_group, pl.DataFrame({"space": [], "desc": []}))
+        )
 
     full_df = _make_filtered_df(sample_dataframe, participant, session, task)
     return full_df, list(sub_ses_groups.values())

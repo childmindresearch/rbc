@@ -65,27 +65,30 @@ def main(args: FunctionalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
+    filters = [pl.col("ses") != "longitudinal", pl.col("space").is_null()]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
     if args.task is not None:
         filters.append(pl.col("task") == args.task)
-    if filters:
-        df = df.filter(pl.all_horizontal(filters))
+    df = df.filter(pl.all_horizontal(filters))
 
-    for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+    for _, sub_ses_group in tqdm(
+        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+    ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
             output_dir=args.output_dir,
         )
+
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         for func_df, anat_df in iter_session_files(
             session, groupby=_FUNC_GROUP_ENTITIES
         ):
+            func_df = func_df.filter(pl.col("desc").is_null())
             row = func_df.filter(suffix="bold").row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]
             ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])

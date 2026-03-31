@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.cli.query import iter_session_files, load_session
+from rbc.cli.query import load_session
 
 if TYPE_CHECKING:
     import argparse
@@ -46,15 +46,20 @@ def main(args: AnatomicalArgs) -> int:
         dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
     )
 
-    filters = [pl.col("space").is_null(), pl.col("desc").is_null()]
+    filters = [
+        pl.col("ses") != "longitudinal",
+        pl.col("space").is_null(),
+        pl.col("desc").is_null(),
+    ]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
-    if filters:
-        df = df.filter(pl.all_horizontal(filters))
+    df = df.filter(pl.all_horizontal(filters))
 
-    for _, sub_ses_group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+    for _, sub_ses_group in tqdm(
+        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+    ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
@@ -62,17 +67,16 @@ def main(args: AnatomicalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for _, anat_df in iter_session_files(session, groupby=_ANAT_GROUP_ENTITIES):
-            row = anat_df.filter(suffix="T1w").row(0, named=True)
+        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
+            _ANAT_GROUP_ENTITIES, maintain_order=True
+        ):
+            row = anat_df.row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]
             ents = extract_entities(row, ["run", "acq", "rec", "echo"])
             ctx.logger.info(f"Processing {t1w_fpath}")
 
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
 
-            pipe_ctx = PipelineContext(
-                sub=row["sub"], ses=row.get("ses"), output_dir=args.output_dir
-            )
             anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
             anat.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
             anat.save(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")

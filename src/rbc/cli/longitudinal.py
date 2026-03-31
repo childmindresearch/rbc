@@ -55,11 +55,12 @@ def _process_anat(
     pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
-    row = anat_df.filter(suffix="T1w").row(0, named=True)
+    anat_df = anat_df.filter(pl.col("space").is_null())
+    row = anat_df.row(0, named=True)
     ents = extract_entities(row, ["run"])
 
     anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
+    tpl_q = anat_q.derive(ses="longitudinal")
 
     outputs = anatomical_longitudinal(
         template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
@@ -76,7 +77,7 @@ def _process_anat(
         wm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
     )
 
-    aex = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents, space="longitudinal")
+    aex = anat_q.derive(entities=ents, space="longitudinal")
     aex.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
     aex.save(
         _require_file(outputs.brain_mask, "brain_mask"),
@@ -108,7 +109,7 @@ def _process_func(
     ents = extract_entities(row, ["task", "run"])
 
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_q = pipe_ctx.bids(datatype="anat").derive(ses="longitudinal")
+    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
     outputs = functional_longitudinal(
         template=tpl_q.expect(tpl_df, suffix="T1w"),
@@ -134,7 +135,7 @@ def _process_func(
         ),
     )
 
-    fex = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents, space="longitudinal")
+    fex = func_q.derive(space="longitudinal")
     fex.save(outputs.sbref, suffix=Suffix.SBREF)
     fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
     fex.save(
@@ -163,20 +164,15 @@ def main(args: LongitudinalArgs) -> int:
     )
 
     group_df = df
-    filters = [
-        pl.col("ses") != "longitudinal",
-        pl.col("space").is_null(),
-        pl.col("desc").is_null(),
-    ]
+    filters = [pl.col("ses") != "longitudinal"]
     if len(args.participant_label) > 0:
         filters.append(pl.col("sub").is_in(args.participant_label))
     if len(args.session_label) > 0:
         filters.append(pl.col("ses").is_in(args.session_label))
-    if filters:
-        group_df = df.filter(pl.all_horizontal(filters))
+    group_df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        group_df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose
+        group_df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = PipelineContext(
             sub=sub_ses_group["sub"][0],
@@ -196,12 +192,14 @@ def main(args: LongitudinalArgs) -> int:
         if tpl_df.is_empty():
             raise ValueError("No longitudinal template found")
 
-        for func_df, anat_df in iter_session_files(
-            session, groupby=_FUNC_GROUP_ENTITIES
-        ):
-            if args.anatomical:
+        if args.anatomical:
+            for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
+                ("run", "acq"), maintain_order=True
+            ):
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
-            if args.functional:
+
+        if args.functional:
+            for func_df, _ in iter_session_files(session, groupby=_FUNC_GROUP_ENTITIES):
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
         pipe_ctx.ensure_dataset_description()
 
