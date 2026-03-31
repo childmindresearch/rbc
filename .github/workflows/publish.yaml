@@ -18,11 +18,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+    - uses: astral-sh/setup-uv@v8.0.0
 
-    - name: Setup venv
-      uses: ./.github/actions/setup-venv
-
-    - name: Freeze dependencies and build
+    - name: Build
       run: |
         uv sync --no-dev --no-install-project
         uv build
