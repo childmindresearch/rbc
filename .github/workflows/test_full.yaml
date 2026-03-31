@@ -33,7 +33,10 @@ jobs:
     - name: Run all tests
       shell: bash
       run: |
-        export JOB_TMP="/tmp/rbc_test_$(date +%s%N)"
+        # Clean up stale tmpfs dirs from previous crashed runs
+        find /dev/shm -maxdepth 1 -name 'rbc_test_*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
+
+        export JOB_TMP="/dev/shm/rbc_test_$(date +%s%N)"
         mkdir -p $JOB_TMP
         echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
         echo "Job temp directory: $JOB_TMP"
@@ -88,4 +91,5 @@ jobs:
       shell: bash
       run: |
         echo "Cleaning up job temp directory: $JOB_TMP"
+        echo "Temp directory size: $(du -sh $JOB_TMP 2>/dev/null | cut -f1)"
         rm -rf $JOB_TMP
