@@ -126,9 +126,7 @@ def _patch_all(
         }
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
-    iter_calls = []
-    for session_group in groups:
-        iter_calls.append(session_group)  # func call
+    iter_calls = list(groups)
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
         patch("rbc.cli.all.load_session", return_value=mock_session),

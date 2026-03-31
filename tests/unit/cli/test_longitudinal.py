@@ -130,9 +130,24 @@ def _patch_main(
     with_bold_mask: bool = True,
 ) -> Generator[tuple[Mock, Mock, Mock], None, None]:
     """Patch all external calls made by main()."""
+    from rbc.cli.query import SessionTables
+
+    mock_anat_df = pl.DataFrame(
+        {
+            "suffix": ["T1w"],
+            "ext": [".nii.gz"],
+            "run": [None],
+            "acq": [None],
+            "space": [None],
+            "desc": [None],
+            "root": ["/data"],
+            "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
+        }
+    )
+    mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
         patch("rbc.cli.longitudinal.load_table", return_value=full_df),
-        patch("rbc.cli.longitudinal.load_session", return_value=Mock()),
+        patch("rbc.cli.longitudinal.load_session", return_value=mock_session),
         patch(
             "rbc.cli.longitudinal.iter_session_files",
             side_effect=_build_iter_side_effect(groups),
