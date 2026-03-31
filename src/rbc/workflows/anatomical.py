@@ -61,8 +61,7 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
         a. N4 bias field correction
         b. Registration to template
         c. Warp brain probability mask to subject space
-        d. Atropos tissue segmentation and morphological refinement (brain mask)
-        e. Apply mask to N4-corrected image (skull-stripped brain)
+        d. Threshold mask to produce binary brain mask
     3. FSL FAST tissue segmentation on skull-stripped brain (CSF / GM / WM
        partial volume maps, thresholded at 0.95 for binary masks).
     4. WM boundary mask for BBR coregistration.

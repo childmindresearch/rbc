@@ -174,7 +174,7 @@ def single_session_preprocess(
     15. Nuisance regression without bandpass on template-space BOLD
         (full frequency range preserved for ALFF/fALFF computation).
     16. Nuisance regression with simultaneous bandpass filtering
-        (0.01-0.1 Hz) on template-space BOLD (Hallquist 2013).
+        on template-space BOLD (Hallquist 2013).
     17. Export bandpass-filtered regressors.
 
     Args:
