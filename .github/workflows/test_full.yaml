@@ -8,8 +8,7 @@ on:
     - tests/**
     - pyproject.toml
     - uv.lock
-    - .github/workflows/test_local.yaml
-    - .github/actions/setup-venv/action.yaml
+    - .github/workflows/test_full.yaml
   workflow_dispatch:
     inputs:
       no_cleanup:
@@ -26,8 +25,10 @@ jobs:
     runs-on: arcana
     steps:
     - uses: actions/checkout@v6
-    - name: Setup venv
-      uses: ./.github/actions/setup-venv
+    - uses: astral-sh/setup-uv@v8
+      with:
+        enable-cache: true # not automatic on self-hosted runners
+    - run: uv sync
 
     - name: Run all tests
       shell: bash
