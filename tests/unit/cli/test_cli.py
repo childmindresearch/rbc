@@ -29,10 +29,10 @@ class TestGlobalOpts:
         assert args.session_label == ["baseline"]
 
     def test_default_runner(self) -> None:
-        """Tests runner default to 'local'."""
+        """Tests runner default to 'auto'."""
         parser = cli._global_opts()
         args = parser.parse_args([])
-        assert args.runner == "local"
+        assert args.runner == "auto"
         assert args.verbose == 0
 
     @pytest.mark.parametrize(

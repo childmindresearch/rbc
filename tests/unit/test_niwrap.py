@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 from typing import TYPE_CHECKING
 
 import pytest
@@ -27,12 +26,10 @@ class TestSetupRunner:
     """Test suite for niwrap.setup_runner."""
 
     def test_default(self, tmp_path: Path) -> None:
-        """Test default initialization."""
-        ctx = setup_runner()
+        """Test default initialization uses auto-detection."""
+        ctx = setup_runner(tmp_dir=tmp_path)
         assert isinstance(ctx.logger, logging.Logger)
-        assert isinstance(ctx.runner, LocalRunner)
-        assert ctx.runner.data_dir != tmp_path
-        shutil.rmtree(ctx.runner.data_dir)  # Clean up test dir for local runner
+        assert ctx.runner is not None
 
     @pytest.mark.parametrize(
         ("runner", "runner_type"),

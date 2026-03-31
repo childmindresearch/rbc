@@ -15,6 +15,7 @@ import pytest
 from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
+from rbc.core.niwrap import resolve_runner
 
 
 class TestSubjectData(NamedTuple):
@@ -44,7 +45,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--runner",
         action="store",
         default="docker",
-        help="Styx runner type to use: ['local', 'docker', 'podman', 'singularity']",
+        help="Styx runner type to use: "
+        "['auto', 'local', 'docker', 'podman', 'singularity']",
     )
 
 
@@ -54,16 +56,19 @@ def niwrap_runner(
 ) -> niwrap.Runner:
     """Globally set test niwrap runner."""
     # Set up niwrap runner
-    match request.config.getoption("--runner").lower():
+    runner_type, runner_exec = resolve_runner(
+        request.config.getoption("--runner").lower()
+    )
+    match runner_type:
         case "docker":
-            niwrap.use_docker()
+            niwrap.use_docker(docker_executable=runner_exec)
         case "podman":
             niwrap.set_global_runner(
                 # UserID = 0 currently necessary for some containers used
-                runner=PodmanRunner(podman_user_id=0)
+                runner=PodmanRunner(podman_executable=runner_exec, podman_user_id=0)
             )
         case "singularity":
-            niwrap.use_singularity()
+            niwrap.use_singularity(singularity_executable=runner_exec)
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()

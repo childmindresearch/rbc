@@ -53,10 +53,10 @@ def _global_opts() -> argparse.ArgumentParser:
     )
     global_opts.add_argument(
         "--runner",
-        choices=["local", "docker", "podman", "singularity"],
-        default="local",
+        choices=["auto", "local", "docker", "podman", "singularity"],
+        default="auto",
         type=lambda x: x.lower(),
-        help="NiWrap runner to use for executing workflow",
+        help="NiWrap runner to use for executing workflow (default: auto-detect)",
     )
     global_opts.add_argument(
         "--tmp-dir",

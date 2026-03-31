@@ -13,6 +13,7 @@ import pytest
 from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
+from rbc.core.niwrap import resolve_runner
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
 from rbc_resources import MNI_TEMPLATES
@@ -40,16 +41,19 @@ def _niwrap_session_runner(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> niwrap.Runner:
     """Session-scoped niwrap runner for full-pipeline tests."""
-    match request.config.getoption("--runner").lower():
+    runner_type, runner_exec = resolve_runner(
+        request.config.getoption("--runner").lower()
+    )
+    match runner_type:
         case "docker":
-            niwrap.use_docker()
+            niwrap.use_docker(docker_executable=runner_exec)
         case "podman":
             niwrap.set_global_runner(
                 # UserID = 0 currently necessary for user mapping
-                runner=PodmanRunner(podman_user_id=0)
+                runner=PodmanRunner(podman_executable=runner_exec, podman_user_id=0)
             )
         case "singularity":
-            niwrap.use_singularity()
+            niwrap.use_singularity(singularity_executable=runner_exec)
         case _:
             niwrap.use_local()
     runner = niwrap.get_global_runner()
