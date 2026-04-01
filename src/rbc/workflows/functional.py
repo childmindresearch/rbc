@@ -425,8 +425,8 @@ def longitudinal_process(
     3. Warp brain mask to longitudinal template space.
     4. Nuisance regression without bandpass on longitudinal-space BOLD
        (for ALFF/fALFF).
-    5. Simultaneous nuisance regression + bandpass on longitudinal-space BOLD
-       (Hallquist 2013).
+    5. Nuisance regression with simultaneous bandpass filtering on longitudinal-space 
+        BOLD (Hallquist 2013).
 
     Args:
         template: Longitudinal template image.
@@ -435,7 +435,7 @@ def longitudinal_process(
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask in native BOLD space.
-        regressor_file: Nuisance regressor file (.1D) in native BOLD space.
+        regressor_file: Bandpass-filtered nuisance regressor file (.1D) in native BOLD space.
 
     Returns:
         :class:`FunctionalLongOutputs` with all non-null inputs transformed to template
