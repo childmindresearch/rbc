@@ -30,7 +30,7 @@ class LongitudinalArgs(BaseArgs):
 
     anatomical: bool
     functional: bool
-    regressor: Literal["36-parameter", "aCompCor"]
+    regressor: Literal[36 - parameter, aCompCor]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -107,7 +107,7 @@ def _process_func(
     pipe_ctx: PipelineContext,
     func_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
-    regressor: Literal["36-parameter", "aCompCor"],
+    regressor: Literal[36 - parameter, aCompCor],
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)

@@ -425,7 +425,7 @@ def longitudinal_process(
     3. Warp brain mask to longitudinal template space.
     4. Nuisance regression without bandpass on longitudinal-space BOLD
        (for ALFF/fALFF).
-    5. Nuisance regression with simultaneous bandpass filtering on longitudinal-space 
+    5. Nuisance regression with simultaneous bandpass filtering on longitudinal-space
         BOLD (Hallquist 2013).
 
     Args:
