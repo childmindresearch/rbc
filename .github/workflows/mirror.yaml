@@ -2,7 +2,9 @@ name: Sync to Public Mirror
 
 on:
   workflow_run:
-    workflows: [Full Testing Suite, Build and publish docs]
+    workflows: [CI]
+    types:
+    - completed
     branches:
     - main
   workflow_dispatch:
@@ -10,13 +12,30 @@ on:
 jobs:
   mirror:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v6
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0   # Full history
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    - name: Update README for public mirror
+      run: |
+        sed -i 's|childmindresearch/rbc.git|childmindresearch/rbc-mirror.git|g' README.md
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add README.md
+        git diff --staged --quiet || git commit -m "chore: update install URL to public mirror"
 
     - name: Push to public mirror
+      env:
+        MIRROR_DEPLOY_KEY: ${{ secrets.RBC_MIRROR_DEPLOY_KEY }}
       run: |
-        git remote add mirror https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/childmindresearch/rbc-mirror.git
-        git push mirror main --force
+        mkdir -p ~/.ssh
+        echo "${MIRROR_DEPLOY_KEY}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        # Trust GH public host key
+        echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" >> ~/.ssh/known_hosts
+        git remote add mirror git@github.com:childmindresearch/rbc-mirror.git
+        echo "Pushing commit $(git rev-parse HEAD) to public mirror"
+        git push mirror HEAD:main --force
