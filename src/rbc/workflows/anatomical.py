@@ -134,8 +134,8 @@ def longitudinal_process(
 ) -> AnatomicalLongOutputs:
     """Transform preprocessed anatomical outputs to longitudinal template space.
 
-    Assumes a longitudinal template generated and subject-to-template composite
-    warp is available.
+    Assumes a longitudinal template has been generated and a subject-to-template
+    composite warp is available.
 
     Args:
         template: Longitudinal template image.

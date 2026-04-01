@@ -81,7 +81,7 @@ class FunctionalOutputs(NamedTuple):
         template_bold: BOLD resampled to template space.
         regressed_bold: Nuisance-regressed & non-bandpassed BOLD.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
-        regressor_file: Nuisance regressor ``.1D`` file.
+        regressor_file: Bandpass-filtered nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """
 
