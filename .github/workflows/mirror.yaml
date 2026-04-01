@@ -1,7 +1,8 @@
 name: Sync to Public Mirror
 
 on:
-  push:
+  workflow_run:
+    workflows: [Full Testing Suite, Build and publish docs]
     branches:
     - main
   workflow_dispatch:
@@ -17,5 +18,5 @@ jobs:
 
     - name: Push to public mirror
       run: |
-        git remote add mirror https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/${{ github.repository_owner }}/rbc-mirror.git
+        git remote add mirror https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/childmindresearch/rbc-mirror.git
         git push mirror main --force
