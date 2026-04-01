@@ -5,7 +5,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/childmindresearch/rbc/blob/main/LICENSE)
 [![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/rbc)
 
-Reference implementation of the [RBC](https://doi.org/10.1016/j.neuron.2024.08.026) preprocessing protocol for structural and functional MRI. Built on [NiWrap](https://github.com/styx-api/niwrap).
+Reference implementation of the [Reproducible Brain Charts (RBC)](https://doi.org/10.1016/j.neuron.2024.08.026) preprocessing protocol for structural and functional MRI. Built on [NiWrap](https://github.com/styx-api/niwrap).
 
 <p align="center">
   <img src="docs/pipeline_flow.svg" alt="RBC pipeline flow" width="720">
@@ -120,13 +120,13 @@ If you use this pipeline, please cite:
 
 ## About RBC
 
-Reproducible Brain Charts (RBC) is an open resource integrating data from 5 large studies of brain development in youth from three continents (N = 6,346). The resource provides:
+[Reproducible Brain Charts (RBC)](https://reprobrainchart.github.io/) is an open resource integrating data from 5 large studies of brain development in youth from three continents (N = 6,346). The resource provides:
 
 - Harmonized psychiatric phenotypes using bifactor models
 - Quality-assured neuroimaging data processed with consistent pipelines
 - All data openly shared via the International Neuroimaging Data-sharing Initiative (INDI)
 
-RBC facilitates large-scale, reproducible, and generalizable research in developmental and psychiatric neuroscience.
+RBC facilitates large-scale, reproducible, and generalizable research in developmental and psychiatric neuroscience. The RBC pipeline was developed originally in the [Configurable Pipeline for the Analysis of Connectomes](https://github.com/FCP-INDI/C-PAC/), and has been remade here using NiWrap to increase readability, portability, and runtime efficiency.
 
 ## License
 
