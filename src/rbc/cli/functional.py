@@ -17,9 +17,9 @@ import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
-from rbc.cli.base import BaseArgs, _validate_task
+from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import (
     Datatype,
     Suffix,
@@ -29,6 +29,7 @@ from rbc.core.bids import (
 )
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
+from rbc.metadata import FunctionalMetadata
 from rbc.workflows.functional import single_session_preprocess
 
 if TYPE_CHECKING:
@@ -42,15 +43,18 @@ class FunctionalArgs(BaseArgs):
 
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
+    tr: float | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
         _validate_task(ns.task)
+        _validate_positive(ns.tr, "TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,  # Validated by argparse choices
             task=ns.task,
+            tr=ns.tr,
         )
 
 
@@ -77,7 +81,7 @@ def main(args: FunctionalArgs) -> int:
     for _, sub_ses_group in tqdm(
         df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
-        pipe_ctx = PipelineContext(
+        pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
             output_dir=args.output_dir,
@@ -96,6 +100,8 @@ def main(args: FunctionalArgs) -> int:
 
             anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
 
+            func_metadata = FunctionalMetadata.load(bold_fpath, tr_override=args.tr)
+
             outputs = single_session_preprocess(
                 in_bold=bold_fpath,
                 t1w_brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
@@ -112,6 +118,7 @@ def main(args: FunctionalArgs) -> int:
                         "mode": "image",
                     },
                 ),
+                metadata=func_metadata,
                 regressor_set=args.regressor,
             )
 
@@ -204,6 +211,12 @@ def register_command(
         "--task",
         default=None,
         help="Task label to filter BOLD runs (without 'task-' prefix).",
+    )
+    parser.add_argument(
+        "--tr",
+        type=float,
+        default=None,
+        help="Repetition time in seconds. Overrides BIDS sidecar and NIfTI header.",
     )
 
     parser.set_defaults(func=lambda args: main(FunctionalArgs.validate_namespace(args)))

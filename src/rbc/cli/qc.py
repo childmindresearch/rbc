@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
@@ -78,7 +78,7 @@ def main(args: QCArgs) -> int:
     for _, group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
         sub: str = group["sub"][0]
         ses: str | None = group["ses"][0] or None
-        pipe_ctx = PipelineContext(sub=sub, ses=ses, output_dir=args.output_dir)
+        pipe_ctx = RunContext(sub=sub, ses=ses, output_dir=args.output_dir)
 
         deriv_df = load_table(
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False

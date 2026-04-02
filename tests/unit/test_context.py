@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from rbc.context import PipelineContext
+from rbc.context import PipelineContext, RunContext
 from rbc.core.bids import Bids, bids_safe_label
 
 if TYPE_CHECKING:
@@ -183,3 +183,23 @@ class TestBids:
         path_result = func.path(suffix="bold", desc="preproc")
         save_result = func.save(src_file, suffix="bold", desc="preproc")
         assert path_result == save_result
+
+
+class TestRunContext:
+    """Tests for RunContext."""
+
+    def test_frozen(self, tmp_path: Path) -> None:
+        """RunContext instances are immutable."""
+        ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
+        with pytest.raises(AttributeError):
+            ctx.sub = "02"  # type: ignore[misc]
+
+    def test_alias(self) -> None:
+        """PipelineContext is an alias for RunContext."""
+        assert PipelineContext is RunContext
+
+    def test_bids_factory(self, tmp_path: Path) -> None:
+        """RunContext.bids() returns a Bids instance."""
+        ctx = RunContext(sub="01", ses=None, output_dir=tmp_path)
+        b = ctx.bids(datatype="anat")
+        assert isinstance(b, Bids)

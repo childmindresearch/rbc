@@ -393,7 +393,7 @@ class TestComputeAlff:
             tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
         )
 
-        alff_path, falff_path = compute_alff(bold_path, mask_path)
+        alff_path, falff_path = compute_alff(bold_path, mask_path, tr=TR)
         assert alff_path.exists()
         assert falff_path.exists()
 
@@ -405,7 +405,7 @@ class TestComputeAlff:
             tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
         )
 
-        alff_path, falff_path = compute_alff(bold_path, mask_path)
+        alff_path, falff_path = compute_alff(bold_path, mask_path, tr=TR)
 
         alff_img = nib.nifti1.load(alff_path)
         falff_img = nib.nifti1.load(falff_path)
@@ -426,12 +426,12 @@ class TestComputeAlff:
             sform_code=4,
         )
 
-        alff_path, _ = compute_alff(bold_path, mask_path)
+        alff_path, _ = compute_alff(bold_path, mask_path, tr=TR)
         img = nib.nifti1.load(alff_path)
         assert int(img.header["sform_code"]) == 4
 
-    def test_tr_override(self, tmp_path: Path) -> None:
-        """Explicit tr= should override the header value."""
+    def test_different_tr_changes_result(self, tmp_path: Path) -> None:
+        """Different TR values produce different ALFF results."""
         rng = np.random.default_rng(33)
         bold_path = _write_nifti(
             tmp_path / "bold.nii.gz", rng.standard_normal(SHAPE), tr=2.0
@@ -440,9 +440,12 @@ class TestComputeAlff:
             tmp_path / "mask.nii.gz", np.ones(SHAPE[:3], dtype=np.uint8)
         )
 
-        # Header has TR=2.0. Override with TR=0.5 shifts freq resolution
-        # from 0.005 Hz to 0.02 Hz, changing which bins fall in [0.01, 0.1].
-        a1, _ = compute_alff(bold_path, mask_path, out_file=tmp_path / "a_alff.nii.gz")
+        # TR=2.0 gives freq resolution 0.005 Hz, Nyquist 0.25 Hz.
+        # TR=0.5 shifts freq resolution to 0.02 Hz, changing which bins
+        # fall in [0.01, 0.1].
+        a1, _ = compute_alff(
+            bold_path, mask_path, tr=TR, out_file=tmp_path / "a_alff.nii.gz"
+        )
         a2, _ = compute_alff(
             bold_path, mask_path, tr=0.5, out_file=tmp_path / "b_alff.nii.gz"
         )
@@ -460,7 +463,7 @@ class TestComputeAlff:
         bold_path = _write_nifti(tmp_path / "bold.nii.gz", data)
         mask_path = _write_nifti(tmp_path / "mask.nii.gz", mask_data)
 
-        alff_path, falff_path = compute_alff(bold_path, mask_path)
+        alff_path, falff_path = compute_alff(bold_path, mask_path, tr=TR)
 
         expected_a, expected_fa = am_alff(data, mask_data, TR)
         np.testing.assert_allclose(

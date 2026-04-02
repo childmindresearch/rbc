@@ -16,7 +16,7 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import Datatype, Extension, Suffix, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
@@ -52,7 +52,7 @@ def _require_file(path: Path | None, field: str) -> Path:
 
 
 def _process_anat(
-    pipe_ctx: PipelineContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
+    pipe_ctx: RunContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle anatomical longitudinal processing."""
     anat_df = anat_df.filter(pl.col("space").is_null())
@@ -102,7 +102,7 @@ def _process_anat(
 
 
 def _process_func(
-    pipe_ctx: PipelineContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
+    pipe_ctx: RunContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
@@ -174,7 +174,7 @@ def main(args: LongitudinalArgs) -> int:
     for _, sub_ses_group in tqdm(
         group_df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
-        pipe_ctx = PipelineContext(
+        pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0],
             output_dir=args.output_dir,

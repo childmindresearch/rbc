@@ -69,7 +69,7 @@ def _patch_qc(
             "rbc.cli.qc.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.qc.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.qc.RunContext") as mock_ctx_cls,
     ):
         yield mock_qc, mock_ctx_cls
 

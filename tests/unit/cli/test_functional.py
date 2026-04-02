@@ -71,6 +71,10 @@ def _patch_functional(
         sub_ses_groups.setdefault(key, [])
         sub_ses_groups[key].append((func_df, anat_df))
 
+    from rbc.metadata import FunctionalMetadata
+
+    mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
+
     with (
         patch("rbc.cli.functional.load_table", return_value=filtered_df),
         patch("rbc.cli.functional.load_session", return_value=Mock()),
@@ -86,7 +90,11 @@ def _patch_functional(
             "rbc.cli.functional.single_session_preprocess",
             return_value=_mock_functional_outputs(),
         ) as mock_preprocess,
-        patch("rbc.cli.functional.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.functional.RunContext") as mock_ctx_cls,
+        patch(
+            "rbc.cli.functional.FunctionalMetadata.load",
+            return_value=mock_metadata,
+        ),
     ):
         yield mock_preprocess, mock_ctx_cls
 
@@ -118,6 +126,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         regressor=["36-parameter"],
         task=None,
+        tr=None,
         tmp_dir=None,
     )
 
@@ -171,6 +180,7 @@ class TestFunctionalArgs:
             session_label=[],
             regressor=["36-parameter"],
             task=None,
+            tr=None,
             tmp_dir=None,
         )
 

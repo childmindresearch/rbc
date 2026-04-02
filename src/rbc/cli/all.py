@@ -22,7 +22,7 @@ from rbc.cli import (
 )
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import (
     Datatype,
     Suffix,
@@ -32,6 +32,7 @@ from rbc.core.bids import (
 )
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
+from rbc.metadata import FunctionalMetadata
 from rbc.workflows.anatomical import single_session_preprocess as anatomical_preprocess
 from rbc.workflows.functional import single_session_preprocess as functional_preprocess
 from rbc.workflows.metrics import single_session_metrics as metrics_pipeline
@@ -53,6 +54,7 @@ class AllArgs(BaseArgs):
     atlas: Sequence[AtlasName]
     fwhm: float
     start_tr: int
+    tr: float | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
@@ -62,6 +64,7 @@ class AllArgs(BaseArgs):
             _validate_atlas(atlas)
         _validate_positive(ns.fwhm, "FWHM")
         _validate_positive(ns.start_tr, "Start TR")
+        _validate_positive(ns.tr, "TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,
@@ -69,6 +72,7 @@ class AllArgs(BaseArgs):
             atlas=ns.atlas,
             fwhm=ns.fwhm,
             start_tr=ns.start_tr,
+            tr=ns.tr,
         )
 
 
@@ -98,7 +102,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
     for _, sub_ses_group in tqdm(
         df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
-        pipe_ctx = PipelineContext(
+        pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
             output_dir=args.output_dir,
@@ -151,6 +155,8 @@ def main(args: AllArgs) -> int:  # noqa: C901
             ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
             ctx.logger.info(f"Functional: {bold_fpath}")
 
+            func_metadata = FunctionalMetadata.load(bold_fpath, tr_override=args.tr)
+
             func_outputs = functional_preprocess(
                 in_bold=bold_fpath,
                 t1w_brain=anat_outputs.brain,
@@ -159,6 +165,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 csf_mask=anat_outputs.csf_mask,
                 wm_mask=anat_outputs.wm_mask,
                 anat_to_template=anat_outputs.inverse_xfm,
+                metadata=func_metadata,
                 start_tr=args.start_tr,
                 regressor_set=args.regressor,
             )
@@ -236,6 +243,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     regressed_bold=func_outputs.regressed_bold[regressor],
                     cleaned_bold=func_outputs.cleaned_bold[regressor],
                     template_brain_mask=func_outputs.template_brain_mask,
+                    tr=func_metadata.tr,
                     atlas=args.atlas,
                     fwhm=args.fwhm,
                 )
@@ -357,6 +365,12 @@ def register_command(
         type=int,
         default=2,
         help="Number of initial TRs to discard.",
+    )
+    parser.add_argument(
+        "--tr",
+        type=float,
+        default=None,
+        help="Repetition time in seconds. Overrides BIDS sidecar and NIfTI header.",
     )
 
     parser.set_defaults(func=lambda args: main(AllArgs.validate_namespace(args)))

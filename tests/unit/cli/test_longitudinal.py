@@ -164,7 +164,7 @@ def _patch_main(
             "rbc.cli.longitudinal.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
-        patch("rbc.cli.longitudinal.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.longitudinal.RunContext") as mock_ctx_cls,
     ):
         yield mock_anat, mock_func, mock_ctx_cls
 

@@ -4,7 +4,7 @@ import argparse
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 import pytest
@@ -62,8 +62,13 @@ def _patch_metrics(
     Patches load_table to return filtered_df on first call (primary BOLD
     filtering) and deriv_df on subsequent calls (derivative lookups per
     sub/ses group). Also patches find_file, single_session_metrics,
-    and PipelineContext.
+    RunContext, and nib header reads.
     """
+    mock_hdr = MagicMock()
+    mock_hdr.__getitem__ = lambda _, key: [0, 1, 1, 1, 2.0] if key == "pixdim" else None
+    mock_img = MagicMock()
+    mock_img.header = mock_hdr
+
     with (
         patch(
             "rbc.cli.metrics.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]
@@ -76,7 +81,8 @@ def _patch_metrics(
             "rbc.cli.metrics.single_session_metrics",
             return_value=_mock_metrics_outputs(),
         ) as mock_metrics,
-        patch("rbc.cli.metrics.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.metrics.RunContext") as mock_ctx_cls,
+        patch("rbc.cli.metrics.nib.nifti1.load", return_value=mock_img),
     ):
         yield mock_metrics, mock_ctx_cls
 
@@ -110,6 +116,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         atlas=["schaefer_200"],
         fwhm=6.0,
         regressor=["36-parameter"],
+        tr=None,
         tmp_dir=None,
     )
 
