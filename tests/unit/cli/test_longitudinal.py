@@ -639,5 +639,10 @@ class TestProcessFunc:
             ),
             patch("rbc.core.bids.shutil.copy2") as mock_copy,
         ):
-            _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            _process_func(
+                pipe_ctx=pipe_ctx,
+                func_df=func_df,
+                tpl_df=tpl_df,
+                regressor="36-parameter",
+            )
             assert mock_copy.call_count == 3

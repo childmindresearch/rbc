@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     import argparse
@@ -17,7 +17,7 @@ from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import PipelineContext
-from rbc.core.bids import Datatype, Extension, Suffix, extract_entities
+from rbc.core.bids import Datatype, Extension, Suffix, bids_safe_label, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -30,7 +30,7 @@ class LongitudinalArgs(BaseArgs):
 
     anatomical: bool
     functional: bool
-    regressor: Literal[36 - parameter, aCompCor]
+    regressor: Literal["36-parameter", "aCompCor"]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -107,7 +107,7 @@ def _process_func(
     pipe_ctx: PipelineContext,
     func_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
-    regressor: Literal[36 - parameter, aCompCor],
+    regressor: Literal["36-parameter", "aCompCor"],
 ) -> None:
     """Handle functional longitudinal processing."""
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
@@ -135,8 +135,18 @@ def _process_func(
         bold=func_q.expect(
             func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]
         ),
-        bold_mask=func_q.find(
-            func_df, suffix=Suffix.MASK, desc="brain", without=["space"]
+        bold_mask=_require_file(
+            func_q.find(func_df, suffix=Suffix.MASK, desc="brain", without=["space"]),
+            "bold_mask",
+        ),
+        regressor_file=_require_file(
+            func_q.find(
+                func_df,
+                suffix="regressors",
+                desc=bids_safe_label(regressor),
+                extension=".1D",
+            ),
+            "regressor_file",
         ),
     )
 
@@ -205,7 +215,12 @@ def main(args: LongitudinalArgs) -> int:
 
         if args.functional:
             for func_df, _ in iter_session_files(session, groupby=_FUNC_GROUP_ENTITIES):
-                _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+                _process_func(
+                    pipe_ctx=pipe_ctx,
+                    func_df=func_df,
+                    tpl_df=tpl_df,
+                    regressor=args.regressor,
+                )
         pipe_ctx.ensure_dataset_description()
 
     return 0

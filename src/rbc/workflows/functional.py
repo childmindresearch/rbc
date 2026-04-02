@@ -435,7 +435,8 @@ def longitudinal_process(
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask in native BOLD space.
-        regressor_file: Bandpass-filtered nuisance regressor file (.1D) in native BOLD space.
+        regressor_file: Bandpass-filtered nuisance regressor file (.1D)
+            in native BOLD space.
 
     Returns:
         :class:`FunctionalLongOutputs` with all non-null inputs transformed to template
