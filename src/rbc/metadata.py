@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 _TR_TOLERANCE = 1e-3
+_TR_PLAUSIBLE_LOW = 0.1  # fastest multiband sequences ~100 ms
+_TR_PLAUSIBLE_HIGH = 20.0  # very slow sparse designs
 
 
 def _resolve_tr(
@@ -88,6 +90,33 @@ def _resolve_tr(
     raise ValueError(msg)
 
 
+def _warn_implausible_tr(tr: float) -> None:
+    """Log a warning if TR falls outside the plausible fMRI range."""
+    if tr < _TR_PLAUSIBLE_LOW:
+        _logger.warning(
+            "TR=%.4f s looks unusually short. Verify units (expected seconds).", tr
+        )
+    elif tr > _TR_PLAUSIBLE_HIGH:
+        _logger.warning("TR=%.4f s looks unusually long. Verify this is correct.", tr)
+
+
+def _validate_slice_timing(slice_timing: list[float], tr: float) -> None:
+    """Raise if any slice time falls outside [0, TR).
+
+    The BIDS spec requires SliceTiming values to be in [0, TR).
+    Out-of-range values indicate a unit mismatch or corrupt sidecar
+    and would cause AFNI 3dTshift to produce wrong results silently.
+    """
+    out_of_range = [t for t in slice_timing if t < 0 or t >= tr]
+    if out_of_range:
+        msg = (
+            f"SliceTiming contains values outside [0, TR={tr:.4f}): "
+            f"{out_of_range}. "
+            f"Check sidecar units (BIDS spec requires seconds in [0, TR))."
+        )
+        raise ValueError(msg)
+
+
 @dataclass(frozen=True)
 class FunctionalMetadata:
     """Validated, immutable metadata for a single BOLD run.
@@ -118,7 +147,8 @@ class FunctionalMetadata:
             A frozen :class:`FunctionalMetadata` instance.
 
         Raises:
-            ValueError: If TR cannot be determined or sources conflict.
+            ValueError: If TR cannot be determined, sources conflict,
+                or SliceTiming values fall outside [0, TR).
         """
         sidecar = load_bids_metadata(bold_path)
         sidecar_tr: float | None = sidecar.get("RepetitionTime")
@@ -132,7 +162,10 @@ class FunctionalMetadata:
             header_tr=header_tr,
             override=tr_override,
         )
+        _warn_implausible_tr(tr)
 
         slice_timing: list[float] | None = sidecar.get("SliceTiming")
+        if slice_timing is not None:
+            _validate_slice_timing(slice_timing, tr)
 
         return cls(tr=tr, slice_timing=slice_timing)

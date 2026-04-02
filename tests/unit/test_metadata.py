@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rbc.metadata import FunctionalMetadata, _resolve_tr
+from rbc.metadata import (
+    FunctionalMetadata,
+    _resolve_tr,
+    _validate_slice_timing,
+    _warn_implausible_tr,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -181,3 +186,107 @@ class TestFunctionalMetadata:
             pytest.raises(ValueError, match="Cannot determine TR"),
         ):
             FunctionalMetadata.load(bold)
+
+    def test_load_implausible_tr_warns(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """load() warns on implausibly short TR."""
+        bold = tmp_path / "bold.nii.gz"
+        bold.touch()
+
+        mock_hdr = MagicMock()
+        mock_hdr.__getitem__ = lambda _, key: (
+            [0, 1, 1, 1, 0.01] if key == "pixdim" else None
+        )
+        mock_img = MagicMock()
+        mock_img.header = mock_hdr
+
+        with (
+            patch(
+                "rbc.metadata.load_bids_metadata",
+                return_value={"RepetitionTime": 0.01},
+            ),
+            patch("rbc.metadata.nib.nifti1.load", return_value=mock_img),
+        ):
+            meta = FunctionalMetadata.load(bold)
+
+        assert meta.tr == pytest.approx(0.01)
+        assert any("unusually short" in msg for msg in caplog.messages)
+
+    def test_load_slice_timing_out_of_range_raises(self, tmp_path: Path) -> None:
+        """load() raises when SliceTiming contains values >= TR."""
+        bold = tmp_path / "bold.nii.gz"
+        bold.touch()
+
+        mock_hdr = MagicMock()
+        mock_hdr.__getitem__ = lambda _, key: (
+            [0, 1, 1, 1, 2.0] if key == "pixdim" else None
+        )
+        mock_img = MagicMock()
+        mock_img.header = mock_hdr
+
+        with (
+            patch(
+                "rbc.metadata.load_bids_metadata",
+                return_value={"RepetitionTime": 2.0, "SliceTiming": [0.0, 1.0, 2.5]},
+            ),
+            patch("rbc.metadata.nib.nifti1.load", return_value=mock_img),
+            pytest.raises(ValueError, match="SliceTiming contains values outside"),
+        ):
+            FunctionalMetadata.load(bold)
+
+
+class TestWarnImplausibleTr:
+    """Tests for TR plausibility warnings."""
+
+    def test_normal_tr_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Normal TR values produce no warning."""
+        _warn_implausible_tr(2.0)
+        assert not any("unusually" in msg for msg in caplog.messages)
+
+    def test_very_short_tr_warns(self, caplog: pytest.LogCaptureFixture) -> None:
+        """TR below 0.1s triggers a warning."""
+        _warn_implausible_tr(0.05)
+        assert any("unusually short" in msg for msg in caplog.messages)
+
+    def test_very_long_tr_warns(self, caplog: pytest.LogCaptureFixture) -> None:
+        """TR above 20s triggers a warning."""
+        _warn_implausible_tr(30.0)
+        assert any("unusually long" in msg for msg in caplog.messages)
+
+    def test_boundary_low_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """TR exactly at the low boundary does not warn."""
+        _warn_implausible_tr(0.1)
+        assert not any("unusually" in msg for msg in caplog.messages)
+
+    def test_boundary_high_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """TR exactly at the high boundary does not warn."""
+        _warn_implausible_tr(20.0)
+        assert not any("unusually" in msg for msg in caplog.messages)
+
+
+class TestValidateSliceTiming:
+    """Tests for SliceTiming range validation."""
+
+    def test_valid_timing(self) -> None:
+        """Timing values within [0, TR) pass."""
+        _validate_slice_timing([0.0, 0.5, 1.0, 1.5], tr=2.0)
+
+    def test_negative_value_raises(self) -> None:
+        """Negative slice timing raises."""
+        with pytest.raises(ValueError, match="SliceTiming contains values outside"):
+            _validate_slice_timing([-0.1, 0.5, 1.0], tr=2.0)
+
+    def test_value_equal_to_tr_raises(self) -> None:
+        """Slice timing exactly equal to TR raises (must be < TR)."""
+        with pytest.raises(ValueError, match="SliceTiming contains values outside"):
+            _validate_slice_timing([0.0, 1.0, 2.0], tr=2.0)
+
+    def test_value_exceeding_tr_raises(self) -> None:
+        """Slice timing exceeding TR raises."""
+        with pytest.raises(ValueError, match="SliceTiming contains values outside"):
+            _validate_slice_timing([0.0, 1.0, 3.5], tr=2.0)
+
+    def test_empty_list_passes(self) -> None:
+        """Empty slice timing list passes (unusual but not invalid)."""
+        _validate_slice_timing([], tr=2.0)
