@@ -69,20 +69,19 @@ class FunctionalOutputs(NamedTuple):
         distortion_warp: ANTs/ITK-compatible distortion warp field, or
             *None* if no fieldmap data was provided.
         stc_bold: Slice-timing corrected BOLD.
-        preproc_bold: Motion-corrected + STC BOLD in native space
-            (exported as desc-preproc_bold, not consumed downstream).
+        preproc_bold: Motion-corrected + STC BOLD in native space.
         motion_params: Six-column motion parameter file.
         rms_rel: Frame-to-frame relative RMS displacement.
         rms_abs: Volume-to-reference absolute RMS displacement.
         mat_dir: Directory of per-volume motion matrices.
         bold_mask: Final binary BOLD brain mask.
         skull_stripped_bold: Skull-stripped BOLD reference.
-        bold_to_anat_matrix: BOLD-to-T1w affine matrix (BBR).
-        bold_to_anat_itk: BOLD-to-T1w affine in ITK format (for ANTs warping).
+        bold_to_anat_matrix: BOLD-to-T1w affine matrix.
+        bold_to_anat_itk: BOLD-to-T1w affine in ITK format.
         template_bold: BOLD resampled to template space.
-        regressed_bold: Nuisance-regressed (non-bandpassed) BOLD.
+        regressed_bold: Nuisance-regressed & non-bandpassed BOLD.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
-        regressor_file: Nuisance regressor ``.1D`` file.
+        regressor_file: Bandpass-filtered nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """
 
@@ -154,24 +153,29 @@ def single_session_preprocess(
     Pipeline steps:
 
     1.  Deoblique & reorient BOLD to RPI.
-    2.  Truncate initial TRs.
+    2.  Truncate initial TRs (default: first 2 TRs).
     3.  Despike BOLD.
     4.  Extract motion reference from despiked BOLD.
     5.  Susceptibility distortion correction (optional, requires fieldmaps).
     6.  Motion correction on despiked BOLD (pre-STC, for .par estimates
         and per-volume .mat affines).
     7.  Slice timing correction on despiked BOLD.
-    8.  Apply motion .mat to STC volumes -> desc-preproc_bold (native-space
-        MC + STC output, exported but not consumed by later steps).
-    9.  BOLD brain masking (on motion reference volume).
-    10. BBR coregistration (skull-stripped BOLD ref -> T1w).
-    11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat).
+    8.  Apply motion .mat affines to STC BOLD (native-space MC + STC,
+        used for nuisance regressor computation).
+    9.  BOLD brain masking on motion reference volume.
+    10. BBR coregistration of skull-stripped BOLD reference to T1w.
+    11. Warp tissue masks (brain, CSF, WM) to BOLD space using inverse
+        of BOLD-to-T1w affine.
     12. Compute nuisance regressors from native-space BOLD.
-    13. Single-step resampling: STC volumes -> template space (motion +
-        BBR + anat2template in one interpolation pass per volume).
+    13. Single-step resampling of STC BOLD to template space: motion +
+        BBR + T1w-to-template composite warp applied in one interpolation pass
+        per volume to minimize resampling artifacts.
     14. Warp brain mask to template space.
-    15. Nuisance regression without bandpass (for ALFF/fALFF).
-    16. Simultaneous regression + bandpass (Hallquist 2013).
+    15. Nuisance regression without bandpass on template-space BOLD
+        (full frequency range preserved for ALFF/fALFF computation).
+    16. Nuisance regression with simultaneous bandpass filtering
+        on template-space BOLD (Hallquist 2013).
+    17. Export bandpass-filtered regressors.
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -180,7 +184,7 @@ def single_session_preprocess(
         brain_mask: Binary brain mask from anatomical pipeline.
         csf_mask: CSF tissue mask from anatomical pipeline.
         wm_mask: WM tissue mask from anatomical pipeline.
-        anat_to_template: T1w -> template composite warp.
+        anat_to_template: T1w-to-template composite warp.
         start_tr: Number of initial TRs to discard.
         regressor_set: Nuisance regressor strategy.
         fieldmap: Fieldmap inputs for susceptibility distortion correction.
@@ -237,10 +241,10 @@ def single_session_preprocess(
     effective_ref = distortion.corrected_ref if distortion else motion_ref
     distortion_warp = distortion.warp_field if distortion else None
 
-    # 6. MC on despiked (pre-STC)
+    # 6. MC on despiked BOLD (pre-STC)
     _logger.info("Motion correction (MCFLIRT)")
-    # .par -> motion params for nuisance regression + QC
-    # .mat -> per-volume affines used in steps 8 and 13
+    # .par motion estimates used for nuisance regression + QC
+    # .mat per-volume affines used in steps 8 and 13
     mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
@@ -251,8 +255,8 @@ def single_session_preprocess(
         tpattern=metadata.get("SliceTiming"),
     )
 
-    # 8. Apply pre-STC motion transforms to STC BOLD ->
-    # desc-preproc_bold (native-space MC + STC, exported only)
+    # 8. Apply pre-STC motion transforms to STC BOLD
+    # native-space MC + STC BOLD used in step 12
     _logger.info("Applying motion transforms to STC BOLD")
     preproc_bold = apply_motion_transforms(
         stc_img=st_corrected,
@@ -276,7 +280,7 @@ def single_session_preprocess(
         wm_seg=wm_bbr_mask,
     )
 
-    # 11. Warp tissue masks T1w -> BOLD space (inverse of bold_to_anat)
+    # 11. Warp tissue masks T1w-to-BOLD space (inverse of BOLD-to-T1w affine)
     bold2anat_fpath_str = str(generate_exec_folder("bold2anat") / "bold2anat.txt")
     bold_to_anat_itk = mat_to_itk(
         bbr.out_matrix_file, t1w_brain, masking.skull_stripped_bold, bold2anat_fpath_str
@@ -298,8 +302,8 @@ def single_session_preprocess(
             regressor_set=regressor,
         )
 
-    # 13. Single-step resampling (STC -> template)
-    # All spatial transforms (motion + BBR + anat2template) applied in one
+    # 13. Single-step resampling (STC BOLD to template)
+    # All spatial transforms (motion + BBR + T1w-to-template) applied in one
     # interpolation pass per volume to minimize resampling artifacts.
     _logger.info("Resampling BOLD to template space (single-step)")
     template_bold = resample_bold_to_template(
@@ -374,13 +378,14 @@ def single_session_preprocess(
 
 
 class FunctionalLongOutputs(NamedTuple):
-    """Outputs from the functional preprocessing pipeline.
+    """Outputs from the longitudinal functional preprocessing pipeline.
 
     Attributes:
-        sbref:
-        bold:
-        bold_mask:
-        forward_xfm:
+        forward_xfm: BOLD-to-longitudinal-template composite warp.
+        sbref: Motion reference volume warped to longitudinal template space.
+        bold: Preprocessed BOLD warped to longitudinal template space.
+        bold_mask: Brain mask warped to longitudinal template space,
+            or *None* if no mask was provided.
     """
 
     forward_xfm: Path
@@ -400,13 +405,14 @@ def longitudinal_process(
 ) -> FunctionalLongOutputs:
     """Transform preprocessed functional outputs to longitudinal template space.
 
-    Assumes a template generated with transforms to anatomical, anatomical data already
-    preprocessed to longitudinal.
+    Assumes a longitudinal template has been generated, the subject-to-template
+    composite warp is available, and anatomical data has already been processed
+    to longitudinal template space.
 
     Args:
         template: Longitudinal template image.
-        anat_to_template_xfm: Transform from subject to template space.
-        bold_to_anat_itk: Transformation from bold to preprocessed anatomical space.
+        anat_to_template_xfm: T1w-to-longitudinal-template composite warp.
+        bold_to_anat_itk: BOLD-to-T1w affine in ITK format.
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask, if available.

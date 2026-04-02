@@ -37,8 +37,8 @@ class AnatomicalOutputs(NamedTuple):
         gm_mask: GM tissue mask.
         wm_mask: WM tissue mask.
         wm_bbr_mask: WM boundary mask for BBR coregistration.
-        forward_xfm: T1w -> template composite warp.
-        inverse_xfm: Template -> T1w composite warp.
+        forward_xfm: T1w-to-template composite warp.
+        inverse_xfm: Template-to-T1w composite warp.
     """
 
     brain: Path
@@ -57,10 +57,15 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     Pipeline steps:
 
     1. Deoblique and reorient T1w to RPI.
-    2. ANTs brain extraction (N4 bias correction + skull-stripping).
-    3. FSL FAST tissue segmentation (CSF / GM / WM masks).
+    2. ANTs brain extraction (via template; default is OASIS):
+        a. N4 bias field correction
+        b. Registration to template
+        c. Warp brain probability mask to subject space
+        d. Threshold mask to produce binary brain mask
+    3. FSL FAST tissue segmentation on skull-stripped brain (CSF / GM / WM
+       partial volume maps, thresholded at 0.95 for binary masks).
     4. WM boundary mask for BBR coregistration.
-    5. ANTs registration to MNI152 template (forward + inverse transforms).
+    5. ANTs registration to MNI152 template (forward + inverse composite warps).
 
     Args:
         in_t1w: Raw T1w image to preprocess.
@@ -92,14 +97,20 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
 
 
 class AnatomicalLongOutputs(NamedTuple):
-    """Outputs from the anatomical preprocessing pipeline.
+    """Outputs from the longitudinal anatomical preprocessing pipeline.
 
     Attributes:
-        brain: Skull-stripped T1w brain.
-        brain_mask: Binary brain mask.
-        csf_mask: CSF tissue mask.
-        gm_mask: GM tissue mask.
-        wm_mask: WM tissue mask.
+        brain: Skull-stripped T1w brain warped to longitudinal template space.
+        brain_mask: Binary brain mask warped to longitudinal template space,
+            or *None* if not provided.
+        csf_mask: CSF tissue mask warped to longitudinal template space,
+            or *None* if not provided.
+        gm_mask: GM tissue mask warped to longitudinal template space,
+            or *None* if not provided.
+        wm_mask: WM tissue mask warped to longitudinal template space,
+            or *None* if not provided.
+        forward_xfm: Longitudinal template-to-MNI152 composite warp.
+        inverse_xfm: MNI152-to-longitudinal template composite warp.
     """
 
     brain: Path
@@ -123,11 +134,12 @@ def longitudinal_process(
 ) -> AnatomicalLongOutputs:
     """Transform preprocessed anatomical outputs to longitudinal template space.
 
-    Assumes a template generated and transforms computed.
+    Assumes a longitudinal template has been generated and a subject-to-template
+    composite warp is available.
 
     Args:
         template: Longitudinal template image.
-        subj_to_template_xfm: Transform from subject to template space.
+        subj_to_template_xfm: Subject-to-longitudinal-template composite warp.
         brain: Preprocessed brain image.
         brain_mask: Brain mask, if available.
         csf_mask: CSF partial volume mask, if available.
