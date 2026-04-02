@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import nibabel as nib
+
 from rbc.workflows import metrics_pipeline
 
 if TYPE_CHECKING:
@@ -26,10 +28,13 @@ def test_single_session_metrics(
 ) -> None:
     """All 11 MetricsOutputs paths must exist on disk."""
     regressor = "36-parameter"  # default regressor
+    regressed_bold = pipeline_data.func.regressed_bold[regressor]
+    tr = float(nib.nifti1.load(regressed_bold).header["pixdim"][4])
     result = metrics_pipeline(
-        regressed_bold=pipeline_data.func.regressed_bold[regressor],
+        regressed_bold=regressed_bold,
         cleaned_bold=pipeline_data.func.cleaned_bold[regressor],
         template_brain_mask=pipeline_data.template_brain_mask,
+        tr=tr,
     )
     for output in result:
         paths = output.values() if isinstance(output, dict) else [output]
