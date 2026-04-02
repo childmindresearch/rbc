@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import polars as pl
 
 from rbc.bids import extract_entities
+from rbc.bids._schema import Datatype, Suffix
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -50,8 +51,12 @@ def load_session(df: pl.DataFrame, subject: str, session: str | None) -> Session
     base: list[pl.Expr] = [pl.col("sub") == subject]
     if session is not None:
         base.append(pl.col("ses") == session)
-    anat_df = df.filter(pl.all_horizontal([*base, pl.col("datatype") == "anat"]))
-    func_df = df.filter(pl.all_horizontal([*base, pl.col("datatype") == "func"]))
+    anat_df = df.filter(
+        pl.all_horizontal(
+            [*base, pl.col("datatype") == Datatype.ANAT, pl.col("suffix") == Suffix.T1W]
+        )
+    )
+    func_df = df.filter(pl.all_horizontal([*base, pl.col("datatype") == Datatype.FUNC]))
 
     return SessionTables(anat=anat_df, func=func_df if not func_df.is_empty() else None)
 
