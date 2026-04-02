@@ -416,9 +416,9 @@ def longitudinal_process(
     to longitudinal template space.
 
     Regressors are computed once during cross-sectional preprocessing and passed
-    in via ``regressor_file``. Only the regression steps are re-run against the 
+    in via ``regressor_file``. Only the regression steps are re-run against the
     longitudinal space BOLD.
- 
+
     Steps:
     1. Compose BOLD-to-anatomical + anatomical-to-longitudinal-template transforms.
     2. Warp sbref (3D) and preproc BOLD (4D) to longitudinal template space.
