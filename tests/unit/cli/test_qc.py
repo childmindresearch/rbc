@@ -57,7 +57,7 @@ def _patch_qc(
     Patches load_table to return filtered_df on first call (primary BOLD
     filtering) and deriv_df on subsequent calls (derivative lookups per
     sub/ses group). Also patches find_file, single_session_qc, and
-    PipelineContext.
+    RunContext.
     """
     with (
         patch("rbc.cli.qc.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]),
