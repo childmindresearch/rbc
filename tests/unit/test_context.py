@@ -190,10 +190,6 @@ class TestRunContext:
         with pytest.raises(AttributeError):
             ctx.sub = "02"  # type: ignore[misc]
 
-    def test_alias(self) -> None:
-        """RunContext is an alias for RunContext."""
-        assert RunContext is RunContext
-
     def test_bids_factory(self, tmp_path: Path) -> None:
         """RunContext.bids() returns a Bids instance."""
         ctx = RunContext(sub="01", ses=None, output_dir=tmp_path)
