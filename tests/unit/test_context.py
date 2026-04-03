@@ -100,9 +100,7 @@ class TestBids:
             func.save(src_file, suffix="bold", space="MNI152", desc="preproc")
         assert any("already exists" in msg for msg in caplog.messages)
 
-    def test_extra_merges_on_derive(
-        self, pipe_ctx: RunContext, src_file: Path
-    ) -> None:
+    def test_extra_merges_on_derive(self, pipe_ctx: RunContext, src_file: Path) -> None:
         """Verify extra dicts merge on derive()."""
         func = pipe_ctx.bids(datatype="func", extra={"reg": "36parameter"})
         derived = func.derive(extra={"mode": "image"})
@@ -110,9 +108,7 @@ class TestBids:
         assert "reg-36parameter" in result.name
         assert "mode-image" in result.name
 
-    def test_extra_merges_on_save(
-        self, pipe_ctx: RunContext, src_file: Path
-    ) -> None:
+    def test_extra_merges_on_save(self, pipe_ctx: RunContext, src_file: Path) -> None:
         """Verify per-call extra merges with session extra."""
         func = pipe_ctx.bids(datatype="func", extra={"reg": "36parameter"})
         result = func.save(src_file, suffix="bold", extra={"mode": "image"})
