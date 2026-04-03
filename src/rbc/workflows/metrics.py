@@ -62,7 +62,7 @@ def single_session_metrics(
     regressed_bold: Path,
     cleaned_bold: Path,
     template_brain_mask: Path,
-    tr: float | None = None,
+    tr: float,
     atlas: Sequence[AtlasName] = ("schaefer_200",),
     fwhm: float = 6.0,
 ) -> MetricsOutputs:
@@ -72,7 +72,7 @@ def single_session_metrics(
         regressed_bold: Nuisance-regressed (non-bandpassed) BOLD in template space.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD in template space.
         template_brain_mask: Brain mask warped to template space.
-        tr: Repetition time in seconds; if *None*, read from NIfTI header.
+        tr: Repetition time in seconds.
         atlas: Atlas short name for timeseries extraction.
         fwhm: Smoothing kernel FWHM in mm.
 

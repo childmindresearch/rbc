@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
@@ -60,7 +60,7 @@ def main(args: AnatomicalArgs) -> int:
     for _, sub_ses_group in tqdm(
         df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
-        pipe_ctx = PipelineContext(
+        pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
             ses=sub_ses_group["ses"][0] or None,
             output_dir=args.output_dir,

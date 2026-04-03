@@ -3,7 +3,7 @@
 Chains the full functional stream and returns all output paths as a
 :class:`FunctionalOutputs` named tuple.  No BIDS naming or file copying
 is performed here -- that responsibility belongs to the CLI layer via
-:class:`~rbc.context.PipelineContext`.
+:class:`~rbc.context.RunContext`.
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from bids2table import load_bids_metadata
 from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
@@ -52,6 +51,7 @@ if TYPE_CHECKING:
         ApplyRegressionOutputs,
         ComputeRegressorsOutputs,
     )
+    from rbc.metadata import FunctionalMetadata
 
 _logger = logging.getLogger("rbc")
 
@@ -144,6 +144,7 @@ def single_session_preprocess(
     csf_mask: Path,
     wm_mask: Path,
     anat_to_template: Path,
+    metadata: FunctionalMetadata,
     start_tr: int = 2,
     regressor_set: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
     fieldmap: PhaseDiffFieldmap | PEPolarFieldmap | None = None,
@@ -185,6 +186,7 @@ def single_session_preprocess(
         csf_mask: CSF tissue mask from anatomical pipeline.
         wm_mask: WM tissue mask from anatomical pipeline.
         anat_to_template: T1w-to-template composite warp.
+        metadata: Validated BOLD metadata (TR, slice timing).
         start_tr: Number of initial TRs to discard.
         regressor_set: Nuisance regressor strategy.
         fieldmap: Fieldmap inputs for susceptibility distortion correction.
@@ -195,8 +197,6 @@ def single_session_preprocess(
     Returns:
         All output paths bundled in a :class:`FunctionalOutputs` tuple.
     """
-    metadata = load_bids_metadata(in_bold)
-
     # 1. Deoblique & reorient
     _logger.info("Deoblique and reorient BOLD")
     reoriented = deoblique_and_reorient(in_file=in_bold)
@@ -251,8 +251,8 @@ def single_session_preprocess(
     _logger.info("Slice timing correction")
     st_corrected = slice_timing_correction(
         in_file=despiked,
-        tr=metadata.get("RepetitionTime"),
-        tpattern=metadata.get("SliceTiming"),
+        tr=metadata.tr,
+        tpattern=metadata.slice_timing,
     )
 
     # 8. Apply pre-STC motion transforms to STC BOLD
@@ -347,9 +347,11 @@ def single_session_preprocess(
 
         # 17. Export bandpass-filtered regressors (matches what 3dTproject
         #     actually applied; raw regressors still in compute_regressors output)
-        tr = metadata.get("RepetitionTime")
         filtered_regressors[regressor] = bandpass_regressor_file(
-            regressors[regressor].regressor_file, tr=tr, f_low=0.01, f_high=0.1
+            regressors[regressor].regressor_file,
+            tr=metadata.tr,
+            f_low=0.01,
+            f_high=0.1,
         )
 
     return FunctionalOutputs(

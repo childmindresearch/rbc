@@ -255,7 +255,7 @@ def generate_module(  # noqa: C901
     w()
 
     # Keys excluded from entity kwargs TypedDicts because they are handled
-    # as explicit parameters (sub/ses from PipelineContext, desc/space/atlas
+    # as explicit parameters (sub/ses from RunContext, desc/space/atlas
     # vary per-call rather than per-session).
     excluded_entity_keys = {"sub", "ses", "desc", "space", "atlas"}
 

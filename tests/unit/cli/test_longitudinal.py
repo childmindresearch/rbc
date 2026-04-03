@@ -10,7 +10,7 @@ import polars as pl
 import pytest
 
 from rbc.cli.longitudinal import LongitudinalArgs, _process_anat, _process_func, main
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 
 _SCHEMA = [
     "datatype",
@@ -164,7 +164,7 @@ def _patch_main(
             "rbc.cli.longitudinal.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
-        patch("rbc.cli.longitudinal.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.longitudinal.RunContext") as mock_ctx_cls,
     ):
         yield mock_anat, mock_func, mock_ctx_cls
 
@@ -496,7 +496,7 @@ class TestProcessAnat:
         self, anat_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
         """Test anatomical longitudinal is called."""
-        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.anatomical_longitudinal",
@@ -529,7 +529,7 @@ class TestProcessAnat:
         tmp_path: Path,
     ) -> None:
         """Test error raised if required anatomical outputs missing."""
-        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         outputs = _mock_anat_outputs()
         if side_effect is None:
             setattr(outputs, null_field, None)
@@ -556,7 +556,7 @@ class TestProcessFunc:
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
         """Test functional longitudinal is called."""
-        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",
@@ -596,7 +596,7 @@ class TestProcessFunc:
         tmp_path: Path,
     ) -> None:
         """Test missing required functional outputs raises error."""
-        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",
@@ -614,7 +614,7 @@ class TestProcessFunc:
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
         """Optional bold_mask not found is caught; 3 exports emitted."""
-        pipe_ctx = PipelineContext(sub="01", ses="baseline", output_dir=tmp_path)
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.cli.longitudinal.functional_longitudinal",

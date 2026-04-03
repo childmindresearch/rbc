@@ -127,6 +127,11 @@ def _patch_all(
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     iter_calls = list(groups)
+
+    from rbc.metadata import FunctionalMetadata
+
+    mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
+
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
         patch("rbc.cli.all.load_session", return_value=mock_session),
@@ -144,7 +149,11 @@ def _patch_all(
             "rbc.cli.all.qc_pipeline",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.all.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.all.RunContext") as mock_ctx_cls,
+        patch(
+            "rbc.cli.all.FunctionalMetadata.load",
+            return_value=mock_metadata,
+        ),
     ):
         yield mock_anat, mock_func, mock_metrics, mock_qc, mock_ctx_cls
 
@@ -210,6 +219,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         atlas=["schaefer_200"],
         fwhm=6.0,
         start_tr=2,
+        tr=None,
         tmp_dir=None,
     )
 

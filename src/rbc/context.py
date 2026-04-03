@@ -3,6 +3,7 @@
 Holds subject identity and output directory, providing a :meth:`bids` factory
 that returns a :class:`~rbc.core.bids.Bids` builder for composing exports
 and queries.
+
 """
 
 from __future__ import annotations
@@ -20,8 +21,8 @@ if TYPE_CHECKING:
 _RBC_VERSION = version("rbc")
 
 
-@dataclass
-class PipelineContext:
+@dataclass(frozen=True)
+class RunContext:
     """Minimal context for a single pipeline run.
 
     Attributes:

@@ -6,15 +6,17 @@ ReHo, smoothing, z-scoring, and atlas-based timeseries extraction.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+import nibabel as nib
 import polars as pl
 from tqdm import tqdm
 
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
-from rbc.context import PipelineContext
+from rbc.context import RunContext
 from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
@@ -23,6 +25,7 @@ from rbc.workflows.metrics import single_session_metrics
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
     from rbc_resources import AtlasName
 
@@ -35,6 +38,7 @@ class MetricsArgs(BaseArgs):
     fwhm: float
     task: str | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
+    tr: float | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
@@ -43,13 +47,31 @@ class MetricsArgs(BaseArgs):
             _validate_atlas(atlas)
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
+        _validate_positive(ns.tr, "TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             atlas=ns.atlas,
             fwhm=ns.fwhm,
             task=ns.task,
             regressor=ns.regressor,
+            tr=ns.tr,
         )
+
+
+_logger = logging.getLogger(__name__)
+
+
+def _read_header_tr(nifti_path: Path) -> float:
+    """Read TR from a NIfTI header, raising on missing/zero values."""
+    hdr = nib.nifti1.load(nifti_path).header
+    tr = float(hdr["pixdim"][4])  # type: ignore[index]
+    if tr <= 0:
+        msg = (
+            f"NIfTI header TR is {tr} for {nifti_path}. Pass --tr to specify manually."
+        )
+        raise ValueError(msg)
+    _logger.info("TR: %.4f s (from NIfTI header)", tr)
+    return tr
 
 
 def main(args: MetricsArgs) -> int:
@@ -58,6 +80,10 @@ def main(args: MetricsArgs) -> int:
     ctx.runner.environ = _DEFAULT_ENV_VARS
 
     ctx.logger.info("Preparing to run RBC metrics workflow")
+    if args.tr is not None:
+        ctx.logger.info("Using CLI-provided TR: %.4f s", args.tr)
+    else:
+        ctx.logger.info("TR will be read from NIfTI headers")
     df = load_table(
         dataset_dir=args.output_dir,
         index_fpath=None,
@@ -82,7 +108,7 @@ def main(args: MetricsArgs) -> int:
     for _, group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
         sub: str = group["sub"][0]
         ses: str | None = group["ses"][0] or None
-        pipe_ctx = PipelineContext(sub=sub, ses=ses, output_dir=args.output_dir)
+        pipe_ctx = RunContext(sub=sub, ses=ses, output_dir=args.output_dir)
 
         deriv_df = load_table(
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
@@ -115,10 +141,13 @@ def main(args: MetricsArgs) -> int:
                     extra={"reg": regressor},
                 )
 
+                tr = args.tr if args.tr is not None else _read_header_tr(regressed_bold)
+
                 outputs = single_session_metrics(
                     regressed_bold=regressed_bold,
                     cleaned_bold=cleaned_bold,
                     template_brain_mask=template_brain_mask,
+                    tr=tr,
                     atlas=args.atlas,
                     fwhm=args.fwhm,
                 )
@@ -198,6 +227,12 @@ def register_command(
             "Space-delimited nuisance regression method(s) used in "
             "functional preprocessing."
         ),
+    )
+    parser.add_argument(
+        "--tr",
+        type=float,
+        default=None,
+        help="Repetition time in seconds. Overrides NIfTI header value for ALFF.",
     )
 
     parser.set_defaults(func=lambda args: main(MetricsArgs.validate_namespace(args)))

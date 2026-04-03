@@ -14,6 +14,7 @@ from styxpodman import PodmanRunner
 
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.core.niwrap import resolve_runner
+from rbc.metadata import FunctionalMetadata
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
 from rbc_resources import MNI_TEMPLATES
@@ -96,6 +97,7 @@ def pipeline_data(
 ) -> PipelineData:
     """Run anatomical and functional preprocessing once for all e2e tests."""
     anat = anatomical_preprocess(test_subject.t1w)
+    func_metadata = FunctionalMetadata.load(test_subject.bold)
     func = functional_preprocess(
         in_bold=test_subject.bold,
         t1w_brain=anat.brain,
@@ -104,6 +106,7 @@ def pipeline_data(
         csf_mask=anat.csf_mask,
         wm_mask=anat.wm_mask,
         anat_to_template=anat.forward_xfm,
+        metadata=func_metadata,
     )
     template_brain_mask = _warp_mask_to_template(
         anat.brain_mask, MNI_TEMPLATES.brain_2mm, anat.forward_xfm

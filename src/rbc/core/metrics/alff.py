@@ -223,7 +223,7 @@ def alff(
 def compute_alff(
     in_file: str | Path,
     mask_file: str | Path,
-    tr: float | None = None,
+    tr: float,
     f_low: float = 0.01,
     f_high: float = 0.1,
     method: AlffMethod = "am",
@@ -236,8 +236,7 @@ def compute_alff(
     Args:
         in_file: Path to 4-D NIfTI ``(X, Y, Z, T)``.
         mask_file: Path to 3-D binary brain mask in the same space.
-        tr: Repetition time in seconds.  If *None*, read from the NIfTI
-            header (``pixdim[4]``).
+        tr: Repetition time in seconds.
         f_low: Lower frequency bound (Hz).
         f_high: Upper frequency bound (Hz).
         method: ``"am"`` or ``"qm"``.
@@ -253,11 +252,7 @@ def compute_alff(
     mask = Volume.load(mask_file, dtype=np.uint8)
     bold.check_compatible(mask)
 
-    effective_tr = tr if tr is not None else bold.tr
-    assert effective_tr is not None  # noqa: S101 - guaranteed by expected_ndim=4
-    alff_map, falff_map = alff(
-        bold.data, mask.data, effective_tr, f_low, f_high, method
-    )
+    alff_map, falff_map = alff(bold.data, mask.data, tr, f_low, f_high, method)
 
     stem = in_file.name.split(".nii")[0]
     if out_file is None:

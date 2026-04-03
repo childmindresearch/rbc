@@ -83,7 +83,7 @@ def _patch_anatomical(
             "rbc.cli.anatomical.single_session_preprocess",
             return_value=_mock_anatomical_outputs(),
         ) as mock_preprocess,
-        patch("rbc.cli.anatomical.PipelineContext") as mock_ctx_cls,
+        patch("rbc.cli.anatomical.RunContext") as mock_ctx_cls,
     ):
         yield mock_preprocess, mock_ctx_cls
 
