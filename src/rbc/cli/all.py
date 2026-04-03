@@ -221,13 +221,13 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     func_outputs.regressed_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="regressed",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
                 mni.save(
                     func_outputs.cleaned_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="preproc",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
 
             mni.save(func_outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
@@ -248,7 +248,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     fwhm=args.fwhm,
                 )
 
-                mex = mni.derive(extra={"reg": regressor})
+                mex = mni.derive(extra={"reg": bids_safe_label(regressor)})
                 mex.save(metrics_outputs.alff, suffix="alff")
                 mex.save(metrics_outputs.falff, suffix="falff")
                 mex.save(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
@@ -266,14 +266,14 @@ def main(args: AllArgs) -> int:  # noqa: C901
                         suffix="timeseries",
                         desc="mean",
                         extension=".tsv",
-                        atlas=atlas,
+                        atlas=bids_safe_label(atlas),
                     )
                     mex.save(
                         metrics_outputs.correlation_matrix[atlas],
                         suffix="correlations",
                         desc="pearson",
                         extension=".tsv",
-                        atlas=atlas,
+                        atlas=bids_safe_label(atlas),
                     )
 
             # --- QC ---
@@ -304,7 +304,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     suffix="quality",
                     desc="xcp",
                     extension=".tsv",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"

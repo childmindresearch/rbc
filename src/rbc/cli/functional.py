@@ -172,13 +172,13 @@ def main(args: FunctionalArgs) -> int:
                     outputs.regressed_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="regressed",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
                 mni.save(
                     outputs.cleaned_bold[regressor],
                     suffix=Suffix.BOLD,
                     desc="preproc",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
             mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
             mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
