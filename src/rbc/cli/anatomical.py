@@ -5,17 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import polars as pl
-from tqdm import tqdm
-
-from rbc.bids import SUB_SES_QUERY, Datatype, load_table
-from rbc.bids.anatomical import discover_anatomical, export_anatomical
-from rbc.bids.session import load_session
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs
-from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
-from rbc.workflows.anatomical import single_session_preprocess
+from rbc.orchestration import Filters
+from rbc.orchestration.anatomical import run
 
 if TYPE_CHECKING:
     import argparse
@@ -34,42 +28,19 @@ class AnatomicalArgs(BaseArgs):
 
 def main(args: AnatomicalArgs) -> int:
     """Main entrypoint of anatomical workflow."""
-    # Setup
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
-
     ctx.logger.info("Preparing to run RBC anatomical workflow")
-    df = load_table(
-        dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
+
+    run(
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
+        filters=Filters(
+            participant_label=args.participant_label,
+            session_label=args.session_label,
+        ),
+        verbose=ctx.verbose,
     )
-
-    filters = [
-        pl.col("ses") != "longitudinal",
-        pl.col("space").is_null(),
-        pl.col("desc").is_null(),
-    ]
-    if len(args.participant_label) > 0:
-        filters.append(pl.col("sub").is_in(args.participant_label))
-    if len(args.session_label) > 0:
-        filters.append(pl.col("ses").is_in(args.session_label))
-    df = df.filter(pl.all_horizontal(filters))
-
-    for _, sub_ses_group in tqdm(
-        df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
-    ):
-        pipe_ctx = RunContext(
-            sub=sub_ses_group["sub"][0],
-            ses=sub_ses_group["ses"][0] or None,
-            output_dir=args.output_dir,
-        )
-        session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
-
-        for run in discover_anatomical(session):
-            ctx.logger.info(f"Processing {run.path}")
-            outputs = single_session_preprocess(in_t1w=run.path)
-            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=run.entities)
-            export_anatomical(anat, outputs)
-        pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC anatomical workflow complete")
     return 0

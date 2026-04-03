@@ -1,6 +1,7 @@
 """Unit tests for QC CLI module."""
 
 import argparse
+import logging
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -60,16 +61,19 @@ def _patch_qc(
     RunContext.
     """
     with (
-        patch("rbc.cli.qc.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]),
+        patch(
+            "rbc.orchestration.qc.load_table",
+            side_effect=[filtered_df, *([deriv_df] * 100)],
+        ),
         patch(
             "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.qc.single_session_qc",
+            "rbc.orchestration.qc.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.qc.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.qc.RunContext") as mock_ctx_cls,
     ):
         yield mock_qc, mock_ctx_cls
 
@@ -301,9 +305,10 @@ class TestQCOutputs:
 
     def test_passed_status_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """PASSED is logged when QC outputs indicate the run passed."""
         base_args.participant_label = ["01"]
@@ -312,22 +317,23 @@ class TestQCOutputs:
         args = QCArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
 
-        with _patch_qc(filtered_df, sample_dataframe, qc_passed=True) as (
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_qc(filtered_df, sample_dataframe, qc_passed=True) as (
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             qc.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("PASSED" in c for c in log_calls)
+            assert any("PASSED" in msg for msg in caplog.messages)
 
     def test_failed_status_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """FAILED is logged when QC outputs indicate the run failed."""
         base_args.participant_label = ["01"]
@@ -336,16 +342,16 @@ class TestQCOutputs:
         args = QCArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
 
-        with _patch_qc(filtered_df, sample_dataframe, qc_passed=False) as (
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_qc(filtered_df, sample_dataframe, qc_passed=False) as (
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             qc.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("FAILED" in c for c in log_calls)
+            assert any("FAILED" in msg for msg in caplog.messages)
 
     def test_qc_export_called(
         self,

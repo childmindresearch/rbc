@@ -5,30 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from rbc.cli import _DEFAULT_ENV_VARS
+from rbc.cli.base import BaseArgs
+from rbc.core.niwrap import setup_runner
+from rbc.orchestration import Filters
+from rbc.orchestration.longitudinal import run
+
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
-    from pathlib import Path
-
-import polars as pl
-from tqdm import tqdm
-
-from rbc.bids import (
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    Extension,
-    Suffix,
-    extract_entities,
-    load_table,
-)
-from rbc.bids.session import iter_session_files, load_session
-from rbc.cli import _DEFAULT_ENV_VARS
-from rbc.cli.base import BaseArgs
-from rbc.context import RunContext
-from rbc.core.niwrap import setup_runner
-from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
-from rbc.workflows.functional import longitudinal_process as functional_longitudinal
 
 
 @dataclass(frozen=True)
@@ -52,164 +37,25 @@ class LongitudinalArgs(BaseArgs):
         )
 
 
-def _require_file(path: Path | None, field: str) -> Path:
-    if path is None:
-        raise ValueError(f"Expected output {field!r} is missing.")
-    return path
-
-
-def _process_anat(
-    pipe_ctx: RunContext, anat_df: pl.DataFrame, tpl_df: pl.DataFrame
-) -> None:
-    """Handle anatomical longitudinal processing."""
-    anat_df = anat_df.filter(pl.col("space").is_null())
-    row = anat_df.row(0, named=True)
-    ents = extract_entities(row, ["run"])
-
-    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-    tpl_q = anat_q.derive(ses="longitudinal")
-
-    outputs = anatomical_longitudinal(
-        template=tpl_q.expect(tpl_df, suffix=Suffix.T1W),
-        subj_to_template_xfm=tpl_q.expect(
-            tpl_df,
-            suffix="xfm",
-            extension=".txt",
-            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
-        ),
-        brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
-        brain_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"),
-        csf_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"),
-        gm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="gm"),
-        wm_mask=anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
-    )
-
-    aex = anat_q.derive(entities=ents, space="longitudinal")
-    aex.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
-    aex.save(
-        _require_file(outputs.brain_mask, "brain_mask"),
-        suffix=Suffix.MASK,
-        desc="T1w",
-    )
-    aex.save(
-        _require_file(outputs.csf_mask, "csf_mask"), suffix=Suffix.MASK, desc="csf"
-    )
-    aex.save(_require_file(outputs.gm_mask, "gm_mask"), suffix=Suffix.MASK, desc="gm")
-    aex.save(_require_file(outputs.wm_mask, "wm_mask"), suffix=Suffix.MASK, desc="wm")
-    aex.save(
-        outputs.forward_xfm,
-        suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
-    )
-    aex.save(
-        outputs.inverse_xfm,
-        suffix="xfm",
-        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
-    )
-
-
-def _process_func(
-    pipe_ctx: RunContext, func_df: pl.DataFrame, tpl_df: pl.DataFrame
-) -> None:
-    """Handle functional longitudinal processing."""
-    row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
-    ents = extract_entities(row, ["task", "run"])
-
-    func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
-
-    outputs = functional_longitudinal(
-        template=tpl_q.expect(tpl_df, suffix="T1w"),
-        anat_to_template_xfm=tpl_q.expect(
-            tpl_df,
-            suffix="xfm",
-            extension=".txt",
-            extra={"from": pipe_ctx.ses},  # type: ignore[dict-item]
-        ),
-        bold_to_anat_itk=func_q.expect(
-            func_df,
-            suffix="xfm",
-            desc="linearITK",
-            extension=".txt",
-            extra={"from": "bold", "to": "T1w", "mode": "image"},
-        ),
-        sbref=func_q.expect(func_df, suffix=Suffix.SBREF, without=["space"]),
-        bold=func_q.expect(
-            func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]
-        ),
-        bold_mask=func_q.find(
-            func_df, suffix=Suffix.MASK, desc="brain", without=["space"]
-        ),
-    )
-
-    fex = func_q.derive(space="longitudinal")
-    fex.save(outputs.sbref, suffix=Suffix.SBREF)
-    fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
-    fex.save(
-        outputs.forward_xfm,
-        suffix="xfm",
-        desc="composite",
-        extension=Extension.NII_GZ,
-        extra={"from": "bold", "to": "longitudinal", "mode": "image"},
-    )
-    if outputs.bold_mask:
-        fex.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
-
-
 def main(args: LongitudinalArgs) -> int:
     """Main entrypoint of longitudinal workflow."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
+    ctx.logger.info("Preparing to run RBC longitudinal workflow")
 
-    ctx.logger.warning(
-        "This workflow is experimental and may be sensitive to input file "
-        "naming conventions."
+    run(
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
+        filters=Filters(
+            participant_label=args.participant_label,
+            session_label=args.session_label,
+        ),
+        anatomical=args.anatomical,
+        functional=args.functional,
+        verbose=ctx.verbose,
     )
-    ctx.logger.info("Preparing to run RBC-based longitudinal workflow")
-    df = load_table(
-        dataset_dir=args.input_dir, index_fpath=None, max_workers=0, verbose=ctx.verbose
-    )
 
-    group_df = df
-    filters = [pl.col("ses") != "longitudinal"]
-    if len(args.participant_label) > 0:
-        filters.append(pl.col("sub").is_in(args.participant_label))
-    if len(args.session_label) > 0:
-        filters.append(pl.col("ses").is_in(args.session_label))
-    group_df = df.filter(pl.all_horizontal(filters))
-
-    for _, sub_ses_group in tqdm(
-        group_df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
-    ):
-        pipe_ctx = RunContext(
-            sub=sub_ses_group["sub"][0],
-            ses=sub_ses_group["ses"][0],
-            output_dir=args.output_dir,
-        )
-        if pipe_ctx.ses is None:
-            raise ValueError(
-                "No session data - unable to perform longitudinal processing"
-            )
-        session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
-        tpl_df = df.filter(
-            pl.all_horizontal(
-                pl.col("sub") == pipe_ctx.sub, pl.col("ses") == "longitudinal"
-            )
-        )
-        if tpl_df.is_empty():
-            raise ValueError("No longitudinal template found")
-
-        if args.anatomical:
-            for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-                ("run", "acq"), maintain_order=True
-            ):
-                _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
-
-        if args.functional:
-            for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
-                _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-        pipe_ctx.ensure_dataset_description()
-
+    ctx.logger.info("RBC longitudinal workflow complete")
     return 0
 
 

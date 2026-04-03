@@ -1,6 +1,7 @@
 """Unit tests for Longitudinal CLI module."""
 
 import argparse
+import logging
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -9,8 +10,9 @@ from unittest.mock import Mock, patch
 import polars as pl
 import pytest
 
-from rbc.cli.longitudinal import LongitudinalArgs, _process_anat, _process_func, main
+from rbc.cli.longitudinal import LongitudinalArgs, main
 from rbc.context import RunContext
+from rbc.orchestration.longitudinal import process_anat, process_func
 
 _SCHEMA = [
     "datatype",
@@ -146,10 +148,10 @@ def _patch_main(
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
-        patch("rbc.cli.longitudinal.load_table", return_value=full_df),
-        patch("rbc.cli.longitudinal.load_session", return_value=mock_session),
+        patch("rbc.orchestration.longitudinal.load_table", return_value=full_df),
+        patch("rbc.orchestration.longitudinal.load_session", return_value=mock_session),
         patch(
-            "rbc.cli.longitudinal.iter_session_files",
+            "rbc.orchestration.longitudinal.iter_session_files",
             side_effect=_build_iter_side_effect(groups),
         ),
         patch(
@@ -157,14 +159,14 @@ def _patch_main(
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.longitudinal.anatomical_longitudinal",
+            "rbc.orchestration.longitudinal.anatomical_longitudinal",
             return_value=_mock_anat_outputs(),
         ) as mock_anat,
         patch(
-            "rbc.cli.longitudinal.functional_longitudinal",
+            "rbc.orchestration.longitudinal.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
-        patch("rbc.cli.longitudinal.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.longitudinal.RunContext") as mock_ctx_cls,
     ):
         yield mock_anat, mock_func, mock_ctx_cls
 
@@ -406,7 +408,7 @@ class TestLongitudinalMain:
             with pytest.raises(ValueError, match="No longitudinal template found"):
                 main(args)
 
-    def test_functional_false_never_calls_process_func(
+    def test_functional_false_never_callsprocess_func(
         self,
         mock_setup: Mock,  # noqa: ARG002
         base_args: argparse.Namespace,
@@ -420,13 +422,13 @@ class TestLongitudinalMain:
                 __,
                 mock_ctx_cls,
             ),
-            patch("rbc.cli.longitudinal._process_func") as mock_func,
+            patch("rbc.orchestration.longitudinal.process_func") as mock_func,
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             main(args)
             mock_func.assert_not_called()
 
-    def test_functional_true_dispatches_process_func(
+    def test_functional_true_dispatchesprocess_func(
         self,
         mock_setup: Mock,  # noqa: ARG002
         base_args: argparse.Namespace,
@@ -469,11 +471,15 @@ class TestRunnerSetup:
     """Test runner configuration and environment setup."""
 
     def test_experimental_warning_emitted(
-        self, base_args: argparse.Namespace, anat_df_full: pl.DataFrame
+        self,
+        base_args: argparse.Namespace,
+        anat_df_full: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test experimental warning message is logged."""
         args = LongitudinalArgs.validate_namespace(base_args)
         with (
+            caplog.at_level(logging.WARNING),
             patch("rbc.cli.longitudinal.setup_runner") as mock_setup,
             _patch_main(anat_df_full, _make_groups(anat_df_full, [], [])) as (
                 _,
@@ -485,12 +491,11 @@ class TestRunnerSetup:
             mock_setup.return_value = ctx
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             main(args)
-            ctx.logger.warning.assert_called_once()
-            assert "experimental" in ctx.logger.warning.call_args[0][0].lower()
+            assert any("experimental" in msg.lower() for msg in caplog.messages)
 
 
 class TestProcessAnat:
-    """Tests for _process_anat helper."""
+    """Tests for process_anat helper."""
 
     def test_calls_anatomical_longitudinal(
         self, anat_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
@@ -499,7 +504,7 @@ class TestProcessAnat:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.cli.longitudinal.anatomical_longitudinal",
+                "rbc.orchestration.longitudinal.anatomical_longitudinal",
                 return_value=_mock_anat_outputs(),
             ) as mock_long,
             patch(
@@ -508,7 +513,7 @@ class TestProcessAnat:
             ),
             patch("rbc.bids.builder.shutil.copy2"),
         ):
-            _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
+            process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             assert mock_long.call_count == 1
 
     @pytest.mark.parametrize(
@@ -541,16 +546,19 @@ class TestProcessAnat:
             get_patch = patch("rbc.bids.query.find_file", side_effect=side_effect)
 
         with (
-            patch("rbc.cli.longitudinal.anatomical_longitudinal", return_value=outputs),
+            patch(
+                "rbc.orchestration.longitudinal.anatomical_longitudinal",
+                return_value=outputs,
+            ),
             get_patch,
             patch("rbc.bids.builder.shutil.copy2"),
             pytest.raises(expected_error, match=null_field),
         ):
-            _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
+            process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
 
 
 class TestProcessFunc:
-    """Tests for _process_func helper."""
+    """Tests for process_func helper."""
 
     def test_calls_functional_longitudinal(
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
@@ -559,7 +567,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.cli.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ) as mock_func,
             patch(
@@ -568,7 +576,7 @@ class TestProcessFunc:
             ),
             patch("rbc.bids.builder.shutil.copy2"),
         ):
-            _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
             assert mock_func.call_count == 1
 
     @pytest.mark.parametrize(
@@ -599,7 +607,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.cli.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ),
             patch(
@@ -608,7 +616,7 @@ class TestProcessFunc:
             ),
             pytest.raises(FileNotFoundError),
         ):
-            _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
 
     def test_optional_bold_mask_file_not_found(
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
@@ -617,7 +625,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.cli.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional_longitudinal",
                 return_value=_mock_func_outputs(with_bold_mask=False),
             ),
             patch(
@@ -626,5 +634,5 @@ class TestProcessFunc:
             ),
             patch("rbc.bids.builder.shutil.copy2") as mock_copy,
         ):
-            _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
             assert mock_copy.call_count == 3

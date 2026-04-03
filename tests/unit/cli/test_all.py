@@ -1,6 +1,7 @@
 """Unit tests for All (combined pipeline) CLI module."""
 
 import argparse
+import logging
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
@@ -138,29 +139,35 @@ def _patch_all(
     mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
 
     with (
-        patch("rbc.cli.all.load_table", return_value=filtered_df),
-        patch("rbc.cli.all.load_session", return_value=Mock()),
+        patch("rbc.orchestration.all.load_table", return_value=filtered_df),
+        patch("rbc.orchestration.all.load_session", return_value=Mock()),
         patch(
-            "rbc.cli.all.discover_anatomical",
+            "rbc.orchestration.anatomical.discover_anatomical",
             side_effect=lambda _: iter(anat_runs),
         ),
-        patch("rbc.cli.all.discover_functional", side_effect=func_run_calls),
         patch(
-            "rbc.cli.all.anatomical_preprocess", return_value=_mock_anat_outputs()
+            "rbc.orchestration.functional.discover_functional",
+            side_effect=func_run_calls,
+        ),
+        patch(
+            "rbc.orchestration.anatomical.single_session_preprocess",
+            return_value=_mock_anat_outputs(),
         ) as mock_anat,
         patch(
-            "rbc.cli.all.functional_preprocess", return_value=_mock_func_outputs()
+            "rbc.orchestration.functional.single_session_preprocess",
+            return_value=_mock_func_outputs(),
         ) as mock_func,
         patch(
-            "rbc.cli.all.metrics_pipeline", return_value=_mock_metrics_outputs()
+            "rbc.orchestration.all.single_session_metrics",
+            return_value=_mock_metrics_outputs(),
         ) as mock_metrics,
         patch(
-            "rbc.cli.all.qc_pipeline",
+            "rbc.orchestration.all.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.all.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.all.RunContext") as mock_ctx_cls,
         patch(
-            "rbc.cli.all.FunctionalMetadata.load",
+            "rbc.orchestration.functional.FunctionalMetadata.load",
             return_value=mock_metadata,
         ),
     ):
@@ -462,9 +469,10 @@ class TestAllPipeline:
 
     def test_qc_passed_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """PASSED is logged when QC outputs indicate the run passed."""
         base_args.participant_label = ["01"]
@@ -475,25 +483,26 @@ class TestAllPipeline:
             sample_dataframe, ["01"], ["baseline"], "rest"
         )
 
-        with _patch_all(filtered_df, groups, qc_passed=True) as (
-            _,
-            _,
-            _,
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_all(filtered_df, groups, qc_passed=True) as (
+                _,
+                _,
+                _,
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             all_cli.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("PASSED" in c for c in log_calls)
+            assert any("PASSED" in msg for msg in caplog.messages)
 
     def test_qc_failed_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """FAILED is logged when QC outputs indicate the run failed."""
         base_args.participant_label = ["01"]
@@ -504,19 +513,19 @@ class TestAllPipeline:
             sample_dataframe, ["01"], ["baseline"], "rest"
         )
 
-        with _patch_all(filtered_df, groups, qc_passed=False) as (
-            _,
-            _,
-            _,
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_all(filtered_df, groups, qc_passed=False) as (
+                _,
+                _,
+                _,
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             all_cli.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("FAILED" in c for c in log_calls)
+            assert any("FAILED" in msg for msg in caplog.messages)
 
 
 class TestRunnerSetup:

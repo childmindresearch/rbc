@@ -86,10 +86,10 @@ def _patch_functional(
     mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
 
     with (
-        patch("rbc.cli.functional.load_table", return_value=filtered_df),
-        patch("rbc.cli.functional.load_session", return_value=Mock()),
+        patch("rbc.orchestration.functional.load_table", return_value=filtered_df),
+        patch("rbc.orchestration.functional.load_session", return_value=Mock()),
         patch(
-            "rbc.cli.functional.discover_functional",
+            "rbc.orchestration.functional.discover_functional",
             side_effect=func_run_calls,
         ),
         patch(
@@ -97,12 +97,12 @@ def _patch_functional(
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.functional.single_session_preprocess",
+            "rbc.orchestration.functional.single_session_preprocess",
             return_value=_mock_functional_outputs(),
         ) as mock_preprocess,
-        patch("rbc.cli.functional.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.functional.RunContext") as mock_ctx_cls,
         patch(
-            "rbc.cli.functional.FunctionalMetadata.load",
+            "rbc.orchestration.functional.FunctionalMetadata.load",
             return_value=mock_metadata,
         ),
     ):

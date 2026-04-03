@@ -71,18 +71,19 @@ def _patch_metrics(
 
     with (
         patch(
-            "rbc.cli.metrics.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]
+            "rbc.orchestration.metrics.load_table",
+            side_effect=[filtered_df, *([deriv_df] * 100)],
         ),
         patch(
             "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.metrics.single_session_metrics",
+            "rbc.orchestration.metrics.single_session_metrics",
             return_value=_mock_metrics_outputs(),
         ) as mock_metrics,
-        patch("rbc.cli.metrics.RunContext") as mock_ctx_cls,
-        patch("rbc.cli.metrics.nib.nifti1.load", return_value=mock_img),
+        patch("rbc.orchestration.metrics.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.metrics.nib.nifti1.load", return_value=mock_img),
     ):
         yield mock_metrics, mock_ctx_cls
 
