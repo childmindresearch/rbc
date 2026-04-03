@@ -92,7 +92,3 @@ def _ensure_dataset_description(output_dir: Path) -> None:
     }
     with ds_file.open("w") as fpath:
         json.dump(ds_data, fpath, indent=2)
-
-
-# Backward-compatible alias.
-PipelineContext = RunContext
