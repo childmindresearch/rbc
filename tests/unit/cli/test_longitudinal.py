@@ -130,7 +130,7 @@ def _patch_main(
     with_bold_mask: bool = True,
 ) -> Generator[tuple[Mock, Mock, Mock], None, None]:
     """Patch all external calls made by main()."""
-    from rbc.cli.query import SessionTables
+    from rbc.bids.session import SessionTables
 
     mock_anat_df = pl.DataFrame(
         {

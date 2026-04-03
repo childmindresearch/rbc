@@ -16,11 +16,17 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids import (
+    FUNC_GROUP_ENTITIES,
+    SUB_SES_QUERY,
+    Datatype,
+    extract_entities,
+    load_table,
+)
 from rbc.bids.functional import export_functional, resolve_functional
-from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
+from rbc.bids.session import iter_session_files, load_session
+from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
-from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
 from rbc.metadata import FunctionalMetadata
@@ -73,7 +79,7 @@ def main(args: FunctionalArgs) -> int:
     df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+        df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
@@ -84,7 +90,7 @@ def main(args: FunctionalArgs) -> int:
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         for func_df, anat_df in iter_session_files(
-            session, groupby=_FUNC_GROUP_ENTITIES
+            session, groupby=FUNC_GROUP_ENTITIES
         ):
             func_df = func_df.filter(pl.col("desc").is_null())
             row = func_df.filter(suffix="bold").row(0, named=True)

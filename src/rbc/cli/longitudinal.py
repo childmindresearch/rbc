@@ -13,10 +13,18 @@ if TYPE_CHECKING:
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import Datatype, Extension, Suffix, extract_entities, load_table
-from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
+from rbc.bids import (
+    FUNC_GROUP_ENTITIES,
+    SUB_SES_QUERY,
+    Datatype,
+    Extension,
+    Suffix,
+    extract_entities,
+    load_table,
+)
+from rbc.bids.session import iter_session_files, load_session
+from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs
-from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
@@ -171,7 +179,7 @@ def main(args: LongitudinalArgs) -> int:
     group_df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        group_df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+        group_df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
@@ -198,7 +206,7 @@ def main(args: LongitudinalArgs) -> int:
                 _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
 
         if args.functional:
-            for func_df, _ in iter_session_files(session, groupby=_FUNC_GROUP_ENTITIES):
+            for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
                 _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
         pipe_ctx.ensure_dataset_description()
 

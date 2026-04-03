@@ -56,7 +56,7 @@ def _patch_anatomical(
     filtered_df: pl.DataFrame,
 ) -> Generator[tuple[Mock, Mock], None, None]:
     """Common context manager patches for anatomical tests."""
-    from rbc.cli.query import SessionTables
+    from rbc.bids.session import SessionTables
 
     mock_anat_df = pl.DataFrame(
         {

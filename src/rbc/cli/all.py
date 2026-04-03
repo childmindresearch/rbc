@@ -14,19 +14,21 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids import (
+    ANAT_GROUP_ENTITIES,
+    FUNC_GROUP_ENTITIES,
+    SUB_SES_QUERY,
+    Datatype,
+    extract_entities,
+    load_table,
+)
 from rbc.bids.anatomical import export_anatomical
 from rbc.bids.functional import export_functional
 from rbc.bids.metrics import export_metrics
 from rbc.bids.qc import export_qc
-from rbc.cli import (
-    _ANAT_GROUP_ENTITIES,
-    _DEFAULT_ENV_VARS,
-    _FUNC_GROUP_ENTITIES,
-    _SUB_SES_QUERY,
-)
+from rbc.bids.session import iter_session_files, load_session
+from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
-from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
 from rbc.metadata import FunctionalMetadata
@@ -97,7 +99,7 @@ def main(args: AllArgs) -> int:
     df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+        df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
@@ -108,7 +110,7 @@ def main(args: AllArgs) -> int:
 
         # --- Anatomical (once per session, first T1w) ---
         for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-            _ANAT_GROUP_ENTITIES, maintain_order=True
+            ANAT_GROUP_ENTITIES, maintain_order=True
         ):
             anat_row = anat_df.filter(suffix="T1w").row(0, named=True)
             t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
@@ -122,7 +124,7 @@ def main(args: AllArgs) -> int:
 
         # --- Functional + Metrics + QC (per BOLD run) ---
         for func_df, _anat_df in iter_session_files(
-            session, groupby=_FUNC_GROUP_ENTITIES
+            session, groupby=FUNC_GROUP_ENTITIES
         ):
             row = func_df.row(0, named=True)
             bold_fpath = Path(row["root"]) / row["path"]

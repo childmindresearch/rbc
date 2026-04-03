@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.cli.query import load_session
+from rbc.bids.session import load_session
 
 if TYPE_CHECKING:
     import argparse
@@ -16,9 +16,15 @@ from pathlib import Path
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids import (
+    ANAT_GROUP_ENTITIES,
+    SUB_SES_QUERY,
+    Datatype,
+    extract_entities,
+    load_table,
+)
 from rbc.bids.anatomical import export_anatomical
-from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
@@ -58,7 +64,7 @@ def main(args: AnatomicalArgs) -> int:
     df = df.filter(pl.all_horizontal(filters))
 
     for _, sub_ses_group in tqdm(
-        df.group_by(_SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
+        df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not ctx.verbose
     ):
         pipe_ctx = RunContext(
             sub=sub_ses_group["sub"][0],
@@ -68,7 +74,7 @@ def main(args: AnatomicalArgs) -> int:
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-            _ANAT_GROUP_ENTITIES, maintain_order=True
+            ANAT_GROUP_ENTITIES, maintain_order=True
         ):
             row = anat_df.row(0, named=True)
             t1w_fpath = Path(row["root"]) / row["path"]

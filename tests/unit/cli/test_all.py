@@ -106,7 +106,7 @@ def _patch_all(
 
     Yields (mock_anat, mock_func, mock_metrics, mock_qc, mock_ctx_cls).
     """
-    from rbc.cli.query import SessionTables
+    from rbc.bids.session import SessionTables
 
     mock_anat_df = pl.DataFrame(
         {

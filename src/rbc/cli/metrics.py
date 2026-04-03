@@ -14,9 +14,16 @@ import nibabel as nib
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import Datatype, TemplateSpace, extract_entities, load_table
+from rbc.bids import (
+    FUNC_GROUP_ENTITIES,
+    SUB_SES_QUERY,
+    Datatype,
+    TemplateSpace,
+    extract_entities,
+    load_table,
+)
 from rbc.bids.metrics import export_metrics, resolve_metrics
-from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
+from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
@@ -105,7 +112,7 @@ def main(args: MetricsArgs) -> int:
         filters.append(pl.col("task") == args.task)
     df = df.filter(pl.all_horizontal(filters))
 
-    for _, group in tqdm(df.group_by(_SUB_SES_QUERY), disable=not ctx.verbose):
+    for _, group in tqdm(df.group_by(SUB_SES_QUERY), disable=not ctx.verbose):
         sub: str = group["sub"][0]
         ses: str | None = group["ses"][0] or None
         pipe_ctx = RunContext(sub=sub, ses=ses, output_dir=args.output_dir)
@@ -114,7 +121,7 @@ def main(args: MetricsArgs) -> int:
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
         )
 
-        for _, run_group in group.group_by(_FUNC_GROUP_ENTITIES):
+        for _, run_group in group.group_by(FUNC_GROUP_ENTITIES):
             row = run_group.row(0, named=True)
             ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
 
