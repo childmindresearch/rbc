@@ -48,7 +48,7 @@ omit = ["src/rbc_resources/"]
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/rbc/core/bids/_schema\\.py$", "tests/unit/test_bids\\.py$"]
+exclude = ["src/rbc/bids/_schema\\.py$", "tests/unit/bids/test_bids\\.py$"]
 
 [tool.ruff]
 line-length = 88
@@ -56,8 +56,8 @@ indent-width = 4
 src = ["src"]
 target-version = "py312"
 extend-exclude = [
-  "src/rbc/core/bids/_schema.py",
-  "tests/unit/test_bids.py",
+  "src/rbc/bids/_schema.py",
+  "tests/unit/bids/test_bids.py",
   "scripts/visualize_pipeline.py",
   "scripts/build_robust_template.py"
 ]
@@ -99,8 +99,8 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"bids2table.format_bids_path".msg = "Prefer rbc.core.bids.bids_path / rbc.core.bids.bids_name"
-"bids2table.parse_bids_entities".msg = "Prefer rbc.core.bids.parse_bids_name"
+"bids2table.format_bids_path".msg = "Prefer rbc.bids.bids_path / rbc.bids.bids_name"
+"bids2table.parse_bids_entities".msg = "Prefer rbc.bids.parse_bids_name"
 "types.SimpleNamespace".msg = "Prefer NamedTuple"
 
 [tool.ruff.lint.pydocstyle]

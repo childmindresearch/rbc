@@ -14,11 +14,11 @@ import nibabel as nib
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, TemplateSpace, extract_entities, load_table
+from rbc.bids.metrics import export_metrics, resolve_metrics
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.metrics import single_session_metrics
 
@@ -124,59 +124,25 @@ def main(args: MetricsArgs) -> int:
                 space=TemplateSpace.MNI152NLIN6ASYM,
             )
 
-            template_brain_mask = mni_q.expect(
-                deriv_df, suffix=Suffix.MASK, desc="bold"
-            )
             for regressor in args.regressor:
-                regressed_bold = mni_q.expect(
-                    deriv_df,
-                    suffix=Suffix.BOLD,
-                    desc="regressed",
-                    extra={"reg": regressor},
-                )
-                cleaned_bold = mni_q.expect(
-                    deriv_df,
-                    suffix=Suffix.BOLD,
-                    desc="preproc",
-                    extra={"reg": regressor},
-                )
+                resolved = resolve_metrics(mni_q, deriv_df, regressor=regressor)
 
-                tr = args.tr if args.tr is not None else _read_header_tr(regressed_bold)
+                tr = (
+                    args.tr
+                    if args.tr is not None
+                    else _read_header_tr(resolved["regressed_bold"])
+                )
 
                 outputs = single_session_metrics(
-                    regressed_bold=regressed_bold,
-                    cleaned_bold=cleaned_bold,
-                    template_brain_mask=template_brain_mask,
+                    regressed_bold=resolved["regressed_bold"],
+                    cleaned_bold=resolved["cleaned_bold"],
+                    template_brain_mask=resolved["template_brain_mask"],
                     tr=tr,
                     atlas=args.atlas,
                     fwhm=args.fwhm,
                 )
 
-                mex = mni_q.derive(extra={"reg": regressor})
-                mex.save(outputs.alff, suffix="alff")
-                mex.save(outputs.falff, suffix="falff")
-                mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
-                mex.save(outputs.falff_smooth, suffix="falff", desc="smooth")
-                mex.save(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-                mex.save(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
-                mex.save(outputs.reho, suffix="reho")
-                mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
-                mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-                for atlas in args.atlas:
-                    mex.save(
-                        outputs.timeseries[atlas],
-                        suffix="timeseries",
-                        desc="mean",
-                        extension=".tsv",
-                        atlas=atlas,
-                    )
-                    mex.save(
-                        outputs.correlation_matrix[atlas],
-                        suffix="correlations",
-                        desc="pearson",
-                        extension=".tsv",
-                        atlas=atlas,
-                    )
+                export_metrics(mni_q, outputs, regressor=regressor, atlases=args.atlas)
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC metrics workflow complete")

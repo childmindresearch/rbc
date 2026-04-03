@@ -1,7 +1,7 @@
 """Pipeline context for BIDS-compliant derivative export.
 
 Holds subject identity and output directory, providing a :meth:`bids` factory
-that returns a :class:`~rbc.core.bids.Bids` builder for composing exports
+that returns a :class:`~rbc.bids.Bids` builder for composing exports
 and queries.
 
 """
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 
-from rbc.core.bids import BIDS_VERSION, Bids, EntityKwargs
+from rbc.bids import BIDS_VERSION, Bids, EntityKwargs
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -43,7 +43,7 @@ class RunContext:
         extra: dict[str, str | int] | None = None,
         **overrides: str | int,
     ) -> Bids:
-        """Create a :class:`~rbc.core.bids.Bids` builder bound to this context.
+        """Create a :class:`~rbc.bids.Bids` builder bound to this context.
 
         Args:
             datatype: BIDS datatype directory (e.g. ``"anat"``, ``"func"``).
@@ -52,7 +52,7 @@ class RunContext:
             **overrides: Individual entity overrides.
 
         Returns:
-            A :class:`~rbc.core.bids.Bids` builder ready for
+            A :class:`~rbc.bids.Bids` builder ready for
             ``.derive()`` / ``.save()`` / ``.find()`` calls.
         """
         merged: dict[str, str | int] = {**(entities or {}), **overrides}  # type: ignore[dict-item]

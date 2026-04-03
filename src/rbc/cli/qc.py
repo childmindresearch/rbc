@@ -13,18 +13,17 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, TemplateSpace, extract_entities, load_table
+from rbc.bids.qc import export_qc, resolve_qc
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.qc import single_session_qc
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
-    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -91,57 +90,19 @@ def main(args: QCArgs) -> int:
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
             func_mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
 
-            template_bold = func_mni.expect(
-                deriv_df, suffix=Suffix.BOLD, desc="preproc"
-            )
-            cleaned_bold: dict[str, Path] = {
-                regressor: func_mni.expect(
-                    deriv_df,
-                    suffix=Suffix.BOLD,
-                    desc="preproc",
-                    extra={"reg": regressor},
-                )
-                for regressor in args.regressor
-            }
-            motion_params = func.expect(
+            resolved = resolve_qc(
+                func,
+                func_mni,
+                pipe_ctx,
                 deriv_df,
-                suffix=Suffix.MOTION,
-                desc="motionParams",
-                extension=".1D",
-            )
-            rms_rel = func.expect(
-                deriv_df,
-                suffix=Suffix.MOTION,
-                desc="relsDisplacement",
-                extension=".rms",
-            )
-            bold_mask = func.expect(deriv_df, suffix=Suffix.MASK, desc="brain")
-            brain_mask = pipe_ctx.bids(datatype=Datatype.ANAT).expect(
-                deriv_df, suffix=Suffix.MASK, desc="T1w"
-            )
-            bold_to_anat_matrix = func.expect(
-                deriv_df,
-                suffix="xfm",
-                desc="linear",
-                extension=".mat",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            )
-            template_brain_mask = func_mni.expect(
-                deriv_df, suffix=Suffix.MASK, desc="bold"
+                regressors=args.regressor,
             )
 
             bold_task: str | None = row.get("task")
             bold_run: int | None = row.get("run")
 
             qc_outputs = single_session_qc(
-                template_bold=template_bold,
-                cleaned_bold=cleaned_bold,
-                motion_params=motion_params,
-                rms_rel=rms_rel,
-                bold_mask=bold_mask,
-                brain_mask=brain_mask,
-                bold_to_anat_matrix=bold_to_anat_matrix,
-                template_brain_mask=template_brain_mask,
+                **resolved,
                 sub=sub,
                 ses=ses or "",
                 task=bold_task or "",
@@ -150,14 +111,7 @@ def main(args: QCArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            for regressor in args.regressor:
-                func_mni.save(
-                    qc_outputs.qc_file[regressor],
-                    suffix="quality",
-                    desc="xcp",
-                    extension=".tsv",
-                    extra={"reg": regressor},
-                )
+            export_qc(func_mni, qc_outputs, regressors=args.regressor)
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             ctx.logger.info(

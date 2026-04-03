@@ -6,7 +6,7 @@ from pathlib import PurePath
 
 import pytest
 
-from rbc.core.bids import (
+from rbc.bids import (
     BIDSFile,
     Datatype,
     Extension,

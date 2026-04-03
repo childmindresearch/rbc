@@ -16,11 +16,11 @@ from pathlib import Path
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids.anatomical import export_anatomical
 from rbc.cli import _ANAT_GROUP_ENTITIES, _DEFAULT_ENV_VARS, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
 
@@ -78,30 +78,7 @@ def main(args: AnatomicalArgs) -> int:
             outputs = single_session_preprocess(in_t1w=t1w_fpath)
 
             anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
-            anat.save(outputs.brain, suffix=Suffix.T1W, desc="brain")
-            anat.save(outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
-            anat.save(outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
-            anat.save(outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
-            anat.save(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
-            anat.save(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
-            anat.save(
-                outputs.forward_xfm,
-                suffix="xfm",
-                extra={
-                    "from": "T1w",
-                    "to": TemplateSpace.MNI152NLIN6ASYM,
-                    "mode": "image",
-                },
-            )
-            anat.save(
-                outputs.inverse_xfm,
-                suffix="xfm",
-                extra={
-                    "from": TemplateSpace.MNI152NLIN6ASYM,
-                    "to": "T1w",
-                    "mode": "image",
-                },
-            )
+            export_anatomical(anat, outputs)
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC anatomical workflow complete")

@@ -16,18 +16,12 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids.functional import export_functional, resolve_functional
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
-from rbc.core.bids import (
-    Datatype,
-    Suffix,
-    TemplateSpace,
-    bids_safe_label,
-    extract_entities,
-)
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.metadata import FunctionalMetadata
 from rbc.workflows.functional import single_session_preprocess
@@ -99,89 +93,24 @@ def main(args: FunctionalArgs) -> int:
             ctx.logger.info(f"Processing {bold_fpath}")
 
             anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+            resolved = resolve_functional(anat_q, anat_df)
 
             func_metadata = FunctionalMetadata.load(bold_fpath, tr_override=args.tr)
 
             outputs = single_session_preprocess(
                 in_bold=bold_fpath,
-                t1w_brain=anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
-                wm_bbr_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wmBBR"),
-                brain_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="T1w"),
-                csf_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="csf"),
-                wm_mask=anat_q.expect(anat_df, suffix=Suffix.MASK, desc="wm"),
-                anat_to_template=anat_q.expect(
-                    anat_df,
-                    suffix="xfm",
-                    extra={
-                        "from": TemplateSpace.MNI152NLIN6ASYM,
-                        "to": "T1w",
-                        "mode": "image",
-                    },
-                ),
+                t1w_brain=resolved["t1w_brain"],
+                wm_bbr_mask=resolved["wm_bbr_mask"],
+                brain_mask=resolved["brain_mask"],
+                csf_mask=resolved["csf_mask"],
+                wm_mask=resolved["wm_mask"],
+                anat_to_template=resolved["anat_to_template"],
                 metadata=func_metadata,
                 regressor_set=args.regressor,
             )
 
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-            func.save(outputs.sbref, suffix=Suffix.SBREF)
-            func.save(outputs.preproc_bold, suffix=Suffix.BOLD, desc="preproc")
-            func.save(
-                outputs.motion_params,
-                suffix=Suffix.MOTION,
-                desc="motionParams",
-                extension=".1D",
-            )
-            func.save(
-                outputs.rms_rel,
-                suffix=Suffix.MOTION,
-                desc="relsDisplacement",
-                extension=".rms",
-            )
-            func.save(
-                outputs.rms_abs,
-                suffix=Suffix.MOTION,
-                desc="maxDisplacement",
-                extension=".rms",
-            )
-            func.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
-            func.save(
-                outputs.bold_to_anat_matrix,
-                suffix="xfm",
-                desc="linear",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            )
-            func.save(
-                outputs.bold_to_anat_itk,
-                suffix="xfm",
-                desc="linearITK",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            )
-            for regressor in args.regressor:
-                func.save(
-                    outputs.regressor_file[regressor],
-                    suffix="regressors",
-                    desc=bids_safe_label(regressor),
-                    extension=".1D",
-                )
-
-            mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
-            for regressor in args.regressor:
-                mni.save(
-                    outputs.regressed_bold[regressor],
-                    suffix=Suffix.BOLD,
-                    desc="regressed",
-                    extra={"reg": regressor},
-                )
-                mni.save(
-                    outputs.cleaned_bold[regressor],
-                    suffix=Suffix.BOLD,
-                    desc="preproc",
-                    extra={"reg": regressor},
-                )
-            mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
-            mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
+            export_functional(func, outputs, regressors=args.regressor)
 
         pipe_ctx.ensure_dataset_description()
 

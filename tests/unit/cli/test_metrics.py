@@ -74,7 +74,7 @@ def _patch_metrics(
             "rbc.cli.metrics.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]
         ),
         patch(
-            "rbc.core.bids2table.find_file",
+            "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(

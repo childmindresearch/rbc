@@ -14,6 +14,11 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, extract_entities, load_table
+from rbc.bids.anatomical import export_anatomical
+from rbc.bids.functional import export_functional
+from rbc.bids.metrics import export_metrics
+from rbc.bids.qc import export_qc
 from rbc.cli import (
     _ANAT_GROUP_ENTITIES,
     _DEFAULT_ENV_VARS,
@@ -23,14 +28,6 @@ from rbc.cli import (
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
-from rbc.core.bids import (
-    Datatype,
-    Suffix,
-    TemplateSpace,
-    bids_safe_label,
-    extract_entities,
-)
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.metadata import FunctionalMetadata
 from rbc.workflows.anatomical import single_session_preprocess as anatomical_preprocess
@@ -76,7 +73,7 @@ class AllArgs(BaseArgs):
         )
 
 
-def main(args: AllArgs) -> int:  # noqa: C901
+def main(args: AllArgs) -> int:
     """Main entrypoint of combined pipeline."""
     ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
     ctx.runner.environ = _DEFAULT_ENV_VARS
@@ -121,30 +118,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
             anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
 
             anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
-            anat.save(anat_outputs.brain, suffix=Suffix.T1W, desc="brain")
-            anat.save(anat_outputs.brain_mask, suffix=Suffix.MASK, desc="T1w")
-            anat.save(anat_outputs.csf_mask, suffix=Suffix.MASK, desc="csf")
-            anat.save(anat_outputs.gm_mask, suffix=Suffix.MASK, desc="gm")
-            anat.save(anat_outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
-            anat.save(anat_outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
-            anat.save(
-                anat_outputs.forward_xfm,
-                suffix="xfm",
-                extra={
-                    "from": "T1w",
-                    "to": TemplateSpace.MNI152NLIN6ASYM,
-                    "mode": "image",
-                },
-            )
-            anat.save(
-                anat_outputs.inverse_xfm,
-                suffix="xfm",
-                extra={
-                    "from": TemplateSpace.MNI152NLIN6ASYM,
-                    "to": "T1w",
-                    "mode": "image",
-                },
-            )
+            export_anatomical(anat, anat_outputs)
 
         # --- Functional + Metrics + QC (per BOLD run) ---
         for func_df, _anat_df in iter_session_files(
@@ -170,68 +144,8 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 regressor_set=args.regressor,
             )
 
-            # Export functional outputs
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-            func.save(func_outputs.sbref, suffix=Suffix.SBREF)
-            func.save(func_outputs.preproc_bold, suffix=Suffix.BOLD, desc="preproc")
-            func.save(
-                func_outputs.motion_params,
-                suffix=Suffix.MOTION,
-                desc="motionParams",
-                extension=".1D",
-            )
-            func.save(
-                func_outputs.rms_rel,
-                suffix=Suffix.MOTION,
-                desc="relsDisplacement",
-                extension=".rms",
-            )
-            func.save(
-                func_outputs.rms_abs,
-                suffix=Suffix.MOTION,
-                desc="maxDisplacement",
-                extension=".rms",
-            )
-            func.save(func_outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
-            func.save(
-                func_outputs.bold_to_anat_matrix,
-                suffix="xfm",
-                desc="linear",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            )
-            func.save(
-                func_outputs.bold_to_anat_itk,
-                suffix="xfm",
-                desc="linearITK",
-                extension=".txt",
-                extra={"from": "bold", "to": "T1w", "mode": "image"},
-            )
-            for regressor in args.regressor:
-                func.save(
-                    func_outputs.regressor_file[regressor],
-                    suffix="regressors",
-                    desc=bids_safe_label(regressor),
-                    extension=".1D",
-                )
-
-            mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
-            for regressor in args.regressor:
-                mni.save(
-                    func_outputs.regressed_bold[regressor],
-                    suffix=Suffix.BOLD,
-                    desc="regressed",
-                    extra={"reg": regressor},
-                )
-                mni.save(
-                    func_outputs.cleaned_bold[regressor],
-                    suffix=Suffix.BOLD,
-                    desc="preproc",
-                    extra={"reg": regressor},
-                )
-
-            mni.save(func_outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
-            mni.save(func_outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
+            mni = export_functional(func, func_outputs, regressors=args.regressor)
 
             # --- Metrics ---
             for regressor in args.regressor:
@@ -248,33 +162,12 @@ def main(args: AllArgs) -> int:  # noqa: C901
                     fwhm=args.fwhm,
                 )
 
-                mex = mni.derive(extra={"reg": regressor})
-                mex.save(metrics_outputs.alff, suffix="alff")
-                mex.save(metrics_outputs.falff, suffix="falff")
-                mex.save(metrics_outputs.alff_smooth, suffix="alff", desc="smooth")
-                mex.save(metrics_outputs.falff_smooth, suffix="falff", desc="smooth")
-                mex.save(metrics_outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-                mex.save(
-                    metrics_outputs.falff_zscored, suffix="falff", desc="smoothZstd"
+                export_metrics(
+                    mni,
+                    metrics_outputs,
+                    regressor=regressor,
+                    atlases=args.atlas,
                 )
-                mex.save(metrics_outputs.reho, suffix="reho")
-                mex.save(metrics_outputs.reho_smooth, suffix="reho", desc="smooth")
-                mex.save(metrics_outputs.reho_zscored, suffix="reho", desc="smoothZstd")
-                for atlas in args.atlas:
-                    mex.save(
-                        metrics_outputs.timeseries[atlas],
-                        suffix="timeseries",
-                        desc="mean",
-                        extension=".tsv",
-                        atlas=atlas,
-                    )
-                    mex.save(
-                        metrics_outputs.correlation_matrix[atlas],
-                        suffix="correlations",
-                        desc="pearson",
-                        extension=".tsv",
-                        atlas=atlas,
-                    )
 
             # --- QC ---
             ctx.logger.info(
@@ -298,14 +191,7 @@ def main(args: AllArgs) -> int:  # noqa: C901
                 regressor_set=args.regressor,
             )
 
-            for regressor in args.regressor:
-                mni.save(
-                    qc_outputs.qc_file[regressor],
-                    suffix="quality",
-                    desc="xcp",
-                    extension=".tsv",
-                    extra={"reg": regressor},
-                )
+            export_qc(mni, qc_outputs, regressors=args.regressor)
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             ctx.logger.info(

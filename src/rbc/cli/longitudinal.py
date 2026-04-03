@@ -13,12 +13,11 @@ if TYPE_CHECKING:
 import polars as pl
 from tqdm import tqdm
 
+from rbc.bids import Datatype, Extension, Suffix, extract_entities, load_table
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs
 from rbc.cli.query import iter_session_files, load_session
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Extension, Suffix, extract_entities
-from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal

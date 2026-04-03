@@ -153,7 +153,7 @@ def _patch_main(
             side_effect=_build_iter_side_effect(groups),
         ),
         patch(
-            "rbc.core.bids2table.find_file",
+            "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
@@ -503,10 +503,10 @@ class TestProcessAnat:
                 return_value=_mock_anat_outputs(),
             ) as mock_long,
             patch(
-                "rbc.core.bids2table.find_file",
+                "rbc.bids.query.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             ),
-            patch("rbc.core.bids.shutil.copy2"),
+            patch("rbc.bids.builder.shutil.copy2"),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
             assert mock_long.call_count == 1
@@ -534,16 +534,16 @@ class TestProcessAnat:
         if side_effect is None:
             setattr(outputs, null_field, None)
             get_patch = patch(
-                "rbc.core.bids2table.find_file",
+                "rbc.bids.query.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             )
         else:
-            get_patch = patch("rbc.core.bids2table.find_file", side_effect=side_effect)
+            get_patch = patch("rbc.bids.query.find_file", side_effect=side_effect)
 
         with (
             patch("rbc.cli.longitudinal.anatomical_longitudinal", return_value=outputs),
             get_patch,
-            patch("rbc.core.bids.shutil.copy2"),
+            patch("rbc.bids.builder.shutil.copy2"),
             pytest.raises(expected_error, match=null_field),
         ):
             _process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
@@ -563,10 +563,10 @@ class TestProcessFunc:
                 return_value=_mock_func_outputs(),
             ) as mock_func,
             patch(
-                "rbc.core.bids2table.find_file",
+                "rbc.bids.query.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
             ),
-            patch("rbc.core.bids.shutil.copy2"),
+            patch("rbc.bids.builder.shutil.copy2"),
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
             assert mock_func.call_count == 1
@@ -603,7 +603,7 @@ class TestProcessFunc:
                 return_value=_mock_func_outputs(),
             ),
             patch(
-                "rbc.core.bids2table.find_file",
+                "rbc.bids.query.find_file",
                 side_effect=_none_for(**match_kwargs),
             ),
             pytest.raises(FileNotFoundError),
@@ -621,10 +621,10 @@ class TestProcessFunc:
                 return_value=_mock_func_outputs(with_bold_mask=False),
             ),
             patch(
-                "rbc.core.bids2table.find_file",
+                "rbc.bids.query.find_file",
                 side_effect=_none_for(suffix="mask", desc="brain"),
             ),
-            patch("rbc.core.bids.shutil.copy2") as mock_copy,
+            patch("rbc.bids.builder.shutil.copy2") as mock_copy,
         ):
             _process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
             assert mock_copy.call_count == 3
