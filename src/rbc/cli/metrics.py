@@ -9,10 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
-from rbc.core.niwrap import setup_runner
-from rbc.orchestration import Filters
+from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.metrics import run
 
 if TYPE_CHECKING:
@@ -52,10 +50,6 @@ class MetricsArgs(BaseArgs):
 
 def main(args: MetricsArgs) -> int:
     """Main entrypoint of metrics workflow."""
-    ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
-    ctx.runner.environ = _DEFAULT_ENV_VARS
-    ctx.logger.info("Preparing to run RBC metrics workflow")
-
     run(
         output_dir=args.output_dir,
         filters=Filters(
@@ -67,10 +61,12 @@ def main(args: MetricsArgs) -> int:
         atlases=args.atlas,
         fwhm=args.fwhm,
         tr=args.tr,
-        verbose=ctx.verbose,
+        runner_config=RunnerConfig(
+            runner=args.runner,
+            verbose=bool(args.verbose),
+            tmp_dir=args.tmp_dir,
+        ),
     )
-
-    ctx.logger.info("RBC metrics workflow complete")
     return 0
 
 

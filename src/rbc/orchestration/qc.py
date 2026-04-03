@@ -12,13 +12,12 @@ from rbc.bids import SUB_SES_QUERY, Datatype, TemplateSpace, load_table
 from rbc.bids.qc import export_qc, resolve_qc
 from rbc.bids.session import discover_derivative_runs
 from rbc.context import RunContext
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.qc import single_session_qc
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
-
-    from rbc.orchestration import Filters
 
 _logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     start_tr: int,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the QC pipeline for all matching subjects/sessions.
 
@@ -38,8 +37,13 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         start_tr: Number of initial TRs discarded during preprocessing.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    _logger.info("Preparing to run RBC QC workflow")
     df = load_table(
         dataset_dir=output_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -105,3 +109,5 @@ def run(
             )
 
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC QC workflow complete")

@@ -10,10 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
-from rbc.core.niwrap import setup_runner
-from rbc.orchestration import Filters
+from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.all import run
 
 if TYPE_CHECKING:
@@ -56,10 +54,6 @@ class AllArgs(BaseArgs):
 
 def main(args: AllArgs) -> int:
     """Main entrypoint of combined pipeline."""
-    ctx = setup_runner(runner=args.runner, verbose=args.verbose, tmp_dir=args.tmp_dir)
-    ctx.runner.environ = _DEFAULT_ENV_VARS
-    ctx.logger.info("Preparing to run RBC full pipeline")
-
     run(
         input_dir=args.input_dir,
         output_dir=args.output_dir,
@@ -73,10 +67,12 @@ def main(args: AllArgs) -> int:
         fwhm=args.fwhm,
         start_tr=args.start_tr,
         tr=args.tr,
-        verbose=ctx.verbose,
+        runner_config=RunnerConfig(
+            runner=args.runner,
+            verbose=bool(args.verbose),
+            tmp_dir=args.tmp_dir,
+        ),
     )
-
-    ctx.logger.info("RBC full pipeline complete")
     return 0
 
 

@@ -17,6 +17,7 @@ from rbc.bids.metrics import export_metrics
 from rbc.bids.qc import export_qc
 from rbc.bids.session import load_session
 from rbc.context import RunContext
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.anatomical import process_session as process_anat
 from rbc.orchestration.functional import process_session as process_func
 from rbc.workflows.metrics import single_session_metrics
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
-    from rbc.orchestration import Filters
     from rbc_resources import AtlasName
 
 _logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def run(
     fwhm: float,
     start_tr: int,
     tr: float | None = None,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the full pipeline (anat + func + metrics + QC) per session.
 
@@ -58,8 +58,13 @@ def run(
         fwhm: Smoothing kernel FWHM in mm.
         start_tr: Number of initial TRs discarded during preprocessing.
         tr: TR override in seconds, or ``None`` to read from headers.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    _logger.info("Preparing to run RBC full pipeline")
     df = load_table(
         dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -140,3 +145,5 @@ def run(
             _logger.info("QC %s for sub-%s", status, pipe_ctx.sub)
 
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC full pipeline complete")

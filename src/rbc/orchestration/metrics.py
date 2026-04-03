@@ -13,6 +13,7 @@ from rbc.bids import SUB_SES_QUERY, Datatype, TemplateSpace, load_table
 from rbc.bids.metrics import export_metrics, resolve_metrics
 from rbc.bids.session import discover_derivative_runs
 from rbc.context import RunContext
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.metrics import single_session_metrics
 
 if TYPE_CHECKING:
@@ -20,7 +21,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from rbc.bids import Bids
-    from rbc.orchestration import Filters
     from rbc.workflows.functional import FunctionalOutputs
     from rbc.workflows.metrics import MetricsOutputs
     from rbc_resources import AtlasName
@@ -85,7 +85,7 @@ def run(
     atlases: Sequence[AtlasName],
     fwhm: float,
     tr: float | None = None,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the metrics pipeline for all matching subjects/sessions.
 
@@ -96,8 +96,14 @@ def run(
         atlases: Atlas names for timeseries extraction.
         fwhm: Smoothing kernel FWHM in mm.
         tr: TR override in seconds, or ``None`` to read from headers.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    tr_msg = f" (TR override: {tr}s)" if tr is not None else ""
+    _logger.info("Preparing to run RBC metrics workflow%s", tr_msg)
     df = load_table(
         dataset_dir=output_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -158,3 +164,5 @@ def run(
                 )
 
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC metrics workflow complete")

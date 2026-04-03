@@ -173,13 +173,8 @@ def _patch_main(
 
 @pytest.fixture
 def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking setup_runner with consistent return value."""
-    with patch("rbc.cli.longitudinal.setup_runner") as mock:
-        ctx = Mock()
-        ctx.runner = Mock()
-        ctx.logger = Mock()
-        ctx.verbose = False
-        mock.return_value = ctx
+    """Fixture for mocking init_runner so no real runner is created."""
+    with patch("rbc.orchestration.longitudinal.init_runner") as mock:
         yield mock
 
 
@@ -480,15 +475,13 @@ class TestRunnerSetup:
         args = LongitudinalArgs.validate_namespace(base_args)
         with (
             caplog.at_level(logging.WARNING),
-            patch("rbc.cli.longitudinal.setup_runner") as mock_setup,
+            patch("rbc.orchestration.longitudinal.init_runner"),
             _patch_main(anat_df_full, _make_groups(anat_df_full, [], [])) as (
                 _,
                 __,
                 mock_ctx_cls,
             ),
         ):
-            ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
-            mock_setup.return_value = ctx
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             main(args)
             assert any("experimental" in msg.lower() for msg in caplog.messages)

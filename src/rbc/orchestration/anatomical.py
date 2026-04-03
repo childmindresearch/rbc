@@ -12,13 +12,13 @@ from rbc.bids import SUB_SES_QUERY, Datatype, load_table
 from rbc.bids.anatomical import discover_anatomical, export_anatomical
 from rbc.bids.session import load_session
 from rbc.context import RunContext
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.anatomical import AnatomicalOutputs, single_session_preprocess
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from rbc.bids.session import SessionTables
-    from rbc.orchestration import Filters
 
 _logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def run(
     output_dir: Path,
     *,
     filters: Filters,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the anatomical pipeline for all matching subjects/sessions.
 
@@ -62,8 +62,13 @@ def run(
         input_dir: BIDS dataset directory.
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    _logger.info("Preparing to run RBC anatomical workflow")
     df = load_table(
         dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -90,3 +95,5 @@ def run(
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         process_session(session, pipe_ctx)
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC anatomical workflow complete")

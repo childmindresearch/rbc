@@ -24,13 +24,12 @@ from rbc.bids.longitudinal import (
 )
 from rbc.bids.session import iter_session_files, load_session
 from rbc.context import RunContext
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from rbc.orchestration import Filters
 
 _logger = logging.getLogger(__name__)
 
@@ -102,7 +101,7 @@ def run(
     filters: Filters,
     anatomical: bool = True,
     functional: bool = True,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the longitudinal pipeline for all matching subjects/sessions.
 
@@ -112,12 +111,17 @@ def run(
         filters: Participant/session/task filters.
         anatomical: Run anatomical longitudinal processing.
         functional: Run functional longitudinal processing.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
     _logger.warning(
         "This workflow is experimental and may be sensitive to input file "
         "naming conventions."
     )
+    _logger.info("Preparing to run RBC longitudinal workflow")
     df = load_table(
         dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -163,3 +167,5 @@ def run(
                 process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
 
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC longitudinal workflow complete")

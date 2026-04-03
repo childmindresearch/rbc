@@ -90,13 +90,8 @@ def _patch_metrics(
 
 @pytest.fixture
 def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking setup_runner with consistent return value."""
-    with patch("rbc.cli.metrics.setup_runner") as mock:
-        ctx = Mock()
-        ctx.runner = Mock()
-        ctx.logger = Mock()
-        ctx.verbose = False
-        mock.return_value = ctx
+    """Fixture for mocking init_runner so no real runner is created."""
+    with patch("rbc.orchestration.metrics.init_runner") as mock:
         yield mock
 
 
@@ -398,28 +393,24 @@ class TestMetricsExports:
 class TestRunnerSetup:
     """Test runner configuration and environment setup."""
 
-    def test_runner_environment_variables_set(
+    def test_init_runner_called_with_config(
         self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
     ) -> None:
-        """Runner environment variables are set to the expected defaults."""
-        from rbc.core import CPAC_ANTS_SEED
+        """Test init_runner is called with the correct RunnerConfig."""
+        from rbc.orchestration import RunnerConfig
 
         args = MetricsArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, [], [], None)
 
         with (
-            patch("rbc.cli.metrics.setup_runner") as mock_setup,
+            patch("rbc.orchestration.metrics.init_runner") as mock_init,
             _patch_metrics(filtered_df, sample_dataframe) as (_, mock_ctx_cls),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
-            mock_setup.return_value = ctx
-
             metrics.main(args)
-            assert ctx.runner.environ == {
-                "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
-                "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
-            }
+            mock_init.assert_called_once()
+            config = mock_init.call_args[0][0]
+            assert isinstance(config, RunnerConfig)
 
 
 class TestMetricsRegistration:

@@ -17,6 +17,7 @@ from rbc.bids.functional import (
 from rbc.bids.session import load_session
 from rbc.context import RunContext
 from rbc.metadata import FunctionalMetadata
+from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.functional import single_session_preprocess
 
 if TYPE_CHECKING:
@@ -25,7 +26,6 @@ if TYPE_CHECKING:
 
     from rbc.bids import Bids
     from rbc.bids.session import SessionTables
-    from rbc.orchestration import Filters
     from rbc.workflows.functional import FunctionalOutputs
 
 _logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     tr: float | None = None,
-    verbose: bool = False,
+    runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the functional pipeline for all matching subjects/sessions.
 
@@ -95,8 +95,13 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         tr: TR override in seconds.
-        verbose: Show progress bar.
+        runner_config: Execution backend configuration.
     """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    _logger.info("Preparing to run RBC functional workflow")
     df = load_table(
         dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
@@ -124,3 +129,5 @@ def run(
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
         process_session(session, pipe_ctx, regressors=regressors, tr=tr)
         pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC functional workflow complete")
