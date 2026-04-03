@@ -16,7 +16,13 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids import (
+    Datatype,
+    Suffix,
+    TemplateSpace,
+    bids_safe_label,
+    extract_entities,
+)
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.qc import single_session_qc
@@ -99,7 +105,7 @@ def main(args: QCArgs) -> int:
                     deriv_df,
                     suffix=Suffix.BOLD,
                     desc="preproc",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
                 for regressor in args.regressor
             }
@@ -123,7 +129,7 @@ def main(args: QCArgs) -> int:
                 deriv_df,
                 suffix="xfm",
                 desc="linear",
-                extension=".mat",
+                extension=".txt",
                 extra={"from": "bold", "to": "T1w", "mode": "image"},
             )
             template_brain_mask = func_mni.expect(
@@ -156,7 +162,7 @@ def main(args: QCArgs) -> int:
                     suffix="quality",
                     desc="xcp",
                     extension=".tsv",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
 
             status = "PASSED" if qc_outputs.passed else "FAILED"

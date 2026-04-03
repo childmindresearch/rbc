@@ -17,7 +17,13 @@ from tqdm import tqdm
 from rbc.cli import _DEFAULT_ENV_VARS, _FUNC_GROUP_ENTITIES, _SUB_SES_QUERY
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import RunContext
-from rbc.core.bids import Datatype, Suffix, TemplateSpace, extract_entities
+from rbc.core.bids import (
+    Datatype,
+    Suffix,
+    TemplateSpace,
+    bids_safe_label,
+    extract_entities,
+)
 from rbc.core.bids2table import load_table
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.metrics import single_session_metrics
@@ -132,13 +138,13 @@ def main(args: MetricsArgs) -> int:
                     deriv_df,
                     suffix=Suffix.BOLD,
                     desc="regressed",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
                 cleaned_bold = mni_q.expect(
                     deriv_df,
                     suffix=Suffix.BOLD,
                     desc="preproc",
-                    extra={"reg": regressor},
+                    extra={"reg": bids_safe_label(regressor)},
                 )
 
                 tr = args.tr if args.tr is not None else _read_header_tr(regressed_bold)
@@ -152,7 +158,7 @@ def main(args: MetricsArgs) -> int:
                     fwhm=args.fwhm,
                 )
 
-                mex = mni_q.derive(extra={"reg": regressor})
+                mex = mni_q.derive(extra={"reg": bids_safe_label(regressor)})
                 mex.save(outputs.alff, suffix="alff")
                 mex.save(outputs.falff, suffix="falff")
                 mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
@@ -168,14 +174,14 @@ def main(args: MetricsArgs) -> int:
                         suffix="timeseries",
                         desc="mean",
                         extension=".tsv",
-                        atlas=atlas,
+                        atlas=bids_safe_label(atlas),
                     )
                     mex.save(
                         outputs.correlation_matrix[atlas],
                         suffix="correlations",
                         desc="pearson",
                         extension=".tsv",
-                        atlas=atlas,
+                        atlas=bids_safe_label(atlas),
                     )
         pipe_ctx.ensure_dataset_description()
 
