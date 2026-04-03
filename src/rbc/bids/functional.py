@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from rbc.bids import Suffix, TemplateSpace, bids_safe_label
 
@@ -16,10 +16,21 @@ if TYPE_CHECKING:
     from rbc.workflows.functional import FunctionalOutputs
 
 
+class FunctionalInputs(TypedDict):
+    """Resolved anatomical inputs for the functional workflow."""
+
+    t1w_brain: Path
+    wm_bbr_mask: Path
+    brain_mask: Path
+    csf_mask: Path
+    wm_mask: Path
+    anat_to_template: Path
+
+
 def resolve_functional(
     anat_q: Bids,
     anat_df: pl.DataFrame,
-) -> dict[str, Path]:
+) -> FunctionalInputs:
     """Resolve anatomical prerequisites needed by functional preprocessing.
 
     Args:

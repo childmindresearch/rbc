@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from rbc.bids import Suffix, bids_safe_label
 
@@ -16,12 +16,20 @@ if TYPE_CHECKING:
     from rbc.workflows.metrics import MetricsOutputs
 
 
+class MetricsInputs(TypedDict):
+    """Resolved functional inputs for the metrics workflow."""
+
+    template_brain_mask: Path
+    regressed_bold: Path
+    cleaned_bold: Path
+
+
 def resolve_metrics(
     mni_q: Bids,
     deriv_df: pl.DataFrame,
     *,
     regressor: str,
-) -> dict[str, Path]:
+) -> MetricsInputs:
     """Resolve functional derivatives needed by the metrics workflow.
 
     Args:

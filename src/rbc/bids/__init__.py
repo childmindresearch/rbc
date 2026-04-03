@@ -26,9 +26,9 @@ from rbc.bids._schema import (
 )
 from rbc.bids.anatomical import export_anatomical
 from rbc.bids.builder import Bids
-from rbc.bids.functional import export_functional, resolve_functional
-from rbc.bids.metrics import export_metrics, resolve_metrics
-from rbc.bids.qc import export_qc, resolve_qc
+from rbc.bids.functional import FunctionalInputs, export_functional, resolve_functional
+from rbc.bids.metrics import MetricsInputs, export_metrics, resolve_metrics
+from rbc.bids.qc import QCInputs, export_qc, resolve_qc
 from rbc.bids.query import find_file, find_files, get_extra_entity, load_table
 
 __all__ = [
@@ -40,7 +40,10 @@ __all__ = [
     "Datatype",
     "EntityKwargs",
     "Extension",
+    "FunctionalInputs",
+    "MetricsInputs",
     "Modality",
+    "QCInputs",
     "Suffix",
     "TemplateSpace",
     "bids_name",
