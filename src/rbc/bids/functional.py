@@ -1,19 +1,58 @@
-"""BIDS export and resolve for the functional workflow."""
+"""BIDS discovery, resolve, and export for the functional workflow."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
-from rbc.bids import Suffix, TemplateSpace, bids_safe_label
+import polars as pl
+
+from rbc.bids import Suffix, TemplateSpace, bids_safe_label, extract_entities
+from rbc.bids.session import FUNC_GROUP_ENTITIES, SessionTables, iter_session_files
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from pathlib import Path
+    from collections.abc import Iterator, Sequence
 
-    import polars as pl
-
-    from rbc.bids import Bids
+    from rbc.bids import Bids, EntityKwargs
     from rbc.workflows.functional import FunctionalOutputs
+
+
+class FunctionalRun(NamedTuple):
+    """A single functional run discovered from a BIDS session.
+
+    Attributes:
+        path: Path to the BOLD NIfTI file.
+        entities: BIDS entities for this run (task, run, acq, rec, dir, echo).
+        anat_df: Matched anatomical DataFrame for this run.
+    """
+
+    path: Path
+    entities: EntityKwargs
+    anat_df: pl.DataFrame
+
+
+def discover_functional(session: SessionTables) -> Iterator[FunctionalRun]:
+    """Discover BOLD runs in a session, paired with matched anatomical data.
+
+    Iterates via :func:`~rbc.bids.session.iter_session_files`, filters for
+    raw (unprocessed) BOLD files, and extracts functional entities.
+
+    Args:
+        session: Session tables from :func:`~rbc.bids.session.load_session`.
+
+    Yields:
+        A :class:`FunctionalRun` for each BOLD group.
+    """
+    for func_df, anat_df in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
+        func_df = func_df.filter(pl.col("desc").is_null())
+        row = func_df.filter(suffix="bold").row(0, named=True)
+        yield FunctionalRun(
+            path=Path(row["root"]) / row["path"],
+            entities=extract_entities(
+                row, ["task", "run", "acq", "rec", "dir", "echo"]
+            ),
+            anat_df=anat_df,
+        )
 
 
 class FunctionalInputs(TypedDict):

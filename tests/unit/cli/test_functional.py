@@ -61,15 +61,25 @@ def _patch_functional(
     filtered_df: pl.DataFrame, groups: list[tuple]
 ) -> Generator[tuple[Mock, Mock], None, None]:
     """Common context manager patches for functional tests."""
-    # Group by (sub, ses) to match how main() calls iter_session_files
-    sub_ses_groups: dict[tuple, list] = {}
+    from rbc.bids.functional import FunctionalRun
+
+    # Build discovery results from groups.
+    func_run_calls: list[list[FunctionalRun]] = []
+    sub_ses_groups: dict[tuple, list[FunctionalRun]] = {}
     for func_df, anat_df in groups:
         if func_df.is_empty():
             continue
         row = func_df.row(0, named=True)
         key = (row["sub"], row["ses"])
         sub_ses_groups.setdefault(key, [])
-        sub_ses_groups[key].append((func_df, anat_df))
+        sub_ses_groups[key].append(
+            FunctionalRun(
+                path=Path(row.get("root", "/data")) / row.get("path", "bold.nii.gz"),
+                entities={"task": row.get("task", "rest")},
+                anat_df=anat_df,
+            )
+        )
+    func_run_calls = list(sub_ses_groups.values())
 
     from rbc.metadata import FunctionalMetadata
 
@@ -79,8 +89,8 @@ def _patch_functional(
         patch("rbc.cli.functional.load_table", return_value=filtered_df),
         patch("rbc.cli.functional.load_session", return_value=Mock()),
         patch(
-            "rbc.cli.functional.iter_session_files",
-            side_effect=list(sub_ses_groups.values()),
+            "rbc.cli.functional.discover_functional",
+            side_effect=func_run_calls,
         ),
         patch(
             "rbc.bids.query.find_file",

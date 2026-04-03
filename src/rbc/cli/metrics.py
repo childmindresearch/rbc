@@ -14,15 +14,9 @@ import nibabel as nib
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    TemplateSpace,
-    extract_entities,
-    load_table,
-)
+from rbc.bids import SUB_SES_QUERY, Datatype, TemplateSpace, load_table
 from rbc.bids.metrics import export_metrics, resolve_metrics
+from rbc.bids.session import discover_derivative_runs
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import RunContext
@@ -121,13 +115,10 @@ def main(args: MetricsArgs) -> int:
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
         )
 
-        for _, run_group in group.group_by(FUNC_GROUP_ENTITIES):
-            row = run_group.row(0, named=True)
-            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
-
+        for run in discover_derivative_runs(group):
             mni_q = pipe_ctx.bids(
                 datatype=Datatype.FUNC,
-                entities=ents,
+                entities=run.entities,
                 space=TemplateSpace.MNI152NLIN6ASYM,
             )
 

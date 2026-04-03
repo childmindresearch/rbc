@@ -10,21 +10,18 @@ warping depend on the anatomical outputs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    extract_entities,
-    load_table,
+from rbc.bids import SUB_SES_QUERY, Datatype, load_table
+from rbc.bids.functional import (
+    discover_functional,
+    export_functional,
+    resolve_functional,
 )
-from rbc.bids.functional import export_functional, resolve_functional
-from rbc.bids.session import iter_session_files, load_session
+from rbc.bids.session import load_session
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import RunContext
@@ -89,22 +86,16 @@ def main(args: FunctionalArgs) -> int:
 
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for func_df, anat_df in iter_session_files(
-            session, groupby=FUNC_GROUP_ENTITIES
-        ):
-            func_df = func_df.filter(pl.col("desc").is_null())
-            row = func_df.filter(suffix="bold").row(0, named=True)
-            bold_fpath = Path(row["root"]) / row["path"]
-            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
-            ctx.logger.info(f"Processing {bold_fpath}")
+        for run in discover_functional(session):
+            ctx.logger.info(f"Processing {run.path}")
 
             anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-            resolved = resolve_functional(anat_q, anat_df)
+            resolved = resolve_functional(anat_q, run.anat_df)
 
-            func_metadata = FunctionalMetadata.load(bold_fpath, tr_override=args.tr)
+            func_metadata = FunctionalMetadata.load(run.path, tr_override=args.tr)
 
             outputs = single_session_preprocess(
-                in_bold=bold_fpath,
+                in_bold=run.path,
                 t1w_brain=resolved["t1w_brain"],
                 wm_bbr_mask=resolved["wm_bbr_mask"],
                 brain_mask=resolved["brain_mask"],
@@ -115,7 +106,7 @@ def main(args: FunctionalArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=run.entities)
             export_functional(func, outputs, regressors=args.regressor)
 
         pipe_ctx.ensure_dataset_description()

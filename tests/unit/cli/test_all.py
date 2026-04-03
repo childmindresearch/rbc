@@ -106,27 +106,32 @@ def _patch_all(
 
     Yields (mock_anat, mock_func, mock_metrics, mock_qc, mock_ctx_cls).
     """
-    from rbc.bids.session import SessionTables
+    from pathlib import Path as _Path
 
-    mock_anat_df = pl.DataFrame(
-        {
-            "suffix": ["T1w"],
-            "ext": [".nii.gz"],
-            "run": [None],
-            "acq": [None],
-            "part": [None],
-            "echo": [None],
-            "ce": [None],
-            "rec": [None],
-            "inv": [None],
-            "space": [None],
-            "desc": [None],
-            "root": ["/data"],
-            "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
-        }
-    )
-    mock_session = SessionTables(anat=mock_anat_df, func=None)
-    iter_calls = list(groups)
+    from rbc.bids.anatomical import AnatomicalRun
+    from rbc.bids.functional import FunctionalRun
+
+    # Build discovery results from the groups structure.
+    anat_runs = [
+        AnatomicalRun(
+            path=_Path("/data/sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"),
+            entities={},
+        )
+    ]
+    func_run_calls: list[list[FunctionalRun]] = []
+    for sub_ses_runs in groups:
+        runs = []
+        for func_df, anat_df in sub_ses_runs:
+            row = func_df.row(0, named=True)
+            runs.append(
+                FunctionalRun(
+                    path=_Path(row.get("root", "/data"))
+                    / row.get("path", "bold.nii.gz"),
+                    entities={"task": row.get("task", "rest")},
+                    anat_df=anat_df,
+                )
+            )
+        func_run_calls.append(runs)
 
     from rbc.metadata import FunctionalMetadata
 
@@ -134,8 +139,12 @@ def _patch_all(
 
     with (
         patch("rbc.cli.all.load_table", return_value=filtered_df),
-        patch("rbc.cli.all.load_session", return_value=mock_session),
-        patch("rbc.cli.all.iter_session_files", side_effect=iter_calls),
+        patch("rbc.cli.all.load_session", return_value=Mock()),
+        patch(
+            "rbc.cli.all.discover_anatomical",
+            side_effect=lambda _: iter(anat_runs),
+        ),
+        patch("rbc.cli.all.discover_functional", side_effect=func_run_calls),
         patch(
             "rbc.cli.all.anatomical_preprocess", return_value=_mock_anat_outputs()
         ) as mock_anat,

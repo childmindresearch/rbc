@@ -10,8 +10,12 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
 
+from rbc.bids import extract_entities
+
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
+
+    from rbc.bids import EntityKwargs
 
 SUB_SES_QUERY = ("sub", "ses")
 
@@ -127,3 +131,37 @@ def iter_session_files(
             runs_correspond=has_anat_runs and len(anat_runs) == len(func_runs),
         )
         yield func_group, anat_subset
+
+
+_FUNC_ENTITY_KEYS = ("task", "run", "acq", "rec", "dir", "echo")
+
+
+class DerivativeRun(NamedTuple):
+    """A single functional run discovered from derivative data.
+
+    Attributes:
+        entities: BIDS entities for this run (task, run, acq, rec, dir, echo).
+    """
+
+    entities: EntityKwargs
+
+
+def discover_derivative_runs(
+    group: pl.DataFrame,
+) -> Iterator[DerivativeRun]:
+    """Discover functional runs within a sub/ses derivative group.
+
+    Groups by :data:`FUNC_GROUP_ENTITIES` and extracts standard functional
+    entities from each group.
+
+    Args:
+        group: DataFrame of derivative BOLD runs for a single sub/ses.
+
+    Yields:
+        A :class:`DerivativeRun` for each functional run group.
+    """
+    for _, run_group in group.group_by(FUNC_GROUP_ENTITIES):
+        row = run_group.row(0, named=True)
+        yield DerivativeRun(
+            entities=extract_entities(row, list(_FUNC_ENTITY_KEYS)),
+        )

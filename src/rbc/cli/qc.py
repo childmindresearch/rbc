@@ -13,15 +13,9 @@ from typing import TYPE_CHECKING, Literal
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    TemplateSpace,
-    extract_entities,
-    load_table,
-)
+from rbc.bids import SUB_SES_QUERY, Datatype, TemplateSpace, load_table
 from rbc.bids.qc import export_qc, resolve_qc
+from rbc.bids.session import discover_derivative_runs
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.context import RunContext
@@ -90,11 +84,8 @@ def main(args: QCArgs) -> int:
             dataset_dir=args.output_dir, index_fpath=None, max_workers=0, verbose=False
         )
 
-        for _, run_group in group.group_by(FUNC_GROUP_ENTITIES):
-            row = run_group.row(0, named=True)
-            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
-
-            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+        for run in discover_derivative_runs(group):
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=run.entities)
             func_mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
 
             resolved = resolve_qc(
@@ -105,8 +96,8 @@ def main(args: QCArgs) -> int:
                 regressors=args.regressor,
             )
 
-            bold_task: str | None = row.get("task")
-            bold_run: int | None = row.get("run")
+            bold_task = run.entities.get("task")
+            bold_run = run.entities.get("run")
 
             qc_outputs = single_session_qc(
                 **resolved,

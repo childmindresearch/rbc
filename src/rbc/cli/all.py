@@ -8,25 +8,17 @@ between stages.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    ANAT_GROUP_ENTITIES,
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    extract_entities,
-    load_table,
-)
-from rbc.bids.anatomical import export_anatomical
-from rbc.bids.functional import export_functional
+from rbc.bids import SUB_SES_QUERY, Datatype, load_table
+from rbc.bids.anatomical import discover_anatomical, export_anatomical
+from rbc.bids.functional import discover_functional, export_functional
 from rbc.bids.metrics import export_metrics
 from rbc.bids.qc import export_qc
-from rbc.bids.session import iter_session_files, load_session
+from rbc.bids.session import load_session
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
 from rbc.context import RunContext
@@ -109,32 +101,22 @@ def main(args: AllArgs) -> int:
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         # --- Anatomical (once per session, first T1w) ---
-        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-            ANAT_GROUP_ENTITIES, maintain_order=True
-        ):
-            anat_row = anat_df.filter(suffix="T1w").row(0, named=True)
-            t1w_fpath = Path(anat_row["root"]) / anat_row["path"]
-            ents = extract_entities(anat_row, ["run", "acq", "rec", "echo"])
-            ctx.logger.info(f"Anatomical: {t1w_fpath}")
+        for anat_run in discover_anatomical(session):
+            ctx.logger.info(f"Anatomical: {anat_run.path}")
 
-            anat_outputs = anatomical_preprocess(in_t1w=t1w_fpath)
+            anat_outputs = anatomical_preprocess(in_t1w=anat_run.path)
 
-            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
+            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=anat_run.entities)
             export_anatomical(anat, anat_outputs)
 
         # --- Functional + Metrics + QC (per BOLD run) ---
-        for func_df, _anat_df in iter_session_files(
-            session, groupby=FUNC_GROUP_ENTITIES
-        ):
-            row = func_df.row(0, named=True)
-            bold_fpath = Path(row["root"]) / row["path"]
-            ents = extract_entities(row, ["task", "run", "acq", "rec", "dir", "echo"])
-            ctx.logger.info(f"Functional: {bold_fpath}")
+        for func_run in discover_functional(session):
+            ctx.logger.info(f"Functional: {func_run.path}")
 
-            func_metadata = FunctionalMetadata.load(bold_fpath, tr_override=args.tr)
+            func_metadata = FunctionalMetadata.load(func_run.path, tr_override=args.tr)
 
             func_outputs = functional_preprocess(
-                in_bold=bold_fpath,
+                in_bold=func_run.path,
                 t1w_brain=anat_outputs.brain,
                 wm_bbr_mask=anat_outputs.wm_bbr_mask,
                 brain_mask=anat_outputs.brain_mask,
@@ -146,14 +128,16 @@ def main(args: AllArgs) -> int:
                 regressor_set=args.regressor,
             )
 
-            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
+            func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=func_run.entities)
             mni = export_functional(func, func_outputs, regressors=args.regressor)
 
             # --- Metrics ---
             for regressor in args.regressor:
+                task = func_run.entities.get("task", "")
+                run = func_run.entities.get("run", 0)
                 ctx.logger.info(
-                    f"Metrics: sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
-                    f"run-{ents.get('run', 0)} regressor-{regressor}"
+                    f"Metrics: sub-{pipe_ctx.sub} task-{task} "
+                    f"run-{run} regressor-{regressor}"
                 )
                 metrics_outputs = metrics_pipeline(
                     regressed_bold=func_outputs.regressed_bold[regressor],
@@ -172,10 +156,7 @@ def main(args: AllArgs) -> int:
                 )
 
             # --- QC ---
-            ctx.logger.info(
-                f"QC: sub-{pipe_ctx.sub} "
-                f"task-{ents.get('task', '')} run-{ents.get('run', 0)}"
-            )
+            ctx.logger.info(f"QC: sub-{pipe_ctx.sub} task-{task} run-{run}")
             qc_outputs = qc_pipeline(
                 template_bold=func_outputs.template_bold,
                 cleaned_bold=func_outputs.cleaned_bold,
@@ -187,8 +168,8 @@ def main(args: AllArgs) -> int:
                 template_brain_mask=func_outputs.template_brain_mask,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses or "",
-                task=ents.get("task", ""),
-                run=ents.get("run", 0),
+                task=func_run.entities.get("task", ""),
+                run=func_run.entities.get("run", 0),
                 start_tr=args.start_tr,
                 regressor_set=args.regressor,
             )
@@ -196,10 +177,7 @@ def main(args: AllArgs) -> int:
             export_qc(mni, qc_outputs, regressors=args.regressor)
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
-            ctx.logger.info(
-                f"QC {status} for sub-{pipe_ctx.sub} task-{ents.get('task', '')} "
-                f"run-{ents.get('run', 0)}"
-            )
+            ctx.logger.info(f"QC {status} for sub-{pipe_ctx.sub} task-{task} run-{run}")
         pipe_ctx.ensure_dataset_description()
 
     ctx.logger.info("RBC full pipeline complete")

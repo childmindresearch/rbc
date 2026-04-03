@@ -24,9 +24,15 @@ from rbc.bids._schema import (
     extract_entities,
     parse_bids_name,
 )
-from rbc.bids.anatomical import export_anatomical
+from rbc.bids.anatomical import AnatomicalRun, discover_anatomical, export_anatomical
 from rbc.bids.builder import Bids
-from rbc.bids.functional import FunctionalInputs, export_functional, resolve_functional
+from rbc.bids.functional import (
+    FunctionalInputs,
+    FunctionalRun,
+    discover_functional,
+    export_functional,
+    resolve_functional,
+)
 from rbc.bids.metrics import MetricsInputs, export_metrics, resolve_metrics
 from rbc.bids.qc import QCInputs, export_qc, resolve_qc
 from rbc.bids.query import find_file, find_files, get_extra_entity, load_table
@@ -34,7 +40,9 @@ from rbc.bids.session import (
     ANAT_GROUP_ENTITIES,
     FUNC_GROUP_ENTITIES,
     SUB_SES_QUERY,
+    DerivativeRun,
     SessionTables,
+    discover_derivative_runs,
     iter_session_files,
     load_session,
 )
@@ -45,13 +53,16 @@ __all__ = [
     "FUNC_GROUP_ENTITIES",
     "SUB_SES_QUERY",
     "_STANDARD_ENTITIES",
+    "AnatomicalRun",
     "BIDSFile",
     "Bids",
     "BidsEntities",
     "Datatype",
+    "DerivativeRun",
     "EntityKwargs",
     "Extension",
     "FunctionalInputs",
+    "FunctionalRun",
     "MetricsInputs",
     "Modality",
     "QCInputs",
@@ -63,6 +74,9 @@ __all__ = [
     "bids_path",
     "bids_path_from_entities",
     "bids_safe_label",
+    "discover_anatomical",
+    "discover_derivative_runs",
+    "discover_functional",
     "export_anatomical",
     "export_functional",
     "export_metrics",

@@ -5,30 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.bids.session import load_session
-
-if TYPE_CHECKING:
-    import argparse
-    from collections.abc import Sequence
-
-from pathlib import Path
-
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    ANAT_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    Datatype,
-    extract_entities,
-    load_table,
-)
-from rbc.bids.anatomical import export_anatomical
+from rbc.bids import SUB_SES_QUERY, Datatype, load_table
+from rbc.bids.anatomical import discover_anatomical, export_anatomical
+from rbc.bids.session import load_session
 from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.cli.base import BaseArgs
 from rbc.context import RunContext
 from rbc.core.niwrap import setup_runner
 from rbc.workflows.anatomical import single_session_preprocess
+
+if TYPE_CHECKING:
+    import argparse
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -73,17 +64,10 @@ def main(args: AnatomicalArgs) -> int:
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
-        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-            ANAT_GROUP_ENTITIES, maintain_order=True
-        ):
-            row = anat_df.row(0, named=True)
-            t1w_fpath = Path(row["root"]) / row["path"]
-            ents = extract_entities(row, ["run", "acq", "rec", "echo"])
-            ctx.logger.info(f"Processing {t1w_fpath}")
-
-            outputs = single_session_preprocess(in_t1w=t1w_fpath)
-
-            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=ents)
+        for run in discover_anatomical(session):
+            ctx.logger.info(f"Processing {run.path}")
+            outputs = single_session_preprocess(in_t1w=run.path)
+            anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=run.entities)
             export_anatomical(anat, outputs)
         pipe_ctx.ensure_dataset_description()
 
