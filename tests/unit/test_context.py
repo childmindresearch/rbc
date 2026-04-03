@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from rbc.context import RunContext, RunContext
+from rbc.context import RunContext
 from rbc.core.bids import Bids, bids_safe_label
 
 if TYPE_CHECKING:
