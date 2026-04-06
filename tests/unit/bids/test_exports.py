@@ -42,6 +42,7 @@ def _make_anat_outputs(w: Path) -> AnatomicalOutputs:
     return AnatomicalOutputs(
         brain=_dummy(w, "brain.nii.gz"),
         brain_mask=_dummy(w, "brain_mask.nii.gz"),
+        brain_tpl=_dummy(w, "brain_tpl.nii.gz"),
         csf_mask=_dummy(w, "csf_mask.nii.gz"),
         gm_mask=_dummy(w, "gm_mask.nii.gz"),
         wm_mask=_dummy(w, "wm_mask.nii.gz"),
@@ -134,7 +135,7 @@ class TestExportAnatomical:
         outputs = _make_anat_outputs(workdir)
         export_anatomical(anat_bids, outputs)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 8
+        assert len(saved) == 9
 
     def test_filenames_contain_expected_entities(
         self, anat_bids: Bids, workdir: Path, pipe_ctx: RunContext
