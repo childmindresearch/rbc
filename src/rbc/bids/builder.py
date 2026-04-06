@@ -11,7 +11,7 @@ import shutil
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from rbc.core.bids._schema import (
+from rbc.bids._schema import (
     _STANDARD_ENTITIES,
     BIDS_VERSION,
     BidsEntities,
@@ -269,7 +269,7 @@ class Bids:
         Raises:
             ValueError: If multiple matches found.
         """
-        from rbc.core.bids2table import find_file
+        from rbc.bids.query import find_file
 
         merged, merged_extra = self._merge_query(extra, has, without, overrides)
         return find_file(
@@ -359,7 +359,7 @@ class Bids:
         Returns:
             List of matching file paths (may be empty).
         """
-        from rbc.core.bids2table import find_files
+        from rbc.bids.query import find_files
 
         merged, merged_extra = self._merge_query(extra, has, without, overrides)
         return find_files(

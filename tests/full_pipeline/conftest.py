@@ -12,9 +12,9 @@ import niwrap
 import pytest
 from styxpodman import PodmanRunner
 
-from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.core.niwrap import resolve_runner
 from rbc.metadata import FunctionalMetadata
+from rbc.orchestration import _DEFAULT_ENV_VARS
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
 from rbc_resources import MNI_TEMPLATES

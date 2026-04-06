@@ -1,0 +1,67 @@
+"""Pipeline orchestration layer.
+
+Provides ``run()`` entry points for each workflow that handle runner setup,
+BIDS table loading, filtering, sub/ses iteration, and the
+discover-process-export loop. CLI modules delegate to these after parsing
+arguments.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+from rbc.core import CPAC_ANTS_SEED
+from rbc.core.niwrap import setup_runner
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+    from typing import Literal
+
+_DEFAULT_ENV_VARS = {
+    "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
+    "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
+}
+
+
+@dataclass(frozen=True)
+class Filters:
+    """User-level filters applied to the BIDS table before processing.
+
+    Attributes:
+        participant_label: Subject labels to include (empty = all).
+        session_label: Session labels to include (empty = all).
+        task: Task label to filter BOLD runs (None = all).
+    """
+
+    participant_label: Sequence[str] = field(default_factory=tuple)
+    session_label: Sequence[str] = field(default_factory=tuple)
+    task: str | None = None
+
+
+@dataclass(frozen=True)
+class RunnerConfig:
+    """Configuration for the execution backend.
+
+    Attributes:
+        runner: Execution backend (local, docker, podman, singularity).
+        verbose: Enable verbose output (progress bars, info logging).
+        tmp_dir: Temporary directory for intermediate files.
+    """
+
+    runner: Literal["auto", "local", "docker", "podman", "singularity"] = "local"
+    verbose: bool = False
+    tmp_dir: Path | None = None
+
+
+def init_runner(config: RunnerConfig) -> None:
+    """Set up the execution backend and environment variables.
+
+    Args:
+        config: Runner configuration.
+    """
+    ctx = setup_runner(
+        runner=config.runner, verbose=config.verbose, tmp_dir=config.tmp_dir
+    )
+    ctx.runner.environ = _DEFAULT_ENV_VARS

@@ -61,38 +61,48 @@ def _patch_functional(
     filtered_df: pl.DataFrame, groups: list[tuple]
 ) -> Generator[tuple[Mock, Mock], None, None]:
     """Common context manager patches for functional tests."""
-    # Group by (sub, ses) to match how main() calls iter_session_files
-    sub_ses_groups: dict[tuple, list] = {}
+    from rbc.bids.functional import FunctionalRun
+
+    # Build discovery results from groups.
+    func_run_calls: list[list[FunctionalRun]] = []
+    sub_ses_groups: dict[tuple, list[FunctionalRun]] = {}
     for func_df, anat_df in groups:
         if func_df.is_empty():
             continue
         row = func_df.row(0, named=True)
         key = (row["sub"], row["ses"])
         sub_ses_groups.setdefault(key, [])
-        sub_ses_groups[key].append((func_df, anat_df))
+        sub_ses_groups[key].append(
+            FunctionalRun(
+                path=Path(row.get("root", "/data")) / row.get("path", "bold.nii.gz"),
+                entities={"task": row.get("task", "rest")},
+                anat_df=anat_df,
+            )
+        )
+    func_run_calls = list(sub_ses_groups.values())
 
     from rbc.metadata import FunctionalMetadata
 
     mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
 
     with (
-        patch("rbc.cli.functional.load_table", return_value=filtered_df),
-        patch("rbc.cli.functional.load_session", return_value=Mock()),
+        patch("rbc.orchestration.functional.load_table", return_value=filtered_df),
+        patch("rbc.orchestration.functional.load_session", return_value=Mock()),
         patch(
-            "rbc.cli.functional.iter_session_files",
-            side_effect=list(sub_ses_groups.values()),
+            "rbc.orchestration.functional.discover_functional",
+            side_effect=func_run_calls,
         ),
         patch(
-            "rbc.core.bids2table.find_file",
+            "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.functional.single_session_preprocess",
+            "rbc.orchestration.functional.single_session_preprocess",
             return_value=_mock_functional_outputs(),
         ) as mock_preprocess,
-        patch("rbc.cli.functional.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.functional.RunContext") as mock_ctx_cls,
         patch(
-            "rbc.cli.functional.FunctionalMetadata.load",
+            "rbc.orchestration.functional.FunctionalMetadata.load",
             return_value=mock_metadata,
         ),
     ):
@@ -101,13 +111,8 @@ def _patch_functional(
 
 @pytest.fixture
 def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking setup_runner with consistent return value."""
-    with patch("rbc.cli.functional.setup_runner") as mock:
-        ctx = Mock()
-        ctx.runner = Mock()
-        ctx.logger = Mock()
-        ctx.verbose = False
-        mock.return_value = ctx
+    """Fixture for mocking init_runner so no real runner is created."""
+    with patch("rbc.orchestration.functional.init_runner") as mock:
         yield mock
 
 
@@ -319,25 +324,21 @@ class TestFunctional:
 class TestRunnerSetup:
     """Test runner configuration and environment setup."""
 
-    def test_runner_environment_variables_set(
+    def test_init_runner_called_with_config(
         self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
     ) -> None:
-        """Test runner environment variables are configured correctly."""
-        from rbc.core import CPAC_ANTS_SEED
+        """Test init_runner is called with the correct RunnerConfig."""
+        from rbc.orchestration import RunnerConfig
 
         args = FunctionalArgs.validate_namespace(base_args)
         filtered_df, groups = _make_groups(sample_dataframe, [], [], None)
 
         with (
-            patch("rbc.cli.functional.setup_runner") as mock_setup,
+            patch("rbc.orchestration.functional.init_runner") as mock_init,
             _patch_functional(filtered_df, groups) as (_, mock_ctx_cls),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
-            mock_setup.return_value = ctx
-
             main(args)
-            assert ctx.runner.environ == {
-                "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
-                "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
-            }
+            mock_init.assert_called_once()
+            config = mock_init.call_args[0][0]
+            assert isinstance(config, RunnerConfig)

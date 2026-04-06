@@ -16,7 +16,7 @@ import nibabel as nib
 import numpy as np
 from niwrap import fsl
 
-from rbc.core.bids import TemplateSpace
+from rbc.bids import TemplateSpace
 from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics

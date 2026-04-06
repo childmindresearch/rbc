@@ -1,4 +1,4 @@
-"""Unit tests for rbc.context and rbc.core.bids.Bids."""
+"""Unit tests for rbc.context and rbc.bids.Bids."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from rbc.bids import Bids, bids_safe_label
 from rbc.context import RunContext
-from rbc.core.bids import Bids, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path

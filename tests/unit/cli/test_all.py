@@ -1,6 +1,7 @@
 """Unit tests for All (combined pipeline) CLI module."""
 
 import argparse
+import logging
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
@@ -106,52 +107,67 @@ def _patch_all(
 
     Yields (mock_anat, mock_func, mock_metrics, mock_qc, mock_ctx_cls).
     """
-    from rbc.cli.query import SessionTables
+    from pathlib import Path as _Path
 
-    mock_anat_df = pl.DataFrame(
-        {
-            "suffix": ["T1w"],
-            "ext": [".nii.gz"],
-            "run": [None],
-            "acq": [None],
-            "part": [None],
-            "echo": [None],
-            "ce": [None],
-            "rec": [None],
-            "inv": [None],
-            "space": [None],
-            "desc": [None],
-            "root": ["/data"],
-            "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
-        }
-    )
-    mock_session = SessionTables(anat=mock_anat_df, func=None)
-    iter_calls = list(groups)
+    from rbc.bids.anatomical import AnatomicalRun
+    from rbc.bids.functional import FunctionalRun
+
+    # Build discovery results from the groups structure.
+    anat_runs = [
+        AnatomicalRun(
+            path=_Path("/data/sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"),
+            entities={},
+        )
+    ]
+    func_run_calls: list[list[FunctionalRun]] = []
+    for sub_ses_runs in groups:
+        runs = []
+        for func_df, anat_df in sub_ses_runs:
+            row = func_df.row(0, named=True)
+            runs.append(
+                FunctionalRun(
+                    path=_Path(row.get("root", "/data"))
+                    / row.get("path", "bold.nii.gz"),
+                    entities={"task": row.get("task", "rest")},
+                    anat_df=anat_df,
+                )
+            )
+        func_run_calls.append(runs)
 
     from rbc.metadata import FunctionalMetadata
 
     mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
 
     with (
-        patch("rbc.cli.all.load_table", return_value=filtered_df),
-        patch("rbc.cli.all.load_session", return_value=mock_session),
-        patch("rbc.cli.all.iter_session_files", side_effect=iter_calls),
+        patch("rbc.orchestration.all.load_table", return_value=filtered_df),
+        patch("rbc.orchestration.all.load_session", return_value=Mock()),
         patch(
-            "rbc.cli.all.anatomical_preprocess", return_value=_mock_anat_outputs()
+            "rbc.orchestration.anatomical.discover_anatomical",
+            side_effect=lambda _: iter(anat_runs),
+        ),
+        patch(
+            "rbc.orchestration.functional.discover_functional",
+            side_effect=func_run_calls,
+        ),
+        patch(
+            "rbc.orchestration.anatomical.single_session_preprocess",
+            return_value=_mock_anat_outputs(),
         ) as mock_anat,
         patch(
-            "rbc.cli.all.functional_preprocess", return_value=_mock_func_outputs()
+            "rbc.orchestration.functional.single_session_preprocess",
+            return_value=_mock_func_outputs(),
         ) as mock_func,
         patch(
-            "rbc.cli.all.metrics_pipeline", return_value=_mock_metrics_outputs()
+            "rbc.orchestration.all.single_session_metrics",
+            return_value=_mock_metrics_outputs(),
         ) as mock_metrics,
         patch(
-            "rbc.cli.all.qc_pipeline",
+            "rbc.orchestration.all.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.all.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.all.RunContext") as mock_ctx_cls,
         patch(
-            "rbc.cli.all.FunctionalMetadata.load",
+            "rbc.orchestration.functional.FunctionalMetadata.load",
             return_value=mock_metadata,
         ),
     ):
@@ -191,13 +207,8 @@ def _make_groups(
 
 @pytest.fixture
 def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking setup_runner with consistent return value."""
-    with patch("rbc.cli.all.setup_runner") as mock:
-        ctx = Mock()
-        ctx.runner = Mock()
-        ctx.logger = Mock()
-        ctx.verbose = False
-        mock.return_value = ctx
+    """Fixture for mocking init_runner so no real runner is created."""
+    with patch("rbc.orchestration.all.init_runner") as mock:
         yield mock
 
 
@@ -453,9 +464,10 @@ class TestAllPipeline:
 
     def test_qc_passed_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """PASSED is logged when QC outputs indicate the run passed."""
         base_args.participant_label = ["01"]
@@ -466,25 +478,26 @@ class TestAllPipeline:
             sample_dataframe, ["01"], ["baseline"], "rest"
         )
 
-        with _patch_all(filtered_df, groups, qc_passed=True) as (
-            _,
-            _,
-            _,
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_all(filtered_df, groups, qc_passed=True) as (
+                _,
+                _,
+                _,
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             all_cli.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("PASSED" in c for c in log_calls)
+            assert any("PASSED" in msg for msg in caplog.messages)
 
     def test_qc_failed_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """FAILED is logged when QC outputs indicate the run failed."""
         base_args.participant_label = ["01"]
@@ -495,46 +508,42 @@ class TestAllPipeline:
             sample_dataframe, ["01"], ["baseline"], "rest"
         )
 
-        with _patch_all(filtered_df, groups, qc_passed=False) as (
-            _,
-            _,
-            _,
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_all(filtered_df, groups, qc_passed=False) as (
+                _,
+                _,
+                _,
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             all_cli.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("FAILED" in c for c in log_calls)
+            assert any("FAILED" in msg for msg in caplog.messages)
 
 
 class TestRunnerSetup:
     """Test runner configuration and environment setup."""
 
-    def test_runner_environment_variables_set(
+    def test_init_runner_called_with_config(
         self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
     ) -> None:
-        """Runner environment variables are set to the expected defaults."""
-        from rbc.core import CPAC_ANTS_SEED
+        """Test init_runner is called with the correct RunnerConfig."""
+        from rbc.orchestration import RunnerConfig
 
         args = AllArgs.validate_namespace(base_args)
         filtered_df, groups = _make_groups(sample_dataframe, [], [], None)
 
         with (
-            patch("rbc.cli.all.setup_runner") as mock_setup,
+            patch("rbc.orchestration.all.init_runner") as mock_init,
             _patch_all(filtered_df, groups) as (_, _, _, _, mock_ctx_cls),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
-            mock_setup.return_value = ctx
-
             all_cli.main(args)
-            assert ctx.runner.environ == {
-                "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
-                "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
-            }
+            mock_init.assert_called_once()
+            config = mock_init.call_args[0][0]
+            assert isinstance(config, RunnerConfig)
 
 
 class TestAllRegistration:

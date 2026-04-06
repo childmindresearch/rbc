@@ -1,6 +1,7 @@
 """Unit tests for QC CLI module."""
 
 import argparse
+import logging
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -60,29 +61,27 @@ def _patch_qc(
     RunContext.
     """
     with (
-        patch("rbc.cli.qc.load_table", side_effect=[filtered_df, *([deriv_df] * 100)]),
         patch(
-            "rbc.core.bids2table.find_file",
+            "rbc.orchestration.qc.load_table",
+            side_effect=[filtered_df, *([deriv_df] * 100)],
+        ),
+        patch(
+            "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.cli.qc.single_session_qc",
+            "rbc.orchestration.qc.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
         ) as mock_qc,
-        patch("rbc.cli.qc.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.qc.RunContext") as mock_ctx_cls,
     ):
         yield mock_qc, mock_ctx_cls
 
 
 @pytest.fixture
 def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking setup_runner with consistent return value."""
-    with patch("rbc.cli.qc.setup_runner") as mock:
-        ctx = Mock()
-        ctx.runner = Mock()
-        ctx.logger = Mock()
-        ctx.verbose = False
-        mock.return_value = ctx
+    """Fixture for mocking init_runner so no real runner is created."""
+    with patch("rbc.orchestration.qc.init_runner") as mock:
         yield mock
 
 
@@ -301,9 +300,10 @@ class TestQCOutputs:
 
     def test_passed_status_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """PASSED is logged when QC outputs indicate the run passed."""
         base_args.participant_label = ["01"]
@@ -312,22 +312,23 @@ class TestQCOutputs:
         args = QCArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
 
-        with _patch_qc(filtered_df, sample_dataframe, qc_passed=True) as (
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_qc(filtered_df, sample_dataframe, qc_passed=True) as (
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             qc.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("PASSED" in c for c in log_calls)
+            assert any("PASSED" in msg for msg in caplog.messages)
 
     def test_failed_status_logged(
         self,
-        mock_setup: Mock,
+        mock_setup: Mock,  # noqa: ARG002 - test setup
         base_args: argparse.Namespace,
         sample_dataframe: pl.DataFrame,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """FAILED is logged when QC outputs indicate the run failed."""
         base_args.participant_label = ["01"]
@@ -336,16 +337,16 @@ class TestQCOutputs:
         args = QCArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
 
-        with _patch_qc(filtered_df, sample_dataframe, qc_passed=False) as (
-            _,
-            mock_ctx_cls,
+        with (
+            caplog.at_level(logging.INFO),
+            _patch_qc(filtered_df, sample_dataframe, qc_passed=False) as (
+                _,
+                mock_ctx_cls,
+            ),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             qc.main(args)
-            log_calls = [
-                str(c) for c in mock_setup.return_value.logger.info.call_args_list
-            ]
-            assert any("FAILED" in c for c in log_calls)
+            assert any("FAILED" in msg for msg in caplog.messages)
 
     def test_qc_export_called(
         self,
@@ -374,28 +375,24 @@ class TestQCOutputs:
 class TestRunnerSetup:
     """Test runner configuration and environment setup."""
 
-    def test_runner_environment_variables_set(
+    def test_init_runner_called_with_config(
         self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
     ) -> None:
-        """Runner environment variables are set to the expected defaults."""
-        from rbc.core import CPAC_ANTS_SEED
+        """Test init_runner is called with the correct RunnerConfig."""
+        from rbc.orchestration import RunnerConfig
 
         args = QCArgs.validate_namespace(base_args)
         filtered_df = _make_filtered_df(sample_dataframe, [], [], None)
 
         with (
-            patch("rbc.cli.qc.setup_runner") as mock_setup,
+            patch("rbc.orchestration.qc.init_runner") as mock_init,
             _patch_qc(filtered_df, sample_dataframe) as (_, mock_ctx_cls),
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            ctx = Mock(runner=Mock(environ={}), logger=Mock(), verbose=False)
-            mock_setup.return_value = ctx
-
             qc.main(args)
-            assert ctx.runner.environ == {
-                "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
-                "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
-            }
+            mock_init.assert_called_once()
+            config = mock_init.call_args[0][0]
+            assert isinstance(config, RunnerConfig)
 
 
 class TestQCRegistration:

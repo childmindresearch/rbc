@@ -13,7 +13,14 @@ import bids2table as b2t
 import polars as pl
 
 if TYPE_CHECKING:
-    from rbc.core.bids import BidsEntities  # noqa: F401
+    from rbc.bids import BidsEntities  # noqa: F401
+
+__all__ = [
+    "find_file",
+    "find_files",
+    "get_extra_entity",
+    "load_table",
+]
 
 
 def load_table(

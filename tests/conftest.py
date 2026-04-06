@@ -14,8 +14,8 @@ import niwrap
 import pytest
 from styxpodman import PodmanRunner
 
-from rbc.cli import _DEFAULT_ENV_VARS
 from rbc.core.niwrap import resolve_runner
+from rbc.orchestration import _DEFAULT_ENV_VARS
 
 
 class TestSubjectData(NamedTuple):

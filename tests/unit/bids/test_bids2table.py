@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from rbc.core.bids2table import get_extra_entity, load_table
+from rbc.bids import get_extra_entity, load_table
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -45,8 +45,8 @@ class TestLoadBidsTable:
     def test_load_without_index(self, tmp_path: Path, test_table: pa.Table) -> None:
         """Test indexing without passing an index."""
         with (
-            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
-            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
+            patch("rbc.bids.query.b2t.batch_index_dataset") as mock_batch,
+            patch("rbc.bids.query.b2t.find_bids_datasets") as mock_find,
         ):
             mock_find.return_value = [tmp_path]
             mock_batch.return_value = [test_table]
@@ -59,9 +59,9 @@ class TestLoadBidsTable:
     def test_not_a_dataframe(self, tmp_path: Path) -> None:
         """Test TypeError raised if return is not a dataframe."""
         with (
-            patch("rbc.core.bids2table.b2t.find_bids_datasets") as mock_find,
-            patch("rbc.core.bids2table.b2t.batch_index_dataset") as mock_batch,
-            patch("rbc.core.bids2table.pl.from_arrow") as mock_from_arrow,
+            patch("rbc.bids.query.b2t.find_bids_datasets") as mock_find,
+            patch("rbc.bids.query.b2t.batch_index_dataset") as mock_batch,
+            patch("rbc.bids.query.pl.from_arrow") as mock_from_arrow,
         ):
             mock_find.return_value = ["fake_dataset"]
             mock_batch.return_value = [pa.table({"col": [1]})]

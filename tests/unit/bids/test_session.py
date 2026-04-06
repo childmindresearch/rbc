@@ -3,7 +3,12 @@
 import polars as pl
 import pytest
 
-from rbc.cli.query import SessionTables, _resolve_anat, iter_session_files, load_session
+from rbc.bids.session import (
+    SessionTables,
+    _resolve_anat,
+    iter_session_files,
+    load_session,
+)
 
 
 @pytest.fixture
