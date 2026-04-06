@@ -65,7 +65,7 @@ def _resolve_anat(
 ) -> pl.DataFrame:
     """Resolve the anat subset for a given primary group."""
     if runs_correspond:
-        run_vals = primary_group["run"].drop_nulls().unique()
+        run_vals = primary_group["run"].drop_nulls().unique().implode()
         matched = anat.filter(pl.col("run").is_in(run_vals))
         return matched if not matched.is_empty() else fallback_anat
     return fallback_anat
