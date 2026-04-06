@@ -46,7 +46,7 @@ class RunnerConfig:
 
     Attributes:
         runner: Execution backend (local, docker, podman, singularity).
-        verbose: Verbosity level.
+        verbose: Enable verbose output (progress bars, info logging).
         tmp_dir: Temporary directory for intermediate files.
     """
 

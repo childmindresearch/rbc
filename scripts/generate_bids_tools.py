@@ -5,8 +5,8 @@
 """Generate BIDS schema constants, utilities, and tests for the rbc package.
 
 Reads the BIDS schema via bidsschematools and generates:
-  - src/rbc/core/bids/_schema.py   (constants + build/parse functions)
-  - tests/unit/test_bids.py (unit tests)
+  - src/rbc/bids/_schema.py   (constants + build/parse functions)
+  - tests/unit/bids/test_bids.py (unit tests)
 
 Run with:
     uv run scripts/generate_bids_tools.py

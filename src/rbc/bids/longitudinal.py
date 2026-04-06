@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.bids import Extension, Suffix
+from rbc.bids import Suffix
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -157,7 +157,6 @@ def export_longitudinal_func(fex: Bids, outputs: FunctionalLongOutputs) -> None:
         outputs.forward_xfm,
         suffix="xfm",
         desc="composite",
-        extension=Extension.NII_GZ,
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},
     )
     if outputs.bold_mask:
