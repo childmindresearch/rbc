@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
-import polars as pl
-
 from rbc.bids import Suffix, TemplateSpace, extract_entities
 from rbc.bids.session import ANAT_GROUP_ENTITIES, SessionTables
 
@@ -41,9 +39,7 @@ def discover_anatomical(session: SessionTables) -> Iterator[AnatomicalRun]:
     Yields:
         An :class:`AnatomicalRun` for each T1w group.
     """
-    for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-        ANAT_GROUP_ENTITIES, maintain_order=True
-    ):
+    for _, anat_df in session.anat.group_by(ANAT_GROUP_ENTITIES, maintain_order=True):
         row = anat_df.row(0, named=True)
         yield AnatomicalRun(
             path=Path(row["root"]) / row["path"],

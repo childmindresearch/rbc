@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
 
-from rbc.bids import extract_entities
-from rbc.bids._schema import Datatype, Suffix
+from rbc.bids import Datatype, Suffix, extract_entities
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
