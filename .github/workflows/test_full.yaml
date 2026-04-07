@@ -58,6 +58,9 @@ jobs:
     - name: Generate pipeline report
       if: always()
       continue-on-error: true
+      env:
+        DISPLAY: ""
+        VTK_DEFAULT_OPENGL_WINDOW: "vtkOSOpenGLRenderWindow"
       shell: bash
       run: |
         uv run scripts/visualize_pipeline.py --output $JOB_TMP/pipeline_report.png
