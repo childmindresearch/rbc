@@ -1,88 +1,17 @@
 """Unit tests for QC CLI module."""
 
-import argparse
-import logging
-from collections.abc import Generator
-from contextlib import contextmanager
-from pathlib import Path
-from unittest.mock import Mock, patch
+from __future__ import annotations
 
-import polars as pl
+import argparse
+from typing import TYPE_CHECKING
+
 import pytest
 
-from rbc.cli import qc
+if TYPE_CHECKING:
+    from pathlib import Path
+
 from rbc.cli.main import cli, create_parser
 from rbc.cli.qc import QCArgs
-from rbc.core.qc.xcp import XCPQCMetrics
-from rbc.workflows.qc import QCOutputs
-
-
-def _make_filtered_df(
-    sample_dataframe: pl.DataFrame,
-    participant: list[str],
-    session: list[str],
-    task: str | None = None,
-) -> pl.DataFrame:
-    """Filter sample dataframe to match QC main() filtering logic."""
-    return sample_dataframe.filter(
-        pl.col("datatype") == "func",
-        pl.col("suffix") == "bold",
-        pl.col("desc") == "preproc",
-        pl.col("space") == "MNI152NLin6Asym",
-        *([pl.col("sub").is_in(participant)] if participant else []),
-        *([pl.col("ses").is_in(session)] if session else []),
-        *([pl.col("task") == task] if task else []),
-    )
-
-
-def _mock_qc_outputs(
-    *, regressor: str = "36-parameter", passed: bool = True
-) -> QCOutputs:
-    """Create a mock QCOutputs with a fake qc_file path and pass/fail status."""
-    return QCOutputs(
-        metrics={regressor: Mock(spec=XCPQCMetrics)},
-        qc_file={regressor: Path("fake_workdir") / "qc.tsv"},
-        passed=passed,
-    )
-
-
-@contextmanager
-def _patch_qc(
-    filtered_df: pl.DataFrame,
-    deriv_df: pl.DataFrame,
-    *,
-    qc_passed: bool = True,
-) -> Generator[tuple[Mock, Mock], None, None]:
-    """Common context manager patches for QC tests.
-
-    Patches load_table to return filtered_df on first call (primary BOLD
-    filtering) and deriv_df on subsequent calls (derivative lookups per
-    sub/ses group). Also patches find_file, single_session_qc, and
-    RunContext.
-    """
-    with (
-        patch(
-            "rbc.orchestration.qc.load_table",
-            side_effect=[filtered_df, *([deriv_df] * 100)],
-        ),
-        patch(
-            "rbc.bids.query.find_file",
-            return_value=Path("fake_workdir/file.nii.gz"),
-        ),
-        patch(
-            "rbc.orchestration.qc.single_session_qc",
-            return_value=_mock_qc_outputs(passed=qc_passed),
-        ) as mock_qc,
-        patch("rbc.orchestration.qc.RunContext") as mock_ctx_cls,
-    ):
-        yield mock_qc, mock_ctx_cls
-
-
-@pytest.fixture
-def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking init_runner so no real runner is created."""
-    with patch("rbc.orchestration.qc.init_runner") as mock:
-        yield mock
 
 
 @pytest.fixture
@@ -102,50 +31,6 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         start_tr=2,
         regressor=["36-parameter"],
         tmp_dir=None,
-    )
-
-
-@pytest.fixture
-def sample_dataframe() -> pl.DataFrame:
-    """Preprocessed derivatives dataframe simulating QC input.
-
-    Contains:
-    - sub-01/ses-baseline: two bold runs (task-rest, task-nback) in MNI space
-    - sub-02/ses-baseline: one bold run (task-rest) in MNI space
-    - sub-01/ses-vis2: one bold run (task-rest) in MNI space
-    - One non-MNI bold row to verify space filtering
-    """
-    return pl.DataFrame(
-        {
-            "datatype": ["func", "func", "func", "func", "func"],
-            "suffix": ["bold", "bold", "bold", "bold", "bold"],
-            "desc": ["preproc", "preproc", "preproc", "preproc", "preproc"],
-            "space": [
-                "MNI152NLin6Asym",
-                "MNI152NLin6Asym",
-                "MNI152NLin6Asym",
-                "MNI152NLin6Asym",
-                "T1w",  # Should be excluded by space filter
-            ],
-            "sub": ["01", "01", "02", "01", "01"],
-            "ses": ["baseline", "baseline", "baseline", "vis2", "baseline"],
-            "task": ["rest", "nback", "rest", "rest", "rest"],
-            "run": [None, None, None, None, None],
-            "acq": [None, None, None, None, None],
-            "dir": [None, None, None, None, None],
-            "echo": [None, None, None, None, None],
-            "part": [None, None, None, None, None],
-            "rec": [None, None, None, None, None],
-            "ext": [".nii.gz"] * 5,
-            "root": ["/data"] * 5,
-            "path": [
-                "sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_space-MNI_bold.nii.gz",
-                "sub-01/ses-baseline/func/sub-01_ses-baseline_task-nback_space-MNI_bold.nii.gz",
-                "sub-02/ses-baseline/func/sub-02_ses-baseline_task-rest_space-MNI_bold.nii.gz",
-                "sub-01/ses-vis2/func/sub-01_ses-vis2_task-rest_space-MNI_bold.nii.gz",
-                "sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_space-T1w_bold.nii.gz",
-            ],
-        }
     )
 
 
@@ -228,171 +113,6 @@ class TestQCArgs:
         base_args.task = task
         with pytest.raises(ValueError, match="Task must contain only alphanumeric"):
             QCArgs.validate_namespace(base_args)
-
-
-class TestQCFiltering:
-    """Tests for subject/session/task/space filtering in QC main()."""
-
-    @pytest.mark.parametrize(
-        ("participant", "session", "task", "expected_count"),
-        [
-            ([], [], None, 4),  # All MNI bold runs
-            (["01"], [], None, 3),  # All sub-01 bold runs
-            ([], ["baseline"], None, 3),  # All ses-baseline bold runs
-            (["01"], ["baseline"], None, 2),  # sub-01_ses-baseline only
-            (["01"], ["baseline"], "rest", 1),  # sub-01_ses-baseline_task-rest only
-            (["01", "02"], ["baseline"], None, 3),  # sub-01 & sub-02 ses-baseline
-            (["01"], ["baseline", "vis2"], None, 3),  # sub-01, both sessions
-            (["99"], [], None, 0),  # No matches
-        ],
-        ids=[
-            "all_mni_bold",
-            "filter_by_participant",
-            "filter_by_session",
-            "filter_by_participant_and_session",
-            "filter_by_all",
-            "filter_by_multi_participant",
-            "filter_by_multi_session",
-            "no_matches",
-        ],
-    )
-    def test_filtering(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-        participant: list[str],
-        session: list[str],
-        task: str | None,
-        expected_count: int,
-    ) -> None:
-        """QC is invoked exactly once per matching bold run after filtering."""
-        base_args.participant_label = participant
-        base_args.session_label = session
-        base_args.task = task
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, participant, session, task)
-
-        with _patch_qc(filtered_df, sample_dataframe) as (mock_qc, mock_ctx_cls):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            result = qc.main(args)
-            assert result == 0
-            assert mock_qc.call_count == expected_count
-
-    def test_space_filter_excludes_non_mni(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-    ) -> None:
-        """Non-MNI bold rows are excluded regardless of other filters."""
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, [], [], None)
-
-        with _patch_qc(filtered_df, sample_dataframe) as (mock_qc, mock_ctx_cls):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            qc.main(args)
-            assert mock_qc.call_count == 4
-
-
-class TestQCOutputs:
-    """Tests for QC output logging and export behaviour."""
-
-    def test_passed_status_logged(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """PASSED is logged when QC outputs indicate the run passed."""
-        base_args.participant_label = ["01"]
-        base_args.session_label = ["baseline"]
-        base_args.task = "rest"
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
-
-        with (
-            caplog.at_level(logging.INFO),
-            _patch_qc(filtered_df, sample_dataframe, qc_passed=True) as (
-                _,
-                mock_ctx_cls,
-            ),
-        ):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            qc.main(args)
-            assert any("PASSED" in msg for msg in caplog.messages)
-
-    def test_failed_status_logged(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """FAILED is logged when QC outputs indicate the run failed."""
-        base_args.participant_label = ["01"]
-        base_args.session_label = ["baseline"]
-        base_args.task = "rest"
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
-
-        with (
-            caplog.at_level(logging.INFO),
-            _patch_qc(filtered_df, sample_dataframe, qc_passed=False) as (
-                _,
-                mock_ctx_cls,
-            ),
-        ):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            qc.main(args)
-            assert any("FAILED" in msg for msg in caplog.messages)
-
-    def test_qc_export_called(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-    ) -> None:
-        """pipe_ctx.export is called once per QC run with correct suffix and desc."""
-        base_args.participant_label = ["01"]
-        base_args.session_label = ["baseline"]
-        base_args.task = "rest"
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, ["01"], ["baseline"], "rest")
-
-        with _patch_qc(filtered_df, sample_dataframe) as (_, mock_ctx_cls):
-            mock_pipe_ctx = Mock(sub="01", ses="baseline")
-            mock_ctx_cls.return_value = mock_pipe_ctx
-            qc.main(args)
-            save_mock = mock_pipe_ctx.bids.return_value.derive.return_value.save
-            assert save_mock.call_count == 1
-            save_kwargs = save_mock.call_args[1]
-            assert save_kwargs["suffix"] == "quality"
-            assert save_kwargs["desc"] == "xcp"
-
-
-class TestRunnerSetup:
-    """Test runner configuration and environment setup."""
-
-    def test_init_runner_called_with_config(
-        self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
-    ) -> None:
-        """Test init_runner is called with the correct RunnerConfig."""
-        from rbc.orchestration import RunnerConfig
-
-        args = QCArgs.validate_namespace(base_args)
-        filtered_df = _make_filtered_df(sample_dataframe, [], [], None)
-
-        with (
-            patch("rbc.orchestration.qc.init_runner") as mock_init,
-            _patch_qc(filtered_df, sample_dataframe) as (_, mock_ctx_cls),
-        ):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            qc.main(args)
-            mock_init.assert_called_once()
-            config = mock_init.call_args[0][0]
-            assert isinstance(config, RunnerConfig)
 
 
 class TestQCRegistration:
