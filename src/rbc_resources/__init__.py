@@ -80,11 +80,6 @@ class RegistrationTemplates(NamedTuple):
     bold_ref: Path
 
 
-# Backward-compatible aliases
-OasisTemplates = BrainExtractionTemplates
-MniTemplates = RegistrationTemplates
-
-
 class FSL(NamedTuple):
     """Paths to FSL resources."""
 
@@ -105,10 +100,6 @@ REGISTRATION_TEMPLATES = RegistrationTemplates(
     brain_mask_2mm=_TEMPLATES / "mni152_T1w_2mm_brain_mask.nii.gz",
     bold_ref=_TEMPLATES / "mni152_bold_ref_2mm.nii.gz",
 )
-
-# Backward-compatible aliases
-OASIS_TEMPLATES = BRAIN_EXTRACTION_TEMPLATES
-MNI_TEMPLATES = REGISTRATION_TEMPLATES
 
 FSL_RESOURCES = FSL(bbr_schedule=_ROOT / "configs" / "flirt_bbr_schedule.sch")
 
@@ -212,8 +203,6 @@ __all__ = [
     "ATLAS_REGISTRY",
     "BRAIN_EXTRACTION_TEMPLATES",
     "FSL_RESOURCES",
-    "MNI_TEMPLATES",
-    "OASIS_TEMPLATES",
     "REGISTRATION_TEMPLATES",
     "get_atlas",
     "resolve_atlas",

@@ -20,7 +20,7 @@ from rbc.core.functional import (
     slice_timing_correction,
 )
 from rbc.core.niwrap import generate_exec_folder
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -73,7 +73,7 @@ def _create_identity_affine() -> Path:
 @pytest.mark.slow
 def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     """Test single-step resampling of STC BOLD to template space."""
-    template_mni = MNI_TEMPLATES.brain_2mm
+    template_mni = REGISTRATION_TEMPLATES.brain_2mm
     synthetic_wm = _create_synthetic_wm(test_subject.t1w)
     anat_to_template = _create_identity_affine()
 
@@ -92,8 +92,8 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     stc = slice_timing_correction(in_file=truncated.output_file)
     masking = bold_masking(
         bold_ref=bold_ref,
-        template_mask=MNI_TEMPLATES.brain_mask_2mm,
-        template_ref=MNI_TEMPLATES.bold_ref,
+        template_mask=REGISTRATION_TEMPLATES.brain_mask_2mm,
+        template_ref=REGISTRATION_TEMPLATES.bold_ref,
     )
     bbr = coregister_bold_to_t1w(
         in_file=masking.skull_stripped_bold,
