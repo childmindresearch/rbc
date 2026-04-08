@@ -9,22 +9,47 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
+from rbc.cli.base import (
+    BaseArgs,
+    _validate_atlas_nifti,
+    _validate_positive,
+    _validate_task,
+)
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.metrics import run
+from rbc_resources import ATLAS_REGISTRY, resolve_atlas
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
-    from rbc_resources import AtlasName
+
+def _resolve_atlas_args(raw_atlases: list[str]) -> dict[str, Path]:
+    """Resolve a list of atlas names or paths to a label-to-path mapping.
+
+    Registry atlases are trusted; custom paths are validated for integer
+    dtype and 3-D shape.
+    """
+    atlas_files: dict[str, Path] = {}
+    for entry in raw_atlases:
+        label, path = resolve_atlas(entry)
+        if label in atlas_files:
+            raise ValueError(
+                f"Duplicate atlas label {label!r}. Use distinct file names "
+                f"for custom atlases."
+            )
+        if entry not in ATLAS_REGISTRY:
+            _validate_atlas_nifti(path)
+        atlas_files[label] = path
+    return atlas_files
 
 
 @dataclass(frozen=True)
 class MetricsArgs(BaseArgs):
     """Arguments for the metrics CLI."""
 
-    atlas: Sequence[AtlasName]
+    atlas_files: dict[str, Path]
     fwhm: float
     task: str | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
@@ -33,14 +58,13 @@ class MetricsArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
-        for atlas in ns.atlas:
-            _validate_atlas(atlas)
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
         _validate_positive(ns.tr, "TR")
+        atlas_files = _resolve_atlas_args(ns.atlas)
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
-            atlas=ns.atlas,
+            atlas_files=atlas_files,
             fwhm=ns.fwhm,
             task=ns.task,
             regressor=ns.regressor,
@@ -58,7 +82,7 @@ def main(args: MetricsArgs) -> int:
             task=args.task,
         ),
         regressors=args.regressor,
-        atlases=args.atlas,
+        atlas_files=args.atlas_files,
         fwhm=args.fwhm,
         tr=args.tr,
         runner_config=RunnerConfig(
@@ -84,15 +108,13 @@ def register_command(
     parser.add_argument(
         "--atlas",
         nargs="+",
-        choices=[
-            "schaefer_200",
-            "schaefer_300",
-            "schaefer_400",
-            "schaefer_1000",
-            "aal",
-        ],
         default=["schaefer_200"],
-        help="Space-delimited atlas(es) for timeseries extraction.",
+        metavar="ATLAS",
+        help=(
+            "Atlas(es) for timeseries extraction. Accepts registry names "
+            f"({', '.join(sorted(ATLAS_REGISTRY))}) or paths to custom NIfTI "
+            "atlas files."
+        ),
     )
     parser.add_argument(
         "--fwhm",

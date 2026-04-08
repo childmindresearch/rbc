@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import argparse
+import logging
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from pathlib import Path
+from typing import Literal
 
-from rbc_resources import ATLAS_REGISTRY
+import nibabel as nib
 
-if TYPE_CHECKING:
-    import argparse
-    from pathlib import Path
+from rbc_resources import BRAIN_EXTRACTION_TEMPLATES, BrainExtractionTemplates
+
+_logger = logging.getLogger(__name__)
 
 _VALID_RUNNERS = frozenset({"auto", "local", "docker", "podman", "singularity"})
 
@@ -63,10 +66,21 @@ class BaseArgs:
         )
 
 
-def _validate_atlas(atlas: str | None) -> None:
-    """Validate atlas is available and exists."""
-    if atlas not in ATLAS_REGISTRY:
-        raise ValueError(f"Unknown atlas, got: {atlas!r}")
+def _validate_nifti_path(value: str) -> Path:
+    """Validate and return a NIfTI file path (for use as argparse ``type=``).
+
+    Raises:
+        argparse.ArgumentTypeError: If the path does not exist or has an
+            unexpected extension.
+    """
+    path = Path(value).resolve()
+    if not path.exists():
+        raise argparse.ArgumentTypeError(f"File not found: {path}")
+    if not (path.name.endswith(".nii.gz") or path.name.endswith(".nii")):
+        raise argparse.ArgumentTypeError(
+            f"Expected a NIfTI file (.nii or .nii.gz), got: {path.name}"
+        )
+    return path
 
 
 def _validate_task(task: str | None) -> None:
@@ -81,3 +95,75 @@ def _validate_positive(value: float | int | None, name: str) -> None:
     """Validate that a numeric value is strictly positive."""
     if value is not None and value <= 0:
         raise ValueError(f"{name} should be greater than 0, got: {value!r}.")
+
+
+def _validate_atlas_nifti(path: Path) -> None:
+    """Validate a custom atlas NIfTI has integer labels and is 3-D.
+
+    Args:
+        path: Path to a NIfTI atlas file.
+
+    Raises:
+        ValueError: If the atlas is not a 3-D volume.
+    """
+    try:
+        hdr = nib.nifti1.load(path).header
+    except Exception:
+        _logger.warning("Could not read NIfTI header for atlas %s", path)
+        return
+    dtype = hdr.get_data_dtype()
+    if dtype.kind not in ("i", "u"):  # integer or unsigned integer
+        _logger.warning(
+            "Atlas %s has dtype %s (expected integer labels). "
+            "Parcellation-based extraction may produce unexpected results.",
+            path.name,
+            dtype,
+        )
+    shape = hdr.get_data_shape()
+    if len(shape) > 3:
+        raise ValueError(
+            f"Atlas {path.name} is {len(shape)}-D (expected a 3-D "
+            f"parcellation). Multi-volume atlases are ambiguous; extract "
+            f"the desired volume first."
+        )
+
+
+def _build_brain_extraction_templates(
+    ns: argparse.Namespace,
+) -> BrainExtractionTemplates:
+    """Construct brain extraction templates from CLI namespace.
+
+    Falls back to bundled OASIS defaults for any field not provided.
+    Warns if only some of the three templates are overridden (they work
+    as a matched set).
+    """
+    custom = (
+        ns.brain_extraction_template,
+        ns.brain_extraction_prob_mask,
+        ns.brain_extraction_reg_mask,
+    )
+    n_custom = sum(v is not None for v in custom)
+    if 0 < n_custom < 3:
+        _logger.warning(
+            "Only %d of 3 brain extraction templates provided. The three "
+            "files (template, probability mask, registration mask) are "
+            "designed to work as a matched set. Mixing custom and bundled "
+            "templates may produce poor brain extraction results.",
+            n_custom,
+        )
+    return BrainExtractionTemplates(
+        template=_or_default(
+            ns.brain_extraction_template, BRAIN_EXTRACTION_TEMPLATES.template
+        ),
+        probability_mask=_or_default(
+            ns.brain_extraction_prob_mask, BRAIN_EXTRACTION_TEMPLATES.probability_mask
+        ),
+        registration_mask=_or_default(
+            ns.brain_extraction_reg_mask, BRAIN_EXTRACTION_TEMPLATES.registration_mask
+        ),
+    )
+
+
+def _or_default(value: Path | None, default: Path) -> Path:
+    """Return *value* if not None, otherwise *default*."""
+    return value if value is not None else default

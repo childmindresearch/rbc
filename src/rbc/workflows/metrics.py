@@ -17,13 +17,10 @@ from rbc.core.metrics.reho import compute_reho
 from rbc.core.metrics.smoothing import smooth
 from rbc.core.metrics.standardization import compute_zscore
 from rbc.core.metrics.timeseries import compute_timeseries
-from rbc_resources import get_atlas
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping
     from pathlib import Path
-
-    from rbc_resources import AtlasName
 
 _logger = logging.getLogger("rbc")
 
@@ -63,7 +60,7 @@ def single_session_metrics(
     cleaned_bold: Path,
     template_brain_mask: Path,
     tr: float,
-    atlas: Sequence[AtlasName] = ("schaefer_200",),
+    atlas_files: Mapping[str, Path],
     fwhm: float = 6.0,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
@@ -73,7 +70,7 @@ def single_session_metrics(
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD in template space.
         template_brain_mask: Brain mask warped to template space.
         tr: Repetition time in seconds.
-        atlas: Atlas short name for timeseries extraction.
+        atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
 
     Returns:
@@ -104,9 +101,9 @@ def single_session_metrics(
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
     # bandpass-filtered BOLD
     ts_outputs = {}
-    for atl in atlas:
-        _logger.info("Extracting atlas timeseries (%s)", atl)
-        ts_outputs[atl] = compute_timeseries(cleaned_bold, get_atlas(atl))
+    for label, atlas_path in atlas_files.items():
+        _logger.info("Extracting atlas timeseries (%s)", label)
+        ts_outputs[label] = compute_timeseries(cleaned_bold, atlas_path)
 
     return MetricsOutputs(
         alff=alff_path,
@@ -118,8 +115,8 @@ def single_session_metrics(
         reho=reho_path,
         reho_smooth=reho_smooth_path,
         reho_zscored=reho_zscored_path,
-        timeseries={atl: ts.timeseries for atl, ts in ts_outputs.items()},
+        timeseries={label: ts.timeseries for label, ts in ts_outputs.items()},
         correlation_matrix={
-            atl: ts.correlation_matrix for atl, ts in ts_outputs.items()
+            label: ts.correlation_matrix for label, ts in ts_outputs.items()
         },
     )

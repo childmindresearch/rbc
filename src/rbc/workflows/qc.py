@@ -21,7 +21,7 @@ from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics
 from rbc.core.qc.xcp import XCPQCMetrics, generate_xcp_qc, passes_rbc_qc, write_xcp_qc
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -60,6 +60,7 @@ def single_session_qc(
     run: int,
     start_tr: int = 2,
     regressor_set: Sequence[str] = ("36-parameter",),
+    mni_brain_mask_2mm: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
 ) -> QCOutputs:
     """Compute all QC metrics for a single functional run.
 
@@ -78,6 +79,7 @@ def single_session_qc(
         run: Run number.
         start_tr: Number of initial TRs that were discarded.
         regressor_set: Nuisance regressor strategy name.
+        mni_brain_mask_2mm: Brain mask for normalization QC (default: MNI152 2 mm).
 
     Returns:
         All QC outputs bundled in a :class:`QCOutputs` tuple.
@@ -118,7 +120,7 @@ def single_session_qc(
     # 6. Normalization overlap (template brain mask vs MNI brain mask)
     #    Resample MNI mask to template grid if shapes differ.
     tmpl_brain_img = nib.nifti1.load(template_brain_mask)
-    mni_mask_img = nib.nifti1.load(MNI_TEMPLATES.brain_mask_2mm)
+    mni_mask_img = nib.nifti1.load(mni_brain_mask_2mm)
     if mni_mask_img.shape[:3] != tmpl_brain_img.shape[:3]:
         from nibabel.processing import resample_from_to
 

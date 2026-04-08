@@ -19,6 +19,7 @@ from rbc.context import RunContext
 from rbc.metadata import FunctionalMetadata
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.functional import single_session_preprocess
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,6 +38,9 @@ def process_session(
     *,
     regressors: Sequence[str],
     tr: float | None = None,
+    func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
+    func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
+    func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
 ) -> list[tuple[FunctionalOutputs, Bids, FunctionalMetadata]]:
     """Run functional preprocessing for one session.
 
@@ -45,6 +49,9 @@ def process_session(
         pipe_ctx: RunContext bound to this subject/session.
         regressors: Regressor names.
         tr: TR override in seconds, or ``None`` to read from headers.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
+        func_template_ref: BOLD reference image for functional masking.
 
     Returns:
         List of (outputs, mni_builder, metadata) per BOLD run,
@@ -69,6 +76,9 @@ def process_session(
             anat_to_template=resolved["anat_to_template"],
             metadata=func_metadata,
             regressor_set=regressors,  # type: ignore[arg-type]
+            func_template=func_template,
+            func_template_mask=func_template_mask,
+            func_template_ref=func_template_ref,
         )
 
         func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=func_run.entities)
@@ -85,6 +95,9 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     tr: float | None = None,
+    func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
+    func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
+    func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the functional pipeline for all matching subjects/sessions.
@@ -95,6 +108,9 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         tr: TR override in seconds.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
+        func_template_ref: BOLD reference image for functional masking.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -121,7 +137,15 @@ def run(
             output_dir=output_dir,
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
-        process_session(session, pipe_ctx, regressors=regressors, tr=tr)
+        process_session(
+            session,
+            pipe_ctx,
+            regressors=regressors,
+            tr=tr,
+            func_template=func_template,
+            func_template_mask=func_template_mask,
+            func_template_ref=func_template_ref,
+        )
         pipe_ctx.ensure_dataset_description()
 
     _logger.info("RBC functional workflow complete")

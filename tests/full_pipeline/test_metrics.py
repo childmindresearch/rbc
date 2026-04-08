@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import nibabel as nib
 
 from rbc.workflows import metrics_pipeline
+from rbc_resources import get_atlas
 
 if TYPE_CHECKING:
     from full_pipeline.conftest import PipelineData
@@ -35,6 +36,7 @@ def test_single_session_metrics(
         cleaned_bold=pipeline_data.func.cleaned_bold[regressor],
         template_brain_mask=pipeline_data.template_brain_mask,
         tr=tr,
+        atlas_files={"schaefer_200": get_atlas("schaefer_200")},
     )
     for output in result:
         paths = output.values() if isinstance(output, dict) else [output]

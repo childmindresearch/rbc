@@ -14,6 +14,7 @@ from rbc.bids.session import discover_derivative_runs
 from rbc.context import RunContext
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.qc import single_session_qc
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -28,6 +29,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     start_tr: int,
+    mni_brain_mask_2mm: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the QC pipeline for all matching subjects/sessions.
@@ -37,6 +39,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         start_tr: Number of initial TRs discarded during preprocessing.
+        mni_brain_mask_2mm: Brain mask for normalization QC (default: MNI152 2 mm).
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -88,6 +91,7 @@ def run(
                 run=deriv_run.entities.get("run", 0),
                 start_tr=start_tr,
                 regressor_set=regressors,
+                mni_brain_mask_2mm=mni_brain_mask_2mm,
             )
 
             export_qc(func_mni, qc_outputs, regressors=regressors)

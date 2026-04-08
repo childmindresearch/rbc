@@ -17,7 +17,7 @@ from rbc.metadata import FunctionalMetadata
 from rbc.orchestration import _DEFAULT_ENV_VARS
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -109,7 +109,7 @@ def pipeline_data(
         metadata=func_metadata,
     )
     template_brain_mask = _warp_mask_to_template(
-        anat.brain_mask, MNI_TEMPLATES.brain_2mm, anat.forward_xfm
+        anat.brain_mask, REGISTRATION_TEMPLATES.brain_2mm, anat.forward_xfm
     )
     manifest["anat"] = _to_dict(anat)
     manifest["func"] = _to_dict(func)

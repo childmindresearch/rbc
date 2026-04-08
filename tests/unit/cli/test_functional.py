@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from rbc.cli.functional import FunctionalArgs
+from rbc_resources import REGISTRATION_TEMPLATES
 
 
 class TestFunctionalArgs:
@@ -33,6 +34,9 @@ class TestFunctionalArgs:
             task=None,
             tr=None,
             tmp_dir=None,
+            func_template=None,
+            func_template_mask=None,
+            func_template_ref=None,
         )
 
     def test_validate_namespace(self, func_namespace: argparse.Namespace) -> None:
@@ -92,3 +96,12 @@ class TestFunctionalArgs:
         func_namespace.task = task
         with pytest.raises(ValueError, match="Task must contain only alphanumeric"):
             FunctionalArgs.validate_namespace(func_namespace)
+
+    def test_defaults_use_bundled_templates(
+        self, func_namespace: argparse.Namespace
+    ) -> None:
+        """When all template args are None, bundled defaults are used."""
+        args = FunctionalArgs.validate_namespace(func_namespace)
+        assert args.func_template == REGISTRATION_TEMPLATES.brain_2mm
+        assert args.func_template_mask == REGISTRATION_TEMPLATES.brain_mask_2mm
+        assert args.func_template_ref == REGISTRATION_TEMPLATES.bold_ref

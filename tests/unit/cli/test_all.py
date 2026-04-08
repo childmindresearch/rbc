@@ -34,6 +34,13 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         start_tr=2,
         tr=None,
         tmp_dir=None,
+        brain_extraction_template=None,
+        brain_extraction_prob_mask=None,
+        brain_extraction_reg_mask=None,
+        anat_template=None,
+        func_template=None,
+        func_template_mask=None,
+        func_template_ref=None,
     )
 
 
@@ -55,7 +62,7 @@ class TestAllArgs:
         args = AllArgs.validate_namespace(base_args)
         assert args.regressor == ["36-parameter"]
         assert args.task is None
-        assert args.atlas == ["schaefer_200"]
+        assert "schaefer_200" in args.atlas_files
         assert args.fwhm == 6.0
         assert args.start_tr == 2
         assert args.participant_label == []
@@ -78,12 +85,12 @@ class TestAllArgs:
         """All supported atlas options pass validation."""
         base_args.atlas = [atlas]
         args = AllArgs.validate_namespace(base_args)
-        assert args.atlas == [atlas]
+        assert atlas in args.atlas_files
 
     def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
-        """Unsupported atlas name raises ValueError."""
-        base_args.atlas = "invalid_atlas"
-        with pytest.raises(ValueError, match="atlas"):
+        """Unresolvable atlas name raises FileNotFoundError."""
+        base_args.atlas = ["invalid_atlas"]
+        with pytest.raises(FileNotFoundError):
             AllArgs.validate_namespace(base_args)
 
     @pytest.mark.parametrize("fwhm", [0.1, 1.0, 6.0, 10.0])

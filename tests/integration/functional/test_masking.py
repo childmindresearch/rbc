@@ -11,7 +11,7 @@ import pytest
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.functional.masking import bold_masking
 from rbc.core.functional.motion import extract_motion_reference
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from conftest import TestSubjectData
@@ -24,8 +24,8 @@ def test_bold_masking_outputs_exist(test_subject: TestSubjectData) -> None:
     bold_ref = extract_motion_reference(in_file=reoriented.out_file)
     result = bold_masking(
         bold_ref=bold_ref,
-        template_mask=MNI_TEMPLATES.brain_mask_2mm,
-        template_ref=MNI_TEMPLATES.bold_ref,
+        template_mask=REGISTRATION_TEMPLATES.brain_mask_2mm,
+        template_ref=REGISTRATION_TEMPLATES.bold_ref,
     )
 
     assert result.final_mask.exists()
@@ -40,8 +40,8 @@ def test_bold_masking_final_mask_is_binary(test_subject: TestSubjectData) -> Non
 
     result = bold_masking(
         bold_ref=bold_ref,
-        template_mask=MNI_TEMPLATES.brain_mask_2mm,
-        template_ref=MNI_TEMPLATES.bold_ref,
+        template_mask=REGISTRATION_TEMPLATES.brain_mask_2mm,
+        template_ref=REGISTRATION_TEMPLATES.bold_ref,
     )
 
     mask_img = nib.nifti1.load(result.final_mask)

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 from niwrap import ants
 
 from rbc.core import CPAC_ANTS_SEED
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 _PREFIX = "ants_reg"
 
@@ -28,8 +28,12 @@ class CompositeTransforms(NamedTuple):
     inverse: Path
 
 
-def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTransforms:
-    """Register a skull-stripped T1w to the MNI152 1 mm template with ANTs.
+def ants_registration(
+    in_file: Path,
+    seed: int = CPAC_ANTS_SEED,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
+) -> CompositeTransforms:
+    """Register a skull-stripped T1w to a standard-space template with ANTs.
 
     Runs a three-stage registration (Rigid -> Affine -> SyN) and then
     collapses the resulting affine matrix and warp field into a single
@@ -38,16 +42,19 @@ def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTra
     Args:
         in_file: Skull-stripped T1w brain image (output of brain extraction).
         seed: Random seed for ANTs reproducibility.
+        registration_template: Brain template used as the fixed image
+            (default: MNI152 1 mm).
 
     Returns:
-        Forward (T1w -> MNI) and inverse (MNI -> T1w) composite transforms.
+        Forward (T1w -> template) and inverse (template -> T1w) composite
+        transforms.
     """
     registration = ants.ants_registration(
         stages=[
             ants.ants_registration_stage(
                 transform=ants.ants_registration_transform_rigid(gradient_step=0.05),
                 metric=ants.ants_registration_metric_mutual_information(
-                    fixed_image=MNI_TEMPLATES.brain_1mm,
+                    fixed_image=registration_template,
                     moving_image=in_file,
                     metric_weight=1,
                     number_of_bins=ants.ants_registration_number_of_bins(
@@ -72,7 +79,7 @@ def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTra
             ants.ants_registration_stage(
                 transform=ants.ants_registration_transform_affine(gradient_step=0.08),
                 metric=ants.ants_registration_metric_mutual_information(
-                    fixed_image=MNI_TEMPLATES.brain_1mm,
+                    fixed_image=registration_template,
                     moving_image=in_file,
                     metric_weight=1,
                     number_of_bins=ants.ants_registration_number_of_bins(
@@ -105,7 +112,7 @@ def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTra
                     ),
                 ),
                 metric=ants.ants_registration_metric_ants_neighbourhood_cross_correlation(
-                    fixed_image=MNI_TEMPLATES.brain_1mm,
+                    fixed_image=registration_template,
                     moving_image=in_file,
                     metric_weight=1,
                     radius=ants.ants_registration_radius(radius_value=4),
@@ -124,7 +131,7 @@ def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTra
         collapse_output_transforms=True,
         dimensionality=3,
         initial_moving_transform=ants.ants_registration_initial_moving_transform_initialization_feature(
-            fixed_image=MNI_TEMPLATES.brain_1mm,
+            fixed_image=registration_template,
             moving_image=in_file,
             initialization_feature=0,
         ),
@@ -135,7 +142,7 @@ def ants_registration(in_file: Path, seed: int = CPAC_ANTS_SEED) -> CompositeTra
         output=f"[{_PREFIX}_,{_PREFIX}_Warped.nii.gz]",
     )
     fwd = ants.ants_apply_transforms(
-        reference_image=MNI_TEMPLATES.brain_1mm,
+        reference_image=registration_template,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
                 registration.root / f"{_PREFIX}_0GenericAffine.mat"

@@ -19,7 +19,7 @@ from rbc.core.functional import (
     truncate_trs,
 )
 from rbc.core.niwrap import generate_exec_folder
-from rbc_resources import MNI_TEMPLATES
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,8 +64,8 @@ def test_coregistration(test_subject: TestSubjectData) -> None:
     bold_ref = extract_motion_reference(in_file=stc)
     masking = bold_masking(
         bold_ref=bold_ref,
-        template_mask=MNI_TEMPLATES.brain_mask_2mm,
-        template_ref=MNI_TEMPLATES.bold_ref,
+        template_mask=REGISTRATION_TEMPLATES.brain_mask_2mm,
+        template_ref=REGISTRATION_TEMPLATES.bold_ref,
     )
     coregistration = coregister_bold_to_t1w(
         in_file=masking.skull_stripped_bold,

@@ -22,12 +22,15 @@ from rbc.orchestration.anatomical import process_session as process_anat
 from rbc.orchestration.functional import process_session as process_func
 from rbc.workflows.metrics import single_session_metrics
 from rbc.workflows.qc import single_session_qc
+from rbc_resources import (
+    BRAIN_EXTRACTION_TEMPLATES,
+    REGISTRATION_TEMPLATES,
+    BrainExtractionTemplates,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
-
-    from rbc_resources import AtlasName
 
 _logger = logging.getLogger(__name__)
 
@@ -38,10 +41,15 @@ def run(
     *,
     filters: Filters,
     regressors: Sequence[str],
-    atlases: Sequence[AtlasName],
+    atlas_files: Mapping[str, Path],
     fwhm: float,
     start_tr: int,
     tr: float | None = None,
+    brain_extraction_templates: BrainExtractionTemplates = BRAIN_EXTRACTION_TEMPLATES,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
+    func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
+    func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
+    func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the full pipeline (anat + func + metrics + QC) per session.
@@ -54,10 +62,15 @@ def run(
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
         regressors: Regressor names.
-        atlases: Atlas names for timeseries extraction.
+        atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
         start_tr: Number of initial TRs discarded during preprocessing.
         tr: TR override in seconds, or ``None`` to read from headers.
+        brain_extraction_templates: Brain extraction template bundle.
+        registration_template: Brain template for ANTs registration.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
+        func_template_ref: BOLD reference image for functional masking.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -87,10 +100,23 @@ def run(
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
 
         # --- Anatomical ---
-        anat_outputs = process_anat(session, pipe_ctx)
+        anat_outputs = process_anat(
+            session,
+            pipe_ctx,
+            brain_extraction_templates=brain_extraction_templates,
+            registration_template=registration_template,
+        )
 
         # --- Functional + Metrics + QC (per BOLD run) ---
-        func_results = process_func(session, pipe_ctx, regressors=regressors, tr=tr)
+        func_results = process_func(
+            session,
+            pipe_ctx,
+            regressors=regressors,
+            tr=tr,
+            func_template=func_template,
+            func_template_mask=func_template_mask,
+            func_template_ref=func_template_ref,
+        )
 
         for func_outputs, mni, func_metadata in func_results:
             # Metrics (per regressor)
@@ -105,14 +131,14 @@ def run(
                     cleaned_bold=func_outputs.cleaned_bold[regressor],
                     template_brain_mask=func_outputs.template_brain_mask,
                     tr=func_metadata.tr,
-                    atlas=atlases,
+                    atlas_files=atlas_files,
                     fwhm=fwhm,
                 )
                 export_metrics(
                     mni,
                     metrics_outputs,
                     regressor=regressor,
-                    atlases=atlases,
+                    atlases=list(atlas_files),
                 )
 
             # QC
@@ -132,6 +158,7 @@ def run(
                 run=0,
                 start_tr=start_tr,
                 regressor_set=regressors,
+                mni_brain_mask_2mm=func_template_mask,
             )
             export_qc(mni, qc_outputs, regressors=regressors)
 
