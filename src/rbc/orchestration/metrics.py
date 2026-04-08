@@ -17,13 +17,12 @@ from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.metrics import single_session_metrics
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
     from rbc.bids import Bids
     from rbc.workflows.functional import FunctionalOutputs
     from rbc.workflows.metrics import MetricsOutputs
-    from rbc_resources import AtlasName
 
 _logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ def process_run(
     func_outputs: FunctionalOutputs,
     tr: float,
     regressor: str,
-    atlases: Sequence[AtlasName],
+    atlas_files: Mapping[str, Path],
     fwhm: float,
 ) -> MetricsOutputs:
     """Run metrics for a single regressor on a single BOLD run.
@@ -59,7 +58,7 @@ def process_run(
         func_outputs: Functional outputs (in-memory from ``all`` pipeline).
         tr: Repetition time in seconds.
         regressor: Regressor name.
-        atlases: Atlas names for timeseries extraction.
+        atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
 
     Returns:
@@ -70,10 +69,10 @@ def process_run(
         cleaned_bold=func_outputs.cleaned_bold[regressor],
         template_brain_mask=func_outputs.template_brain_mask,
         tr=tr,
-        atlas=atlases,
+        atlas_files=atlas_files,
         fwhm=fwhm,
     )
-    export_metrics(mni, outputs, regressor=regressor, atlases=atlases)
+    export_metrics(mni, outputs, regressor=regressor, atlases=list(atlas_files))
     return outputs
 
 
@@ -82,7 +81,7 @@ def run(
     *,
     filters: Filters,
     regressors: Sequence[str],
-    atlases: Sequence[AtlasName],
+    atlas_files: Mapping[str, Path],
     fwhm: float,
     tr: float | None = None,
     runner_config: RunnerConfig | None = None,
@@ -93,7 +92,7 @@ def run(
         output_dir: Directory containing functional derivatives.
         filters: Participant/session/task filters.
         regressors: Regressor names.
-        atlases: Atlas names for timeseries extraction.
+        atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
         tr: TR override in seconds, or ``None`` to read from headers.
         runner_config: Execution backend configuration.
@@ -147,14 +146,14 @@ def run(
                     cleaned_bold=resolved["cleaned_bold"],
                     template_brain_mask=resolved["template_brain_mask"],
                     tr=run_tr,
-                    atlas=atlases,
+                    atlas_files=atlas_files,
                     fwhm=fwhm,
                 )
                 export_metrics(
                     mni_q,
                     outputs,
                     regressor=regressor,
-                    atlases=atlases,
+                    atlases=list(atlas_files),
                 )
 
         pipe_ctx.ensure_dataset_description()

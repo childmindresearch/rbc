@@ -5,23 +5,41 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import (
+    BaseArgs,
+    _build_brain_extraction_templates,
+    _or_default,
+    _validate_nifti_path,
+)
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.anatomical import run
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
+
+    from rbc_resources import BrainExtractionTemplates
 
 
 @dataclass(frozen=True)
 class AnatomicalArgs(BaseArgs):
     """Arguments for single-session anatomical CLI."""
 
+    brain_extraction_templates: BrainExtractionTemplates
+    registration_template: Path
+
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AnatomicalArgs:
         """Validation of anatomical workflow specific arguments to NamedTuple."""
-        return cls(**BaseArgs.validate_namespace(ns).__dict__)
+        return cls(
+            **BaseArgs.validate_namespace(ns).__dict__,
+            brain_extraction_templates=_build_brain_extraction_templates(ns),
+            registration_template=_or_default(
+                ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
+            ),
+        )
 
 
 def main(args: AnatomicalArgs) -> int:
@@ -33,6 +51,8 @@ def main(args: AnatomicalArgs) -> int:
             participant_label=args.participant_label,
             session_label=args.session_label,
         ),
+        brain_extraction_templates=args.brain_extraction_templates,
+        registration_template=args.registration_template,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -54,4 +74,30 @@ def register_command(
         usage="rbc input_dir output_dir anatomical [-h] [options]",
     )
 
-    parser.set_defaults(func=lambda args: main(args))
+    templates = parser.add_argument_group("template overrides")
+    templates.add_argument(
+        "--anat-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom 1 mm brain template for anatomical registration.",
+    )
+    templates.add_argument(
+        "--brain-extraction-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction template (replaces OASIS template).",
+    )
+    templates.add_argument(
+        "--brain-extraction-prob-mask",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction probability mask.",
+    )
+    templates.add_argument(
+        "--brain-extraction-reg-mask",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction registration mask.",
+    )
+
+    parser.set_defaults(func=lambda args: main(AnatomicalArgs.validate_namespace(args)))

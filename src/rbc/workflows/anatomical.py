@@ -20,6 +20,11 @@ from rbc.core.anatomical import (
 )
 from rbc.core.common import deoblique_and_reorient
 from rbc.core.longitudinal.transform import anat_transform
+from rbc_resources import (
+    BRAIN_EXTRACTION_TEMPLATES,
+    REGISTRATION_TEMPLATES,
+    BrainExtractionTemplates,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,7 +56,11 @@ class AnatomicalOutputs(NamedTuple):
     inverse_xfm: Path
 
 
-def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
+def single_session_preprocess(
+    in_t1w: Path,
+    brain_extraction_templates: BrainExtractionTemplates = BRAIN_EXTRACTION_TEMPLATES,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
+) -> AnatomicalOutputs:
     """Run the full anatomical preprocessing pipeline for one session.
 
     Pipeline steps:
@@ -65,10 +74,13 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     3. FSL FAST tissue segmentation on skull-stripped brain (CSF / GM / WM
        partial volume maps, thresholded at 0.95 for binary masks).
     4. WM boundary mask for BBR coregistration.
-    5. ANTs registration to MNI152 template (forward + inverse composite warps).
+    5. ANTs registration to standard-space template (forward + inverse
+       composite warps).
 
     Args:
         in_t1w: Raw T1w image to preprocess.
+        brain_extraction_templates: Brain extraction template bundle.
+        registration_template: 1 mm brain template for ANTs registration.
 
     Returns:
         All output paths bundled in an :class:`AnatomicalOutputs` tuple.
@@ -76,13 +88,19 @@ def single_session_preprocess(in_t1w: Path) -> AnatomicalOutputs:
     _logger.info("Deoblique and reorient T1w")
     reoriented_t1w = deoblique_and_reorient(in_file=in_t1w)
     _logger.info("Brain extraction (ANTs)")
-    extracted_t1w = ants_brain_extraction(in_file=reoriented_t1w.out_file)
+    extracted_t1w = ants_brain_extraction(
+        in_file=reoriented_t1w.out_file,
+        brain_extraction_templates=brain_extraction_templates,
+    )
     _logger.info("Tissue segmentation (FSL FAST)")
     segmentation = fsl_segmentation(in_file=extracted_t1w.brain)
     tissue_masks = fsl_tissue_masks(fast_result=segmentation)
     wm_bbr = fsl_wm_bbr_mask(fast_result=segmentation)
-    _logger.info("Registration of T1w to MNI152NLin6Asym template (ANTs)")
-    transforms = ants_registration(in_file=extracted_t1w.brain)
+    _logger.info("Registration of T1w to template (ANTs)")
+    transforms = ants_registration(
+        in_file=extracted_t1w.brain,
+        registration_template=registration_template,
+    )
 
     return AnatomicalOutputs(
         brain=extracted_t1w.brain,
@@ -131,6 +149,7 @@ def longitudinal_process(
     csf_mask: Path | None = None,
     gm_mask: Path | None = None,
     wm_mask: Path | None = None,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
 ) -> AnatomicalLongOutputs:
     """Transform preprocessed anatomical outputs to longitudinal template space.
 
@@ -145,6 +164,7 @@ def longitudinal_process(
         csf_mask: CSF partial volume mask, if available.
         gm_mask: Grey matter partial volume mask, if available.
         wm_mask: White matter partial volume mask, if available.
+        registration_template: 1 mm brain template for ANTs registration.
 
     Returns:
         :class:`AnatomicalLongOutputs` with all non-null inputs transformed to template
@@ -157,8 +177,11 @@ def longitudinal_process(
         return anat_transform(in_file=val, template=template, xfm=subj_to_template_xfm)
 
     _logger.info("Transforming anatomical outputs to longitudinal template space")
-    _logger.info("Registration of longitudinal template to MNI152NLin6Asym (ANTs)")
-    transforms = ants_registration(in_file=template)
+    _logger.info("Registration of longitudinal template to standard-space (ANTs)")
+    transforms = ants_registration(
+        in_file=template,
+        registration_template=registration_template,
+    )
     return AnatomicalLongOutputs(
         brain=anat_transform(
             in_file=brain, template=template, xfm=subj_to_template_xfm

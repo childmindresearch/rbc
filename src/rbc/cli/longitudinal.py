@@ -5,13 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rbc.cli.base import BaseArgs
+from rbc.cli.base import BaseArgs, _or_default, _validate_nifti_path
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.longitudinal import run
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -20,6 +22,7 @@ class LongitudinalArgs(BaseArgs):
 
     anatomical: bool
     functional: bool
+    registration_template: Path
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -32,6 +35,9 @@ class LongitudinalArgs(BaseArgs):
             **BaseArgs.validate_namespace(ns).__dict__,
             anatomical=ns.anatomical,
             functional=ns.functional,
+            registration_template=_or_default(
+                ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
+            ),
         )
 
 
@@ -46,6 +52,7 @@ def main(args: LongitudinalArgs) -> int:
         ),
         anatomical=args.anatomical,
         functional=args.functional,
+        registration_template=args.registration_template,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -77,6 +84,14 @@ def register_command(
         default=False,
         action="store_true",
         help="Use functional longitudinal pipeline for processing",
+    )
+
+    templates = parser.add_argument_group("template overrides")
+    templates.add_argument(
+        "--anat-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom 1 mm brain template for anatomical registration.",
     )
 
     parser.set_defaults(

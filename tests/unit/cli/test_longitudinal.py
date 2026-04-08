@@ -28,6 +28,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         anatomical=True,
         functional=False,
         tmp_dir=None,
+        anat_template=None,
     )
 
 

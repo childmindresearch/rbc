@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from rbc.cli import main as cli
+from rbc.cli.base import _validate_nifti_path
 
 
 class TestGlobalOpts:
@@ -221,3 +222,33 @@ class TestMain:
         mock_cli.return_value = 1
         cli.main()
         mock_exit.assert_called_once_with(1)
+
+
+class TestValidateNiftiPath:
+    """Tests for _validate_nifti_path helper."""
+
+    def test_valid_nii_gz(self, tmp_path: Path) -> None:
+        """Accepts an existing .nii.gz file."""
+        nifti = tmp_path / "brain.nii.gz"
+        nifti.touch()
+        result = _validate_nifti_path(str(nifti))
+        assert result == nifti.resolve()
+
+    def test_valid_nii(self, tmp_path: Path) -> None:
+        """Accepts an existing .nii file."""
+        nifti = tmp_path / "brain.nii"
+        nifti.touch()
+        result = _validate_nifti_path(str(nifti))
+        assert result == nifti.resolve()
+
+    def test_nonexistent_raises(self) -> None:
+        """Non-existent path raises ArgumentTypeError."""
+        with pytest.raises(argparse.ArgumentTypeError, match="File not found"):
+            _validate_nifti_path("/nonexistent/brain.nii.gz")
+
+    def test_wrong_extension_raises(self, tmp_path: Path) -> None:
+        """Non-NIfTI extension raises ArgumentTypeError."""
+        txt = tmp_path / "brain.txt"
+        txt.touch()
+        with pytest.raises(argparse.ArgumentTypeError, match="Expected a NIfTI file"):
+            _validate_nifti_path(str(txt))

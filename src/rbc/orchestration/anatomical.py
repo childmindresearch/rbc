@@ -14,6 +14,11 @@ from rbc.bids.session import load_session
 from rbc.context import RunContext
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.anatomical import AnatomicalOutputs, single_session_preprocess
+from rbc_resources import (
+    BRAIN_EXTRACTION_TEMPLATES,
+    REGISTRATION_TEMPLATES,
+    BrainExtractionTemplates,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,12 +31,16 @@ _logger = logging.getLogger(__name__)
 def process_session(
     session: SessionTables,
     pipe_ctx: RunContext,
+    brain_extraction_templates: BrainExtractionTemplates = BRAIN_EXTRACTION_TEMPLATES,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
 ) -> AnatomicalOutputs:
     """Run anatomical preprocessing for one session.
 
     Args:
         session: Session tables for a single subject/session.
         pipe_ctx: RunContext bound to this subject/session.
+        brain_extraction_templates: Brain extraction template bundle.
+        registration_template: 1 mm brain template for ANTs registration.
 
     Returns:
         The last :class:`AnatomicalOutputs` (for use by downstream workflows).
@@ -39,7 +48,11 @@ def process_session(
     outputs: AnatomicalOutputs | None = None
     for anat_run in discover_anatomical(session):
         _logger.info("Anatomical: %s", anat_run.path)
-        outputs = single_session_preprocess(in_t1w=anat_run.path)
+        outputs = single_session_preprocess(
+            in_t1w=anat_run.path,
+            brain_extraction_templates=brain_extraction_templates,
+            registration_template=registration_template,
+        )
         anat = pipe_ctx.bids(datatype=Datatype.ANAT, entities=anat_run.entities)
         export_anatomical(anat, outputs)
 
@@ -54,6 +67,8 @@ def run(
     output_dir: Path,
     *,
     filters: Filters,
+    brain_extraction_templates: BrainExtractionTemplates = BRAIN_EXTRACTION_TEMPLATES,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the anatomical pipeline for all matching subjects/sessions.
@@ -62,6 +77,8 @@ def run(
         input_dir: BIDS dataset directory.
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
+        brain_extraction_templates: Brain extraction template bundle.
+        registration_template: 1 mm brain template for ANTs registration.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -89,7 +106,12 @@ def run(
             output_dir=output_dir,
         )
         session = load_session(sub_ses_group, pipe_ctx.sub, pipe_ctx.ses)
-        process_session(session, pipe_ctx)
+        process_session(
+            session,
+            pipe_ctx,
+            brain_extraction_templates=brain_extraction_templates,
+            registration_template=registration_template,
+        )
         pipe_ctx.ensure_dataset_description()
 
     _logger.info("RBC anatomical workflow complete")

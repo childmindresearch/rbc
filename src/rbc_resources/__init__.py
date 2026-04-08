@@ -46,11 +46,13 @@ _ROOT = Path(__file__).parent.resolve()
 # ---------------------------------------------------------------------------
 
 
-class OasisTemplates(NamedTuple):
-    """Paths to OASIS brain-extraction templates.
+class BrainExtractionTemplates(NamedTuple):
+    """Paths to brain-extraction templates.
+
+    Defaults to OASIS templates. Can be overridden via CLI flags.
 
     Attributes:
-        template: OASIS T1w group template.
+        template: T1w group template for brain extraction.
         probability_mask: Brain+cerebellum probability mask for extraction.
         registration_mask: Brain+cerebellum registration mask.
     """
@@ -60,20 +62,27 @@ class OasisTemplates(NamedTuple):
     registration_mask: Path
 
 
-class MniTemplates(NamedTuple):
-    """Paths to MNI152 standard-space templates.
+class RegistrationTemplates(NamedTuple):
+    """Paths to standard-space registration templates.
+
+    Defaults to MNI152 templates. Can be overridden via CLI flags.
 
     Attributes:
-        brain_1mm: MNI152 T1w brain at 1 mm resolution (registration target).
-        brain_2mm: MNI152 T1w brain at 2 mm resolution.
-        brain_mask_2mm: MNI152 T1w brain mask at 2 mm resolution.
-        bold_ref: MNI152 bold reference image.
+        brain_1mm: T1w brain at 1 mm resolution (registration target).
+        brain_2mm: T1w brain at 2 mm resolution.
+        brain_mask_2mm: T1w brain mask at 2 mm resolution.
+        bold_ref: BOLD reference image.
     """
 
     brain_1mm: Path
     brain_2mm: Path
     brain_mask_2mm: Path
     bold_ref: Path
+
+
+# Backward-compatible aliases
+OasisTemplates = BrainExtractionTemplates
+MniTemplates = RegistrationTemplates
 
 
 class FSL(NamedTuple):
@@ -84,18 +93,22 @@ class FSL(NamedTuple):
 
 _TEMPLATES = _ROOT / "templates"
 
-OASIS_TEMPLATES = OasisTemplates(
+BRAIN_EXTRACTION_TEMPLATES = BrainExtractionTemplates(
     template=_TEMPLATES / "oasis_template.nii.gz",
     probability_mask=_TEMPLATES / "oasis_probability_mask.nii.gz",
     registration_mask=_TEMPLATES / "oasis_registration_mask.nii.gz",
 )
 
-MNI_TEMPLATES = MniTemplates(
+REGISTRATION_TEMPLATES = RegistrationTemplates(
     brain_1mm=_TEMPLATES / "mni152_T1w_1mm_brain.nii.gz",
     brain_2mm=_TEMPLATES / "mni152_T1w_2mm_brain.nii.gz",
     brain_mask_2mm=_TEMPLATES / "mni152_T1w_2mm_brain_mask.nii.gz",
     bold_ref=_TEMPLATES / "mni152_bold_ref_2mm.nii.gz",
 )
+
+# Backward-compatible aliases
+OASIS_TEMPLATES = BRAIN_EXTRACTION_TEMPLATES
+MNI_TEMPLATES = REGISTRATION_TEMPLATES
 
 FSL_RESOURCES = FSL(bbr_schedule=_ROOT / "configs" / "flirt_bbr_schedule.sch")
 
@@ -167,10 +180,41 @@ def get_atlas(name: AtlasName) -> Path:
     return path
 
 
+def resolve_atlas(name_or_path: str) -> tuple[str, Path]:
+    """Resolve an atlas by registry name or filesystem path.
+
+    If *name_or_path* matches a key in :data:`ATLAS_REGISTRY`, the
+    corresponding bundled atlas is returned. Otherwise it is treated as a
+    filesystem path to a user-supplied NIfTI file.
+
+    Args:
+        name_or_path: Either a registry short name (e.g. ``"schaefer_200"``)
+            or an absolute/relative path to a NIfTI atlas file.
+
+    Returns:
+        A ``(label, path)`` tuple. For registry atlases the label is the
+        short name; for custom paths the label is derived from the filename
+        stem (without ``.nii.gz``).
+
+    Raises:
+        FileNotFoundError: If a custom atlas path does not exist on disk.
+    """
+    if name_or_path in ATLAS_REGISTRY:
+        return (name_or_path, get_atlas(name_or_path))  # type: ignore[arg-type]
+    path = Path(name_or_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Custom atlas not found: {path}")
+    label = path.name.removesuffix(".nii.gz").removesuffix(".nii")
+    return (label, path.resolve())
+
+
 __all__ = [
     "ATLAS_REGISTRY",
+    "BRAIN_EXTRACTION_TEMPLATES",
     "FSL_RESOURCES",
     "MNI_TEMPLATES",
     "OASIS_TEMPLATES",
+    "REGISTRATION_TEMPLATES",
     "get_atlas",
+    "resolve_atlas",
 ]

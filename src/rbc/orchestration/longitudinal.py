@@ -27,6 +27,7 @@ from rbc.context import RunContext
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal
+from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -38,6 +39,7 @@ def process_anat(
     pipe_ctx: RunContext,
     anat_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
 ) -> None:
     """Handle anatomical longitudinal processing for one anat group.
 
@@ -45,6 +47,7 @@ def process_anat(
         pipe_ctx: RunContext bound to this subject/session.
         anat_df: Anatomical derivative DataFrame for this group.
         tpl_df: Longitudinal template DataFrame.
+        registration_template: 1 mm brain template for ANTs registration.
     """
     anat_df = anat_df.filter(pl.col("space").is_null())
     ents = extract_entities(anat_df.row(0, named=True), ["run"])
@@ -59,7 +62,10 @@ def process_anat(
         tpl_df,
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
     )
-    outputs = anatomical_longitudinal(**resolved)  # type: ignore[arg-type]
+    outputs = anatomical_longitudinal(
+        **resolved,  # type: ignore[arg-type]
+        registration_template=registration_template,
+    )
     aex = anat_q.derive(entities=ents, space="longitudinal")
     export_longitudinal_anat(aex, outputs)
 
@@ -101,6 +107,7 @@ def run(
     filters: Filters,
     anatomical: bool = True,
     functional: bool = True,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the longitudinal pipeline for all matching subjects/sessions.
@@ -111,6 +118,7 @@ def run(
         filters: Participant/session/task filters.
         anatomical: Run anatomical longitudinal processing.
         functional: Run functional longitudinal processing.
+        registration_template: 1 mm brain template for ANTs registration.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -155,7 +163,12 @@ def run(
             for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
                 ("run", "acq"), maintain_order=True
             ):
-                process_anat(pipe_ctx=pipe_ctx, anat_df=anat_df, tpl_df=tpl_df)
+                process_anat(
+                    pipe_ctx=pipe_ctx,
+                    anat_df=anat_df,
+                    tpl_df=tpl_df,
+                    registration_template=registration_template,
+                )
 
         if functional:
             for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):

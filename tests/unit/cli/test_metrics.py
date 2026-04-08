@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from rbc.cli.main import cli, create_parser
-from rbc.cli.metrics import MetricsArgs
+from rbc.cli.metrics import MetricsArgs, _resolve_atlas_args
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ class TestMetricsArgs:
         """Default values for all fields are preserved through validation."""
         args = MetricsArgs.validate_namespace(base_args)
         assert args.task is None
-        assert args.atlas == ["schaefer_200"]
+        assert "schaefer_200" in args.atlas_files
         assert args.fwhm == 6.0
         assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
@@ -76,12 +76,12 @@ class TestMetricsArgs:
         """All supported atlas options pass validation."""
         base_args.atlas = [atlas]
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.atlas == [atlas]
+        assert atlas in args.atlas_files
 
     def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
-        """Unsupported atlas name raises ValueError."""
-        base_args.atlas = "invalid_atlas"
-        with pytest.raises(ValueError, match="atlas"):
+        """Unresolvable atlas name raises FileNotFoundError."""
+        base_args.atlas = ["invalid_atlas"]
+        with pytest.raises(FileNotFoundError):
             MetricsArgs.validate_namespace(base_args)
 
     @pytest.mark.parametrize("fwhm", [0.1, 1.0, 6.0, 10.0])
@@ -176,3 +176,51 @@ class TestMetricsRegistration:
         parser = create_parser()
         args = parser.parse_args(["/input", "/output", "metrics"])
         assert args.fwhm == 6.0
+
+
+class TestResolveAtlasArgs:
+    """Tests for _resolve_atlas_args helper."""
+
+    def test_registry_atlas(self) -> None:
+        """Registry atlas names resolve to a label-to-path dict."""
+        result = _resolve_atlas_args(["schaefer_200"])
+        assert "schaefer_200" in result
+        assert result["schaefer_200"].exists()
+
+    def test_multiple_registry_atlases(self) -> None:
+        """Multiple registry names are all resolved."""
+        result = _resolve_atlas_args(["schaefer_200", "aal"])
+        assert "schaefer_200" in result
+        assert "aal" in result
+
+    def test_custom_atlas_path(self, tmp_path: Path) -> None:
+        """Custom NIfTI path resolves with stem as label."""
+        atlas_file = tmp_path / "my_custom_atlas.nii.gz"
+        atlas_file.touch()
+        result = _resolve_atlas_args([str(atlas_file)])
+        assert "my_custom_atlas" in result
+        assert result["my_custom_atlas"] == atlas_file.resolve()
+
+    def test_mixed_registry_and_custom(self, tmp_path: Path) -> None:
+        """Registry names and custom paths can be mixed."""
+        atlas_file = tmp_path / "custom.nii.gz"
+        atlas_file.touch()
+        result = _resolve_atlas_args(["schaefer_200", str(atlas_file)])
+        assert "schaefer_200" in result
+        assert "custom" in result
+
+    def test_nonexistent_custom_path_raises(self) -> None:
+        """Non-existent custom atlas path raises FileNotFoundError."""
+        with pytest.raises(FileNotFoundError):
+            _resolve_atlas_args(["/nonexistent/atlas.nii.gz"])
+
+    def test_duplicate_label_raises(self, tmp_path: Path) -> None:
+        """Duplicate labels from different custom paths raise ValueError."""
+        d1 = tmp_path / "a"
+        d2 = tmp_path / "b"
+        d1.mkdir()
+        d2.mkdir()
+        (d1 / "dup.nii.gz").touch()
+        (d2 / "dup.nii.gz").touch()
+        with pytest.raises(ValueError, match="Duplicate atlas label"):
+            _resolve_atlas_args([str(d1 / "dup.nii.gz"), str(d2 / "dup.nii.gz")])

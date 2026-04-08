@@ -10,15 +10,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
+from rbc.cli.base import (
+    BaseArgs,
+    _build_brain_extraction_templates,
+    _or_default,
+    _validate_nifti_path,
+    _validate_positive,
+    _validate_task,
+)
+from rbc.cli.metrics import _resolve_atlas_args
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.all import run
+from rbc_resources import ATLAS_REGISTRY, REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+    from pathlib import Path
 
-    from rbc_resources import AtlasName
+    from rbc_resources import BrainExtractionTemplates
 
 
 @dataclass(frozen=True)
@@ -27,28 +37,45 @@ class AllArgs(BaseArgs):
 
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
-    atlas: Sequence[AtlasName]
+    atlas_files: dict[str, Path]
     fwhm: float
     start_tr: int
     tr: float | None
+    brain_extraction_templates: BrainExtractionTemplates
+    registration_template: Path
+    func_template: Path
+    func_template_mask: Path
+    func_template_ref: Path
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
         """Validate all-workflow arguments."""
         _validate_task(ns.task)
-        for atlas in ns.atlas:
-            _validate_atlas(atlas)
         _validate_positive(ns.fwhm, "FWHM")
         _validate_positive(ns.start_tr, "Start TR")
         _validate_positive(ns.tr, "TR")
+        atlas_files = _resolve_atlas_args(ns.atlas)
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
             regressor=ns.regressor,
             task=ns.task,
-            atlas=ns.atlas,
+            atlas_files=atlas_files,
             fwhm=ns.fwhm,
             start_tr=ns.start_tr,
             tr=ns.tr,
+            brain_extraction_templates=_build_brain_extraction_templates(ns),
+            registration_template=_or_default(
+                ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
+            ),
+            func_template=_or_default(
+                ns.func_template, REGISTRATION_TEMPLATES.brain_2mm
+            ),
+            func_template_mask=_or_default(
+                ns.func_template_mask, REGISTRATION_TEMPLATES.brain_mask_2mm
+            ),
+            func_template_ref=_or_default(
+                ns.func_template_ref, REGISTRATION_TEMPLATES.bold_ref
+            ),
         )
 
 
@@ -63,10 +90,15 @@ def main(args: AllArgs) -> int:
             task=args.task,
         ),
         regressors=args.regressor,
-        atlases=args.atlas,
+        atlas_files=args.atlas_files,
         fwhm=args.fwhm,
         start_tr=args.start_tr,
         tr=args.tr,
+        brain_extraction_templates=args.brain_extraction_templates,
+        registration_template=args.registration_template,
+        func_template=args.func_template,
+        func_template_mask=args.func_template_mask,
+        func_template_ref=args.func_template_ref,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -102,15 +134,13 @@ def register_command(
     parser.add_argument(
         "--atlas",
         nargs="+",
-        choices=[
-            "schaefer_200",
-            "schaefer_300",
-            "schaefer_400",
-            "schaefer_1000",
-            "aal",
-        ],
         default=["schaefer_200"],
-        help="Atlas for timeseries extraction.",
+        metavar="ATLAS",
+        help=(
+            "Atlas(es) for timeseries extraction. Accepts registry names "
+            f"({', '.join(sorted(ATLAS_REGISTRY))}) or paths to custom NIfTI "
+            "atlas files."
+        ),
     )
     parser.add_argument(
         "--fwhm",
@@ -129,6 +159,50 @@ def register_command(
         type=float,
         default=None,
         help="Repetition time in seconds. Overrides BIDS sidecar and NIfTI header.",
+    )
+
+    templates = parser.add_argument_group("template overrides")
+    templates.add_argument(
+        "--anat-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom 1 mm brain template for anatomical registration.",
+    )
+    templates.add_argument(
+        "--brain-extraction-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction template (replaces OASIS template).",
+    )
+    templates.add_argument(
+        "--brain-extraction-prob-mask",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction probability mask.",
+    )
+    templates.add_argument(
+        "--brain-extraction-reg-mask",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom brain extraction registration mask.",
+    )
+    templates.add_argument(
+        "--func-template",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom 2 mm brain template for functional resampling.",
+    )
+    templates.add_argument(
+        "--func-template-mask",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom 2 mm brain mask for functional masking.",
+    )
+    templates.add_argument(
+        "--func-template-ref",
+        type=_validate_nifti_path,
+        default=None,
+        help="Custom BOLD reference image for functional masking.",
     )
 
     parser.set_defaults(func=lambda args: main(AllArgs.validate_namespace(args)))
