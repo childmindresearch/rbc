@@ -67,9 +67,9 @@ def run(
         start_tr: Number of initial TRs discarded during preprocessing.
         tr: TR override in seconds, or ``None`` to read from headers.
         brain_extraction_templates: Brain extraction template bundle.
-        registration_template: 1 mm brain template for ANTs registration.
-        func_template: 2 mm brain template for functional resampling.
-        func_template_mask: 2 mm brain mask for functional masking.
+        registration_template: Brain template for ANTs registration.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
         runner_config: Execution backend configuration.
     """

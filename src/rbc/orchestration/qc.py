@@ -39,7 +39,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         start_tr: Number of initial TRs discarded during preprocessing.
-        mni_brain_mask_2mm: 2 mm brain mask for normalization QC.
+        mni_brain_mask_2mm: Brain mask for normalization QC (default: MNI152 2 mm).
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()

@@ -196,8 +196,8 @@ def single_session_preprocess(
             Pass a :class:`PhaseDiffFieldmap` for B0 fieldmap correction or a
             :class:`PEPolarFieldmap` for opposite phase-encoding correction.
             *None* skips distortion correction.
-        func_template: 2 mm brain template for functional resampling.
-        func_template_mask: 2 mm brain mask for functional masking.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
 
     Returns:

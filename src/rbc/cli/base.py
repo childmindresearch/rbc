@@ -98,10 +98,13 @@ def _validate_positive(value: float | int | None, name: str) -> None:
 
 
 def _validate_atlas_nifti(path: Path) -> None:
-    """Warn if a custom atlas NIfTI has a non-integer dtype or is 4-D.
+    """Validate a custom atlas NIfTI has integer labels and is 3-D.
 
     Args:
         path: Path to a NIfTI atlas file.
+
+    Raises:
+        ValueError: If the atlas is not a 3-D volume.
     """
     try:
         hdr = nib.nifti1.load(path).header
@@ -112,17 +115,16 @@ def _validate_atlas_nifti(path: Path) -> None:
     if dtype.kind not in ("i", "u"):  # integer or unsigned integer
         _logger.warning(
             "Atlas %s has dtype %s (expected integer labels). "
-            "Timeseries extraction may produce unexpected results.",
+            "Parcellation-based extraction may produce unexpected results.",
             path.name,
             dtype,
         )
     shape = hdr.get_data_shape()
     if len(shape) > 3:
-        _logger.warning(
-            "Atlas %s is %d-D (expected 3-D parcellation). "
-            "Only the first volume will be used.",
-            path.name,
-            len(shape),
+        raise ValueError(
+            f"Atlas {path.name} is {len(shape)}-D (expected a 3-D "
+            f"parcellation). Multi-volume atlases are ambiguous; extract "
+            f"the desired volume first."
         )
 
 
@@ -150,20 +152,14 @@ def _build_brain_extraction_templates(
             n_custom,
         )
     return BrainExtractionTemplates(
-        template=(
-            ns.brain_extraction_template
-            if ns.brain_extraction_template is not None
-            else BRAIN_EXTRACTION_TEMPLATES.template
+        template=_or_default(
+            ns.brain_extraction_template, BRAIN_EXTRACTION_TEMPLATES.template
         ),
-        probability_mask=(
-            ns.brain_extraction_prob_mask
-            if ns.brain_extraction_prob_mask is not None
-            else BRAIN_EXTRACTION_TEMPLATES.probability_mask
+        probability_mask=_or_default(
+            ns.brain_extraction_prob_mask, BRAIN_EXTRACTION_TEMPLATES.probability_mask
         ),
-        registration_mask=(
-            ns.brain_extraction_reg_mask
-            if ns.brain_extraction_reg_mask is not None
-            else BRAIN_EXTRACTION_TEMPLATES.registration_mask
+        registration_mask=_or_default(
+            ns.brain_extraction_reg_mask, BRAIN_EXTRACTION_TEMPLATES.registration_mask
         ),
     )
 

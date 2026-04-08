@@ -121,13 +121,13 @@ def register_command(
         "--func-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 2 mm brain template for functional resampling.",
+        help="Custom brain template for functional resampling (default: MNI152 2 mm).",
     )
     templates.add_argument(
         "--func-template-mask",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 2 mm brain mask for functional masking.",
+        help="Custom brain mask for functional masking (default: MNI152 2 mm).",
     )
     templates.add_argument(
         "--func-template-ref",

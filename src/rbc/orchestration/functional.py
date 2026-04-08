@@ -49,8 +49,8 @@ def process_session(
         pipe_ctx: RunContext bound to this subject/session.
         regressors: Regressor names.
         tr: TR override in seconds, or ``None`` to read from headers.
-        func_template: 2 mm brain template for functional resampling.
-        func_template_mask: 2 mm brain mask for functional masking.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
 
     Returns:
@@ -108,8 +108,8 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         tr: TR override in seconds.
-        func_template: 2 mm brain template for functional resampling.
-        func_template_mask: 2 mm brain mask for functional masking.
+        func_template: Brain template for functional resampling (default: MNI152 2 mm).
+        func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
         runner_config: Execution backend configuration.
     """

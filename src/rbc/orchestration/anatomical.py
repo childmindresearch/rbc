@@ -40,7 +40,7 @@ def process_session(
         session: Session tables for a single subject/session.
         pipe_ctx: RunContext bound to this subject/session.
         brain_extraction_templates: Brain extraction template bundle.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
 
     Returns:
         The last :class:`AnatomicalOutputs` (for use by downstream workflows).
@@ -78,7 +78,7 @@ def run(
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
         brain_extraction_templates: Brain extraction template bundle.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()

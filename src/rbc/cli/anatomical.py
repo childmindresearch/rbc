@@ -79,7 +79,7 @@ def register_command(
         "--anat-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 1 mm brain template for anatomical registration.",
+        help="Custom brain template for anatomical registration.",
     )
     templates.add_argument(
         "--brain-extraction-template",

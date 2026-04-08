@@ -137,7 +137,7 @@ def register_command(
         default=["schaefer_200"],
         metavar="ATLAS",
         help=(
-            "Atlas(es) for timeseries extraction. Accepts registry names "
+            "Atlas(es) for connectome extraction. Accepts registry names "
             f"({', '.join(sorted(ATLAS_REGISTRY))}) or paths to custom NIfTI "
             "atlas files."
         ),
@@ -166,7 +166,7 @@ def register_command(
         "--anat-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 1 mm brain template for anatomical registration.",
+        help="Custom brain template for anatomical registration.",
     )
     templates.add_argument(
         "--brain-extraction-template",
@@ -190,13 +190,13 @@ def register_command(
         "--func-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 2 mm brain template for functional resampling.",
+        help="Custom brain template for functional resampling (default: MNI152 2 mm).",
     )
     templates.add_argument(
         "--func-template-mask",
         type=_validate_nifti_path,
         default=None,
-        help="Custom 2 mm brain mask for functional masking.",
+        help="Custom brain mask for functional masking (default: MNI152 2 mm).",
     )
     templates.add_argument(
         "--func-template-ref",

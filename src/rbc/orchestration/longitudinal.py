@@ -47,7 +47,7 @@ def process_anat(
         pipe_ctx: RunContext bound to this subject/session.
         anat_df: Anatomical derivative DataFrame for this group.
         tpl_df: Longitudinal template DataFrame.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
     """
     anat_df = anat_df.filter(pl.col("space").is_null())
     ents = extract_entities(anat_df.row(0, named=True), ["run"])
@@ -118,7 +118,7 @@ def run(
         filters: Participant/session/task filters.
         anatomical: Run anatomical longitudinal processing.
         functional: Run functional longitudinal processing.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()

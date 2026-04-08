@@ -80,7 +80,7 @@ def single_session_preprocess(
     Args:
         in_t1w: Raw T1w image to preprocess.
         brain_extraction_templates: Brain extraction template bundle.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
 
     Returns:
         All output paths bundled in an :class:`AnatomicalOutputs` tuple.
@@ -164,7 +164,7 @@ def longitudinal_process(
         csf_mask: CSF partial volume mask, if available.
         gm_mask: Grey matter partial volume mask, if available.
         wm_mask: White matter partial volume mask, if available.
-        registration_template: 1 mm brain template for ANTs registration.
+        registration_template: Brain template for ANTs registration.
 
     Returns:
         :class:`AnatomicalLongOutputs` with all non-null inputs transformed to template

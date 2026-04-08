@@ -79,7 +79,7 @@ def single_session_qc(
         run: Run number.
         start_tr: Number of initial TRs that were discarded.
         regressor_set: Nuisance regressor strategy name.
-        mni_brain_mask_2mm: 2 mm brain mask for normalization QC.
+        mni_brain_mask_2mm: Brain mask for normalization QC (default: MNI152 2 mm).
 
     Returns:
         All QC outputs bundled in a :class:`QCOutputs` tuple.

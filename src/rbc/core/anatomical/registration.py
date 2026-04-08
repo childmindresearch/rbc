@@ -42,8 +42,8 @@ def ants_registration(
     Args:
         in_file: Skull-stripped T1w brain image (output of brain extraction).
         seed: Random seed for ANTs reproducibility.
-        registration_template: 1 mm brain template used as the fixed image.
-            Defaults to the bundled MNI152 1 mm template.
+        registration_template: Brain template used as the fixed image
+            (default: MNI152 1 mm).
 
     Returns:
         Forward (T1w -> template) and inverse (template -> T1w) composite
