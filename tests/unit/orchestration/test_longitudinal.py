@@ -68,6 +68,8 @@ def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
     m.bold = fake / "bold.nii.gz"
     m.bold_to_long_xfm = fake / "bold_to_long_xfm.nii.gz"
     m.bold_mask = (fake / "bold_mask.nii.gz") if with_bold_mask else None
+    m.regressed_bold = {"36-parameter": fake / "regressed.nii.gz"}
+    m.cleaned_bold = {"36-parameter": fake / "cleaned.nii.gz"}
     return m
 
 
@@ -319,7 +321,12 @@ class TestProcessFunc:
             ),
             patch("rbc.bids.builder.shutil.copy2"),
         ):
-            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(
+                pipe_ctx=pipe_ctx,
+                func_df=func_df,
+                tpl_df=tpl_df,
+                regressors=["36-parameter"],
+            )
             assert mock_func.call_count == 1
 
     @pytest.mark.parametrize(
@@ -359,7 +366,12 @@ class TestProcessFunc:
             ),
             pytest.raises(FileNotFoundError),
         ):
-            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(
+                pipe_ctx=pipe_ctx,
+                func_df=func_df,
+                tpl_df=tpl_df,
+                regressors=["36-parameter"],
+            )
 
     def test_optional_bold_mask_file_not_found(
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
@@ -377,8 +389,13 @@ class TestProcessFunc:
             ),
             patch("rbc.bids.builder.shutil.copy2") as mock_copy,
         ):
-            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-            assert mock_copy.call_count == 3
+            process_func(
+                pipe_ctx=pipe_ctx,
+                func_df=func_df,
+                tpl_df=tpl_df,
+                regressors=["36-parameter"],
+            )
+            assert mock_copy.call_count == 5
 
 
 class TestLongitudinalDispatch:

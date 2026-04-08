@@ -30,6 +30,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         tmp_dir=None,
         anat_template=None,
         ants_threads=1,
+        regressor=["36-parameter"],
     )
 
 

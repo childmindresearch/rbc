@@ -105,7 +105,7 @@ def process_func(
 
 
 def run(
-    input_dirs: Sequence[Path],
+    input_dirs: list[Path],
     output_dir: Path,
     *,
     filters: Filters,
