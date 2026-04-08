@@ -42,6 +42,7 @@ def _make_anat_outputs(w: Path) -> AnatomicalOutputs:
     return AnatomicalOutputs(
         brain=_dummy(w, "brain.nii.gz"),
         brain_mask=_dummy(w, "brain_mask.nii.gz"),
+        brain_tpl=_dummy(w, "brain_tpl.nii.gz"),
         csf_mask=_dummy(w, "csf_mask.nii.gz"),
         gm_mask=_dummy(w, "gm_mask.nii.gz"),
         wm_mask=_dummy(w, "wm_mask.nii.gz"),
@@ -127,14 +128,14 @@ def func_bids(pipe_ctx: RunContext) -> Bids:
 class TestExportAnatomical:
     """Tests for export_anatomical."""
 
-    def test_creates_8_files(
+    def test_creates_9_files(
         self, anat_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
-        """All 8 anatomical outputs are saved."""
+        """All 9 anatomical outputs are saved."""
         outputs = _make_anat_outputs(workdir)
         export_anatomical(anat_bids, outputs)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 8
+        assert len(saved) == 9
 
     def test_filenames_contain_expected_entities(
         self, anat_bids: Bids, workdir: Path, pipe_ctx: RunContext
@@ -145,6 +146,21 @@ class TestExportAnatomical:
         for p in pipe_ctx.output_dir.rglob("*.*"):
             assert "sub-01" in p.name
             assert "ses-baseline" in p.name
+
+    def test_template_space_t1w_has_space_entity(
+        self, anat_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """Template-space T1w is saved with the MNI space entity."""
+        outputs = _make_anat_outputs(workdir)
+        export_anatomical(anat_bids, outputs)
+        mni_files = [
+            p.name
+            for p in pipe_ctx.output_dir.rglob("*.*")
+            if "space-MNI152NLin6Asym" in p.name
+        ]
+        assert len(mni_files) == 1
+        assert "T1w" in mni_files[0]
+        assert "desc-brain" in mni_files[0]
 
 
 # ---------------------------------------------------------------------------

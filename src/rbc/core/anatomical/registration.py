@@ -21,9 +21,16 @@ from rbc_resources import REGISTRATION_TEMPLATES
 _PREFIX = "ants_reg"
 
 
-class CompositeTransforms(NamedTuple):
-    """Forward and inverse composite transformation paths."""
+class RegistrationOutputs(NamedTuple):
+    """Outputs from ANTs registration to a standard-space template.
 
+    Attributes:
+        brain: Warped (template-space) skull-stripped brain.
+        forward: T1w-to-template composite displacement field.
+        inverse: Template-to-T1w composite displacement field.
+    """
+
+    brain: Path
     forward: Path
     inverse: Path
 
@@ -32,7 +39,7 @@ def ants_registration(
     in_file: Path,
     seed: int = CPAC_ANTS_SEED,
     registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
-) -> CompositeTransforms:
+) -> RegistrationOutputs:
     """Register a skull-stripped T1w to a standard-space template with ANTs.
 
     Runs a three-stage registration (Rigid -> Affine -> SyN) and then
@@ -171,6 +178,10 @@ def ants_registration(
             print_out_composite_warp_file=True,
         ),
     )
-    return CompositeTransforms(
-        forward=fwd.output.output_image_outfile, inverse=rev.output.output_image_outfile
+    # ANTs writes the warped image to {prefix}_Warped.nii.gz but NiWrap
+    # does not expose this path, so we construct it from the output root.
+    return RegistrationOutputs(
+        brain=registration.root / f"{_PREFIX}_Warped.nii.gz",
+        forward=fwd.output.output_image_outfile,
+        inverse=rev.output.output_image_outfile,
     )

@@ -83,3 +83,5 @@ def export_anatomical(anat: Bids, outputs: AnatomicalOutputs) -> None:
             "mode": "image",
         },
     )
+    mni = anat.derive(space=TemplateSpace.MNI152NLIN6ASYM)
+    mni.save(outputs.brain_tpl, suffix=Suffix.T1W, desc="brain")
