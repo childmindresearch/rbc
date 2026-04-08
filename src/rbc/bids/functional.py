@@ -160,7 +160,7 @@ def export_functional(
         )
         func.save(
             outputs.bpf_regressor_file[reg],
-            suffix="regressorsBPF",
+            suffix="regressors+filtered",
             desc=bids_safe_label(reg),
             extension=".1D",
         )
