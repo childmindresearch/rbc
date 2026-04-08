@@ -46,7 +46,7 @@ class LongitudinalArgs(BaseArgs):
 def main(args: LongitudinalArgs) -> int:
     """Main entrypoint of longitudinal workflow."""
     run(
-        input_dirs=args.input_dirs,
+        input_dirs=list(args.input_dirs),
         output_dir=args.output_dir,
         filters=Filters(
             participant_label=args.participant_label,

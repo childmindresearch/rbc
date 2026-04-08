@@ -393,8 +393,7 @@ class FunctionalLongOutputs(NamedTuple):
         bold_to_long_xfm: BOLD-to-longitudinal-template composite warp.
         sbref: Motion reference volume warped to longitudinal template space.
         bold: Preprocessed BOLD warped to longitudinal template space.
-        bold_mask: Brain mask warped to longitudinal template space,
-            or *None* if no mask was provided.
+        bold_mask: Brain mask warped to longitudinal template space.
         regressed_bold: Nuisance-regressed (non-bandpassed) BOLD in longitudinal
             template space. Suitable for ALFF/fALFF.
         cleaned_bold: Nuisance-regressed + bandpass-filtered BOLD in longitudinal

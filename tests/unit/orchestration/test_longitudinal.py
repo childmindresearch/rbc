@@ -373,30 +373,6 @@ class TestProcessFunc:
                 regressors=["36-parameter"],
             )
 
-    def test_optional_bold_mask_file_not_found(
-        self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
-    ) -> None:
-        """Optional bold_mask not found is caught; 3 exports emitted."""
-        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
-        with (
-            patch(
-                "rbc.orchestration.longitudinal.functional_longitudinal",
-                return_value=_mock_func_outputs(with_bold_mask=False),
-            ),
-            patch(
-                "rbc.bids.query.find_file",
-                side_effect=_none_for(suffix="mask", desc="brain"),
-            ),
-            patch("rbc.bids.builder.shutil.copy2") as mock_copy,
-        ):
-            process_func(
-                pipe_ctx=pipe_ctx,
-                func_df=func_df,
-                tpl_df=tpl_df,
-                regressors=["36-parameter"],
-            )
-            assert mock_copy.call_count == 5
-
 
 class TestLongitudinalDispatch:
     """Tests for run() dispatch logic (not filtering, which is in test_filters)."""
