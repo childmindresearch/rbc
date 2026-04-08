@@ -73,16 +73,12 @@ def run(
         dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
 
-    filter_exprs = [
+    df = filters.apply(
+        df,
         pl.col("ses") != "longitudinal",
         pl.col("space").is_null(),
         pl.col("desc").is_null(),
-    ]
-    if len(filters.participant_label) > 0:
-        filter_exprs.append(pl.col("sub").is_in(filters.participant_label))
-    if len(filters.session_label) > 0:
-        filter_exprs.append(pl.col("ses").is_in(filters.session_label))
-    df = df.filter(pl.all_horizontal(filter_exprs))
+    )
 
     for _, sub_ses_group in tqdm(
         df.group_by(SUB_SES_QUERY, maintain_order=True), disable=not verbose

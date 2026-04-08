@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+import polars as pl
+
 from rbc.core import CPAC_ANTS_SEED
 from rbc.core.niwrap import setup_runner
 
@@ -38,6 +40,28 @@ class Filters:
     participant_label: Sequence[str] = field(default_factory=tuple)
     session_label: Sequence[str] = field(default_factory=tuple)
     task: str | None = None
+
+    def apply(self, df: pl.DataFrame, *base_exprs: pl.Expr) -> pl.DataFrame:
+        """Apply user-level and workflow-specific filters to a BIDS table.
+
+        Args:
+            df: BIDS table to filter.
+            *base_exprs: Workflow-specific filter expressions
+                (e.g. space, datatype constraints).
+
+        Returns:
+            Filtered DataFrame.
+        """
+        exprs = list(base_exprs)
+        if len(self.participant_label) > 0:
+            exprs.append(pl.col("sub").is_in(self.participant_label))
+        if len(self.session_label) > 0:
+            exprs.append(pl.col("ses").is_in(self.session_label))
+        if self.task is not None:
+            exprs.append(pl.col("task") == self.task)
+        if not exprs:
+            return df
+        return df.filter(pl.all_horizontal(exprs))
 
 
 @dataclass(frozen=True)

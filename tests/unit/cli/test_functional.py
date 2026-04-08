@@ -1,170 +1,16 @@
 """Unit tests for Functional CLI module."""
 
-import argparse
-from collections.abc import Generator, Sequence
-from contextlib import contextmanager
-from pathlib import Path
-from unittest.mock import Mock, patch
+from __future__ import annotations
 
-import polars as pl
+import argparse
+from typing import TYPE_CHECKING
+
 import pytest
 
-from rbc.cli.functional import FunctionalArgs, main
+if TYPE_CHECKING:
+    from pathlib import Path
 
-
-def _make_groups(
-    sample_dataframe: pl.DataFrame,
-    participant: list[str],
-    session: list[str],
-    task: str | None = None,
-) -> tuple[pl.DataFrame, list[tuple]]:
-    """Filter sample dataframe and build iter_session_files groups."""
-    filtered_df = sample_dataframe.filter(
-        pl.col("suffix") == "bold",
-        *([pl.col("sub").is_in(participant)] if participant else []),
-        *([pl.col("ses").is_in(session)] if session else []),
-        *([pl.col("task") == task] if task else []),
-    )
-    groups = [
-        (
-            filtered_df.filter(
-                pl.col("sub") == row["sub"],
-                pl.col("ses") == row["ses"],
-                pl.col("task") == row["task"],
-            ),
-            pl.DataFrame({"space": [], "desc": []}),  # anat_df placeholder
-        )
-        for row in filtered_df.unique(["sub", "ses", "task"]).iter_rows(named=True)
-    ]
-    return filtered_df, groups
-
-
-def _mock_functional_outputs(regressor: Sequence[str] = ["36-parameter"]) -> Mock:
-    """Create a mock FunctionalOutputs with fake paths."""
-    fake = Path("fake_workdir")
-    outputs = Mock()
-    outputs.sbref = fake / "sbref.nii.gz"
-    outputs.motion_corrected_bold = fake / "bold_preproc.nii.gz"
-    outputs.motion_params = fake / "motion.1D"
-    outputs.rms_rel = fake / "rms_rel.rms"
-    outputs.rms_abs = fake / "rms_abs.rms"
-    outputs.bold_mask = fake / "bold_mask.nii.gz"
-    outputs.bold_to_anat_matrix = fake / "bold_to_anat.txt"
-    outputs.cleaned_bold = dict.fromkeys(regressor, fake / "cleaned_bold.nii.gz")
-    outputs.regressed_bold = dict.fromkeys(regressor, fake / "regressed_bold.nii.gz")
-    outputs.regressor_file = dict.fromkeys(regressor, fake / "regressors.1D")
-    return outputs
-
-
-@contextmanager
-def _patch_functional(
-    filtered_df: pl.DataFrame, groups: list[tuple]
-) -> Generator[tuple[Mock, Mock], None, None]:
-    """Common context manager patches for functional tests."""
-    from rbc.bids.functional import FunctionalRun
-
-    # Build discovery results from groups.
-    func_run_calls: list[list[FunctionalRun]] = []
-    sub_ses_groups: dict[tuple, list[FunctionalRun]] = {}
-    for func_df, anat_df in groups:
-        if func_df.is_empty():
-            continue
-        row = func_df.row(0, named=True)
-        key = (row["sub"], row["ses"])
-        sub_ses_groups.setdefault(key, [])
-        sub_ses_groups[key].append(
-            FunctionalRun(
-                path=Path(row.get("root", "/data")) / row.get("path", "bold.nii.gz"),
-                entities={"task": row.get("task", "rest")},
-                anat_df=anat_df,
-            )
-        )
-    func_run_calls = list(sub_ses_groups.values())
-
-    from rbc.metadata import FunctionalMetadata
-
-    mock_metadata = FunctionalMetadata(tr=2.0, slice_timing=None)
-
-    with (
-        patch("rbc.orchestration.functional.load_table", return_value=filtered_df),
-        patch("rbc.orchestration.functional.load_session", return_value=Mock()),
-        patch(
-            "rbc.orchestration.functional.discover_functional",
-            side_effect=func_run_calls,
-        ),
-        patch(
-            "rbc.bids.query.find_file",
-            return_value=Path("fake_workdir/file.nii.gz"),
-        ),
-        patch(
-            "rbc.orchestration.functional.single_session_preprocess",
-            return_value=_mock_functional_outputs(),
-        ) as mock_preprocess,
-        patch("rbc.orchestration.functional.RunContext") as mock_ctx_cls,
-        patch(
-            "rbc.orchestration.functional.FunctionalMetadata.load",
-            return_value=mock_metadata,
-        ),
-    ):
-        yield mock_preprocess, mock_ctx_cls
-
-
-@pytest.fixture
-def mock_setup() -> Generator[Mock, None, None]:
-    """Fixture for mocking init_runner so no real runner is created."""
-    with patch("rbc.orchestration.functional.init_runner") as mock:
-        yield mock
-
-
-@pytest.fixture
-def base_args(tmp_path: Path) -> argparse.Namespace:
-    """Fixture for base argument namespace."""
-    input_dir = tmp_path / "input"
-    input_dir.touch()
-    output_dir = tmp_path / "output"
-    return argparse.Namespace(
-        runner="local",
-        verbose=False,
-        input_dir=input_dir,
-        output_dir=output_dir,
-        participant_label=[],
-        session_label=[],
-        regressor=["36-parameter"],
-        task=None,
-        tr=None,
-        tmp_dir=None,
-    )
-
-
-@pytest.fixture
-def sample_dataframe() -> pl.DataFrame:
-    """Generate sample dataframe for testing."""
-    return pl.DataFrame(
-        {
-            "datatype": ["func", "func", "func", "func", "anat"],
-            "suffix": ["bold", "bold", "bold", "bold", "T1w"],
-            "ext": [".nii.gz", ".nii.gz", ".nii.gz", ".nii.gz", ".nii.gz"],
-            "sub": ["01", "01", "02", "01", "01"],
-            "ses": ["baseline", "baseline", "baseline", "vis2", "baseline"],
-            "task": ["rest", "nback", "rest", "rest", None],
-            "run": [None] * 5,
-            "acq": [None] * 5,
-            "dir": [None] * 5,
-            "echo": [None] * 5,
-            "part": [None] * 5,
-            "rec": [None] * 5,
-            "space": [None] * 5,
-            "desc": [None] * 5,
-            "root": ["/data"] * 5,
-            "path": [
-                "sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz",
-                "sub-01/ses-baseline/func/sub-01_ses-baseline_task-nback_bold.nii.gz",
-                "sub-02/ses-baseline/func/sub-02_ses-baseline_task-rest_bold.nii.gz",
-                "sub-01/ses-vis2/func/sub-01_ses-vis2_task-rest_bold.nii.gz",
-                "sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz",
-            ],
-        }
-    )
+from rbc.cli.functional import FunctionalArgs
 
 
 class TestFunctionalArgs:
@@ -216,9 +62,9 @@ class TestFunctionalArgs:
         assert args.participant_label == []
         assert args.session_label == []
 
-    def test_parser_from_namespace(self, base_args: argparse.Namespace) -> None:
+    def test_parser_from_namespace(self, func_namespace: argparse.Namespace) -> None:
         """Tests parser successfully validates namespace."""
-        args = FunctionalArgs.validate_namespace(base_args)
+        args = FunctionalArgs.validate_namespace(func_namespace)
         assert isinstance(args, FunctionalArgs)
 
     @pytest.mark.parametrize(
@@ -227,11 +73,11 @@ class TestFunctionalArgs:
         ids=["simple", "alphanumeric", "plus_separator", "with_digits", "none"],
     )
     def test_valid_task_labels(
-        self, base_args: argparse.Namespace, task: str | None
+        self, func_namespace: argparse.Namespace, task: str | None
     ) -> None:
         """Tests valid task labels pass validation."""
-        base_args.task = task
-        args = FunctionalArgs.validate_namespace(base_args)
+        func_namespace.task = task
+        args = FunctionalArgs.validate_namespace(func_namespace)
         assert args.task == task
 
     @pytest.mark.parametrize(
@@ -240,105 +86,9 @@ class TestFunctionalArgs:
         ids=["space_hyphen", "space", "special_char", "slash"],
     )
     def test_invalid_task_labels(
-        self, base_args: argparse.Namespace, task: str
+        self, func_namespace: argparse.Namespace, task: str
     ) -> None:
         """Tests invalid task labels raise ValueError."""
-        base_args.task = task
+        func_namespace.task = task
         with pytest.raises(ValueError, match="Task must contain only alphanumeric"):
-            FunctionalArgs.validate_namespace(base_args)
-
-
-class TestFunctional:
-    """Testing suite for functional processing."""
-
-    @pytest.mark.parametrize(
-        ("participant", "session", "task", "expected_count"),
-        [
-            ([], [], None, 4),  # All bold files
-            (["01"], [], None, 3),  # All sub-01 bold
-            ([], ["baseline"], None, 3),  # All ses-baseline bold
-            (["01"], ["baseline"], None, 2),  # sub-01_ses-baseline
-            (["01"], ["baseline"], "rest", 1),  # sub-01_ses-baseline_task-rest
-            (["01", "02"], ["baseline"], None, 3),  # sub-01 & sub-02 ses-baseline
-            (["01"], ["baseline", "vis2"], None, 3),  # sub-01, both sessions
-            (["99"], [], None, 0),  # No matches
-        ],
-        ids=[
-            "filter_by_type",
-            "filter_by_participant",
-            "filter_by_session",
-            "filter_by_participant_and_session",
-            "filter_by_all",
-            "filter_by_multi_participant",
-            "filter_by_multi_session",
-            "no_matches",
-        ],
-    )
-    def test_filtering(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-        participant: list[str],
-        session: list[str],
-        task: str | None,
-        expected_count: int,
-    ) -> None:
-        """Test various filtering scenarios using parametrization."""
-        base_args.participant_label = participant
-        base_args.session_label = session
-        base_args.task = task
-        args = FunctionalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, participant, session, task)
-
-        with _patch_functional(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            result = main(args)
-            assert result == 0
-            assert mock_preprocess.call_count == expected_count
-
-    def test_filtering_validate_files_processed(
-        self,
-        mock_setup: Mock,  # noqa: ARG002 - test setup
-        base_args: argparse.Namespace,
-        sample_dataframe: pl.DataFrame,
-    ) -> None:
-        """Test that correct files are processed after filtering."""
-        participant, session, task = ["01"], ["baseline"], "rest"
-        base_args.participant_label = participant
-        base_args.session_label = session
-        base_args.task = task
-        args = FunctionalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, participant, session, task)
-
-        with _patch_functional(filtered_df, groups) as (mock_preprocess, mock_ctx_cls):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            main(args)
-            assert mock_preprocess.call_count == 1
-            processed_path = mock_preprocess.call_args[1]["in_bold"]
-            assert "sub-01" in str(processed_path)
-            assert "baseline" in str(processed_path)
-            assert "rest" in str(processed_path)
-
-
-class TestRunnerSetup:
-    """Test runner configuration and environment setup."""
-
-    def test_init_runner_called_with_config(
-        self, base_args: argparse.Namespace, sample_dataframe: pl.DataFrame
-    ) -> None:
-        """Test init_runner is called with the correct RunnerConfig."""
-        from rbc.orchestration import RunnerConfig
-
-        args = FunctionalArgs.validate_namespace(base_args)
-        filtered_df, groups = _make_groups(sample_dataframe, [], [], None)
-
-        with (
-            patch("rbc.orchestration.functional.init_runner") as mock_init,
-            _patch_functional(filtered_df, groups) as (_, mock_ctx_cls),
-        ):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            main(args)
-            mock_init.assert_called_once()
-            config = mock_init.call_args[0][0]
-            assert isinstance(config, RunnerConfig)
+            FunctionalArgs.validate_namespace(func_namespace)

@@ -48,19 +48,13 @@ def run(
         dataset_dir=output_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
 
-    filter_exprs = [
+    df = filters.apply(
+        df,
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
         pl.col("space") == TemplateSpace.MNI152NLIN6ASYM,
-    ]
-    if len(filters.participant_label) > 0:
-        filter_exprs.append(pl.col("sub").is_in(filters.participant_label))
-    if len(filters.session_label) > 0:
-        filter_exprs.append(pl.col("ses").is_in(filters.session_label))
-    if filters.task is not None:
-        filter_exprs.append(pl.col("task") == filters.task)
-    df = df.filter(pl.all_horizontal(filter_exprs))
+    )
 
     for _, group in tqdm(df.group_by(SUB_SES_QUERY), disable=not verbose):
         sub: str = group["sub"][0]
