@@ -30,6 +30,7 @@ from rbc.workflows.functional import longitudinal_process as functional_longitud
 from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
 _logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ def process_func(
 
 
 def run(
-    input_dir: Path,
+    input_dirs: Sequence[Path],
     output_dir: Path,
     *,
     filters: Filters,
@@ -113,7 +114,7 @@ def run(
     """Run the longitudinal pipeline for all matching subjects/sessions.
 
     Args:
-        input_dir: BIDS dataset directory.
+        input_dirs: BIDS dataset directories.
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
         anatomical: Run anatomical longitudinal processing.
@@ -131,7 +132,7 @@ def run(
     )
     _logger.info("Preparing to run RBC longitudinal workflow")
     df = load_table(
-        dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
+        dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
 
     group_df = filters.apply(df, pl.col("ses") != "longitudinal")

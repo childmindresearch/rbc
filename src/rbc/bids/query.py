@@ -13,6 +13,8 @@ import bids2table as b2t
 import polars as pl
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from rbc.bids import BidsEntities  # noqa: F401
 
 __all__ = [
@@ -24,15 +26,15 @@ __all__ = [
 
 
 def load_table(
-    dataset_dir: str | Path,
+    dataset_dirs: str | Path | Sequence[str | Path],
     index_fpath: str | Path | None = None,
     max_workers: int | None = 0,
     verbose: bool = False,  # noqa: FBT001, FBT002 (Ignore bool arg for b2t)
 ) -> pl.DataFrame:
-    """Get and return BIDSTable for a given dataset.
+    """Get and return BIDSTable for one or more dataset directories.
 
     Args:
-        dataset_dir: Path to dataset directory.
+        dataset_dirs: One or more paths to BIDS dataset directories.
         index_fpath: Path to bids2table parquet table. If provided and exists,
             will be loaded. Otherwise dataset will be indexed.
         max_workers: Number of parallel indexing processes. 0=main process only,
@@ -44,24 +46,25 @@ def load_table(
 
     Raises:
         ValueError: if no datasets found.
-        TypeError: if found dataset does not return a DataFrame.
     """
     if index_fpath is not None:
         return pl.read_parquet(index_fpath)
 
+    dirs: list[str | Path] = (
+        [dataset_dirs] if isinstance(dataset_dirs, (str, Path)) else list(dataset_dirs)
+    )
+    all_roots: list[Path] = []
+    for d in dirs:
+        all_roots.extend(b2t.find_bids_datasets(d))
+
     tables = b2t.batch_index_dataset(
-        b2t.find_bids_datasets(dataset_dir),
+        all_roots,
         max_workers=max_workers,
         show_progress=verbose,
     )
-    dfs: list[pl.DataFrame] = []
-    for table in tables:
-        result = pl.from_arrow(table)
-        if not isinstance(result, pl.DataFrame):
-            raise TypeError(f"Expected DataFrame, got {type(result)}")
-        dfs.append(result)
+    dfs = [pl.DataFrame(pl.from_arrow(table)) for table in tables]
     if len(dfs) == 0:
-        raise ValueError(f"No datasets found in {dataset_dir}")
+        raise ValueError(f"No datasets found in {dirs}")
 
     return pl.concat(dfs)
 

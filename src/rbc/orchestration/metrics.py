@@ -103,12 +103,12 @@ def run(
 
     tr_msg = f" (TR override: {tr}s)" if tr is not None else ""
     _logger.info("Preparing to run RBC metrics workflow%s", tr_msg)
-    df = load_table(
-        dataset_dir=output_dir, index_fpath=None, max_workers=0, verbose=verbose
+    full_df = load_table(
+        dataset_dirs=output_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
 
     df = filters.apply(
-        df,
+        full_df,
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
@@ -120,13 +120,6 @@ def run(
         ses: str | None = group["ses"][0] or None
         pipe_ctx = RunContext(sub=sub, ses=ses, output_dir=output_dir)
 
-        deriv_df = load_table(
-            dataset_dir=output_dir,
-            index_fpath=None,
-            max_workers=0,
-            verbose=False,
-        )
-
         for deriv_run in discover_derivative_runs(group):
             mni_q = pipe_ctx.bids(
                 datatype=Datatype.FUNC,
@@ -135,7 +128,7 @@ def run(
             )
 
             for regressor in regressors:
-                resolved = resolve_metrics(mni_q, deriv_df, regressor=regressor)
+                resolved = resolve_metrics(mni_q, full_df, regressor=regressor)
                 run_tr = (
                     tr
                     if tr is not None

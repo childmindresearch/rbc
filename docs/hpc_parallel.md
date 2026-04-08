@@ -32,7 +32,7 @@ ls -d /data/bids/sub-* | xargs -n1 basename | sed 's/sub-//' > participants.txt
 
 PARTICIPANT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" participants.txt)
 
-rbc /data/bids /data/output all \
+rbc all /data/bids -o /data/output \
     --runner singularity \
     --participant-label "$PARTICIPANT"
 ```
@@ -60,7 +60,7 @@ If you have a multi-core machine without a scheduler:
 
 ```bash
 cat participants.txt | parallel -j 4 \
-    rbc /data/bids /data/output all \
+    rbc all /data/bids -o /data/output \
         --runner singularity \
         --participant-label {}
 ```
@@ -79,7 +79,7 @@ roughly 8-16 GB per subject).
 
 PARTICIPANT=$(sed -n "${PBS_ARRAY_INDEX}p" participants.txt)
 
-rbc /data/bids /data/output all \
+rbc all /data/bids -o /data/output \
     --runner singularity \
     --participant-label "$PARTICIPANT"
 ```
@@ -92,7 +92,7 @@ clusters provide fast local scratch storage on each compute node. Use
 `--tmp-dir` to point intermediates there:
 
 ```bash
-rbc /data/bids /data/output all \
+rbc all /data/bids -o /data/output \
     --runner singularity \
     --tmp-dir /lscratch/$SLURM_JOB_ID \
     --participant-label "$PARTICIPANT"
@@ -125,8 +125,8 @@ Scratch is cleaned up when the job ends, so only final outputs (written to
 - **Singularity on HPC:** Most clusters don't allow Docker. The examples above
   use `--runner singularity` for this reason. Use `--runner docker` if your
   cluster supports it.
-- **Shared filesystem:** Make sure `input_dir` and `output_dir` are on a
-  filesystem accessible to all compute nodes (e.g., Lustre, GPFS, NFS).
+- **Shared filesystem:** Make sure input directories and the output directory
+  are on a filesystem accessible to all compute nodes (e.g., Lustre, GPFS, NFS).
 - **Local scratch:** Use `--tmp-dir` to place intermediate files on fast
   node-local storage. This can significantly reduce I/O wait times.
 - **Sessions:** RBC processes all sessions for a subject sequentially within a

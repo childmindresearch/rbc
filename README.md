@@ -25,14 +25,16 @@ Requires Python 3.12+. Neuroimaging tools (AFNI, FSL, ANTs) are needed at runtim
 ## Quick start
 
 ```bash
-# Usage example
-# rbc <input_dir> <output_dir> <workflow> [options]
+# Usage: rbc {workflow} INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]
 
 # Run the full pipeline
-rbc /data /data/derivatives all --runner docker
+rbc all /data -o /data/derivatives --runner docker
 
 # Or run a single stage for specific subjects
-rbc /data /data/derivatives functional --task rest --participant-label 01 02 --runner docker
+rbc functional /data -o /data/derivatives --task rest --participant-label 01 02 --runner docker
+
+# Multiple input directories (e.g., raw BIDS + prior derivatives)
+rbc functional /data /data/derivatives -o /data/derivatives --runner docker
 ```
 
 Run any command with `--help` for full options.

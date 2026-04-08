@@ -65,7 +65,7 @@ class FunctionalArgs(BaseArgs):
 def main(args: FunctionalArgs) -> int:
     """Main entrypoint of functional workflow."""
     run(
-        input_dir=args.input_dir,
+        input_dirs=args.input_dirs,
         output_dir=args.output_dir,
         filters=Filters(
             participant_label=args.participant_label,
@@ -95,7 +95,7 @@ def register_command(
         parents=parents,
         description="RBC functional workflow",
         help="Functional workflow",
-        usage="rbc input_dir output_dir functional [-h] [options]",
+        usage="rbc functional INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     parser.add_argument(
         "--regressor",
