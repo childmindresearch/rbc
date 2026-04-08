@@ -35,6 +35,7 @@ def test_tissue_segmentation(test_subject: TestSubjectData) -> None:
 @pytest.mark.slow
 def test_registration(test_subject: TestSubjectData) -> None:
     """Test anatomical registration."""
-    composite_xfms = anatomical.ants_registration(in_file=test_subject.t1w)
-    assert composite_xfms.forward.exists()
-    assert composite_xfms.inverse.exists()
+    reg_outputs = anatomical.ants_registration(in_file=test_subject.t1w)
+    assert reg_outputs.brain.exists()
+    assert reg_outputs.forward.exists()
+    assert reg_outputs.inverse.exists()
