@@ -99,6 +99,7 @@ def single_session_qc(
     pre_data = pre_img.get_fdata()
     tmpl_mask = tmpl_mask_img.get_fdata()
     dvars_init = dvars_qc_metrics(pre_data, tmpl_mask, fd)
+    del pre_img, pre_data, tmpl_mask_img
 
     # 5. Coregistration overlap (BOLD mask warped to anat space vs anat brain mask)
     bold_mask_in_anat = fsl.flirt(
@@ -124,6 +125,7 @@ def single_session_qc(
         mni_mask_img = resample_from_to(mni_mask_img, tmpl_brain_img, order=0)
     mni_mask_arr = mni_mask_img.get_fdata()
     tmpl_brain_arr = tmpl_brain_img.get_fdata()
+    del tmpl_brain_img, mni_mask_img
     norm = registration_qc_metrics(tmpl_brain_arr, mni_mask_arr)
 
     qc_outputs = QCOutputs()
