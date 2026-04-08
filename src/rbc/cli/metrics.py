@@ -9,9 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import BaseArgs, _validate_atlas, _validate_positive, _validate_task
+from rbc.cli.base import BaseArgs, _validate_positive, _validate_task
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.metrics import run
+from rbc_resources import ATLAS_REGISTRY
 
 if TYPE_CHECKING:
     import argparse
@@ -33,8 +34,6 @@ class MetricsArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
-        for atlas in ns.atlas:
-            _validate_atlas(atlas)
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
         _validate_positive(ns.tr, "TR")
@@ -84,13 +83,7 @@ def register_command(
     parser.add_argument(
         "--atlas",
         nargs="+",
-        choices=[
-            "schaefer_200",
-            "schaefer_300",
-            "schaefer_400",
-            "schaefer_1000",
-            "aal",
-        ],
+        choices=list(ATLAS_REGISTRY.keys()),
         default=["schaefer_200"],
         help="Space-delimited atlas(es) for timeseries extraction.",
     )

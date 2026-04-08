@@ -16,6 +16,7 @@ from rbc.cli.main import cli, create_parser
 from rbc.core.qc.xcp import XCPQCMetrics
 from rbc.workflows.metrics import MetricsOutputs
 from rbc.workflows.qc import QCOutputs
+from rbc_resources import ATLAS_REGISTRY
 
 
 def _make_filtered_df(
@@ -315,21 +316,12 @@ class TestAllArgs:
         args = AllArgs.validate_namespace(base_args)
         assert args.regressor == [regressor]
 
-    @pytest.mark.parametrize(
-        "atlas",
-        ["schaefer_200", "schaefer_300", "schaefer_400", "schaefer_1000", "aal"],
-    )
+    @pytest.mark.parametrize("atlas", list(ATLAS_REGISTRY.keys()))
     def test_valid_atlases(self, base_args: argparse.Namespace, atlas: str) -> None:
         """All supported atlas options pass validation."""
         base_args.atlas = [atlas]
         args = AllArgs.validate_namespace(base_args)
         assert args.atlas == [atlas]
-
-    def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
-        """Unsupported atlas name raises ValueError."""
-        base_args.atlas = "invalid_atlas"
-        with pytest.raises(ValueError, match="atlas"):
-            AllArgs.validate_namespace(base_args)
 
     @pytest.mark.parametrize("fwhm", [0.1, 1.0, 6.0, 10.0])
     def test_valid_fwhm(self, base_args: argparse.Namespace, fwhm: float) -> None:

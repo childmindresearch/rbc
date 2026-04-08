@@ -13,6 +13,7 @@ from rbc.cli import metrics
 from rbc.cli.main import cli, create_parser
 from rbc.cli.metrics import MetricsArgs
 from rbc.workflows.metrics import MetricsOutputs
+from rbc_resources import ATLAS_REGISTRY
 
 
 def _make_filtered_df(
@@ -195,21 +196,12 @@ class TestMetricsArgs:
         args = MetricsArgs.validate_namespace(base_args)
         assert args.regressor == [regressor]
 
-    @pytest.mark.parametrize(
-        "atlas",
-        ["schaefer_200", "schaefer_300", "schaefer_400", "schaefer_1000", "aal"],
-    )
+    @pytest.mark.parametrize("atlas", list(ATLAS_REGISTRY.keys()))
     def test_valid_atlases(self, base_args: argparse.Namespace, atlas: str) -> None:
         """All supported atlas options pass validation."""
         base_args.atlas = [atlas]
         args = MetricsArgs.validate_namespace(base_args)
         assert args.atlas == [atlas]
-
-    def test_invalid_atlas_raises(self, base_args: argparse.Namespace) -> None:
-        """Unsupported atlas name raises ValueError."""
-        base_args.atlas = "invalid_atlas"
-        with pytest.raises(ValueError, match="atlas"):
-            MetricsArgs.validate_namespace(base_args)
 
     @pytest.mark.parametrize("fwhm", [0.1, 1.0, 6.0, 10.0])
     def test_valid_fwhm(self, base_args: argparse.Namespace, fwhm: float) -> None:

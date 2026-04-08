@@ -6,8 +6,6 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc_resources import ATLAS_REGISTRY
-
 if TYPE_CHECKING:
     import argparse
     from pathlib import Path
@@ -61,12 +59,6 @@ class BaseArgs:
             verbose=ns.verbose,
             tmp_dir=tmp_dir,
         )
-
-
-def _validate_atlas(atlas: str | None) -> None:
-    """Validate atlas is available and exists."""
-    if atlas not in ATLAS_REGISTRY:
-        raise ValueError(f"Unknown atlas, got: {atlas!r}")
 
 
 def _validate_task(task: str | None) -> None:
