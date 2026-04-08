@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from rbc.cli.base import BaseArgs, _or_default, _validate_nifti_path
 from rbc.orchestration import Filters, RunnerConfig
@@ -23,6 +23,7 @@ class LongitudinalArgs(BaseArgs):
     anatomical: bool
     functional: bool
     registration_template: Path
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -38,6 +39,7 @@ class LongitudinalArgs(BaseArgs):
             registration_template=_or_default(
                 ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
             ),
+            regressor=ns.regressor,
         )
 
 
@@ -53,6 +55,7 @@ def main(args: LongitudinalArgs) -> int:
         anatomical=args.anatomical,
         functional=args.functional,
         registration_template=args.registration_template,
+        regressors=args.regressor,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -85,6 +88,13 @@ def register_command(
         default=False,
         action="store_true",
         help="Use functional longitudinal pipeline for processing",
+    )
+    parser.add_argument(
+        "--regressor",
+        nargs="+",
+        choices=["36-parameter", "aCompCor"],
+        default=["36-parameter"],
+        help="Space-delimited nuisance regression method(s) to apply.",
     )
 
     templates = parser.add_argument_group("template overrides")

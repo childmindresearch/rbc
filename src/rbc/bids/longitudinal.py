@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.bids import Suffix, TemplateSpace
+from rbc.bids import Suffix, TemplateSpace, bids_safe_label
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     import polars as pl
@@ -114,7 +115,8 @@ def resolve_longitudinal_func(
     tpl_df: pl.DataFrame,
     *,
     ses: str,
-) -> dict[str, Path | None]:
+    regressors: Sequence[str],
+) -> dict[str, Path | None | dict[str, Path]]:
     """Resolve inputs for longitudinal functional processing.
 
     Args:
@@ -123,6 +125,7 @@ def resolve_longitudinal_func(
         func_df: DataFrame of functional derivatives.
         tpl_df: DataFrame of longitudinal template files.
         ses: Session label (used for template xfm lookup).
+        regressors: Regressor names (e.g. ``["36-parameter"]``).
 
     Returns:
         Dict with keys matching ``longitudinal_process`` parameters.
@@ -146,9 +149,15 @@ def resolve_longitudinal_func(
         "bold": func_q.expect(
             func_df, suffix=Suffix.BOLD, desc="preproc", without=["space"]
         ),
-        "bold_mask": func_q.find(
+        "bold_mask": func_q.expect(
             func_df, suffix=Suffix.MASK, desc="brain", without=["space"]
         ),
+        "regressor_files": {
+            reg: func_q.expect(
+                func_df, suffix="regressors", desc=bids_safe_label(reg), extension=".1D"
+            )
+            for reg in regressors
+        },
     }
 
 
@@ -167,5 +176,18 @@ def export_longitudinal_func(fex: Bids, outputs: FunctionalLongOutputs) -> None:
         desc="composite",
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},
     )
-    if outputs.bold_mask:
-        fex.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+    fex.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+    for reg, path in outputs.regressed_bold.items():
+        fex.save(
+            path,
+            suffix=Suffix.BOLD,
+            desc="regressed",
+            extra={"reg": bids_safe_label(reg)},
+        )
+    for reg, path in outputs.cleaned_bold.items():
+        fex.save(
+            path,
+            suffix=Suffix.BOLD,
+            desc="preproc",
+            extra={"reg": bids_safe_label(reg)},
+        )

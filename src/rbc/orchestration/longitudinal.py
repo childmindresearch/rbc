@@ -75,6 +75,7 @@ def process_func(
     pipe_ctx: RunContext,
     func_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
+    regressors: Sequence[str],
 ) -> None:
     """Handle functional longitudinal processing for one BOLD run.
 
@@ -82,6 +83,7 @@ def process_func(
         pipe_ctx: RunContext bound to this subject/session.
         func_df: Functional derivative DataFrame for this run.
         tpl_df: Longitudinal template DataFrame.
+        regressors: Regressor names (e.g. ``["36-parameter"]``).
     """
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
@@ -95,6 +97,7 @@ def process_func(
         func_df,
         tpl_df,
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
+        regressors=regressors,
     )
     func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
     fex = func_q.derive(space="longitudinal")
@@ -109,6 +112,7 @@ def run(
     anatomical: bool = True,
     functional: bool = True,
     registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
+    regressors: Sequence[str] = ("36-parameter",),
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the longitudinal pipeline for all matching subjects/sessions.
@@ -120,6 +124,7 @@ def run(
         anatomical: Run anatomical longitudinal processing.
         functional: Run functional longitudinal processing.
         registration_template: Brain template for ANTs registration.
+        regressors: Nuisance regressor strategies to apply (e.g. ``["36-parameter"]``).
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -173,7 +178,12 @@ def run(
 
         if functional:
             for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
-                process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+                process_func(
+                    pipe_ctx=pipe_ctx,
+                    func_df=func_df,
+                    tpl_df=tpl_df,
+                    regressors=regressors,
+                )
 
         pipe_ctx.ensure_dataset_description()
 

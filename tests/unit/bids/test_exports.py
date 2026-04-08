@@ -74,6 +74,7 @@ def _make_func_outputs(w: Path, regressors: list[str]) -> FunctionalOutputs:
         regressed_bold={r: _dummy(w, f"regressed_{r}.nii.gz") for r in regressors},
         cleaned_bold={r: _dummy(w, f"cleaned_{r}.nii.gz") for r in regressors},
         regressor_file={r: _dummy(w, f"regressors_{r}.1D") for r in regressors},
+        bpf_regressor_file={r: _dummy(w, f"bpf_regressors_{r}.1D") for r in regressors},
         template_brain_mask=_dummy(w, "template_mask.nii.gz"),
     )
 

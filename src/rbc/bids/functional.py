@@ -158,6 +158,12 @@ def export_functional(
             desc=bids_safe_label(reg),
             extension=".1D",
         )
+        func.save(
+            outputs.bpf_regressor_file[reg],
+            suffix="regressorsBPF",
+            desc=bids_safe_label(reg),
+            extension=".1D",
+        )
 
     mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
     for reg in regressors:
