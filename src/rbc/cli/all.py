@@ -82,7 +82,7 @@ class AllArgs(BaseArgs):
 def main(args: AllArgs) -> int:
     """Main entrypoint of combined pipeline."""
     run(
-        input_dir=args.input_dir,
+        input_dirs=args.input_dirs,
         output_dir=args.output_dir,
         filters=Filters(
             participant_label=args.participant_label,
@@ -117,7 +117,7 @@ def register_command(
         parents=parents,
         description="RBC full pipeline (anatomical + functional + metrics + QC)",
         help="Full pipeline (all workflows)",
-        usage="rbc input_dir output_dir all [-h] [options]",
+        usage="rbc all INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     parser.add_argument(
         "--regressor",

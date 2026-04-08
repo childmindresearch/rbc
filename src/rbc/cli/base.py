@@ -22,7 +22,7 @@ _VALID_RUNNERS = frozenset({"auto", "local", "docker", "podman", "singularity"})
 class BaseArgs:
     """Base (global) arguments shared across all workflow CLIs."""
 
-    input_dir: Path
+    input_dirs: tuple[Path, ...]
     output_dir: Path
     runner: Literal["auto", "local", "docker", "podman", "singularity"]
     participant_label: list[str]
@@ -33,8 +33,9 @@ class BaseArgs:
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> BaseArgs:
         """Validation of base arguments."""
-        if not ns.input_dir.exists():
-            raise ValueError(f"Input path does not exist: {ns.input_dir}")
+        for d in ns.input_dirs:
+            if not d.exists():
+                raise ValueError(f"Input path does not exist: {d}")
         if ns.runner not in _VALID_RUNNERS:
             raise ValueError(
                 f"Expected one of {_VALID_RUNNERS} for runner, got: {ns.runner!r}"
@@ -56,7 +57,7 @@ class BaseArgs:
             )
 
         return cls(
-            input_dir=ns.input_dir,
+            input_dirs=tuple(ns.input_dirs),
             output_dir=ns.output_dir,
             runner=ns.runner,
             participant_label=ns.participant_label,

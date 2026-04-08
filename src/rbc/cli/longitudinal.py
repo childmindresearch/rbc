@@ -44,7 +44,7 @@ class LongitudinalArgs(BaseArgs):
 def main(args: LongitudinalArgs) -> int:
     """Main entrypoint of longitudinal workflow."""
     run(
-        input_dir=args.input_dir,
+        input_dirs=args.input_dirs,
         output_dir=args.output_dir,
         filters=Filters(
             participant_label=args.participant_label,
@@ -71,7 +71,7 @@ def register_command(
         parents=parents,
         description="RBC-based longitudinal workflow",
         help="Longitudinal workflow",
-        usage="rbc input_dir output_dir longitudinal [-h] [options]",
+        usage="rbc longitudinal INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     parser.add_argument(
         "--anatomical",

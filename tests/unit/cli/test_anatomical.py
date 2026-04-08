@@ -25,7 +25,7 @@ class TestAnatomicalArgs:
         return argparse.Namespace(
             runner="local",
             verbose=False,
-            input_dir=input_dir,
+            input_dirs=[input_dir],
             output_dir=tmp_path / "output",
             participant_label=[],
             session_label=[],

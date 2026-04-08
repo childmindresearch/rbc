@@ -47,12 +47,12 @@ def run(
     verbose = config.verbose
 
     _logger.info("Preparing to run RBC QC workflow")
-    df = load_table(
-        dataset_dir=output_dir, index_fpath=None, max_workers=0, verbose=verbose
+    full_df = load_table(
+        dataset_dirs=output_dir, index_fpath=None, max_workers=0, verbose=verbose
     )
 
     df = filters.apply(
-        df,
+        full_df,
         pl.col("datatype") == "func",
         pl.col("suffix") == "bold",
         pl.col("desc") == "preproc",
@@ -64,13 +64,6 @@ def run(
         ses: str | None = group["ses"][0] or None
         pipe_ctx = RunContext(sub=sub, ses=ses, output_dir=output_dir)
 
-        deriv_df = load_table(
-            dataset_dir=output_dir,
-            index_fpath=None,
-            max_workers=0,
-            verbose=False,
-        )
-
         for deriv_run in discover_derivative_runs(group):
             func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=deriv_run.entities)
             func_mni = func.derive(space=TemplateSpace.MNI152NLIN6ASYM)
@@ -79,7 +72,7 @@ def run(
                 func,
                 func_mni,
                 pipe_ctx,
-                deriv_df,
+                full_df,
                 regressors=regressors,
             )
 

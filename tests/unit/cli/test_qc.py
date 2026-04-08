@@ -23,7 +23,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
     return argparse.Namespace(
         runner="local",
         verbose=False,
-        input_dir=input_dir,
+        input_dirs=[input_dir],
         output_dir=output_dir,
         participant_label=[],
         session_label=[],
@@ -120,35 +120,35 @@ class TestQCRegistration:
 
     def test_qc_command_registered(self) -> None:
         """Test QC workflow is available in parser."""
-        result = cli(["/input", "/output", "qc", "--help"])
+        result = cli(["qc", "/input", "-o", "/output", "--help"])
         assert result == 0
 
     def test_qc_parser_has_task(self) -> None:
         """Test QC subparser includes --task argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "qc", "--task", "rest"])
+        args = parser.parse_args(["qc", "/input", "-o", "/output", "--task", "rest"])
         assert args.task == "rest"
 
     def test_qc_parser_has_start_tr(self) -> None:
         """Test QC subparser includes --start-tr argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "qc", "--start-tr", "5"])
+        args = parser.parse_args(["qc", "/input", "-o", "/output", "--start-tr", "5"])
         assert args.start_tr == 5
 
     def test_qc_parser_has_regressor(self) -> None:
         """Test QC subparser includes --regressor argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "qc"])
+        args = parser.parse_args(["qc", "/input", "-o", "/output"])
         assert args.regressor == ["36-parameter"]
 
     def test_qc_parser_task_default_none(self) -> None:
         """Test QC subparser --task defaults to None."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "qc"])
+        args = parser.parse_args(["qc", "/input", "-o", "/output"])
         assert args.task is None
 
     def test_qc_parser_start_tr_default(self) -> None:
         """Test QC subparser --start-tr defaults to 2."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "qc"])
+        args = parser.parse_args(["qc", "/input", "-o", "/output"])
         assert args.start_tr == 2

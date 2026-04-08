@@ -36,7 +36,7 @@ _logger = logging.getLogger(__name__)
 
 
 def run(
-    input_dir: Path,
+    input_dirs: Sequence[Path],
     output_dir: Path,
     *,
     filters: Filters,
@@ -58,7 +58,7 @@ def run(
     between stages without disk round-trips.
 
     Args:
-        input_dir: BIDS dataset directory.
+        input_dirs: BIDS dataset directories.
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
         regressors: Regressor names.
@@ -79,7 +79,7 @@ def run(
 
     _logger.info("Preparing to run RBC full pipeline")
     df = load_table(
-        dataset_dir=input_dir, index_fpath=None, max_workers=0, verbose=verbose
+        dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
 
     df = filters.apply(

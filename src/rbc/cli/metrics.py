@@ -103,7 +103,7 @@ def register_command(
         parents=parents,
         description="RBC metrics workflow",
         help="Metrics workflow (ALFF, ReHo, timeseries)",
-        usage="rbc input_dir output_dir metrics [-h] [options]",
+        usage="rbc metrics INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     parser.add_argument(
         "--atlas",

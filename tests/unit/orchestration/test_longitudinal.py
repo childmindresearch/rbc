@@ -401,7 +401,7 @@ class TestLongitudinalDispatch:
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             with pytest.raises(ValueError, match="No longitudinal template found"):
                 run(
-                    input_dir=tmp_path,
+                    input_dirs=[tmp_path],
                     output_dir=tmp_path,
                     filters=Filters(),
                 )
@@ -424,7 +424,7 @@ class TestLongitudinalDispatch:
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             run(
-                input_dir=tmp_path,
+                input_dirs=[tmp_path],
                 output_dir=tmp_path,
                 filters=Filters(),
                 functional=False,
@@ -444,7 +444,7 @@ class TestLongitudinalDispatch:
         ) as (mock_anat, mock_func, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             run(
-                input_dir=tmp_path,
+                input_dirs=[tmp_path],
                 output_dir=tmp_path,
                 filters=Filters(participant_label=["01"], session_label=["baseline"]),
                 anatomical=False,
@@ -468,7 +468,7 @@ class TestLongitudinalDispatch:
         ):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             run(
-                input_dir=tmp_path,
+                input_dirs=[tmp_path],
                 output_dir=tmp_path,
                 filters=Filters(participant_label=["01"], session_label=["baseline"]),
                 anatomical=True,
@@ -494,7 +494,7 @@ class TestLongitudinalDispatch:
             patch("rbc.orchestration.longitudinal.load_table", return_value=empty_df),
         ):
             run(
-                input_dir=tmp_path,
+                input_dirs=[tmp_path],
                 output_dir=tmp_path,
                 filters=Filters(),
             )

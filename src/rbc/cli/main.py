@@ -9,10 +9,11 @@ options. Each workflow can define its own specific parameters while inheriting c
 options.
 
 Usage:
-    rbc input_dir output_dir {workflow} [options]
+    rbc {workflow} INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]
 
 Example:
-    rbc /data/bids /data/output anatomical --participant-label 01
+    rbc anatomical /data/bids -o /data/output --participant-label 01
+    rbc functional /data/bids /data/derivatives -o /data/output
 """
 
 import argparse
@@ -30,6 +31,20 @@ __all__ = ["BaseArgs"]
 def _global_opts() -> argparse.ArgumentParser:
     """Shared global options across workflows."""
     global_opts = argparse.ArgumentParser(add_help=False)
+    global_opts.add_argument(
+        "input_dirs",
+        nargs="+",
+        type=Path,
+        metavar="INPUT_DIR",
+        help="One or more BIDS-organized input dataset directories",
+    )
+    global_opts.add_argument(
+        "-o",
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Directory where output data should be stored",
+    )
     global_opts.add_argument(
         "-v",
         "--verbose",
@@ -73,18 +88,7 @@ def create_parser() -> argparse.ArgumentParser:
         prog="rbc",
         description="RBC processing pipelines (developed using NiWrap)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        usage="%(prog)s input_dir output_dir {workflow} [options]",
-    )
-    # Global arguments
-    parser.add_argument(
-        "input_dir",
-        type=Path,
-        help="BIDS-organized input dataset directory",
-    )
-    parser.add_argument(
-        "output_dir",
-        type=Path,
-        help="Directory where output data should be stored",
+        usage="%(prog)s {workflow} INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     global_opts = _global_opts()
 
@@ -103,9 +107,6 @@ def create_parser() -> argparse.ArgumentParser:
     all_.register_command(subparsers, parents=[global_opts])
     # Experimental subcommand
     longitudinal.register_command(subparsers, parents=[global_opts])
-
-    for action in global_opts._actions:
-        parser._add_action(action)
 
     return parser
 

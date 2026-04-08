@@ -45,7 +45,7 @@ class AnatomicalArgs(BaseArgs):
 def main(args: AnatomicalArgs) -> int:
     """Main entrypoint of anatomical workflow."""
     run(
-        input_dir=args.input_dir,
+        input_dirs=args.input_dirs,
         output_dir=args.output_dir,
         filters=Filters(
             participant_label=args.participant_label,
@@ -71,7 +71,7 @@ def register_command(
         parents=parents,
         description="RBC anatomical workflow",
         help="Anatomical workflow",
-        usage="rbc input_dir output_dir anatomical [-h] [options]",
+        usage="rbc anatomical INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
 
     templates = parser.add_argument_group("template overrides")

@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import typing
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
@@ -15,24 +16,27 @@ from rbc.cli.base import _validate_nifti_path
 class TestGlobalOpts:
     """Testing suite for global options in parser."""
 
+    _REQUIRED: typing.ClassVar[list[str]] = ["/input", "-o", "/output"]
+    """Minimal args satisfying required positional and flag."""
+
     @pytest.mark.parametrize("subject", ["sub-01", "01"])
     def test_participant_labels(self, subject: str) -> None:
         """Tests participant label correctly grabbed and strips prefix if needed."""
         parser = cli._global_opts()
-        args = parser.parse_args(["--participant-label", subject])
+        args = parser.parse_args([*self._REQUIRED, "--participant-label", subject])
         assert args.participant_label == ["01"]
 
     @pytest.mark.parametrize("session", ["ses-baseline", "baseline"])
     def test_session_label(self, session: str) -> None:
         """Tests session label correctly grabbed and strips prefix if needed."""
         parser = cli._global_opts()
-        args = parser.parse_args(["--session-label", session])
+        args = parser.parse_args([*self._REQUIRED, "--session-label", session])
         assert args.session_label == ["baseline"]
 
     def test_default_runner(self) -> None:
         """Tests runner default to 'auto'."""
         parser = cli._global_opts()
-        args = parser.parse_args([])
+        args = parser.parse_args(self._REQUIRED)
         assert args.runner == "auto"
         assert args.verbose == 0
 
@@ -52,14 +56,14 @@ class TestGlobalOpts:
     def test_valid_runner(self, runner: str) -> None:
         """Tests runner argument accepts valid choices."""
         parser = cli._global_opts()
-        args = parser.parse_args(["--runner", runner])
+        args = parser.parse_args([*self._REQUIRED, "--runner", runner])
         assert args.runner == runner.lower()
 
     def test_invalid_runner(self) -> None:
         """Test runner rejects invalid choice."""
         parser = cli._global_opts()
         with pytest.raises(SystemExit):
-            parser.parse_args(["--runner", "invalid"])
+            parser.parse_args([*self._REQUIRED, "--runner", "invalid"])
 
     @pytest.mark.parametrize(
         ("verbosity", "log_count"), [("-v", 1), ("-vv", 2), ("-vvv", 3)]
@@ -67,20 +71,21 @@ class TestGlobalOpts:
     def test_verbosity(self, verbosity: str, log_count: int) -> None:
         """Test verbosity option."""
         parser = cli._global_opts()
-        args = parser.parse_args([verbosity])
+        args = parser.parse_args([*self._REQUIRED, verbosity])
         assert args.verbose == log_count
 
 
 class TestParser:
     """Testing suite for parser."""
 
-    def test_parser_inherits_global_opts(self) -> None:
-        """Test parser inherits global options."""
+    def test_subparser_inherits_global_opts(self) -> None:
+        """Test subparsers inherit global options."""
         parser = cli.create_parser()
-        dest_names = {action.dest for action in parser._actions}
-        assert "participant_label" in dest_names
-        assert "session_label" in dest_names
-        assert "runner" in dest_names
+        args = parser.parse_args(
+            ["anatomical", "/input", "-o", "/output", "--participant-label", "01"]
+        )
+        assert args.participant_label == ["01"]
+        assert args.runner == "auto"
 
 
 class TestCLI:
@@ -99,13 +104,14 @@ class TestCLI:
 
         def register_side_effect(
             subparsers: argparse._SubParsersAction,
-            **kwargs: Any,  # noqa: ARG001, ANN401
+            **kwargs: Any,  # noqa: ANN401
         ) -> None:
-            parser = subparsers.add_parser("anatomical")
+            parents = kwargs.get("parents", [])
+            parser = subparsers.add_parser("anatomical", parents=parents)
             parser.set_defaults(func=mock_func)
 
         mock_register.side_effect = register_side_effect
-        result = cli.cli(["input", "output", "anatomical"])
+        result = cli.cli(["anatomical", "input", "-o", "output"])
         assert mock_func.called
         assert result == 0
 
@@ -129,7 +135,7 @@ class TestCLI:
 
         mock_register.side_effect = register_side_effect
 
-        cli.cli(["input", "output", "anatomical", "--participant-label", "01"])
+        cli.cli(["anatomical", "input", "-o", "output", "--participant-label", "01"])
         assert received_args is not None
         assert received_args.participant_label == ["01"]
 
@@ -142,13 +148,14 @@ class TestCLI:
         # Register command without setting func
         def register_side_effect(
             subparsers: argparse._SubParsersAction,
-            **kwargs: Any,  # noqa: ARG001, ANN401
+            **kwargs: Any,  # noqa: ANN401
         ) -> None:
-            subparsers.add_parser("anatomical")
+            parents = kwargs.get("parents", [])
+            subparsers.add_parser("anatomical", parents=parents)
 
         mock_register.side_effect = register_side_effect
 
-        result = cli.cli(["/input", "/output", "anatomical"])
+        result = cli.cli(["anatomical", "/input", "-o", "/output"])
         captured = capsys.readouterr()
         assert "usage:" in captured.out.lower()
         assert result == 1
@@ -166,7 +173,7 @@ class TestValidation:
         return argparse.Namespace(
             runner="local",
             verbose=False,
-            input_dir=input_dir,
+            input_dirs=[input_dir],
             output_dir=output_dir,
             participant_label=[],
             session_label=[],
@@ -180,7 +187,7 @@ class TestValidation:
 
     def test_no_input_dir(self, base_args: argparse.Namespace) -> None:
         """Test error raised if input path doesn't exist."""
-        base_args.input_dir = Path("invalid")
+        base_args.input_dirs = [Path("invalid")]
         with pytest.raises(ValueError, match="Input path does not exist"):
             cli.BaseArgs.validate_namespace(base_args)
 

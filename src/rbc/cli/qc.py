@@ -69,7 +69,7 @@ def register_command(
         parents=parents,
         description="RBC quality control workflow",
         help="QC workflow (motion, DVARS, registration overlap)",
-        usage="rbc input_dir output_dir qc [-h] [options]",
+        usage="rbc qc INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
     )
     parser.add_argument(
         "--task",

@@ -33,14 +33,14 @@ class TestLoadBidsTable:
         """Test loading from existing parquet file."""
         index_path = tmp_path / "index.parquet"
         pq.write_table(test_table, index_path)
-        result = load_table(dataset_dir=tmp_path, index_fpath=index_path)
+        result = load_table(dataset_dirs=tmp_path, index_fpath=index_path)
         assert isinstance(result, pl.DataFrame)
 
     def test_load_no_existing_index(self, tmp_path: Path) -> None:
         """Testing indexing if existing index does not exist."""
         index_fpath = tmp_path / "index.parquet"
         with pytest.raises(FileNotFoundError):
-            load_table(dataset_dir=tmp_path, index_fpath=index_fpath)
+            load_table(dataset_dirs=tmp_path, index_fpath=index_fpath)
 
     def test_load_without_index(self, tmp_path: Path, test_table: pa.Table) -> None:
         """Test indexing without passing an index."""
@@ -50,30 +50,34 @@ class TestLoadBidsTable:
         ):
             mock_find.return_value = [tmp_path]
             mock_batch.return_value = [test_table]
-            result = load_table(dataset_dir=tmp_path)
+            result = load_table(dataset_dirs=tmp_path)
             mock_find.assert_called_once()
             mock_batch.assert_called_once()
             assert isinstance(result, pl.DataFrame)
             assert result.shape == (3, 2)
 
-    def test_not_a_dataframe(self, tmp_path: Path) -> None:
-        """Test TypeError raised if return is not a dataframe."""
+    def test_load_multiple_dirs(self, tmp_path: Path, test_table: pa.Table) -> None:
+        """Test indexing multiple input directories."""
+        dir_a = tmp_path / "a"
+        dir_b = tmp_path / "b"
         with (
-            patch("rbc.bids.query.b2t.find_bids_datasets") as mock_find,
             patch("rbc.bids.query.b2t.batch_index_dataset") as mock_batch,
-            patch("rbc.bids.query.pl.from_arrow") as mock_from_arrow,
+            patch("rbc.bids.query.b2t.find_bids_datasets") as mock_find,
         ):
-            mock_find.return_value = ["fake_dataset"]
-            mock_batch.return_value = [pa.table({"col": [1]})]
-            mock_from_arrow.return_value = "not a dataframe"
-
-            with pytest.raises(TypeError, match="Expected DataFrame"):
-                load_table(tmp_path)
+            mock_find.side_effect = lambda d: [d]
+            mock_batch.return_value = [test_table, test_table]
+            result = load_table(dataset_dirs=[dir_a, dir_b])
+            assert mock_find.call_count == 2
+            mock_batch.assert_called_once_with(
+                [dir_a, dir_b], max_workers=0, show_progress=False
+            )
+            assert isinstance(result, pl.DataFrame)
+            assert result.shape == (6, 2)
 
     def test_no_datasets(self, tmp_path: Path) -> None:
         """Test ValueError raised if no datasets are found."""
         with pytest.raises(ValueError, match="No datasets found"):
-            load_table(dataset_dir=tmp_path)
+            load_table(dataset_dirs=tmp_path)
 
 
 class TestGetExtraEntity:

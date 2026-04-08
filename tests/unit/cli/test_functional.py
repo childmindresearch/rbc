@@ -26,7 +26,7 @@ class TestFunctionalArgs:
         return argparse.Namespace(
             runner="local",
             verbose=0,
-            input_dir=input_dir,
+            input_dirs=[input_dir],
             output_dir=output_dir,
             participant_label=[],
             session_label=[],

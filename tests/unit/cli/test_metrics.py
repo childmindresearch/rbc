@@ -23,7 +23,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
     return argparse.Namespace(
         runner="local",
         verbose=False,
-        input_dir=input_dir,
+        input_dirs=[input_dir],
         output_dir=output_dir,
         participant_label=[],
         session_label=[],
@@ -132,49 +132,55 @@ class TestMetricsRegistration:
 
     def test_metrics_command_registered(self) -> None:
         """Test metrics workflow is available in parser."""
-        result = cli(["/input", "/output", "metrics", "--help"])
+        result = cli(["metrics", "/input", "-o", "/output", "--help"])
         assert result == 0
 
     def test_metrics_parser_has_atlas(self) -> None:
         """Test metrics subparser includes --atlas argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics"])
+        args = parser.parse_args(["metrics", "/input", "-o", "/output"])
         assert args.atlas == ["schaefer_200"]
 
     def test_metrics_parser_atlas_choices(self) -> None:
         """Test metrics subparser accepts valid atlas choices."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics", "--atlas", "aal"])
+        args = parser.parse_args(
+            ["metrics", "/input", "-o", "/output", "--atlas", "aal"]
+        )
         assert args.atlas == ["aal"]
 
     def test_metrics_parser_has_fwhm(self) -> None:
         """Test metrics subparser includes --fwhm argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics", "--fwhm", "8.0"])
+        args = parser.parse_args(
+            ["metrics", "/input", "-o", "/output", "--fwhm", "8.0"]
+        )
         assert args.fwhm == 8.0
 
     def test_metrics_parser_has_task(self) -> None:
         """Test metrics subparser includes --task argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics", "--task", "rest"])
+        args = parser.parse_args(
+            ["metrics", "/input", "-o", "/output", "--task", "rest"]
+        )
         assert args.task == "rest"
 
     def test_metrics_parser_has_regressor(self) -> None:
         """Test metrics subparser includes --regressor argument."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics"])
+        args = parser.parse_args(["metrics", "/input", "-o", "/output"])
         assert args.regressor == ["36-parameter"]
 
     def test_metrics_parser_task_default_none(self) -> None:
         """Test metrics subparser --task defaults to None."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics"])
+        args = parser.parse_args(["metrics", "/input", "-o", "/output"])
         assert args.task is None
 
     def test_metrics_parser_fwhm_default(self) -> None:
         """Test metrics subparser --fwhm defaults to 6.0."""
         parser = create_parser()
-        args = parser.parse_args(["/input", "/output", "metrics"])
+        args = parser.parse_args(["metrics", "/input", "-o", "/output"])
         assert args.fwhm == 6.0
 
 
