@@ -137,7 +137,7 @@ def register_command(
         default=["schaefer_200"],
         metavar="ATLAS",
         help=(
-            "Atlas(es) for connectome extraction. Accepts registry names "
+            "Atlas(es) for timeseries extraction. Accepts registry names "
             f"({', '.join(sorted(ATLAS_REGISTRY))}) or paths to custom NIfTI "
             "atlas files."
         ),
