@@ -48,7 +48,7 @@ omit = ["src/rbc_resources/"]
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/rbc/bids/_schema\\.py$", "tests/unit/bids/test_bids\\.py$"]
+exclude = ["src/rbc/bids/_schema\\.py$", "tests/unit/bids/test_bids\\.py$", "tests/data/"]
 
 [tool.ruff]
 line-length = 88
