@@ -98,19 +98,20 @@ def sequential_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) ->
     out.mkdir()
 
     runner_args = ["--runner", _runner, *_COMMON_ARGS]
-    input_args = [str(_TEST_DATASET), "-o", str(out)]
+    raw = str(_TEST_DATASET)
+    deriv = str(out)
 
-    # 1. anatomical
-    _run_rbc(["anatomical", *input_args, *runner_args])
+    # 1. anatomical (raw BIDS only)
+    _run_rbc(["anatomical", raw, "-o", deriv, *runner_args])
 
-    # 2. functional (reads anat derivatives from output_dir)
-    _run_rbc(["functional", *input_args, *runner_args])
+    # 2. functional (raw BIDS + anat derivatives)
+    _run_rbc(["functional", raw, deriv, "-o", deriv, *runner_args])
 
-    # 3. metrics (reads func derivatives from output_dir)
-    _run_rbc(["metrics", *input_args, *runner_args])
+    # 3. metrics (raw BIDS + derivatives from previous stages)
+    _run_rbc(["metrics", raw, deriv, "-o", deriv, *runner_args])
 
-    # 4. qc (reads func derivatives from output_dir)
-    _run_rbc(["qc", *input_args, *runner_args])
+    # 4. qc (raw BIDS + derivatives from previous stages)
+    _run_rbc(["qc", raw, deriv, "-o", deriv, *runner_args])
 
     return out
 
