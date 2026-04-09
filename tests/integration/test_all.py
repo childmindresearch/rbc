@@ -4,6 +4,9 @@ Runs the full pipeline via ``rbc all`` (in-memory handoff) and via the four
 individual subcommands in sequence (disk round-trip), then verifies that both
 approaches complete without errors, produce key derivative files, and yield
 identical outputs.
+
+The BOLD timeseries is truncated to a small number of volumes so that
+functional processing finishes in minutes rather than tens of minutes.
 """
 
 from __future__ import annotations
@@ -13,17 +16,23 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import nibabel as nib
+import numpy as np
 import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-_TEST_DATASET = Path(__file__).parents[1] / "data" / "ds000001"
+_ORIG_DATASET = Path(__file__).parents[1] / "data" / "ds000001"
 
 # Subject with no session in ds000001.
 _SUB = "01"
 _TASK = "balloonanalogrisktask"
 _RUN = "01"
+
+# Number of BOLD volumes to keep. Must be enough for nuisance regression
+# (after discarding --start-tr 2) but small enough to be fast.
+_BOLD_VOLUMES = 25
 
 
 # ---------------------------------------------------------------------------
@@ -73,14 +82,36 @@ def _runner(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture(scope="session")
-def all_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) -> Path:
+def truncated_dataset(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Copy ds000001 and truncate the BOLD to *_BOLD_VOLUMES* volumes."""
+    dest = tmp_path_factory.mktemp("ds") / "ds000001"
+    shutil.copytree(_ORIG_DATASET, dest)
+
+    bold = (
+        dest
+        / f"sub-{_SUB}"
+        / "func"
+        / f"sub-{_SUB}_task-{_TASK}_run-{_RUN}_bold.nii.gz"
+    )
+    img = nib.nifti1.load(bold)
+    data = np.asarray(img.dataobj[:, :, :, :_BOLD_VOLUMES])
+    nib.nifti1.save(nib.Nifti1Image(data, img.affine, img.header), bold)
+    return dest
+
+
+@pytest.fixture(scope="session")
+def all_output(
+    tmp_path_factory: pytest.TempPathFactory,
+    _runner: str,
+    truncated_dataset: Path,
+) -> Path:
     """Run ``rbc all`` once and return the output directory."""
     out = tmp_path_factory.mktemp("all") / "derivatives"
     out.mkdir()
     _run_rbc(
         [
             "all",
-            str(_TEST_DATASET),
+            str(truncated_dataset),
             "-o",
             str(out),
             "--runner",
@@ -92,13 +123,17 @@ def all_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) -> Path:
 
 
 @pytest.fixture(scope="session")
-def sequential_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) -> Path:
+def sequential_output(
+    tmp_path_factory: pytest.TempPathFactory,
+    _runner: str,
+    truncated_dataset: Path,
+) -> Path:
     """Run the four individual subcommands in order and return the output dir."""
     out = tmp_path_factory.mktemp("sequential") / "derivatives"
     out.mkdir()
 
     runner_args = ["--runner", _runner, *_COMMON_ARGS]
-    raw = str(_TEST_DATASET)
+    raw = str(truncated_dataset)
     deriv = str(out)
 
     # 1. anatomical (raw BIDS only)
