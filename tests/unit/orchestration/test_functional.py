@@ -44,9 +44,7 @@ _BOLD_DF = pl.DataFrame(
         "desc": [None],
         "space": [None],
         "root": ["/data"],
-        "path": [
-            "sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz"
-        ],
+        "path": ["sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz"],
     }
 )
 
@@ -67,16 +65,16 @@ _ANAT_DF = pl.DataFrame(
         "desc": [None],
         "space": [None],
         "root": ["/data"],
-        "path": [
-            "sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"
-        ],
+        "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
     }
 )
 
 
 def _mock_func_run() -> FunctionalRun:
     return FunctionalRun(
-        path=Path("/data/sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz"),
+        path=Path(
+            "/data/sub-01/ses-baseline/func/sub-01_ses-baseline_task-rest_bold.nii.gz"
+        ),
         entities={"task": "rest"},
         anat_df=_ANAT_DF,
     )
@@ -102,7 +100,7 @@ def _mock_metadata() -> Mock:
 
 
 @contextmanager
-def _patch_process_session() -> Generator[tuple[Mock, Mock, Mock], None, None]:
+def _patch_process_session() -> Generator[tuple[Mock, Mock, FunctionalRun], None, None]:
     """Patch external calls made by functional.process_session()."""
     func_run = _mock_func_run()
     with (
