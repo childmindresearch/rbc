@@ -30,9 +30,10 @@ _SUB = "01"
 _TASK = "balloonanalogrisktask"
 _RUN = "01"
 
-# Number of BOLD volumes to keep. Must be enough for nuisance regression
-# (after discarding --start-tr 2) but small enough to be fast.
-_BOLD_VOLUMES = 25
+# Number of BOLD volumes to keep. The 36-parameter regressor model needs
+# more timepoints than regressors (~36 columns + derivatives). After
+# discarding --start-tr 2, we need at least ~45 usable volumes.
+_BOLD_VOLUMES = 50
 
 
 # ---------------------------------------------------------------------------
