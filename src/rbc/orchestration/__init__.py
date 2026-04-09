@@ -72,11 +72,13 @@ class RunnerConfig:
         runner: Execution backend (local, docker, podman, singularity).
         verbose: Enable verbose output (progress bars, info logging).
         tmp_dir: Temporary directory for intermediate files.
+        ants_threads: Number of threads for ANTs (ITK) operations.
     """
 
     runner: Literal["auto", "local", "docker", "podman", "singularity"] = "local"
     verbose: bool = False
     tmp_dir: Path | None = None
+    ants_threads: int = 1
 
 
 def init_runner(config: RunnerConfig) -> None:
@@ -88,4 +90,7 @@ def init_runner(config: RunnerConfig) -> None:
     ctx = setup_runner(
         runner=config.runner, verbose=config.verbose, tmp_dir=config.tmp_dir
     )
-    ctx.runner.environ = _DEFAULT_ENV_VARS
+    ctx.runner.environ = {
+        **_DEFAULT_ENV_VARS,
+        "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": str(config.ants_threads),
+    }

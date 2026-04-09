@@ -29,6 +29,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         functional=False,
         tmp_dir=None,
         anat_template=None,
+        ants_threads=1,
     )
 
 

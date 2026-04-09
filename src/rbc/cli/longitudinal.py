@@ -57,6 +57,7 @@ def main(args: LongitudinalArgs) -> int:
             runner=args.runner,
             verbose=bool(args.verbose),
             tmp_dir=args.tmp_dir,
+            ants_threads=args.ants_threads,
         ),
     )
     return 0

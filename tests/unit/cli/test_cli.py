@@ -178,6 +178,7 @@ class TestValidation:
             participant_label=[],
             session_label=[],
             tmp_dir=None,
+            ants_threads=1,
         )
 
     def test_valid(self, base_args: argparse.Namespace) -> None:

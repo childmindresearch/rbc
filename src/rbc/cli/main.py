@@ -79,6 +79,15 @@ def _global_opts() -> argparse.ArgumentParser:
         default=None,
         help="Directory for intermediate files (default: system temp)",
     )
+    global_opts.add_argument(
+        "--ants-threads",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of threads for ANTs (ITK) operations (default: 1). "
+        "Values above 1 speed up registration but increase memory usage "
+        "and may produce non-deterministic results",
+    )
     return global_opts
 
 

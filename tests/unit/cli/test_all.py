@@ -41,6 +41,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         func_template=None,
         func_template_mask=None,
         func_template_ref=None,
+        ants_threads=1,
     )
 
 
