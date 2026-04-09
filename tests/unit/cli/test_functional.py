@@ -37,6 +37,7 @@ class TestFunctionalArgs:
             func_template=None,
             func_template_mask=None,
             func_template_ref=None,
+            ants_threads=1,
         )
 
     def test_validate_namespace(self, func_namespace: argparse.Namespace) -> None:

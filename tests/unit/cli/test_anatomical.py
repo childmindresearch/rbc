@@ -34,6 +34,7 @@ class TestAnatomicalArgs:
             brain_extraction_prob_mask=None,
             brain_extraction_reg_mask=None,
             anat_template=None,
+            ants_threads=1,
         )
 
     def test_parser_from_namespace(self, anat_namespace: argparse.Namespace) -> None:

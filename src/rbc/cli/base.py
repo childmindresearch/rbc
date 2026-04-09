@@ -29,6 +29,7 @@ class BaseArgs:
     session_label: list[str]
     verbose: int
     tmp_dir: Path | None
+    ants_threads: int
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> BaseArgs:
@@ -56,6 +57,12 @@ class BaseArgs:
                 f"Temporary path exists, but is not a directory: {tmp_dir}"
             )
 
+        ants_threads: int = ns.ants_threads
+        if ants_threads < 1:
+            raise ValueError(
+                f"ANTs thread count must be at least 1, got: {ants_threads}"
+            )
+
         return cls(
             input_dirs=tuple(ns.input_dirs),
             output_dir=ns.output_dir,
@@ -64,6 +71,7 @@ class BaseArgs:
             session_label=ns.session_label,
             verbose=ns.verbose,
             tmp_dir=tmp_dir,
+            ants_threads=ants_threads,
         )
 
 
