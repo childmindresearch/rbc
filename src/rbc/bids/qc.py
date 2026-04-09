@@ -57,7 +57,7 @@ def resolve_qc(
                 deriv_df,
                 suffix=Suffix.BOLD,
                 desc="preproc",
-                extra={"reg": reg},
+                extra={"reg": bids_safe_label(reg)},
             )
             for reg in regressors
         },

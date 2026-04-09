@@ -47,13 +47,13 @@ def resolve_metrics(
             deriv_df,
             suffix=Suffix.BOLD,
             desc="regressed",
-            extra={"reg": regressor},
+            extra={"reg": bids_safe_label(regressor)},
         ),
         "cleaned_bold": mni_q.expect(
             deriv_df,
             suffix=Suffix.BOLD,
             desc="preproc",
-            extra={"reg": regressor},
+            extra={"reg": bids_safe_label(regressor)},
         ),
     }
 
