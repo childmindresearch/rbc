@@ -190,6 +190,41 @@ class TestCorrelationMatrix:
         assert corr.min() >= -1.0 - 1e-10
         assert corr.max() <= 1.0 + 1e-10
 
+    def test_zero_variance_roi_produces_nan(self) -> None:
+        """Zero-variance ROIs should yield NaN without RuntimeWarning."""
+        ts = np.array(
+            [
+                [1.0, 2.0, 3.0, 4.0, 5.0],
+                [7.0, 7.0, 7.0, 7.0, 7.0],  # constant
+                [5.0, 4.0, 3.0, 2.0, 1.0],
+            ]
+        )
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            corr = correlation_matrix(ts)
+
+        # Valid ROIs should have real correlation values
+        assert corr[0, 2] == pytest.approx(-1.0)
+        # Zero-variance ROI should produce NaN
+        assert np.isnan(corr[1, 0])
+        assert np.isnan(corr[0, 1])
+        assert np.isnan(corr[1, 2])
+        assert corr[1, 1] == pytest.approx(1.0)
+
+    def test_all_zero_variance_produces_all_nan(self) -> None:
+        """If all ROIs are constant, the entire matrix should be NaN."""
+        ts = np.array(
+            [
+                [5.0, 5.0, 5.0],
+                [3.0, 3.0, 3.0],
+            ]
+        )
+        corr = correlation_matrix(ts)
+        assert np.all(np.isnan(corr[~np.eye(2, dtype=bool)]))
+        np.testing.assert_allclose(np.diag(corr), 1.0)
+
     def test_rejects_single_roi(self) -> None:
         """Should reject fewer than 2 ROIs."""
         with pytest.raises(ValueError, match="2 ROIs"):
