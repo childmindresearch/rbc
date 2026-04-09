@@ -118,7 +118,7 @@ def run(
                 "brain_mask": anat_outputs.brain_mask,
                 "csf_mask": anat_outputs.csf_mask,
                 "wm_mask": anat_outputs.wm_mask,
-                "anat_to_template": anat_outputs.inverse_xfm,
+                "anat_to_template": anat_outputs.anat_to_template_xfm,
             },
             tr=tr,
             func_template=func_template,

@@ -207,8 +207,8 @@ class TestAllPipelineAnatHandoff:
             gm_mask=_FAKE / "gm_mask.nii.gz",
             wm_mask=_FAKE / "wm_mask.nii.gz",
             wm_bbr_mask=_FAKE / "wm_bbr.nii.gz",
-            forward_xfm=_FAKE / "fwd.nii.gz",
-            inverse_xfm=_FAKE / "inv.nii.gz",
+            anat_to_template_xfm=_FAKE / "anat_to_template.nii.gz",
+            template_to_anat_xfm=_FAKE / "template_to_anat.nii.gz",
         )
 
         raw_df = pl.DataFrame(
@@ -260,4 +260,6 @@ class TestAllPipelineAnatHandoff:
             assert passed_inputs["csf_mask"] == anat_outputs.csf_mask
             assert passed_inputs["wm_mask"] == anat_outputs.wm_mask
             assert passed_inputs["wm_bbr_mask"] == anat_outputs.wm_bbr_mask
-            assert passed_inputs["anat_to_template"] == anat_outputs.inverse_xfm
+            assert (
+                passed_inputs["anat_to_template"] == anat_outputs.anat_to_template_xfm
+            )

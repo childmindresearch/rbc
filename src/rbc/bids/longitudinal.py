@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.bids import Suffix
+from rbc.bids import Suffix, TemplateSpace
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -88,14 +88,22 @@ def export_longitudinal_anat(aex: Bids, outputs: AnatomicalLongOutputs) -> None:
         desc="wm",
     )
     aex.save(
-        outputs.forward_xfm,
+        outputs.long_to_template_xfm,
         suffix="xfm",
-        extra={"from": "T1w", "to": "longitudinal", "mode": "image"},
+        extra={
+            "from": "longitudinal",
+            "to": TemplateSpace.MNI152NLIN6ASYM,
+            "mode": "image",
+        },
     )
     aex.save(
-        outputs.inverse_xfm,
+        outputs.template_to_long_xfm,
         suffix="xfm",
-        extra={"from": "longitudinal", "to": "T1w", "mode": "image"},
+        extra={
+            "from": TemplateSpace.MNI152NLIN6ASYM,
+            "to": "longitudinal",
+            "mode": "image",
+        },
     )
 
 
@@ -154,7 +162,7 @@ def export_longitudinal_func(fex: Bids, outputs: FunctionalLongOutputs) -> None:
     fex.save(outputs.sbref, suffix=Suffix.SBREF)
     fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
     fex.save(
-        outputs.forward_xfm,
+        outputs.bold_to_long_xfm,
         suffix="xfm",
         desc="composite",
         extra={"from": "bold", "to": "longitudinal", "mode": "image"},

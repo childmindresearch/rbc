@@ -105,11 +105,11 @@ def pipeline_data(
         brain_mask=anat.brain_mask,
         csf_mask=anat.csf_mask,
         wm_mask=anat.wm_mask,
-        anat_to_template=anat.forward_xfm,
+        anat_to_template=anat.anat_to_template_xfm,
         metadata=func_metadata,
     )
     template_brain_mask = _warp_mask_to_template(
-        anat.brain_mask, REGISTRATION_TEMPLATES.brain_2mm, anat.forward_xfm
+        anat.brain_mask, REGISTRATION_TEMPLATES.brain_2mm, anat.anat_to_template_xfm
     )
     manifest["anat"] = _to_dict(anat)
     manifest["func"] = _to_dict(func)
