@@ -137,7 +137,7 @@ def _transform_4d_chunked(in_file: Path, template: Path, xfm: Path) -> Path:
             dimensionality=3,
             interpolation=ants.ants_apply_transforms_linear(),
             output=ants.ants_apply_transforms_warped_output(
-                f"vol_{idx:04d}_template.nii.gz"
+                f"vol_{idx:04d}_template.nii"
             ),
         )
         transformed_vols.append(result.output.output_image_outfile)

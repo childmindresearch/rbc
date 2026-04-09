@@ -99,7 +99,7 @@ def apply_motion_transforms(
             default_value=0,
             dimensionality=3,
             output=ants.ants_apply_transforms_warped_output(
-                f"vol_{idx:04d}_motion.nii.gz"
+                f"vol_{idx:04d}_motion.nii"
             ),
         )
         transformed_vols.append(result.output.output_image_outfile)
@@ -193,7 +193,7 @@ def resample_bold_to_template(
             default_value=0,
             dimensionality=3,
             output=ants.ants_apply_transforms_warped_output(
-                f"vol_{idx:04d}_template.nii.gz"
+                f"vol_{idx:04d}_template.nii"
             ),
         )
         transformed_vols.append(result.output.output_image_outfile)

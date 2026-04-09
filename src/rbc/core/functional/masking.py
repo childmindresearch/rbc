@@ -183,7 +183,7 @@ def bold_masking(
     warped_probseg = ants.ants_apply_transforms(
         reference_image=bold_ref,
         output=ants.ants_apply_transforms_warped_output(
-            warped_output_file_name="probseg_transform.nii.gz"
+            warped_output_file_name="probseg_transform.nii"
         ),
         default_value=0,
         float_=True,
@@ -222,7 +222,7 @@ def bold_masking(
     # mismatches before N4 correction.
     bold_ref_dir_corrected = ants.set_direction_by_matrix(
         infile=bold_ref,
-        outfile="bold_ref_dir_corrected.nii.gz",
+        outfile="bold_ref_dir_corrected.nii",
         direction_matrix=parse_direction_matrix_from_header(
             dilated_binary_mask.output_file
         ),
@@ -233,7 +233,7 @@ def bold_masking(
     n4_bias_correction = ants.n4_bias_field_correction(
         input_image=bold_ref_dir_corrected.outfile,
         output=ants.n4_bias_field_correction_corrected_output(
-            corrected_output_file_name="ref_bold_corrected.nii.gz"
+            corrected_output_file_name="ref_bold_corrected.nii"
         ),
         image_dimensionality=3,
         bspline_fitting=ants.n4_bias_field_correction_bspline_fitting(
@@ -274,7 +274,7 @@ def bold_masking(
             fsl.fslmaths_operation_mas(mas=dilated_bet_mask.output_file),
             fsl.fslmaths_operation_seed(seed=seed),
         ],
-        output="ref_bold_corrected_brain_masked.nii.gz",
+        output="ref_bold_corrected_brain_masked.nii",
     )
 
     # --- Phase 5: Intensity Uniformization & Second-Pass ---
@@ -286,7 +286,7 @@ def bold_masking(
         in_file=masked_bold.output_file,
         cl_frac=0.2,
         rbt=[18.3, 65, 90],
-        prefix="uni.nii.gz",
+        prefix="uni.nii",
         t2=True,
     )
 
