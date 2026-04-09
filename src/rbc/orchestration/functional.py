@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from rbc.bids import SUB_SES_QUERY, Datatype, load_table
 from rbc.bids.functional import (
+    FunctionalInputs,
     discover_functional,
     export_functional,
     resolve_functional,
@@ -37,6 +38,7 @@ def process_session(
     pipe_ctx: RunContext,
     *,
     regressors: Sequence[str],
+    anat_inputs: FunctionalInputs | None = None,
     tr: float | None = None,
     func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
     func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
@@ -48,6 +50,9 @@ def process_session(
         session: Session tables for a single subject/session.
         pipe_ctx: RunContext bound to this subject/session.
         regressors: Regressor names.
+        anat_inputs: Pre-resolved anatomical inputs. When provided (e.g. from
+            the combined ``all`` pipeline), skips the DataFrame-based resolve
+            and uses these paths directly for every BOLD run.
         tr: TR override in seconds, or ``None`` to read from headers.
         func_template: Brain template for functional resampling (default: MNI152 2 mm).
         func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
@@ -61,8 +66,11 @@ def process_session(
     for func_run in discover_functional(session):
         _logger.info("Functional: %s", func_run.path)
 
-        anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-        resolved = resolve_functional(anat_q, func_run.anat_df)
+        if anat_inputs is not None:
+            resolved = anat_inputs
+        else:
+            anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+            resolved = resolve_functional(anat_q, func_run.anat_df)
 
         func_metadata = FunctionalMetadata.load(func_run.path, tr_override=tr)
 
