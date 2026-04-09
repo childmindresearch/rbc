@@ -37,5 +37,5 @@ def test_registration(test_subject: TestSubjectData) -> None:
     """Test anatomical registration."""
     reg_outputs = anatomical.ants_registration(in_file=test_subject.t1w)
     assert reg_outputs.brain.exists()
-    assert reg_outputs.forward.exists()
-    assert reg_outputs.inverse.exists()
+    assert reg_outputs.anat_to_template.exists()
+    assert reg_outputs.template_to_anat.exists()
