@@ -349,7 +349,7 @@ def correct_distortion_phasediff(
         diff_img = nib.Nifti1Image(
             diff_data, affine=p1_img.affine, header=p1_img.header
         )
-        phasediff = out_dir / "phasediff.nii.gz"
+        phasediff = out_dir / "phasediff.nii"
         nib.save(diff_img, phasediff)
 
     # 4. Prepare fieldmap (rad/s)
@@ -454,7 +454,7 @@ def correct_distortion_pepolar(
     # 2. Merge forward/reverse into 4D
     merged_path = merge_3d_to_4d(
         volumes=[epi_forward, epi_reverse],
-        output=out_dir / "merged_epi.nii.gz",
+        output=out_dir / "merged_epi.nii",
     )
 
     # 3. Estimate field with TOPUP

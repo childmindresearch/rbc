@@ -10,13 +10,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import nibabel as nib
-from niwrap import afni, fsl
+from niwrap import afni
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
 from rbc.core.fileops import file_tmp_copy
+from rbc.core.niwrap import generate_exec_folder
 
 __all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
 
@@ -49,19 +50,24 @@ def deoblique_and_reorient(
 def split_4d(img_4d: Path) -> list[Path]:
     """Split a 4D NIfTI timeseries into individual 3D volumes.
 
+    Volumes are written as uncompressed NIfTI (.nii) to avoid gzip
+    overhead on float intermediates that are read back immediately.
+
     Args:
         img_4d: Path to a 4D NIfTI image.
 
     Returns:
         Sorted list of paths to the individual 3D volume files.
     """
-    split_result = fsl.fslsplit(
-        infile=img_4d, separation_time=True, output_basename="vol_"
-    )
-    assert split_result.out_files is not None  # noqa: S101
-    out_files = split_result.out_files
-    out_dir = out_files[0].parent if isinstance(out_files, list) else out_files.parent
-    return sorted(out_dir.glob("vol_*.nii.gz"))
+    img = nib.nifti1.load(img_4d)
+    volumes = nib.four_to_three(img)
+    out_dir = generate_exec_folder(suffix="split4d")
+    paths: list[Path] = []
+    for idx, vol in enumerate(volumes):
+        out_path = out_dir / f"vol_{idx:04d}.nii"
+        nib.save(vol, out_path)
+        paths.append(out_path)
+    return paths
 
 
 def merge_3d_to_4d(volumes: Sequence[Path], output: Path) -> Path:

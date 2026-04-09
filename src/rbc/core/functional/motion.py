@@ -80,7 +80,7 @@ def extract_motion_reference(in_file: Path) -> Path:
             header=ref_im.header,
         )
 
-    temp_slice_file = generate_exec_folder(suffix="motion_ref_input") / "slice.nii.gz"
+    temp_slice_file = generate_exec_folder(suffix="motion_ref_input") / "slice.nii"
     ref_im.to_filename(temp_slice_file)
 
     mc_output_prefix = f"{_MC_PREFIX}_volreg.nii.gz"
