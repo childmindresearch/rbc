@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from rbc.bids import Suffix, TemplateSpace, bids_safe_label
 
@@ -108,6 +108,18 @@ def export_longitudinal_anat(aex: Bids, outputs: AnatomicalLongOutputs) -> None:
     )
 
 
+class LongitudinalFuncInputs(TypedDict):
+    """Resolved inputs for the longitudinal functional workflow."""
+
+    template: Path
+    anat_to_template_xfm: Path
+    bold_to_anat_itk: Path
+    sbref: Path
+    bold: Path
+    bold_mask: Path
+    regressor_files: dict[str, Path]
+
+
 def resolve_longitudinal_func(
     func_q: Bids,
     tpl_q: Bids,
@@ -116,7 +128,7 @@ def resolve_longitudinal_func(
     *,
     ses: str,
     regressors: Sequence[str],
-) -> dict[str, Path | None | dict[str, Path]]:
+) -> LongitudinalFuncInputs:
     """Resolve inputs for longitudinal functional processing.
 
     Args:

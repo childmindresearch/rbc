@@ -17,6 +17,7 @@ from rbc.bids import (
     load_table,
 )
 from rbc.bids.longitudinal import (
+    LongitudinalFuncInputs,
     export_longitudinal_anat,
     export_longitudinal_func,
     resolve_longitudinal_anat,
@@ -91,7 +92,7 @@ def process_func(
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
     tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
 
-    resolved = resolve_longitudinal_func(
+    resolved: LongitudinalFuncInputs = resolve_longitudinal_func(
         func_q,
         tpl_q,
         func_df,
@@ -105,7 +106,7 @@ def process_func(
 
 
 def run(
-    input_dirs: list[Path],
+    input_dirs: Sequence[Path],
     output_dir: Path,
     *,
     filters: Filters,
