@@ -274,7 +274,7 @@ def bold_masking(
             fsl.fslmaths_operation_mas(mas=dilated_bet_mask.output_file),
             fsl.fslmaths_operation_seed(seed=seed),
         ],
-        output="ref_bold_corrected_brain_masked.nii",
+        output="ref_bold_corrected_brain_masked.nii.gz",
     )
 
     # --- Phase 5: Intensity Uniformization & Second-Pass ---
