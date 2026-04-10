@@ -31,9 +31,9 @@ class LongitudinalArgs(BaseArgs):
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
         """Validation of longitudinal workflow specific arguments to NamedTuple."""
-        if not ns.functional and not ns.anatomical:
+        if not ns.functional and not ns.anatomical and not ns.metrics:
             raise ValueError(
-                "At least one of '--anatomical' or '--functional' is required."
+                "At least one of '--anatomical', '--functional', or '--metrics' is required."
             )
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
