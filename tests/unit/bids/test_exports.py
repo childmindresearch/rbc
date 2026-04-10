@@ -47,8 +47,8 @@ def _make_anat_outputs(w: Path) -> AnatomicalOutputs:
         gm_mask=_dummy(w, "gm_mask.nii.gz"),
         wm_mask=_dummy(w, "wm_mask.nii.gz"),
         wm_bbr_mask=_dummy(w, "wm_bbr_mask.nii.gz"),
-        forward_xfm=_dummy(w, "forward_xfm.nii.gz"),
-        inverse_xfm=_dummy(w, "inverse_xfm.nii.gz"),
+        anat_to_template_xfm=_dummy(w, "anat_to_template_xfm.nii.gz"),
+        template_to_anat_xfm=_dummy(w, "template_to_anat_xfm.nii.gz"),
     )
 
 

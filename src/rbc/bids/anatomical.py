@@ -66,7 +66,7 @@ def export_anatomical(anat: Bids, outputs: AnatomicalOutputs) -> None:
     anat.save(outputs.wm_mask, suffix=Suffix.MASK, desc="wm")
     anat.save(outputs.wm_bbr_mask, suffix=Suffix.MASK, desc="wmBBR")
     anat.save(
-        outputs.forward_xfm,
+        outputs.anat_to_template_xfm,
         suffix="xfm",
         extra={
             "from": "T1w",
@@ -75,7 +75,7 @@ def export_anatomical(anat: Bids, outputs: AnatomicalOutputs) -> None:
         },
     )
     anat.save(
-        outputs.inverse_xfm,
+        outputs.template_to_anat_xfm,
         suffix="xfm",
         extra={
             "from": TemplateSpace.MNI152NLIN6ASYM,

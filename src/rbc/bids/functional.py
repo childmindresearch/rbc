@@ -91,8 +91,8 @@ def resolve_functional(
             anat_df,
             suffix="xfm",
             extra={
-                "from": TemplateSpace.MNI152NLIN6ASYM,
-                "to": "T1w",
+                "to": TemplateSpace.MNI152NLIN6ASYM,
+                "from": "T1w",
                 "mode": "image",
             },
         ),

@@ -26,13 +26,13 @@ class RegistrationOutputs(NamedTuple):
 
     Attributes:
         brain: Warped (template-space) skull-stripped brain.
-        forward: T1w-to-template composite displacement field.
-        inverse: Template-to-T1w composite displacement field.
+        forward: anat-to-template composite displacement field.
+        inverse: Template-to-anat composite displacement field.
     """
 
     brain: Path
-    forward: Path
-    inverse: Path
+    anat_to_template: Path
+    template_to_anat: Path
 
 
 def ants_registration(
@@ -53,8 +53,8 @@ def ants_registration(
             (default: MNI152 1 mm).
 
     Returns:
-        Forward (T1w -> template) and inverse (template -> T1w) composite
-        transforms.
+        Transformed brain in template space, forward (T1w -> template) and inverse
+        (template -> T1w) composite transforms.
     """
     registration = ants.ants_registration(
         stages=[
@@ -148,7 +148,7 @@ def ants_registration(
         interpolation="LanczosWindowedSinc",
         output=f"[{_PREFIX}_,{_PREFIX}_Warped.nii.gz]",
     )
-    fwd = ants.ants_apply_transforms(
+    anat_to_template = ants.ants_apply_transforms(
         reference_image=registration_template,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
@@ -159,11 +159,11 @@ def ants_registration(
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field="forward_xfm.nii.gz",
+            composite_displacement_field="anat_to_template_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )
-    rev = ants.ants_apply_transforms(
+    template_to_anat = ants.ants_apply_transforms(
         reference_image=in_file,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
@@ -174,7 +174,7 @@ def ants_registration(
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
-            composite_displacement_field="inverse_xfm.nii.gz",
+            composite_displacement_field="template_to_anat_xfm.nii.gz",
             print_out_composite_warp_file=True,
         ),
     )
@@ -182,6 +182,6 @@ def ants_registration(
     # does not expose this path, so we construct it from the output root.
     return RegistrationOutputs(
         brain=registration.root / f"{_PREFIX}_Warped.nii.gz",
-        forward=fwd.output.output_image_outfile,
-        inverse=rev.output.output_image_outfile,
+        anat_to_template=anat_to_template.output.output_image_outfile,
+        template_to_anat=template_to_anat.output.output_image_outfile,
     )

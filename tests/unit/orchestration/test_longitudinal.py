@@ -56,8 +56,8 @@ def _mock_anat_outputs() -> Mock:
     m.csf_mask = fake / "csf_mask.nii.gz"
     m.gm_mask = fake / "gm_mask.nii.gz"
     m.wm_mask = fake / "wm_mask.nii.gz"
-    m.forward_xfm = fake / "fwd_xfm.nii.gz"
-    m.inverse_xfm = fake / "inverse_xfm.nii.gz"
+    m.long_to_template_xfm = fake / "long_to_template_xfm.nii.gz"
+    m.template_to_long_xfm = fake / "template_to_long_xfm.nii.gz"
     return m
 
 
@@ -66,7 +66,7 @@ def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
     m = Mock()
     m.sbref = fake / "sbref.nii.gz"
     m.bold = fake / "bold.nii.gz"
-    m.forward_xfm = fake / "fwd_xfm.nii.gz"
+    m.bold_to_long_xfm = fake / "bold_to_long_xfm.nii.gz"
     m.bold_mask = (fake / "bold_mask.nii.gz") if with_bold_mask else None
     return m
 

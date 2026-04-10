@@ -146,9 +146,11 @@ def _resample_mosaic(
 def _build_mosaic(
     data: np.ndarray,
     n: int = 7,
+    slices: list[int] | None = None,
 ) -> np.ndarray:
     """Build an axial-slice mosaic resampled to standard dimensions."""
-    slices = _axial_slices(data, n)
+    if slices is None:
+        slices = _axial_slices(data, n)
     panels = [data[:, :, z].T for z in slices]
     mosaic = np.concatenate(panels, axis=1)
     return _resample_mosaic(mosaic)
@@ -285,8 +287,9 @@ def _render_stat_overlay(
 ) -> None:
     """Lightbox with thresholded stat map overlaid on background."""
     bg_vmax = _robust_vmax(bg_data)
-    bg_mosaic = _build_mosaic(bg_data, n)
-    stat_mosaic = _build_mosaic(stat_data, n)
+    slices = _axial_slices(bg_data, n)
+    bg_mosaic = _build_mosaic(bg_data, n, slices=slices)
+    stat_mosaic = _build_mosaic(stat_data, n, slices=slices)
 
     ax.imshow(
         bg_mosaic,

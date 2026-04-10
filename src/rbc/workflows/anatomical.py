@@ -43,8 +43,8 @@ class AnatomicalOutputs(NamedTuple):
         gm_mask: GM tissue mask.
         wm_mask: WM tissue mask.
         wm_bbr_mask: WM boundary mask for BBR coregistration.
-        forward_xfm: T1w-to-template composite warp.
-        inverse_xfm: Template-to-T1w composite warp.
+        anat_to_template_xfm: anat-to-template composite warp.
+        template_to_anat_xfm: Template-to-anat composite warp.
     """
 
     brain: Path
@@ -54,8 +54,8 @@ class AnatomicalOutputs(NamedTuple):
     gm_mask: Path
     wm_mask: Path
     wm_bbr_mask: Path
-    forward_xfm: Path
-    inverse_xfm: Path
+    anat_to_template_xfm: Path
+    template_to_anat_xfm: Path
 
 
 def single_session_preprocess(
@@ -112,8 +112,8 @@ def single_session_preprocess(
         gm_mask=tissue_masks.gm,
         wm_mask=tissue_masks.wm,
         wm_bbr_mask=wm_bbr,
-        forward_xfm=transforms.forward,
-        inverse_xfm=transforms.inverse,
+        anat_to_template_xfm=transforms.anat_to_template,
+        template_to_anat_xfm=transforms.template_to_anat,
     )
 
 
@@ -130,8 +130,8 @@ class AnatomicalLongOutputs(NamedTuple):
             or *None* if not provided.
         wm_mask: WM tissue mask warped to longitudinal template space,
             or *None* if not provided.
-        forward_xfm: Longitudinal template-to-MNI152 composite warp.
-        inverse_xfm: MNI152-to-longitudinal template composite warp.
+        long_to_template_xfm: Longitudinal template-to-MNI152 composite warp.
+        template_to_long_xfm: MNI152-to-longitudinal template composite warp.
     """
 
     brain: Path
@@ -139,8 +139,8 @@ class AnatomicalLongOutputs(NamedTuple):
     csf_mask: Path | None
     gm_mask: Path | None
     wm_mask: Path | None
-    forward_xfm: Path
-    inverse_xfm: Path
+    long_to_template_xfm: Path
+    template_to_long_xfm: Path
 
 
 def longitudinal_process(
@@ -193,6 +193,6 @@ def longitudinal_process(
         csf_mask=_xfm(csf_mask),
         gm_mask=_xfm(gm_mask),
         wm_mask=_xfm(wm_mask),
-        forward_xfm=transforms.forward,
-        inverse_xfm=transforms.inverse,
+        long_to_template_xfm=transforms.anat_to_template,
+        template_to_long_xfm=transforms.template_to_anat,
     )

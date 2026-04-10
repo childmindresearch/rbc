@@ -387,14 +387,14 @@ class FunctionalLongOutputs(NamedTuple):
     """Outputs from the longitudinal functional preprocessing pipeline.
 
     Attributes:
-        forward_xfm: BOLD-to-longitudinal-template composite warp.
+        bold_to_long_xfm: BOLD-to-longitudinal-template composite warp.
         sbref: Motion reference volume warped to longitudinal template space.
         bold: Preprocessed BOLD warped to longitudinal template space.
         bold_mask: Brain mask warped to longitudinal template space,
             or *None* if no mask was provided.
     """
 
-    forward_xfm: Path
+    bold_to_long_xfm: Path
     sbref: Path
     bold: Path
     bold_mask: Path | None = None
@@ -443,5 +443,5 @@ def longitudinal_process(
         bold_mask=mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
         if bold_mask
         else None,
-        forward_xfm=bold_to_tpl_xfm,
+        bold_to_long_xfm=bold_to_tpl_xfm,
     )
