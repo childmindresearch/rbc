@@ -17,6 +17,7 @@ from rbc.core.metrics.reho import compute_reho
 from rbc.core.metrics.smoothing import smooth
 from rbc.core.metrics.standardization import compute_zscore
 from rbc.core.metrics.timeseries import compute_timeseries
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -76,15 +77,23 @@ def single_session_metrics(
     Returns:
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
     """
+    work_dir = generate_exec_folder("metrics")
+
     # 1. ALFF / fALFF on regressed BOLD (non-bandpassed)
     _logger.info("Computing ALFF/fALFF")
     alff_path, falff_path = compute_alff(
-        regressed_bold, template_brain_mask, tr=tr, method="qm"
+        regressed_bold,
+        template_brain_mask,
+        tr=tr,
+        method="qm",
+        out_file=work_dir / "alff.nii.gz",
     )
 
     # 2. ReHo on bandpass-filtered cleaned BOLD
     _logger.info("Computing ReHo")
-    reho_path = compute_reho(cleaned_bold, template_brain_mask)
+    reho_path = compute_reho(
+        cleaned_bold, template_brain_mask, out_file=work_dir / "reho.nii.gz"
+    )
 
     # 3. Smooth raw maps
     _logger.info("Smoothing maps (FWHM=%.1f mm)", fwhm)
@@ -103,7 +112,9 @@ def single_session_metrics(
     ts_outputs = {}
     for label, atlas_path in atlas_files.items():
         _logger.info("Extracting atlas timeseries (%s)", label)
-        ts_outputs[label] = compute_timeseries(cleaned_bold, atlas_path)
+        ts_outputs[label] = compute_timeseries(
+            cleaned_bold, atlas_path, out_dir=work_dir
+        )
 
     return MetricsOutputs(
         alff=alff_path,

@@ -17,6 +17,7 @@ import numpy as np
 from niwrap import fsl
 
 from rbc.bids import TemplateSpace
+from rbc.core.niwrap import generate_exec_folder
 from rbc.core.qc.dvars import dvars_qc_metrics
 from rbc.core.qc.motion import framewise_displacement_jenkinson, motion_qc_metrics
 from rbc.core.qc.registration import registration_qc_metrics
@@ -85,6 +86,8 @@ def single_session_qc(
         All QC outputs bundled in a :class:`QCOutputs` tuple.
     """
     _logger.info("Computing QC metrics")
+    work_dir = generate_exec_folder("qc")
+
     # 1. Load motion data
     rms_values = np.loadtxt(rms_rel)
     motion_data = np.loadtxt(motion_params)
@@ -157,8 +160,7 @@ def single_session_qc(
         # 9. Write QC TSV
         qc_outputs.qc_file[regressor] = write_xcp_qc(
             qc_outputs.metrics[regressor],
-            template_bold.parent
-            / f"sub-{sub}_ses-{ses}_task-{task}_run-{run}_reg-{regressor}_qc.tsv",
+            work_dir / f"reg-{regressor}_qc.tsv",
         )
 
     # 10. RBC pass/fail
