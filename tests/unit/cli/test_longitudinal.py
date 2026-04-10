@@ -27,9 +27,11 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         anatomical=True,
         functional=False,
+        metrics=False,
         tmp_dir=None,
         anat_template=None,
         ants_threads=1,
+        atlas=["schaefer_200"],
         regressor=["36-parameter"],
     )
 
