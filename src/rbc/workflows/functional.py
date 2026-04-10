@@ -488,7 +488,7 @@ def longitudinal_process(
         )
 
     return FunctionalLongOutputs(
-        forward_xfm=bold_to_tpl_xfm,
+        bold_to_long_xfm=bold_to_tpl_xfm,
         sbref=warped_sbref,
         bold=warped_bold,
         bold_mask=warped_mask,
