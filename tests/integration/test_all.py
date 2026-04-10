@@ -1,9 +1,12 @@
 """Integration test for ``rbc all`` pipeline stage handoff.
 
-Runs the full pipeline via ``rbc all`` (in-memory handoff) and via the four
-individual subcommands in sequence (disk round-trip), then verifies that both
-approaches complete without errors, produce key derivative files, and yield
-identical outputs.
+Runs the full pipeline via ``rbc all`` (in-memory handoff) and via the
+individual subcommands in sequence (disk round-trip), then verifies that
+both approaches complete without errors, produce key derivative files,
+and yield identical outputs.
+
+The sequential run reuses anatomical outputs from the ``rbc all`` run to
+avoid running brain extraction and registration twice.
 """
 
 from __future__ import annotations
@@ -92,25 +95,40 @@ def all_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) -> Path:
 
 
 @pytest.fixture(scope="session")
-def sequential_output(tmp_path_factory: pytest.TempPathFactory, _runner: str) -> Path:
-    """Run the four individual subcommands in order and return the output dir."""
+def sequential_output(
+    tmp_path_factory: pytest.TempPathFactory,
+    _runner: str,
+    all_output: Path,
+) -> Path:
+    """Run functional/metrics/qc using anat outputs from ``rbc all``.
+
+    Copies the anatomical derivatives produced by the ``all_output``
+    fixture so that only the functional, metrics, and QC stages run,
+    saving ~30-40 min of redundant brain extraction and registration.
+    """
     out = tmp_path_factory.mktemp("sequential") / "derivatives"
     out.mkdir()
+
+    # Seed with anatomical outputs + dataset_description from rbc all
+    anat_src = all_output / f"sub-{_SUB}" / "anat"
+    anat_dst = out / f"sub-{_SUB}" / "anat"
+    shutil.copytree(anat_src, anat_dst)
+    shutil.copy2(
+        all_output / "dataset_description.json",
+        out / "dataset_description.json",
+    )
 
     runner_args = ["--runner", _runner, *_COMMON_ARGS]
     raw = str(_TEST_DATASET)
     deriv = str(out)
 
-    # 1. anatomical (raw BIDS only)
-    _run_rbc(["anatomical", raw, "-o", deriv, *runner_args])
-
-    # 2. functional (raw BIDS + anat derivatives)
+    # functional (raw BIDS + anat derivatives)
     _run_rbc(["functional", raw, deriv, "-o", deriv, *runner_args])
 
-    # 3. metrics (raw BIDS + derivatives from previous stages)
+    # metrics (derivatives from previous stages)
     _run_rbc(["metrics", raw, deriv, "-o", deriv, *runner_args])
 
-    # 4. qc (raw BIDS + derivatives from previous stages)
+    # qc (derivatives from previous stages)
     _run_rbc(["qc", raw, deriv, "-o", deriv, *runner_args])
 
     return out
@@ -179,7 +197,7 @@ def test_rbc_all_produces_derivatives(all_output: Path) -> None:
 
 @pytest.mark.slow
 def test_sequential_produces_derivatives(sequential_output: Path) -> None:
-    """Running anatomical/functional/metrics/qc individually produces the same files."""
+    """Running functional/metrics/qc individually produces the same files."""
     _assert_derivatives_exist(sequential_output)
 
 
