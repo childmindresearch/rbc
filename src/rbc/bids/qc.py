@@ -51,7 +51,9 @@ def resolve_qc(
         Dict with keys matching ``single_session_qc`` parameters.
     """
     return {
-        "template_bold": func_mni.expect(deriv_df, suffix=Suffix.BOLD, desc="preproc"),
+        "template_bold": func_mni.expect(
+            deriv_df, suffix=Suffix.BOLD, desc="preproc", without=["reg"]
+        ),
         "cleaned_bold": {
             reg: func_mni.expect(
                 deriv_df,

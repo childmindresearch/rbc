@@ -26,7 +26,7 @@ _TEST_DATASET = Path(__file__).parents[1] / "data" / "ds000001"
 # Subject with no session in ds000001.
 _SUB = "01"
 _TASK = "balloonanalogrisktask"
-_RUN = "01"
+_RUN = "1"
 
 
 # ---------------------------------------------------------------------------
