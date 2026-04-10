@@ -65,6 +65,12 @@ def _relative_files(root: Path) -> set[str]:
     return {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()}
 
 
+def _file_tree(root: Path) -> str:
+    """Return a newline-separated listing of all files under *root*."""
+    files = sorted(p.relative_to(root) for p in root.rglob("*") if p.is_file())
+    return "\n".join(str(f) for f in files) if files else "(empty)"
+
+
 # ---------------------------------------------------------------------------
 # Fixtures — each pipeline variant runs once per session
 # ---------------------------------------------------------------------------
@@ -141,10 +147,13 @@ def sequential_output(
 
 def _assert_derivatives_exist(output_dir: Path) -> None:
     """Check that all expected derivative files are present."""
+    tree = _file_tree(output_dir)
     sub_dir = output_dir / f"sub-{_SUB}"
 
     # -- Dataset-level metadata --
-    assert (output_dir / "dataset_description.json").is_file()
+    assert (output_dir / "dataset_description.json").is_file(), (
+        f"Missing dataset_description.json\n--- file tree ---\n{tree}"
+    )
 
     # -- Anatomical derivatives --
     anat = sub_dir / "anat"
@@ -157,7 +166,9 @@ def _assert_derivatives_exist(output_dir: Path) -> None:
         f"sub-{_SUB}_desc-wmBBR_mask.nii.gz",
     ]
     for name in anat_files:
-        assert (anat / name).is_file(), f"Missing anatomical file: {name}"
+        assert (anat / name).is_file(), (
+            f"Missing anatomical file: {name}\n--- file tree ---\n{tree}"
+        )
 
     # -- Functional derivatives --
     func = sub_dir / "func"
@@ -169,18 +180,20 @@ def _assert_derivatives_exist(output_dir: Path) -> None:
         f"{bold_stem}_desc-brain_mask.nii.gz",
     ]
     for name in func_files:
-        assert (func / name).is_file(), f"Missing functional file: {name}"
+        assert (func / name).is_file(), (
+            f"Missing functional file: {name}\n--- file tree ---\n{tree}"
+        )
 
     # -- QC --
     qc_files = list(func.glob(f"{bold_stem}_space-*_desc-xcp_*_quality.tsv"))
-    assert qc_files, "No QC quality TSV files found"
+    assert qc_files, f"No QC quality TSV files found\n--- file tree ---\n{tree}"
 
     # -- Metrics --
     assert list(func.glob(f"{bold_stem}_space-*_*_timeseries.tsv")), (
-        "No timeseries TSV files found"
+        f"No timeseries TSV files found\n--- file tree ---\n{tree}"
     )
     assert list(func.glob(f"{bold_stem}_space-*_*_correlations.tsv")), (
-        "No correlation matrix TSV files found"
+        f"No correlation matrix TSV files found\n--- file tree ---\n{tree}"
     )
 
 
