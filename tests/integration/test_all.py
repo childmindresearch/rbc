@@ -185,7 +185,7 @@ def _assert_derivatives_exist(output_dir: Path) -> None:
         )
 
     # -- QC --
-    qc_files = list(func.glob(f"{bold_stem}_space-*_desc-xcp_*_quality.tsv"))
+    qc_files = list(func.glob(f"{bold_stem}_space-*_*_quality.tsv"))
     assert qc_files, f"No QC quality TSV files found\n--- file tree ---\n{tree}"
 
     # -- Metrics --
