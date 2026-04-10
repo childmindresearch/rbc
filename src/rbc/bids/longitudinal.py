@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 from rbc.bids import Suffix, TemplateSpace, bids_safe_label
+from rbc.bids.metrics import export_metrics
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from rbc.bids import Bids
     from rbc.workflows.anatomical import AnatomicalLongOutputs
     from rbc.workflows.functional import FunctionalLongOutputs
+    from rbc.workflows.metrics import MetricsOutputs
 
 
 def _require_file(path: Path | None, field: str) -> Path:
@@ -203,3 +205,68 @@ def export_longitudinal_func(fex: Bids, outputs: FunctionalLongOutputs) -> None:
             desc="preproc",
             extra={"reg": bids_safe_label(reg)},
         )
+    if outputs.bold_mask:
+        fex.save(outputs.bold_mask, suffix=Suffix.MASK, desc="brain")
+
+
+class LongitudinalMetricsInputs(TypedDict):
+    """Resolved inputs for longitudinal metrics."""
+
+    regressed_bold: Path
+    cleaned_bold: Path
+    template_brain_mask: Path
+
+
+def resolve_longitudinal_metrics(
+    long_q: Bids,
+    func_df: pl.DataFrame,
+    *,
+    regressor: str,
+) -> LongitudinalMetricsInputs:
+    """Resolve inputs for longitudinal metrics.
+
+    Args:
+        long_q: Bids builder with ``space="longitudinal"`` and identity entities.
+        func_df: DataFrame of longitudinal functional derivatives.
+        regressor: Regressor name (e.g. ``"36-parameter"``).
+
+    Returns:
+        Dict with keys matching ``single_session_metrics`` parameters.
+    """
+    return {
+        "regressed_bold": long_q.expect(
+            func_df,
+            suffix=Suffix.BOLD,
+            desc="regressed",
+            extra={"reg": bids_safe_label(regressor)},
+        ),
+        "cleaned_bold": long_q.expect(
+            func_df,
+            suffix=Suffix.BOLD,
+            desc="preproc",
+            extra={"reg": bids_safe_label(regressor)},
+        ),
+        "template_brain_mask": long_q.expect(
+            func_df,
+            suffix=Suffix.MASK,
+            desc="brain",
+        ),
+    }
+
+
+def export_longitudinal_metrics(
+    long_q: Bids,
+    outputs: MetricsOutputs,
+    *,
+    regressor: str,
+    atlases: list[str],
+) -> None:
+    """Export longitudinal metrics outputs.
+
+    Args:
+        long_q: Bids builder with ``space="longitudinal"`` and identity entities.
+        outputs: Results from the metrics workflow.
+        regressor: Regressor name.
+        atlases: Atlas labels.
+    """
+    export_metrics(long_q, outputs, regressor=regressor, atlases=atlases)

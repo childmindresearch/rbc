@@ -20,18 +20,22 @@ from rbc.bids.longitudinal import (
     LongitudinalFuncInputs,
     export_longitudinal_anat,
     export_longitudinal_func,
+    export_longitudinal_metrics,
     resolve_longitudinal_anat,
     resolve_longitudinal_func,
+    resolve_longitudinal_metrics,
 )
 from rbc.bids.session import iter_session_files, load_session
 from rbc.context import RunContext
 from rbc.orchestration import Filters, RunnerConfig, init_runner
+from rbc.orchestration.metrics import _read_header_tr
 from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
 from rbc.workflows.functional import longitudinal_process as functional_longitudinal
+from rbc.workflows.metrics import single_session_metrics as metrics_longitudinal
 from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
 _logger = logging.getLogger(__name__)
@@ -105,6 +109,42 @@ def process_func(
     export_longitudinal_func(fex, func_outputs)
 
 
+def process_metrics(
+    pipe_ctx: RunContext,
+    func_df: pl.DataFrame,
+    *,
+    regressors: Sequence[str],
+    atlas_files: Mapping[str, Path],
+    fwhm: float = 6.0,
+) -> None:
+    """Handle longitudinal metrics for one BOLD run.
+
+    Args:
+        pipe_ctx: RunContext bound to this subject/session.
+        func_df: Functional derivative DataFrame for this run.
+        regressors: Regressor names.
+        atlas_files: Mapping of atlas labels to NIfTI file paths.
+        fwhm: Smoothing kernel FWHM in mm.
+    """
+    row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
+    ents = extract_entities(row, ["task", "run"])
+
+    long_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents, space="longitudinal")
+
+    for regressor in regressors:
+        resolved = resolve_longitudinal_metrics(long_q, func_df, regressor=regressor)
+        run_tr = _read_header_tr(resolved["regressed_bold"])
+        outputs = metrics_longitudinal(
+            **resolved,
+            tr=run_tr,
+            atlas_files=atlas_files,
+            fwhm=fwhm,
+        )
+        export_longitudinal_metrics(
+            long_q, outputs, regressor=regressor, atlases=list(atlas_files)
+        )
+
+
 def run(
     input_dirs: Sequence[Path],
     output_dir: Path,
@@ -112,8 +152,10 @@ def run(
     filters: Filters,
     anatomical: bool = True,
     functional: bool = True,
+    metrics: bool = False,
     registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
     regressors: Sequence[str] = ("36-parameter",),
+    atlas_files: Mapping[str, Path] | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the longitudinal pipeline for all matching subjects/sessions.
@@ -124,6 +166,8 @@ def run(
         filters: Participant/session/task filters.
         anatomical: Run anatomical longitudinal processing.
         functional: Run functional longitudinal processing.
+        metrics: Run longitudinal metrics (ALFF, ReHo, timeseries).
+        atlas_files: Mapping of atlas labels to NIfTI file paths.
         registration_template: Brain template for ANTs registration.
         regressors: Nuisance regressor strategies to apply (e.g. ``["36-parameter"]``).
         runner_config: Execution backend configuration.
@@ -184,6 +228,15 @@ def run(
                     func_df=func_df,
                     tpl_df=tpl_df,
                     regressors=regressors,
+                )
+
+        if metrics:
+            for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
+                process_metrics(
+                    pipe_ctx=pipe_ctx,
+                    func_df=func_df,
+                    regressors=regressors,
+                    atlas_files=atlas_files or {},
                 )
 
         pipe_ctx.ensure_dataset_description()

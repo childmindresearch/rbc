@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from rbc.cli.base import BaseArgs, _or_default, _validate_nifti_path
+from rbc.cli.metrics import _resolve_atlas_args
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.longitudinal import run
-from rbc_resources import REGISTRATION_TEMPLATES
+from rbc_resources import ATLAS_REGISTRY, REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     import argparse
@@ -22,8 +23,10 @@ class LongitudinalArgs(BaseArgs):
 
     anatomical: bool
     functional: bool
+    metrics: bool
     registration_template: Path
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
+    atlas_files: dict[str, Path]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
@@ -36,10 +39,12 @@ class LongitudinalArgs(BaseArgs):
             **BaseArgs.validate_namespace(ns).__dict__,
             anatomical=ns.anatomical,
             functional=ns.functional,
+            metrics=ns.metrics,
             registration_template=_or_default(
                 ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
             ),
             regressor=ns.regressor,
+            atlas_files=_resolve_atlas_args(ns.atlas),
         )
 
 
@@ -54,8 +59,10 @@ def main(args: LongitudinalArgs) -> int:
         ),
         anatomical=args.anatomical,
         functional=args.functional,
+        metrics=args.metrics,
         registration_template=args.registration_template,
         regressors=args.regressor,
+        atlas_files=args.atlas_files,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -96,7 +103,23 @@ def register_command(
         default=["36-parameter"],
         help="Space-delimited nuisance regression method(s) to apply.",
     )
-
+    parser.add_argument(
+        "--metrics",
+        default=False,
+        action="store_true",
+        help="Compute longitudinal metrics (ALFF, ReHo, timeseries).",
+    )
+    parser.add_argument(
+        "--atlas",
+        nargs="+",
+        default=["schaefer_200"],
+        metavar="ATLAS",
+        help=(
+            "Atlas(es) for timeseries extraction. Accepts registry names "
+            f"({', '.join(sorted(ATLAS_REGISTRY))}) or paths to custom NIfTI "
+            "atlas files."
+        ),
+    )
     templates = parser.add_argument_group("template overrides")
     templates.add_argument(
         "--anat-template",
