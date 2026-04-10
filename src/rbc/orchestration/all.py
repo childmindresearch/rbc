@@ -84,7 +84,7 @@ def run(
 
     df = filters.apply(
         df,
-        pl.col("ses") != "longitudinal",
+        pl.col("ses").ne_missing("longitudinal"),
         pl.col("space").is_null(),
         pl.col("desc").is_null(),
     )

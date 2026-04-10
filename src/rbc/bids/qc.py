@@ -51,13 +51,15 @@ def resolve_qc(
         Dict with keys matching ``single_session_qc`` parameters.
     """
     return {
-        "template_bold": func_mni.expect(deriv_df, suffix=Suffix.BOLD, desc="preproc"),
+        "template_bold": func_mni.expect(
+            deriv_df, suffix=Suffix.BOLD, desc="preproc", extra={"reg": False}
+        ),
         "cleaned_bold": {
             reg: func_mni.expect(
                 deriv_df,
                 suffix=Suffix.BOLD,
                 desc="preproc",
-                extra={"reg": reg},
+                extra={"reg": bids_safe_label(reg)},
             )
             for reg in regressors
         },
