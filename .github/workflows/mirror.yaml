@@ -22,10 +22,11 @@ jobs:
     - name: Update README for public mirror
       run: |
         sed -i 's|childmindresearch/rbc.git|childmindresearch/rbc-mirror.git|g' README.md
+        sed -i 's|childmindresearch/rbc|childmindresearch/rbc-mirror|g' src/rbc/context.py
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add README.md
-        git diff --staged --quiet || git commit -m "chore: update install URL to public mirror"
+        git add README.md src/rbc/context.py
+        git diff --staged --quiet || git commit -m "chore: update URLs to public mirror"
 
     - name: Push to public mirror
       env:
