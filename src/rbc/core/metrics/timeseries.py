@@ -6,10 +6,13 @@ pairwise Pearson correlation matrices.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import NamedTuple
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def extract_timeseries(
@@ -64,6 +67,10 @@ def extract_timeseries(
 def correlation_matrix(timeseries: np.ndarray) -> np.ndarray:
     """Compute pairwise Pearson correlation matrix.
 
+    ROIs with zero variance (constant signal) produce ``NaN`` entries
+    because the Pearson correlation is undefined for constant series.
+    A warning is logged for any such ROIs.
+
     Args:
         timeseries: (n_rois, n_timepoints) array.
 
@@ -77,7 +84,27 @@ def correlation_matrix(timeseries: np.ndarray) -> np.ndarray:
         raise ValueError(f"Need at least 2 ROIs, got {timeseries.shape[0]}")
     if timeseries.shape[1] < 2:
         raise ValueError(f"Need at least 2 timepoints, got {timeseries.shape[1]}")
-    return np.corrcoef(timeseries)
+
+    n_rois = timeseries.shape[0]
+    std = timeseries.std(axis=1)
+    valid = std > 0
+
+    if valid.all():
+        return np.corrcoef(timeseries)
+
+    n_zero = int((~valid).sum())
+    logger.warning(
+        "%d of %d ROIs have zero variance (constant signal); "
+        "their correlation values will be NaN",
+        n_zero,
+        n_rois,
+    )
+
+    corr = np.full((n_rois, n_rois), np.nan, dtype=np.float64)
+    np.fill_diagonal(corr, 1.0)
+    if valid.sum() >= 2:
+        corr[np.ix_(valid, valid)] = np.corrcoef(timeseries[valid])
+    return corr
 
 
 class TimeseriesOutputs(NamedTuple):
