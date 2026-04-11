@@ -47,7 +47,7 @@ jobs:
         export COVERAGE_FILE="$JOB_TMP/.coverage"
 
         uv run pytest \
-          -n auto \
+          -n 8 \
           --runner=podman \
           --basetemp=$JOB_TMP/pytest-tmp \
           --cov-report= \
