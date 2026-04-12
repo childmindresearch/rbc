@@ -117,6 +117,18 @@ def _validate_slice_timing(slice_timing: list[float], tr: float) -> None:
         raise ValueError(msg)
 
 
+def _header_slice_timing(hdr: nib.Nifti1Header) -> list[float] | None:
+    """Extract per-slice acquisition times from the NIfTI header, if present.
+
+    Returns *None* when the header lacks the necessary fields
+    (slice_code, slice_duration, dim_info).
+    """
+    try:
+        return list(hdr.get_slice_times())
+    except nib.spatialimages.HeaderDataError:
+        return None
+
+
 @dataclass(frozen=True)
 class FunctionalMetadata:
     """Validated, immutable metadata for a single BOLD run.
@@ -166,6 +178,23 @@ class FunctionalMetadata:
 
         slice_timing: list[float] | None = sidecar.get("SliceTiming")
         if slice_timing is not None:
+            _logger.info(
+                "SliceTiming: from BIDS sidecar (%d slices)", len(slice_timing)
+            )
             _validate_slice_timing(slice_timing, tr)
+        else:
+            slice_timing = _header_slice_timing(hdr)
+            if slice_timing is not None:
+                _logger.warning(
+                    "No SliceTiming in BIDS sidecar; "
+                    "falling back to NIfTI header (%d slices)",
+                    len(slice_timing),
+                )
+                _validate_slice_timing(slice_timing, tr)
+            else:
+                _logger.warning(
+                    "No SliceTiming in BIDS sidecar or NIfTI header; "
+                    "slice timing correction will be skipped"
+                )
 
         return cls(tr=tr, slice_timing=slice_timing)

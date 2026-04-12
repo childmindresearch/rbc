@@ -6,6 +6,7 @@ from dataclasses import FrozenInstanceError
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import nibabel as nib
 import pytest
 
 from rbc.metadata import (
@@ -146,7 +147,7 @@ class TestFunctionalMetadata:
         assert meta.tr == pytest.approx(1.5)
 
     def test_load_no_slice_timing(self, tmp_path: Path) -> None:
-        """load() sets slice_timing to None when absent from sidecar."""
+        """load() sets slice_timing to None when absent from sidecar and header."""
         bold = tmp_path / "bold.nii.gz"
         bold.touch()
 
@@ -154,6 +155,7 @@ class TestFunctionalMetadata:
         mock_hdr.__getitem__ = lambda _, key: (
             [0, 1, 1, 1, 2.0] if key == "pixdim" else None
         )
+        mock_hdr.get_slice_times.side_effect = nib.spatialimages.HeaderDataError()
         mock_img = MagicMock()
         mock_img.header = mock_hdr
 
@@ -167,6 +169,32 @@ class TestFunctionalMetadata:
             meta = FunctionalMetadata.load(bold)
 
         assert meta.slice_timing is None
+
+    def test_load_slice_timing_from_header(self, tmp_path: Path) -> None:
+        """load() falls back to NIfTI header when sidecar lacks SliceTiming."""
+        bold = tmp_path / "bold.nii.gz"
+        bold.touch()
+
+        header_times = [0.0, 0.5, 1.0, 1.5]
+
+        mock_hdr = MagicMock()
+        mock_hdr.__getitem__ = lambda _, key: (
+            [0, 1, 1, 1, 2.0] if key == "pixdim" else None
+        )
+        mock_hdr.get_slice_times.return_value = header_times
+        mock_img = MagicMock()
+        mock_img.header = mock_hdr
+
+        with (
+            patch(
+                "rbc.metadata.load_bids_metadata",
+                return_value={"RepetitionTime": 2.0},
+            ),
+            patch("rbc.metadata.nib.nifti1.load", return_value=mock_img),
+        ):
+            meta = FunctionalMetadata.load(bold)
+
+        assert meta.slice_timing == header_times
 
     def test_load_missing_tr_raises(self, tmp_path: Path) -> None:
         """load() raises when TR cannot be determined."""

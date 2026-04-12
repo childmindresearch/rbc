@@ -254,12 +254,18 @@ def single_session_preprocess(
     mc = fsl_motion_correction(in_file=despiked, ref_file=effective_ref)
 
     # 7. Slice timing correction
-    _logger.info("Slice timing correction")
-    st_corrected = slice_timing_correction(
-        in_file=despiked,
-        tr=metadata.tr,
-        tpattern=metadata.slice_timing,
-    )
+    if metadata.slice_timing is not None:
+        _logger.info("Slice timing correction")
+        st_corrected = slice_timing_correction(
+            in_file=despiked,
+            tr=metadata.tr,
+            tpattern=metadata.slice_timing,
+        )
+    else:
+        _logger.info(
+            "Skipping slice timing correction (no SliceTiming in sidecar or header)"
+        )
+        st_corrected = despiked
 
     # 8. Apply pre-STC motion transforms to STC BOLD
     # native-space MC + STC BOLD used in step 12
