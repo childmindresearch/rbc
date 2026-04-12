@@ -262,7 +262,9 @@ def single_session_preprocess(
             tpattern=metadata.slice_timing,
         )
     else:
-        _logger.info("Skipping slice timing correction (no SliceTiming in sidecar)")
+        _logger.info(
+            "Skipping slice timing correction (no SliceTiming in sidecar or header)"
+        )
         st_corrected = despiked
 
     # 8. Apply pre-STC motion transforms to STC BOLD
