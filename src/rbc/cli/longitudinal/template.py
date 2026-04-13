@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rbc.cli.base import BaseArgs
@@ -13,11 +15,27 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-def main(args: BaseArgs) -> int:
+@dataclass(frozen=True)
+class TemplateArgs(BaseArgs):
+    """Arguments for ``rbc longitudinal template``."""
+
+    fs_license: Path | None
+
+    @classmethod
+    def validate_namespace(cls, ns: argparse.Namespace) -> TemplateArgs:
+        """Validate base args and the optional --fs-license path."""
+        fs_license: Path | None = ns.fs_license
+        if fs_license is not None and not fs_license.exists():
+            raise ValueError(f"FreeSurfer license not found: {fs_license}")
+        return cls(**BaseArgs.validate_namespace(ns).__dict__, fs_license=fs_license)
+
+
+def main(args: TemplateArgs) -> int:
     """Build a robust longitudinal template per matching subject."""
     run(
         input_dirs=args.input_dirs,
         output_dir=args.output_dir,
+        fs_license=args.fs_license,
         filters=Filters(
             participant_label=args.participant_label,
             session_label=args.session_label,
@@ -50,5 +68,14 @@ def register_command(
             "-o OUTPUT_DIR [options]"
         ),
     )
-
-    parser.set_defaults(func=lambda args: main(BaseArgs.validate_namespace(args)))
+    parser.add_argument(
+        "--fs-license",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to a FreeSurfer license file. Falls back to the "
+            "FS_LICENSE environment variable, then to a license-free bypass "
+            "if neither is set."
+        ),
+    )
+    parser.set_defaults(func=lambda args: main(TemplateArgs.validate_namespace(args)))

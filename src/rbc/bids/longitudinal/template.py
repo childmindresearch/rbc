@@ -28,19 +28,22 @@ class TemplateInputs(NamedTuple):
     files: list[Path]
 
 
-def discover_template_inputs(df: pl.DataFrame) -> list[TemplateInputs]:
+def discover_template_inputs(
+    df: pl.DataFrame,
+) -> tuple[list[TemplateInputs], list[str]]:
     """Group preprocessed T1w brain volumes by subject for template generation.
 
     Filters for ``ses != 'longitudinal'`` brain-extracted T1w files and
     returns one :class:`TemplateInputs` per subject that has at least two
-    sessions. Subjects with a single session are skipped (a robust template
-    cannot be built from one volume).
+    sessions. Subjects with a single session are reported separately so the
+    caller can warn or fail.
 
     Args:
         df: Full BIDS table (raw + derivatives).
 
     Returns:
-        Per-subject template inputs. Empty if no subject has multiple sessions.
+        Tuple of (per-subject template inputs, single-session subject labels
+        that were excluded).
     """
     filtered = df.filter(
         pl.col("ses") != "longitudinal",
@@ -50,16 +53,18 @@ def discover_template_inputs(df: pl.DataFrame) -> list[TemplateInputs]:
     )
 
     inputs: list[TemplateInputs] = []
+    skipped: list[str] = []
     for _, sub_group in filtered.group_by("sub", maintain_order=True):
-        if len(sub_group) < 2:
-            continue
         sub = sub_group["sub"][0]
+        if len(sub_group) < 2:
+            skipped.append(sub)
+            continue
         sessions = [row["ses"] for row in sub_group.iter_rows(named=True)]
         files = [
             Path(row["root"]) / row["path"] for row in sub_group.iter_rows(named=True)
         ]
         inputs.append(TemplateInputs(sub=sub, sessions=sessions, files=files))
-    return inputs
+    return inputs, skipped
 
 
 def export_template(tpl: Bids, outputs: LongitudinalTemplateOutputs) -> None:

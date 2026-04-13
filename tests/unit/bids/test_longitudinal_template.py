@@ -63,21 +63,23 @@ class TestDiscoverTemplateInputs:
             _brain_row("02", "baseline"),
             _brain_row("02", "vis2"),
         )
-        result = discover_template_inputs(df)
-        assert {ti.sub for ti in result} == {"01", "02"}
-        for ti in result:
+        inputs, skipped = discover_template_inputs(df)
+        assert {ti.sub for ti in inputs} == {"01", "02"}
+        assert skipped == []
+        for ti in inputs:
             assert sorted(ti.sessions) == ["baseline", "vis2"]
             assert all(p.suffix == ".gz" for p in ti.files)
 
-    def test_skips_single_session_subject(self) -> None:
-        """Per-subject volume check must skip single-session subjects (#19)."""
+    def test_reports_single_session_subject(self) -> None:
+        """Single-session subjects are reported separately (bug #19)."""
         df = _df(
             _brain_row("01", "baseline"),
             _brain_row("01", "vis2"),
             _brain_row("02", "baseline"),
         )
-        result = discover_template_inputs(df)
-        assert [ti.sub for ti in result] == ["01"]
+        inputs, skipped = discover_template_inputs(df)
+        assert [ti.sub for ti in inputs] == ["01"]
+        assert skipped == ["02"]
 
     def test_excludes_existing_longitudinal(self) -> None:
         """Pre-existing longitudinal templates are not re-included as inputs."""
@@ -86,14 +88,15 @@ class TestDiscoverTemplateInputs:
             _brain_row("01", "vis2"),
             _brain_row("01", "longitudinal"),
         )
-        result = discover_template_inputs(df)
-        assert len(result) == 1
-        assert sorted(result[0].sessions) == ["baseline", "vis2"]
+        inputs, skipped = discover_template_inputs(df)
+        assert len(inputs) == 1
+        assert sorted(inputs[0].sessions) == ["baseline", "vis2"]
+        assert skipped == []
 
     def test_empty_when_no_subjects(self) -> None:
         """Empty input yields empty output."""
         empty = pl.DataFrame({c: [] for c in _SCHEMA})
-        assert discover_template_inputs(empty) == []
+        assert discover_template_inputs(empty) == ([], [])
 
 
 class TestExportTemplate:

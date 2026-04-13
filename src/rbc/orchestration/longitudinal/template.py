@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import niwrap
@@ -14,6 +16,7 @@ from rbc.bids.longitudinal.template import (
     export_template,
 )
 from rbc.context import RunContext
+from rbc.core.niwrap import mount_fs_license
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.longitudinal.template import (
     LongitudinalTemplateOutputs,
@@ -22,7 +25,6 @@ from rbc.workflows.longitudinal.template import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
 
     from rbc.bids.longitudinal.template import TemplateInputs
 
@@ -58,6 +60,7 @@ def run(
     output_dir: Path,
     *,
     filters: Filters,
+    fs_license: Path | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Build a longitudinal template per subject across all matching sessions.
@@ -67,12 +70,14 @@ def run(
             cross-sectional anatomical derivatives).
         output_dir: Output directory for derivatives.
         filters: Participant/session filters applied before grouping.
+        fs_license: Explicit FreeSurfer license path. If ``None`` and the
+            ``FS_LICENSE`` env var is also unset, the SURFER_SIDEDOOR bypass
+            is used and no license is required.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
     init_runner(config)
-    # Bypass FreeSurfer's chklc() so no FS license is needed.
-    niwrap.get_global_runner().environ["SURFER_SIDEDOOR"] = "1"
+    _setup_freesurfer_auth(fs_license)
     verbose = config.verbose
 
     _logger.warning(
@@ -85,7 +90,13 @@ def run(
     )
     df = filters.apply(df)
 
-    inputs = discover_template_inputs(df)
+    inputs, skipped = discover_template_inputs(df)
+    for sub in skipped:
+        _logger.warning(
+            "Skipping sub-%s: only one preprocessed T1w brain volume found "
+            "(at least 2 sessions needed for a longitudinal template).",
+            sub,
+        )
     if not inputs:
         raise ValueError(
             "No subject has multiple sessions of preprocessed T1w brain "
@@ -98,3 +109,21 @@ def run(
         pipe_ctx.ensure_dataset_description()
 
     _logger.info("Longitudinal template construction complete")
+
+
+def _setup_freesurfer_auth(fs_license: Path | None) -> None:
+    """Resolve the FS license; fall back to the chklc bypass if absent."""
+    license_path = fs_license
+    if license_path is None and (env := os.environ.get("FS_LICENSE")):
+        license_path = Path(env)
+
+    runner = niwrap.get_global_runner()
+    if license_path is not None:
+        if not license_path.exists():
+            raise FileNotFoundError(f"FreeSurfer license not found: {license_path}")
+        mount_fs_license(runner, license_path)
+        return
+
+    if hasattr(runner, "environ"):
+        # Bypass FreeSurfer's chklc() so no FS license is needed.
+        runner.environ["SURFER_SIDEDOOR"] = "1"
