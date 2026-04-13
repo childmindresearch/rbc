@@ -32,26 +32,32 @@ class MetricsOutputs(NamedTuple):
     Attributes:
         alff: Raw ALFF map.
         falff: Raw fALFF map.
-        alff_smooth: Smoothed ALFF map.
-        falff_smooth: Smoothed fALFF map.
-        alff_zscored: Z-scored (smoothed) ALFF map.
-        falff_zscored: Z-scored (smoothed) fALFF map.
         reho: Raw ReHo map.
-        reho_smooth: Smoothed ReHo map.
-        reho_zscored: Z-scored (smoothed) ReHo map.
+        alff_zscored: Z-scored raw ALFF map.
+        falff_zscored: Z-scored raw fALFF map.
+        reho_zscored: Z-scored raw ReHo map.
+        alff_smooth: Smoothed ALFF map, or None if --smooth not set.
+        falff_smooth: Smoothed fALFF map, or None if --smooth not set.
+        reho_smooth: Smoothed ReHo map, or None if --smooth not set.
+        alff_smooth_zscored: Z-scored smoothed ALFF map, or None if --smooth not set.
+        falff_smooth_zscored: Z-scored smoothed fALFF map, or None if --smooth not set.
+        reho_smooth_zscored: Z-scored smoothed ReHo map, or None if --smooth not set.
         timeseries: Atlas-based mean timeseries TSV.
         correlation_matrix: Pairwise correlation matrix TSV.
     """
 
     alff: Path
     falff: Path
-    alff_smooth: Path
-    falff_smooth: Path
+    reho: Path
     alff_zscored: Path
     falff_zscored: Path
-    reho: Path
-    reho_smooth: Path
     reho_zscored: Path
+    alff_smooth: Path | None
+    falff_smooth: Path | None
+    reho_smooth: Path | None
+    alff_smooth_zscored: Path | None
+    falff_smooth_zscored: Path | None
+    reho_smooth_zscored: Path | None
     timeseries: dict[str, Path]
     correlation_matrix: dict[str, Path]
 
@@ -63,6 +69,7 @@ def single_session_metrics(
     tr: float,
     atlas_files: Mapping[str, Path],
     fwhm: float = 6.0,
+    apply_smooth: bool = False,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
 
@@ -95,17 +102,26 @@ def single_session_metrics(
         cleaned_bold, template_brain_mask, out_file=work_dir / "reho.nii.gz"
     )
 
-    # 3. Smooth raw maps
-    _logger.info("Smoothing maps (FWHM=%.1f mm)", fwhm)
-    alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm)
-    falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm)
-    reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm)
+    # 3. Z-score raw maps (always)
+    _logger.info("Z-scoring raw maps")
+    alff_zscored_path = compute_zscore(alff_path, template_brain_mask)
+    falff_zscored_path = compute_zscore(falff_path, template_brain_mask)
+    reho_zscored_path = compute_zscore(reho_path, template_brain_mask)
 
-    # 4. Z-score smoothed maps
-    _logger.info("Z-scoring smoothed maps")
-    alff_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)
-    falff_zscored_path = compute_zscore(falff_smooth_path, template_brain_mask)
-    reho_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
+    # 4. Smooth + z-score smoothed maps (optional)
+    alff_smooth_path = falff_smooth_path = reho_smooth_path = None
+    alff_smooth_zscored_path = falff_smooth_zscored_path = reho_smooth_zscored_path = None
+
+    if apply_smooth:
+        _logger.info("Smoothing derivative maps (FWHM=%.1f mm)", fwhm)
+        alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm)
+        falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm)
+        reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm)
+
+        _logger.info("Z-scoring smoothed maps")
+        alff_smooth_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)
+        falff_smooth_zscored_path = compute_zscore(falff_smooth_path, template_brain_mask)
+        reho_smooth_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
     # bandpass-filtered BOLD. Each atlas needs its own ``out_dir`` so the
@@ -122,13 +138,16 @@ def single_session_metrics(
     return MetricsOutputs(
         alff=alff_path,
         falff=falff_path,
-        alff_smooth=alff_smooth_path,
-        falff_smooth=falff_smooth_path,
+        reho=reho_path,
         alff_zscored=alff_zscored_path,
         falff_zscored=falff_zscored_path,
-        reho=reho_path,
-        reho_smooth=reho_smooth_path,
         reho_zscored=reho_zscored_path,
+        alff_smooth=alff_smooth_path,
+        falff_smooth=falff_smooth_path,
+        reho_smooth=reho_smooth_path,
+        alff_smooth_zscored=alff_smooth_zscored_path,
+        falff_smooth_zscored=falff_smooth_zscored_path,
+        reho_smooth_zscored=reho_smooth_zscored_path,
         timeseries={label: ts.timeseries for label, ts in ts_outputs.items()},
         correlation_matrix={
             label: ts.correlation_matrix for label, ts in ts_outputs.items()

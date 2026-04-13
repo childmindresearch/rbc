@@ -64,8 +64,14 @@ def export_metrics(
     *,
     regressor: str,
     atlases: Sequence[str],
+    fwhm: float,
 ) -> None:
     """Export metrics for a single regressor to BIDS-named derivatives.
+
+    Raw and z-scored raw maps are always exported. Smoothed and
+    z-scored smoothed variants are exported only when the corresponding
+    fields are not None (i.e. when ``smooth=True`` was passed to
+    ``single_session_metrics``).
 
     Args:
         mni: MNI-space Bids builder (typically from
@@ -73,17 +79,32 @@ def export_metrics(
         outputs: Results from the metrics workflow.
         regressor: The regressor this run used.
         atlases: Atlas names used for timeseries extraction.
+        fwhm: Smoothing kernel FWHM in mm.
     """
     mex = mni.derive(extra={"reg": bids_safe_label(regressor)})
+    sm_desc = f"sm{int(fwhm)}"
+
+    # Raw maps
     mex.save(outputs.alff, suffix="alff")
     mex.save(outputs.falff, suffix="falff")
-    mex.save(outputs.alff_smooth, suffix="alff", desc="smooth")
-    mex.save(outputs.falff_smooth, suffix="falff", desc="smooth")
-    mex.save(outputs.alff_zscored, suffix="alff", desc="smoothZstd")
-    mex.save(outputs.falff_zscored, suffix="falff", desc="smoothZstd")
     mex.save(outputs.reho, suffix="reho")
-    mex.save(outputs.reho_smooth, suffix="reho", desc="smooth")
-    mex.save(outputs.reho_zscored, suffix="reho", desc="smoothZstd")
+
+    # Z-scored raw maps
+    mex.save(outputs.alff_zscored, suffix="alff", desc="zstd")
+    mex.save(outputs.falff_zscored, suffix="falff", desc="zstd")
+    mex.save(outputs.reho_zscored, suffix="reho", desc="zstd")
+
+    # Smoothed + z-scored smoothed -> only when smooth=True
+    if outputs.alff_smooth is not None:
+        mex.save(outputs.alff_smooth, suffix="alff", desc=sm_desc)
+        mex.save(outputs.alff_smooth_zscored, suffix="alff", desc=f"{sm_desc}Zstd")
+    if outputs.falff_smooth is not None:
+        mex.save(outputs.falff_smooth, suffix="falff", desc=sm_desc)
+        mex.save(outputs.falff_smooth_zscored, suffix="falff", desc=f"{sm_desc}Zstd")
+    if outputs.reho_smooth is not None:
+        mex.save(outputs.reho_smooth, suffix="reho", desc=sm_desc)
+        mex.save(outputs.reho_smooth_zscored, suffix="reho", desc=f"{sm_desc}Zstd")
+
     for atl in atlases:
         mex.save(
             outputs.timeseries[atl],
