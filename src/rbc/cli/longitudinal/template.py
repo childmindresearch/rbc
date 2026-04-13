@@ -42,8 +42,7 @@ def register_command(
         parents=parents,
         description=(
             "Build a robust within-subject T1w template for longitudinal "
-            "analysis using FreeSurfer's mri_robust_template. The license "
-            "check is bypassed via SURFER_SIDEDOOR; no FS license is required."
+            "analysis using FreeSurfer's mri_robust_template."
         ),
         help="Build longitudinal T1w template",
         usage=(

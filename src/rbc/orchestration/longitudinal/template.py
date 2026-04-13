@@ -30,11 +30,6 @@ __all__ = ["process_subject", "run"]
 
 _logger = logging.getLogger(__name__)
 
-# FreeSurfer's chklc() returns immediately if this env var is set, so no
-# license file is required. The string is obfuscated in upstream FreeSurfer
-# (utils/chklc.cpp) but reduces to "SURFER_SIDEDOOR" for command-line tools.
-_FS_BYPASS_ENV = "SURFER_SIDEDOOR"
-
 
 def process_subject(
     pipe_ctx: RunContext, inputs: TemplateInputs
@@ -76,8 +71,8 @@ def run(
     """
     config = runner_config or RunnerConfig()
     init_runner(config)
-    runner = niwrap.get_global_runner()
-    runner.environ[_FS_BYPASS_ENV] = "1"
+    # Bypass FreeSurfer's chklc() so no FS license is needed.
+    niwrap.get_global_runner().environ["SURFER_SIDEDOOR"] = "1"
     verbose = config.verbose
 
     _logger.warning(
