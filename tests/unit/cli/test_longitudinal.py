@@ -10,7 +10,7 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from rbc.cli.longitudinal import LongitudinalArgs
+from rbc.cli.longitudinal.process import LongitudinalArgs
 
 
 @pytest.fixture
