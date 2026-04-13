@@ -1,4 +1,10 @@
-"""CLI subcommand for longitudinal processing."""
+"""Legacy ``rbc longitudinal process`` subcommand.
+
+Carries the pre-Stage-2 ``--anatomical --functional`` flag flow under a
+nested subcommand so the new ``rbc longitudinal template`` can sit beside
+it. Stage 3 will replace this with dedicated ``anatomical`` / ``functional``
+subcommands.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +24,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class LongitudinalArgs(BaseArgs):
-    """Arguments for longitudinal CLI."""
+    """Arguments for the legacy ``longitudinal process`` subcommand."""
 
     anatomical: bool
     functional: bool
@@ -26,7 +32,7 @@ class LongitudinalArgs(BaseArgs):
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> LongitudinalArgs:
-        """Validation of longitudinal workflow specific arguments to NamedTuple."""
+        """Validate the legacy longitudinal namespace."""
         if not ns.functional and not ns.anatomical:
             raise ValueError(
                 "At least one of '--anatomical' or '--functional' is required."
@@ -42,7 +48,7 @@ class LongitudinalArgs(BaseArgs):
 
 
 def main(args: LongitudinalArgs) -> int:
-    """Main entrypoint of longitudinal workflow."""
+    """Run the legacy longitudinal anat+func dispatcher."""
     run(
         input_dirs=args.input_dirs,
         output_dir=args.output_dir,
@@ -64,15 +70,21 @@ def main(args: LongitudinalArgs) -> int:
 
 
 def register_command(
-    subparsers: argparse._SubParsersAction, parents: Sequence[argparse.ArgumentParser]
+    subparsers: argparse._SubParsersAction,
+    parents: Sequence[argparse.ArgumentParser],
 ) -> None:
-    """Register longitudinal workflow to parser."""
+    """Register ``rbc longitudinal process`` on a longitudinal subparser group."""
     parser = subparsers.add_parser(
-        "longitudinal",
+        "process",
         parents=parents,
-        description="RBC-based longitudinal workflow",
-        help="Longitudinal workflow",
-        usage="rbc longitudinal INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]",
+        description=(
+            "Legacy longitudinal anat/func dispatcher (will be split into "
+            "dedicated subcommands in Stage 3)."
+        ),
+        help="Legacy longitudinal anat/func dispatcher",
+        usage=(
+            "rbc longitudinal process INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]"
+        ),
     )
     parser.add_argument(
         "--anatomical",

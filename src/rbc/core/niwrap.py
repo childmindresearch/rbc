@@ -7,6 +7,7 @@ of choice depending on what is available on the system.
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -127,6 +128,38 @@ def setup_runner(
         rbc_logger.addHandler(handler)
 
     return StyxContext(logger=rbc_logger, runner=styx_runner, verbose=verbose > 0)
+
+
+_CONTAINER_FS_LICENSE_PATH = "/opt/freesurfer/license.txt"
+
+
+def mount_fs_license(runner: niwrap.Runner, fs_license: Path) -> None:
+    """Make a FreeSurfer license available to the active runner.
+
+    Local runner: sets ``FS_LICENSE`` in the ambient environment.
+    Container runners: bind-mounts the license at a stable path and points
+    ``FS_LICENSE`` at it on the runner environ.
+    """
+    license_path = fs_license.resolve()
+    runner_name = type(runner).__name__.lower().replace("runner", "")
+
+    if runner_name == "local":
+        os.environ["FS_LICENSE"] = str(license_path)
+        return
+
+    if runner_name in ("docker", "podman"):
+        mount_args = [
+            "--mount",
+            f"type=bind,source={license_path},"
+            f"target={_CONTAINER_FS_LICENSE_PATH},readonly",
+        ]
+    elif runner_name == "singularity":
+        mount_args = ["--bind", f"{license_path}:{_CONTAINER_FS_LICENSE_PATH}"]
+    else:
+        raise ValueError(f"Unsupported runner for FS license mount: {runner_name!r}")
+
+    getattr(runner, f"{runner_name}_extra_args").extend(mount_args)
+    runner.environ["FS_LICENSE"] = _CONTAINER_FS_LICENSE_PATH
 
 
 def generate_exec_folder(suffix: str = "python") -> Path:

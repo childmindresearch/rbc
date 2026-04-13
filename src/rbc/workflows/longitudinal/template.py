@@ -1,0 +1,72 @@
+"""Longitudinal template construction workflow.
+
+Composes :func:`generate_robust_template` and :func:`fs_to_itk_xfm` from
+``rbc.core.longitudinal.freesurfer`` to build a robust within-subject
+template plus ANTs-compatible per-session transforms.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, NamedTuple
+
+from rbc.core.longitudinal.freesurfer import (
+    fs_to_itk_xfm,
+    generate_robust_template,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+
+_logger = logging.getLogger("rbc")
+
+
+class LongitudinalTemplateOutputs(NamedTuple):
+    """Outputs from the longitudinal template workflow.
+
+    Attributes:
+        template: Robust within-subject template volume.
+        sessions: Session labels in the same order as ``transforms``.
+        transforms: Per-session ITK-format session-to-template transforms.
+    """
+
+    template: Path
+    sessions: list[str]
+    transforms: list[Path]
+
+
+def generate_subject_template(
+    sub: str,
+    sessions: Sequence[str],
+    in_files: Sequence[Path],
+) -> LongitudinalTemplateOutputs:
+    """Build a robust template and ITK transforms for one subject.
+
+    Args:
+        sub: Subject label (without the ``sub-`` prefix).
+        sessions: Session labels parallel to ``in_files``.
+        in_files: Per-session preprocessed T1w volumes (e.g. brain-extracted).
+
+    Returns:
+        :class:`LongitudinalTemplateOutputs` ready for BIDS export.
+    """
+    _logger.info("Building robust template for sub-%s", sub)
+    robust = generate_robust_template(
+        sub=sub, sessions=list(sessions), in_files=list(in_files)
+    )
+
+    _logger.info("Converting FreeSurfer transforms to ITK format")
+    itk_xfms = fs_to_itk_xfm(
+        sub=sub,
+        sessions=list(sessions),
+        reference=robust.template,
+        sources=list(in_files),
+        in_xfms=robust.transforms,
+    )
+
+    return LongitudinalTemplateOutputs(
+        template=robust.template,
+        sessions=list(sessions),
+        transforms=itk_xfms,
+    )

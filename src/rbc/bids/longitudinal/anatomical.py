@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.bids import Suffix, TemplateSpace
+from rbc.bids import Suffix, TemplateSpace, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -48,7 +48,7 @@ def resolve_longitudinal_anat(
             tpl_df,
             suffix="xfm",
             extension=".txt",
-            extra={"from": ses},
+            extra={"from": bids_safe_label(ses), "to": "longitudinal"},
         ),
         "brain": anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
         "brain_mask": anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"),

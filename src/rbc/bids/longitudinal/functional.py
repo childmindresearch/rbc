@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.bids import Suffix
+from rbc.bids import Suffix, bids_safe_label
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,7 +41,7 @@ def resolve_longitudinal_func(
             tpl_df,
             suffix="xfm",
             extension=".txt",
-            extra={"from": ses},
+            extra={"from": bids_safe_label(ses), "to": "longitudinal"},
         ),
         "bold_to_anat_itk": func_q.expect(
             func_df,
