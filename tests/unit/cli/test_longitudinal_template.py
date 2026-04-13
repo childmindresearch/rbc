@@ -43,8 +43,6 @@ class TestTemplateSubcommand:
         output_dir = tmp_path / "output"
 
         with patch("rbc.cli.longitudinal.template.run") as mock_run:
-            rc = cli(
-                ["long", "template", str(input_dir), "-o", str(output_dir)]
-            )
+            rc = cli(["long", "template", str(input_dir), "-o", str(output_dir)])
             assert rc == 0
             mock_run.assert_called_once()
