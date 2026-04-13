@@ -225,11 +225,11 @@ def _patch_run(
             return_value=Path("fake_workdir/file.nii.gz"),
         ),
         patch(
-            "rbc.orchestration.longitudinal.anatomical_longitudinal",
+            "rbc.orchestration.longitudinal.anatomical.anatomical_longitudinal",
             return_value=_mock_anat_outputs(),
         ) as mock_anat,
         patch(
-            "rbc.orchestration.longitudinal.functional_longitudinal",
+            "rbc.orchestration.longitudinal.functional.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
         patch("rbc.orchestration.longitudinal.RunContext") as mock_ctx_cls,
@@ -247,7 +247,7 @@ class TestProcessAnat:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.orchestration.longitudinal.anatomical_longitudinal",
+                "rbc.orchestration.longitudinal.anatomical.anatomical_longitudinal",
                 return_value=_mock_anat_outputs(),
             ) as mock_long,
             patch(
@@ -290,7 +290,7 @@ class TestProcessAnat:
 
         with (
             patch(
-                "rbc.orchestration.longitudinal.anatomical_longitudinal",
+                "rbc.orchestration.longitudinal.anatomical.anatomical_longitudinal",
                 return_value=outputs,
             ),
             get_patch,
@@ -310,7 +310,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.orchestration.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ) as mock_func,
             patch(
@@ -350,7 +350,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.orchestration.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional.functional_longitudinal",
                 return_value=_mock_func_outputs(),
             ),
             patch(
@@ -368,7 +368,7 @@ class TestProcessFunc:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
-                "rbc.orchestration.longitudinal.functional_longitudinal",
+                "rbc.orchestration.longitudinal.functional.functional_longitudinal",
                 return_value=_mock_func_outputs(with_bold_mask=False),
             ),
             patch(
