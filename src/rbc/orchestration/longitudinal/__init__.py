@@ -11,94 +11,22 @@ from tqdm import tqdm
 from rbc.bids import (
     FUNC_GROUP_ENTITIES,
     SUB_SES_QUERY,
-    Datatype,
-    Suffix,
-    extract_entities,
     load_table,
-)
-from rbc.bids.longitudinal import (
-    export_longitudinal_anat,
-    export_longitudinal_func,
-    resolve_longitudinal_anat,
-    resolve_longitudinal_func,
 )
 from rbc.bids.session import iter_session_files, load_session
 from rbc.context import RunContext
 from rbc.orchestration import Filters, RunnerConfig, init_runner
-from rbc.workflows.anatomical import longitudinal_process as anatomical_longitudinal
-from rbc.workflows.functional import longitudinal_process as functional_longitudinal
+from rbc.orchestration.longitudinal.anatomical import process_anat
+from rbc.orchestration.longitudinal.functional import process_func
 from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
+__all__ = ["process_anat", "process_func", "run"]
+
 _logger = logging.getLogger(__name__)
-
-
-def process_anat(
-    pipe_ctx: RunContext,
-    anat_df: pl.DataFrame,
-    tpl_df: pl.DataFrame,
-    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
-) -> None:
-    """Handle anatomical longitudinal processing for one anat group.
-
-    Args:
-        pipe_ctx: RunContext bound to this subject/session.
-        anat_df: Anatomical derivative DataFrame for this group.
-        tpl_df: Longitudinal template DataFrame.
-        registration_template: Brain template for ANTs registration.
-    """
-    anat_df = anat_df.filter(pl.col("space").is_null())
-    ents = extract_entities(anat_df.row(0, named=True), ["run"])
-
-    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
-    tpl_q = anat_q.derive(ses="longitudinal")
-
-    resolved = resolve_longitudinal_anat(
-        anat_q,
-        tpl_q,
-        anat_df,
-        tpl_df,
-        ses=pipe_ctx.ses,  # type: ignore[arg-type]
-    )
-    outputs = anatomical_longitudinal(
-        **resolved,  # type: ignore[arg-type]
-        registration_template=registration_template,
-    )
-    aex = anat_q.derive(entities=ents, space="longitudinal")
-    export_longitudinal_anat(aex, outputs)
-
-
-def process_func(
-    pipe_ctx: RunContext,
-    func_df: pl.DataFrame,
-    tpl_df: pl.DataFrame,
-) -> None:
-    """Handle functional longitudinal processing for one BOLD run.
-
-    Args:
-        pipe_ctx: RunContext bound to this subject/session.
-        func_df: Functional derivative DataFrame for this run.
-        tpl_df: Longitudinal template DataFrame.
-    """
-    row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
-    ents = extract_entities(row, ["task", "run"])
-
-    func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
-    tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
-
-    resolved = resolve_longitudinal_func(
-        func_q,
-        tpl_q,
-        func_df,
-        tpl_df,
-        ses=pipe_ctx.ses,  # type: ignore[arg-type]
-    )
-    func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
-    fex = func_q.derive(space="longitudinal")
-    export_longitudinal_func(fex, func_outputs)
 
 
 def run(
