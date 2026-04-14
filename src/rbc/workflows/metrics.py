@@ -69,6 +69,7 @@ def single_session_metrics(
     tr: float,
     atlas_files: Mapping[str, Path],
     fwhm: float = 6.0,
+    *,
     apply_smooth: bool = False,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
@@ -80,6 +81,8 @@ def single_session_metrics(
         tr: Repetition time in seconds.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
+        apply_smooth: If True, produce smoothed and z-scored variants of all
+            derivative maps in addition to the raw maps.
 
     Returns:
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
@@ -110,7 +113,9 @@ def single_session_metrics(
 
     # 4. Smooth + z-score smoothed maps (optional)
     alff_smooth_path = falff_smooth_path = reho_smooth_path = None
-    alff_smooth_zscored_path = falff_smooth_zscored_path = reho_smooth_zscored_path = None
+    alff_smooth_zscored_path = falff_smooth_zscored_path = reho_smooth_zscored_path = (
+        None
+    )
 
     if apply_smooth:
         _logger.info("Smoothing derivative maps (FWHM=%.1f mm)", fwhm)
@@ -120,7 +125,9 @@ def single_session_metrics(
 
         _logger.info("Z-scoring smoothed maps")
         alff_smooth_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)
-        falff_smooth_zscored_path = compute_zscore(falff_smooth_path, template_brain_mask)
+        falff_smooth_zscored_path = compute_zscore(
+            falff_smooth_path, template_brain_mask
+        )
         reho_smooth_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,

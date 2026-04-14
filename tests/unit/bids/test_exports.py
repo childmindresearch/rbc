@@ -83,13 +83,16 @@ def _make_metrics_outputs(w: Path, atlases: list[str]) -> MetricsOutputs:
     return MetricsOutputs(
         alff=_dummy(w, "alff.nii.gz"),
         falff=_dummy(w, "falff.nii.gz"),
-        alff_smooth=_dummy(w, "alff_smooth.nii.gz"),
-        falff_smooth=_dummy(w, "falff_smooth.nii.gz"),
-        alff_zscored=_dummy(w, "alff_z.nii.gz"),
-        falff_zscored=_dummy(w, "falff_z.nii.gz"),
         reho=_dummy(w, "reho.nii.gz"),
-        reho_smooth=_dummy(w, "reho_smooth.nii.gz"),
-        reho_zscored=_dummy(w, "reho_z.nii.gz"),
+        alff_zscored=_dummy(w, "alff_zstd.nii.gz"),
+        falff_zscored=_dummy(w, "falff_zstd.nii.gz"),
+        reho_zscored=_dummy(w, "reho_zstd.nii.gz"),
+        alff_smooth=None,
+        falff_smooth=None,
+        reho_smooth=None,
+        alff_smooth_zscored=None,
+        falff_smooth_zscored=None,
+        reho_smooth_zscored=None,
         timeseries={a: _dummy(w, f"ts_{a}.tsv") for a in atlases},
         correlation_matrix={a: _dummy(w, f"corr_{a}.tsv") for a in atlases},
     )
@@ -233,7 +236,9 @@ class TestExportMetrics:
         """Atlas names with underscores are sanitized in filenames."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
-        export_metrics(mni, outputs, regressor="36-parameter", atlases=["schaefer_200"])
+        export_metrics(
+            mni, outputs, regressor="36-parameter", atlases=["schaefer_200"], fwhm=6.0
+        )
         atlas_files = [
             p.name for p in pipe_ctx.output_dir.rglob("*.*") if "atlas-" in p.name
         ]
@@ -248,7 +253,9 @@ class TestExportMetrics:
         """Regressor names with hyphens are sanitized in filenames."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["aal"])
-        export_metrics(mni, outputs, regressor="36-parameter", atlases=["aal"])
+        export_metrics(
+            mni, outputs, regressor="36-parameter", atlases=["aal"], fwhm=6.0
+        )
         all_names = [p.name for p in pipe_ctx.output_dir.rglob("*.*")]
         reg_files = [n for n in all_names if "reg-" in n]
         assert len(reg_files) > 0
@@ -258,23 +265,25 @@ class TestExportMetrics:
     def test_file_count_single_atlas(
         self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
-        """9 scalar maps + 2 atlas files = 11."""
+        """3 raw + 3 zscored + 2 atlas files = 8."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=["schaefer_200"])
+        export_metrics(
+            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], fwhm=6.0
+        )
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 11
+        assert len(saved) == 8
 
     def test_file_count_multiple_atlases(
         self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
-        """9 scalar maps + 2 * 2 atlas files = 13."""
+        """3 raw + 3 zscored + 4 atlas files = 10."""
         atlases = ["schaefer_200", "aal"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, atlases)
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases)
+        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, fwhm=6.0)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 13
+        assert len(saved) == 10
 
 
 # ---------------------------------------------------------------------------

@@ -72,7 +72,9 @@ def process_run(
         atlas_files=atlas_files,
         fwhm=fwhm,
     )
-    export_metrics(mni, outputs, regressor=regressor, atlases=list(atlas_files))
+    export_metrics(
+        mni, outputs, regressor=regressor, atlases=list(atlas_files), fwhm=fwhm
+    )
     return outputs
 
 
@@ -147,6 +149,7 @@ def run(
                     outputs,
                     regressor=regressor,
                     atlases=list(atlas_files),
+                    fwhm=fwhm,
                 )
 
         pipe_ctx.ensure_dataset_description()

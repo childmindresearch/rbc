@@ -97,12 +97,15 @@ def export_metrics(
     # Smoothed + z-scored smoothed -> only when smooth=True
     if outputs.alff_smooth is not None:
         mex.save(outputs.alff_smooth, suffix="alff", desc=sm_desc)
+        assert outputs.alff_smooth_zscored is not None  # noqa: S101
         mex.save(outputs.alff_smooth_zscored, suffix="alff", desc=f"{sm_desc}Zstd")
     if outputs.falff_smooth is not None:
         mex.save(outputs.falff_smooth, suffix="falff", desc=sm_desc)
+        assert outputs.falff_smooth_zscored is not None  # noqa: S101
         mex.save(outputs.falff_smooth_zscored, suffix="falff", desc=f"{sm_desc}Zstd")
     if outputs.reho_smooth is not None:
         mex.save(outputs.reho_smooth, suffix="reho", desc=sm_desc)
+        assert outputs.reho_smooth_zscored is not None  # noqa: S101
         mex.save(outputs.reho_smooth_zscored, suffix="reho", desc=f"{sm_desc}Zstd")
 
     for atl in atlases:

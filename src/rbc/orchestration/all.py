@@ -147,6 +147,7 @@ def run(
                     metrics_outputs,
                     regressor=regressor,
                     atlases=list(atlas_files),
+                    fwhm=fwhm,
                 )
 
             # QC
