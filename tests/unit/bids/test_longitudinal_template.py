@@ -35,15 +35,19 @@ def _df(*rows: tuple) -> pl.DataFrame:
     return pl.DataFrame(dict(zip(_SCHEMA, zip(*rows, strict=True), strict=True)))
 
 
-def _brain_row(sub: str, ses: str) -> tuple:
-    path = f"sub-{sub}/ses-{ses}/anat/sub-{sub}_ses-{ses}_desc-brain_T1w.nii.gz"
+def _brain_row(sub: str, ses: str, space: str | None = None) -> tuple:
+    space_part = f"_space-{space}" if space else ""
+    path = (
+        f"sub-{sub}/ses-{ses}/anat/"
+        f"sub-{sub}_ses-{ses}{space_part}_desc-brain_T1w.nii.gz"
+    )
     return (
         "anat",
         "T1w",
         ".nii.gz",
         sub,
         ses,
-        None,
+        space,
         None,
         None,
         "brain",
@@ -97,6 +101,27 @@ class TestDiscoverTemplateInputs:
         """Empty input yields empty output."""
         empty = pl.DataFrame({c: [] for c in _SCHEMA})
         assert discover_template_inputs(empty) == ([], [])
+
+    def test_excludes_mni_registered_brains(self) -> None:
+        """Cross-sectional MNI-registered desc-brain T1ws are not template inputs.
+
+        Cross-sectional anat writes both a native-space and an MNI-registered
+        ``desc-brain`` T1w per session. Without filtering on ``space.is_null()``
+        the latter is picked up as a second input per session, producing
+        duplicate LTA filenames in the mri_robust_template invocation.
+        """
+        df = _df(
+            _brain_row("01", "test"),
+            _brain_row("01", "test", space="MNI152NLin6Asym"),
+            _brain_row("01", "retest"),
+            _brain_row("01", "retest", space="MNI152NLin6Asym"),
+        )
+        inputs, skipped = discover_template_inputs(df)
+        assert len(inputs) == 1
+        assert sorted(inputs[0].sessions) == ["retest", "test"]
+        assert len(inputs[0].files) == 2
+        assert all("space-" not in str(p) for p in inputs[0].files)
+        assert skipped == []
 
 
 class TestExportTemplate:
