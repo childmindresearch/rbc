@@ -28,7 +28,8 @@ dev = [
   "pytest-cov>=7.0.0",
   "ruff>=0.8.1",
   "deptry>=0.23.0",
-  "pytest-xdist[psutil]>=3.8.0"
+  "pytest-xdist[psutil]>=3.8.0",
+  "styxcache>=0.1.0"
 ]
 docs = ["pdoc>=15.0.0"]
 

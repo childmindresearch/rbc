@@ -15,6 +15,10 @@ on:
         description: Keep intermediate files after running tests
         default: false
         type: boolean
+      styxcache_dir:
+        description: Override persistent styxcache directory on the self-hosted runner
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,6 +27,9 @@ concurrency:
 jobs:
   test:
     runs-on: arcana
+    env:
+      STYXCACHE_DIR: ${{ inputs.styxcache_dir || '/var/lib/rbc-ci/styxcache' }}
+      STYXCACHE_MAX_GB: "50"
     steps:
     - uses: actions/checkout@v6
     - uses: astral-sh/setup-uv@v8.0.0
@@ -31,13 +38,42 @@ jobs:
         enable-cache: true # not automatic on self-hosted runners
     - run: uv sync
 
+    - name: Prepare styx cache
+      shell: bash
+      run: |
+        mkdir -p "$STYXCACHE_DIR"
+        # Purge stale staging dirs from crashed previous runs (safe: atomic-rename commits)
+        rm -rf "$STYXCACHE_DIR/.incoming" 2>/dev/null || true
+
+        size_kb=$(du -sk "$STYXCACHE_DIR" 2>/dev/null | awk '{print $1}')
+        size_kb=${size_kb:-0}
+        cap_kb=$(( STYXCACHE_MAX_GB * 1024 * 1024 ))
+        if [ "$size_kb" -gt "$cap_kb" ]; then
+          echo "Cache size ${size_kb}KB exceeds cap ${cap_kb}KB; evicting oldest shards"
+          find "$STYXCACHE_DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
+            | sort -n \
+            | while read -r _ path; do
+                rm -rf "$path"
+                cur=$(du -sk "$STYXCACHE_DIR" 2>/dev/null | awk '{print $1}')
+                [ "${cur:-0}" -le "$cap_kb" ] && break
+              done
+        fi
+
+        {
+          echo "## styxcache"
+          echo "- dir: \`$STYXCACHE_DIR\`"
+          echo "- size before: $(du -sh "$STYXCACHE_DIR" 2>/dev/null | cut -f1)"
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: Run all tests
       shell: bash
       run: |
-        # Clean up stale tmpfs dirs from previous crashed runs
-        find /dev/shm -maxdepth 1 -name 'rbc_test_*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
+        tmp_root="${RUNNER_TEMP:-/var/lib/rbc-ci/tmp}"
+        mkdir -p "$tmp_root"
+        # Clean up stale job tmp dirs from previous crashed runs
+        find "$tmp_root" -maxdepth 1 -name 'rbc_test_*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
-        export JOB_TMP="/dev/shm/rbc_test_$(date +%s%N)"
+        export JOB_TMP="$tmp_root/rbc_test_$(date +%s%N)"
         mkdir -p $JOB_TMP
         echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
         echo "Job temp directory: $JOB_TMP"
@@ -45,6 +81,7 @@ jobs:
         export PYTEST_CACHE_DIR="$JOB_TMP/.pytest_cache"
         export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
         export COVERAGE_FILE="$JOB_TMP/.coverage"
+        export RBC_STYXCACHE_DIR="$STYXCACHE_DIR"
 
         uv run pytest \
           -n 8 \
@@ -86,6 +123,17 @@ jobs:
           --fail-under=$COVERAGE_FAIL \
           --show-missing \
           --format=markdown >> $GITHUB_STEP_SUMMARY
+
+    - name: styxcache summary
+      if: always()
+      shell: bash
+      run: |
+        size=$(du -sh "$STYXCACHE_DIR" 2>/dev/null | cut -f1)
+        entries=$(find "$STYXCACHE_DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | wc -l)
+        {
+          echo "- size after: ${size:-0}"
+          echo "- entries: ${entries:-0}"
+        } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Cleanup
       if: ${{ always() && github.event.inputs.no_cleanup != true }}

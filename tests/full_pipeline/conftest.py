@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import niwrap
 import pytest
+from styxcache import CachePolicy, CachingRunner
+from styxcache.backends import docker_digest_resolver, podman_digest_resolver
 from styxpodman import PodmanRunner
 
 from rbc.core.niwrap import resolve_runner
@@ -27,6 +29,21 @@ if TYPE_CHECKING:
     from rbc.workflows import AnatomicalOutputs, FunctionalOutputs
 
 MANIFEST_PATH = Path(__file__).parent / ".last_run.json"
+
+
+class _AttrProxyCachingRunner(CachingRunner):
+    # CachingRunner doesn't proxy base-runner attrs, but rbc.core.niwrap
+    # reads/mutates data_dir, uid, execution_counter on the global runner.
+    _OWN_ATTRS = frozenset({"base", "store", "policy"})
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self.__dict__["base"], name)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if "base" not in self.__dict__ or name in self._OWN_ATTRS:
+            super().__setattr__(name, value)
+        else:
+            setattr(self.__dict__["base"], name, value)
 
 
 class PipelineData(NamedTuple):
@@ -69,6 +86,21 @@ def _niwrap_session_runner(
     runner.data_dir = data_dir
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)
+
+    cache_dir = os.environ.get("RBC_STYXCACHE_DIR")
+    if cache_dir and runner_type in {"docker", "podman"}:
+        resolver = (
+            docker_digest_resolver
+            if runner_type == "docker"
+            else podman_digest_resolver
+        )
+        wrapped = _AttrProxyCachingRunner(
+            base=runner,
+            cache_dir=cache_dir,
+            policy=CachePolicy(image_digest=resolver),
+        )
+        niwrap.set_global_runner(wrapped)
+        return wrapped
     return runner
 
 
