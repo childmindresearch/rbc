@@ -1118,35 +1118,36 @@ wheels = [
 
 [[package]]
 name = "styxdefs"
-version = "0.6.0"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9d/dd/1f8394cf4a5f00f199fb3dfaa01b6af7afdaf62bfe8a0a06d5b23edaa291/styxdefs-0.6.0.tar.gz", hash = "sha256:c9940a86ea590e94fe48bff7477de6f26eaff0af8730c3538c87eff05442df4d", size = 4367, upload-time = "2025-11-14T20:29:53.681Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/e4/811682acf2343276ff166bf330dffd53a3accedb3c36c76b3a13010d990f/styxdefs-0.6.1.tar.gz", hash = "sha256:cb8053f25b9857e2cc80725223bbe49eb139551dd97399e1903386ab59fc4f18", size = 4082, upload-time = "2026-04-14T14:33:41.429Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/35/b51d04c7b32761a835e58cf77cff759ac20e592c86d72e03bce4475b3455/styxdefs-0.6.0-py3-none-any.whl", hash = "sha256:5688f82ee4566c3ef60f5a4d63b7193bba4b5e52c496f284a8a7817b785d76b8", size = 6194, upload-time = "2025-11-14T20:29:52.876Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/1c/60aa84abfa32d85c79d92ca872e8a21a271cd0dcd4f4e08bc3f9de507217/styxdefs-0.6.1-py3-none-any.whl", hash = "sha256:7eaf2a4a2b74fa66ebc1564e3b15098079c96cee58f6df2bfe88a6e00c60dd19", size = 6192, upload-time = "2026-04-14T14:33:40.656Z" },
 ]
 
 [[package]]
 name = "styxdocker"
-version = "0.6.3"
+version = "0.6.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "styxcontainer-common" },
     { name = "styxdefs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/23/69/49f562bd45c6c7f3f1c9dceb11182881e1a287d752b0dc2258ebd064949c/styxdocker-0.6.3.tar.gz", hash = "sha256:edc0ba3dd3a7014179f27c220b5fcc56e4021b1b290255bc7445b0a322eb63c8", size = 5213, upload-time = "2026-02-26T02:37:30.379Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/fa/49ea7420572df1f28fef3cbcabb7214bdebdb2babd8d9d7d35c44f0b75f0/styxdocker-0.6.4.tar.gz", hash = "sha256:82d91bae01e6cf86ba9517c491df16b3851f17f8cfe16858d78787619dc3b02d", size = 3549, upload-time = "2026-04-14T14:33:48.374Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/51/a98a7b2c80263b45f51fd849177fdc49474b8788ab104ddc3787f991a7da/styxdocker-0.6.3-py3-none-any.whl", hash = "sha256:5925028a2769734cfa2649c1e18e75ea694ce7003363e16b4d0ae6f3b92ac7e7", size = 5781, upload-time = "2026-02-26T02:37:29.668Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/75/c2821919cb0ad045267e1419c53f62902e1f5c67d5e65841a80719ceef3c/styxdocker-0.6.4-py3-none-any.whl", hash = "sha256:6cabaf6ec421b70f72870bd50fb5f24b3310d6f4cf386e62794d7756776ec529", size = 4396, upload-time = "2026-04-14T14:33:47.462Z" },
 ]
 
 [[package]]
 name = "styxgraph"
-version = "0.6.0"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "styxdefs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/b1/2f6bb1c3deeb0990adbdb860727e718feee5c3440e77ed76849191e4cf4a/styxgraph-0.6.0.tar.gz", hash = "sha256:c8cd73debff95d18ff8116ee6a52c6fbd714350f75091641444e67e4527e517c", size = 3146, upload-time = "2025-11-18T19:15:48.258Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/f6/b0cd6cdcac3ea2a15454ad59d87041ee8bd7cbba4b776829a81b50461d49/styxgraph-0.6.1.tar.gz", hash = "sha256:5a6364660c65a589f5e596279e88481b94a3d9927d0b511b7fc05bbcdce01365", size = 2860, upload-time = "2026-04-14T14:33:48.69Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/6b/624417c87db757c0b055436283932e73379cb54a544509544b4f7fb3cf25/styxgraph-0.6.0-py3-none-any.whl", hash = "sha256:87022da2954b06779a26a74c1a080be616810e5fa3605937b39577af03067896", size = 3588, upload-time = "2025-11-18T19:15:47.556Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/e3/afdffd5149a86f1eaa05a85a56d59cca20011ac5cb2f044278e95513f22b/styxgraph-0.6.1-py3-none-any.whl", hash = "sha256:3f387abb6956b16bdad6ef0b64a65b2272f613eb0f7621810e31be4186534796", size = 3591, upload-time = "2026-04-14T14:33:47.645Z" },
 ]
 
 [[package]]
@@ -1164,14 +1165,15 @@ wheels = [
 
 [[package]]
 name = "styxsingularity"
-version = "0.7.1"
+version = "0.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "styxcontainer-common" },
     { name = "styxdefs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/6d/4c3118893f30b99da175c39688e78458c7c72e8194c06ecb7e18c7048f4e/styxsingularity-0.7.1.tar.gz", hash = "sha256:974242c5487c00cda475e75083670e5ba3680a58cc7d0473ff961bbf9e3f46ac", size = 5966, upload-time = "2025-11-24T16:26:55.507Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/32/92065b8ccff061a90b36f4939dffa9c3481f5d17523cf9c28fadf7dab66d/styxsingularity-0.7.2.tar.gz", hash = "sha256:7700f888dee5cb32bfe121add2cc58b018358ce8c461b83a26d70128e6bd6e02", size = 3637, upload-time = "2026-04-14T14:33:48.573Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/9a/b2bbad95730637b6635fae695a08d7b457c9680ef45d5d7261f80159a3c3/styxsingularity-0.7.1-py3-none-any.whl", hash = "sha256:cde458d7a167ee738f4098bd7084082143f84202df692ff085f88d3874a1f3d5", size = 6534, upload-time = "2025-11-24T16:26:54.208Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/16/631312ec12c1dcf6da6a3a182a80cc2f2b7cf61ba971df795af48d69cf17/styxsingularity-0.7.2-py3-none-any.whl", hash = "sha256:a8197d0ca48c9a275fbc0bbbdb9be4301194ac17bd43df11486669ef60fc32b5", size = 4441, upload-time = "2026-04-14T14:33:47.598Z" },
 ]
 
 [[package]]
