@@ -93,7 +93,10 @@ def ds000114_anat_derivatives(
         ],
         capture_output=True,
         text=True,
-        timeout=3600,
+        # Two-session anat (brain extraction + registration, twice) under
+        # xdist contention on the self-hosted runner can push past an hour;
+        # match the 7200s budget used by tests/integration/test_all.py.
+        timeout=7200,
     )
     assert result.returncode == 0, (
         f"rbc anatomical exited with code {result.returncode}\n"

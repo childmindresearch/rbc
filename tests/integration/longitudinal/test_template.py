@@ -43,7 +43,7 @@ def test_rbc_longitudinal_template_builds_bids_tree(
         ],
         capture_output=True,
         text=True,
-        timeout=3600,
+        timeout=7200,
     )
     assert result.returncode == 0, (
         f"rbc longitudinal template exited with code {result.returncode}\n"
