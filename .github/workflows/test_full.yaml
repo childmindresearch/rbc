@@ -28,7 +28,7 @@ jobs:
   test:
     runs-on: arcana
     env:
-      STYXCACHE_DIR: ${{ inputs.styxcache_dir || '/var/lib/rbc-ci/styxcache' }}
+      STYXCACHE_DIR_OVERRIDE: ${{ inputs.styxcache_dir }}
       STYXCACHE_MAX_GB: "50"
     steps:
     - uses: actions/checkout@v6
@@ -41,6 +41,11 @@ jobs:
     - name: Prepare styx cache
       shell: bash
       run: |
+        # Resolve cache dir: honor explicit override, else use the runner user's
+        # home cache (persistent across runs, user-owned — no sudo required).
+        STYXCACHE_DIR="${STYXCACHE_DIR_OVERRIDE:-$HOME/.cache/rbc-styxcache}"
+        echo "STYXCACHE_DIR=$STYXCACHE_DIR" >> "$GITHUB_ENV"
+
         mkdir -p "$STYXCACHE_DIR"
         # Purge stale staging dirs from crashed previous runs (safe: atomic-rename commits)
         rm -rf "$STYXCACHE_DIR/.incoming" 2>/dev/null || true
@@ -68,12 +73,10 @@ jobs:
     - name: Run all tests
       shell: bash
       run: |
-        tmp_root="${RUNNER_TEMP:-/var/lib/rbc-ci/tmp}"
-        mkdir -p "$tmp_root"
         # Clean up stale job tmp dirs from previous crashed runs
-        find "$tmp_root" -maxdepth 1 -name 'rbc_test_*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
+        find "$RUNNER_TEMP" -maxdepth 1 -name 'rbc_test_*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
-        export JOB_TMP="$tmp_root/rbc_test_$(date +%s%N)"
+        export JOB_TMP="$RUNNER_TEMP/rbc_test_$(date +%s%N)"
         mkdir -p $JOB_TMP
         echo "JOB_TMP=$JOB_TMP" >> $GITHUB_ENV
         echo "Job temp directory: $JOB_TMP"
