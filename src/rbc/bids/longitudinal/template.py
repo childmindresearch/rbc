@@ -50,6 +50,11 @@ def discover_template_inputs(
         pl.col("datatype") == "anat",
         pl.col("desc") == "brain",
         pl.col("suffix") == "T1w",
+        # Native-space brains only; the MNI-registered desc-brain T1w that
+        # cross-sectional anat also writes would otherwise be picked up as
+        # a second input per session, producing duplicate LTA filenames in
+        # the mri_robust_template invocation.
+        pl.col("space").is_null(),
     )
 
     inputs: list[TemplateInputs] = []
