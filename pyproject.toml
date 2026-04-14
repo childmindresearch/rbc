@@ -13,7 +13,7 @@ dependencies = [
   "numpy>=2.4.2",
   "polars>=1.38.1",
   "scipy>=1.17.0",
-  "styxpodman@git+https://github.com/styx-api/styxpodman.git@1382977",
+  "styxpodman>=0.1.1",
   "tqdm>=4.67.3"
 ]
 
