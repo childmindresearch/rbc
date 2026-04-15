@@ -161,7 +161,11 @@ def setup_runner(
     styx_runner = niwrap.get_global_runner()
     if tmp_dir is not None:
         Path(tmp_dir).mkdir(parents=True, exist_ok=True)
-    styx_runner.data_dir = Path(tempfile.mkdtemp(dir=tmp_dir))
+        data_parent = Path(tmp_dir)
+    else:
+        data_parent = _work_root() / "niwrap"
+        data_parent.mkdir(parents=True, exist_ok=True)
+    styx_runner.data_dir = Path(tempfile.mkdtemp(dir=data_parent))
     styx_logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
     styx_logger.setLevel(_LOG_LEVELS[log_level])
@@ -213,34 +217,37 @@ def mount_fs_license(runner: niwrap.Runner, fs_license: Path) -> None:
     runner.environ["FS_LICENSE"] = _CONTAINER_FS_LICENSE_PATH
 
 
-_SCRATCH_ROOT: Path | None = None
+_WORK_ROOT: Path | None = None
 
 
-def _scratch_root() -> Path:
-    """Return the shared rbc scratch root, creating it on first use.
+def _work_root() -> Path:
+    """Return the shared rbc work-dir root, creating it on first use.
 
-    Honors ``RBC_SCRATCH_DIR`` if set; otherwise creates a process-unique
-    temp dir. Isolated from niwrap's runner data_dir so rbc scratch paths
-    never collide with or scribble into cache shards.
+    Honors ``RBC_WORK_DIR`` if set; otherwise creates a process-unique
+    temp dir. Both niwrap runners' ``data_dir`` and rbc-owned scratch
+    folders live under this root, so a single env var controls disk
+    layout and cleanup covers both in one sweep.
     """
-    global _SCRATCH_ROOT
-    if _SCRATCH_ROOT is not None and _SCRATCH_ROOT.exists():
-        return _SCRATCH_ROOT
-    override = os.environ.get("RBC_SCRATCH_DIR")
+    global _WORK_ROOT
+    if _WORK_ROOT is not None and _WORK_ROOT.exists():
+        return _WORK_ROOT
+    override = os.environ.get("RBC_WORK_DIR")
     if override:
         root = Path(override)
         root.mkdir(parents=True, exist_ok=True)
     else:
-        root = Path(tempfile.mkdtemp(prefix="rbc_scratch_"))
-    _SCRATCH_ROOT = root
+        root = Path(tempfile.mkdtemp(prefix="rbc_work_"))
+    _WORK_ROOT = root
     return root
 
 
 def generate_exec_folder(suffix: str = "python") -> Path:
     """Create a fresh scratch directory for intermediate rbc-owned outputs.
 
-    Returns a unique directory under the rbc scratch root. The directory
-    does not live under any niwrap runner's data dir, so writes here are
-    guaranteed not to touch a cached tool output.
+    Returns a unique directory under ``RBC_WORK_DIR`` (or a process-unique
+    temp dir). Never touches a niwrap runner's data_dir, so writes here
+    are guaranteed not to scribble into a cached tool output shard.
     """
-    return Path(tempfile.mkdtemp(prefix=f"{suffix}_", dir=_scratch_root()))
+    scratch = _work_root() / "scratch"
+    scratch.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=f"{suffix}_", dir=scratch))

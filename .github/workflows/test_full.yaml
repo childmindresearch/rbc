@@ -106,6 +106,9 @@ jobs:
         export PYTHONPYCACHEPREFIX="$JOB_TMP/__pycache__"
         export COVERAGE_FILE="$JOB_TMP/.coverage"
         export RBC_STYXCACHE_DIR="$STYXCACHE_DIR"
+        # Pin rbc's scratch + niwrap data_dir under JOB_TMP so the Cleanup step
+        # reclaims them automatically. Default is a system tmpdir otherwise.
+        export RBC_WORK_DIR="$JOB_TMP/rbc_work"
 
         uv run pytest \
           -n 8 \
