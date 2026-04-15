@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from rbc.core.nifti import Volume
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -256,7 +257,8 @@ def compute_alff(
 
     stem = in_file.name.split(".nii")[0]
     if out_file is None:
-        alff_path = in_file.parent / f"{stem}_alff.nii.gz"
+        out_dir = generate_exec_folder("alff")
+        alff_path = out_dir / f"{stem}_alff.nii.gz"
     else:
         alff_path = Path(out_file)
 

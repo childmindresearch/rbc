@@ -143,9 +143,9 @@ class TestFsToItkXfm:
             in_xfms=in_xfms,
         )
 
-        assert result == [
-            tmp_path / itk_filename("01", "baseline"),
-            tmp_path / itk_filename("01", "vis2"),
+        assert [p.name for p in result] == [
+            itk_filename("01", "baseline"),
+            itk_filename("01", "vis2"),
         ]
         assert mock_fs.lta_convert.call_count == 2
         assert mock_mat_to_itk.call_count == 2

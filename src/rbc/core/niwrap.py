@@ -213,19 +213,34 @@ def mount_fs_license(runner: niwrap.Runner, fs_license: Path) -> None:
     runner.environ["FS_LICENSE"] = _CONTAINER_FS_LICENSE_PATH
 
 
-def generate_exec_folder(suffix: str = "python") -> Path:
-    """Generate an execution folder following Styx hash pattern.
+_SCRATCH_ROOT: Path | None = None
 
-    Args:
-        suffix: Task to append to suffix of folder (default: 'python')
 
-    Returns:
-        Path to created execution folder
+def _scratch_root() -> Path:
+    """Return the shared rbc scratch root, creating it on first use.
+
+    Honors ``RBC_SCRATCH_DIR`` if set; otherwise creates a process-unique
+    temp dir. Isolated from niwrap's runner data_dir so rbc scratch paths
+    never collide with or scribble into cache shards.
     """
-    runner = niwrap.get_global_runner()
-    dir_path = (
-        Path(runner.data_dir) / f"{runner.uid}_{runner.execution_counter}_{suffix}"
-    )
-    dir_path.mkdir(parents=True)
-    runner.execution_counter += 1
-    return dir_path
+    global _SCRATCH_ROOT
+    if _SCRATCH_ROOT is not None and _SCRATCH_ROOT.exists():
+        return _SCRATCH_ROOT
+    override = os.environ.get("RBC_SCRATCH_DIR")
+    if override:
+        root = Path(override)
+        root.mkdir(parents=True, exist_ok=True)
+    else:
+        root = Path(tempfile.mkdtemp(prefix="rbc_scratch_"))
+    _SCRATCH_ROOT = root
+    return root
+
+
+def generate_exec_folder(suffix: str = "python") -> Path:
+    """Create a fresh scratch directory for intermediate rbc-owned outputs.
+
+    Returns a unique directory under the rbc scratch root. The directory
+    does not live under any niwrap runner's data dir, so writes here are
+    guaranteed not to touch a cached tool output.
+    """
+    return Path(tempfile.mkdtemp(prefix=f"{suffix}_", dir=_scratch_root()))

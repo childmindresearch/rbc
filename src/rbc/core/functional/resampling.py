@@ -104,7 +104,7 @@ def apply_motion_transforms(
         )
         transformed_vols.append(result.output.output_image_outfile)
 
-    out_path = transformed_vols[0].parent / "preproc_bold.nii.gz"
+    out_path = generate_exec_folder("preproc_bold_merge") / "preproc_bold.nii.gz"
     merged = merge_3d_to_4d(transformed_vols, out_path)
 
     # antsApplyTransforms writes the reference image's pixdim into the output
@@ -198,7 +198,10 @@ def resample_bold_to_template(
         )
         transformed_vols.append(result.output.output_image_outfile)
 
-    out_path = transformed_vols[0].parent / "bold_to_template_resampled.nii.gz"
+    out_path = (
+        generate_exec_folder("bold_to_template_merge")
+        / "bold_to_template_resampled.nii.gz"
+    )
     merged = merge_3d_to_4d(transformed_vols, out_path)
 
     # antsApplyTransforms writes the reference (template) image's pixdim into
