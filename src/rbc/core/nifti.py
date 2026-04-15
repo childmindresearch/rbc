@@ -26,7 +26,14 @@ __all__ = [
     "Volume",
     "nifti_num_slices",
     "nifti_num_volumes",
+    "strip_afni_volatile_metadata",
 ]
+
+# AFNI embeds a NIfTI extension (code 4) with an XML payload that contains
+# wall-clock timestamps and a random per-invocation UUID. Those poison
+# content-hash based caching for any tool downstream. Drop the extension
+# entirely; AFNI tools fall back to sform/qform (untouched) for geometry.
+_AFNI_EXTENSION_CODE = 4
 
 
 # NIfTI spatial unit codes (nibabel xyzt_units bits 0-2)
@@ -524,3 +531,22 @@ def nifti_num_slices(in_file: str | Path) -> int:
         return img.shape[slice_axis]
 
     return img.shape[2] if len(img.shape) >= 3 else 1
+
+
+def strip_afni_volatile_metadata(path: str | Path) -> None:
+    """Rewrite a NIfTI file with AFNI's non-deterministic extension removed.
+
+    AFNI tools embed a NIfTI extension carrying wall-clock timestamps and a
+    random per-invocation UUID, which breaks content-hash based caching for
+    any downstream consumer. We drop the whole AFNI extension; the standard
+    NIfTI sform/qform are untouched so downstream tools still get correct
+    geometry.
+    """
+    img = nib.nifti1.load(path)
+    ext_list = img.header.extensions
+    kept = [e for e in ext_list if e.get_code() != _AFNI_EXTENSION_CODE]
+    if len(kept) == len(ext_list):
+        return
+    ext_list.clear()
+    ext_list.extend(kept)
+    nib.save(img, path)

@@ -7,17 +7,28 @@ Currently provides:
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
 import nibabel as nib
 from niwrap import afni
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
     from pathlib import Path
 
 from rbc.core.fileops import file_tmp_copy
+from rbc.core.nifti import strip_afni_volatile_metadata
 from rbc.core.niwrap import generate_exec_folder
+
+try:
+    from styxcache import bypass as _styxcache_bypass
+except ImportError:  # styxcache is optional — only used on CI
+
+    @contextlib.contextmanager
+    def _styxcache_bypass() -> Iterator[None]:
+        yield
+
 
 __all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
 
@@ -41,7 +52,13 @@ def deoblique_and_reorient(
         AFNI 3dresample outputs (use ``.out_file`` for the reoriented image).
     """
     with file_tmp_copy(in_file) as tmp_file:
-        afni.v_3drefit(in_file=tmp_file, deoblique=True)
+        # 3drefit mutates in place, and styxcache 0.2.0 does not replay
+        # mutable-input mutations on cache hits. Bypass it so it always runs,
+        # then strip AFNI's non-deterministic extension (timestamps + random
+        # UUID) so the downstream cached 3dresample call keys on stable bytes.
+        with _styxcache_bypass():
+            afni.v_3drefit(in_file=tmp_file, deoblique=True)
+        strip_afni_volatile_metadata(tmp_file)
         return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"
         )
