@@ -12,6 +12,7 @@ from rbc.bids.longitudinal.functional import (
 )
 from rbc.bids.session import iter_session_files
 from rbc.orchestration import Filters, RunnerConfig, init_runner
+from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.functional import (
     longitudinal_process as functional_longitudinal,
 )
@@ -76,9 +77,6 @@ def run(
         filters: Participant/session/task filters applied before grouping.
         runner_config: Execution backend configuration.
     """
-    # Local import to break the import cycle with the package ``__init__``.
-    from rbc.orchestration.longitudinal import iter_sessions_with_template
-
     config = runner_config or RunnerConfig()
     init_runner(config)
     verbose = config.verbose

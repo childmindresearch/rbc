@@ -194,8 +194,11 @@ def _patch_anat_run(
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
         patch("rbc.orchestration.longitudinal.anatomical.init_runner"),
-        patch("rbc.orchestration.longitudinal.load_table", return_value=full_df),
-        patch("rbc.orchestration.longitudinal.load_session", return_value=mock_session),
+        patch("rbc.orchestration.longitudinal._iter.load_table", return_value=full_df),
+        patch(
+            "rbc.orchestration.longitudinal._iter.load_session",
+            return_value=mock_session,
+        ),
         patch(
             "rbc.bids.query.find_file",
             return_value=Path("fake_workdir/file.nii.gz"),
@@ -204,7 +207,7 @@ def _patch_anat_run(
             "rbc.orchestration.longitudinal.anatomical.anatomical_longitudinal",
             return_value=_mock_anat_outputs(),
         ) as mock_anat,
-        patch("rbc.orchestration.longitudinal.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.longitudinal._iter.RunContext") as mock_ctx_cls,
     ):
         yield mock_anat, mock_ctx_cls
 
@@ -234,8 +237,11 @@ def _patch_func_run(
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
         patch("rbc.orchestration.longitudinal.functional.init_runner"),
-        patch("rbc.orchestration.longitudinal.load_table", return_value=full_df),
-        patch("rbc.orchestration.longitudinal.load_session", return_value=mock_session),
+        patch("rbc.orchestration.longitudinal._iter.load_table", return_value=full_df),
+        patch(
+            "rbc.orchestration.longitudinal._iter.load_session",
+            return_value=mock_session,
+        ),
         patch(
             "rbc.orchestration.longitudinal.functional.iter_session_files",
             side_effect=_build_iter_side_effect(groups),
@@ -248,7 +254,7 @@ def _patch_func_run(
             "rbc.orchestration.longitudinal.functional.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
-        patch("rbc.orchestration.longitudinal.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.longitudinal._iter.RunContext") as mock_ctx_cls,
     ):
         yield mock_func, mock_ctx_cls
 
@@ -471,7 +477,9 @@ class TestLongitudinalFunctionalRun:
         with (
             caplog.at_level(logging.WARNING),
             patch("rbc.orchestration.longitudinal.functional.init_runner"),
-            patch("rbc.orchestration.longitudinal.load_table", return_value=empty_df),
+            patch(
+                "rbc.orchestration.longitudinal._iter.load_table", return_value=empty_df
+            ),
         ):
             run(
                 input_dirs=[tmp_path],

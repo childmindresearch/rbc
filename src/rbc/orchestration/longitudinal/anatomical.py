@@ -13,6 +13,7 @@ from rbc.bids.longitudinal.anatomical import (
     resolve_longitudinal_anat,
 )
 from rbc.orchestration import Filters, RunnerConfig, init_runner
+from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.anatomical import (
     longitudinal_process as anatomical_longitudinal,
 )
@@ -82,9 +83,6 @@ def run(
         registration_template: Brain template for ANTs registration.
         runner_config: Execution backend configuration.
     """
-    # Local import to break the import cycle with the package ``__init__``.
-    from rbc.orchestration.longitudinal import iter_sessions_with_template
-
     config = runner_config or RunnerConfig()
     init_runner(config)
     verbose = config.verbose
