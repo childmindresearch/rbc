@@ -168,33 +168,6 @@ jobs:
           echo "- entries: ${entries:-0}"
         } >> "$GITHUB_STEP_SUMMARY"
 
-    - name: Dump recent styxcache stderr on failure
-      if: failure()
-      shell: bash
-      run: |
-        # StyxPodmanError doesn't capture container stderr; it lives in
-        # .styxcache.stderr.gz per cache entry. On failure, surface the
-        # most recently written ones so we can see what the tool said.
-        echo "## Recent styxcache stderr" >> "$GITHUB_STEP_SUMMARY"
-        mapfile -t recent < <(
-          find "$STYXCACHE_DIR" "$STYXCACHE_DIR/.incoming" -type f \
-            -name '.styxcache.stderr.gz' -mmin -120 -printf '%T@ %p\n' \
-            2>/dev/null | sort -rn | awk '{print $2}' | head -5
-        )
-        if [ ${#recent[@]} -eq 0 ]; then
-          echo "- no recent stderr logs found" >> "$GITHUB_STEP_SUMMARY"
-        fi
-        for f in "${recent[@]}"; do
-          {
-            echo ""
-            echo "### \`$f\`"
-            echo ""
-            echo '```'
-            gzip -dc "$f" 2>/dev/null | tail -80
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-        done
-
     - name: Cleanup
       if: ${{ always() && github.event.inputs.no_cleanup != true }}
       shell: bash
