@@ -52,9 +52,6 @@ def resolve_longitudinal_anat(
         ),
         "brain": anat_q.expect(anat_df, suffix=Suffix.T1W, desc="brain"),
         "brain_mask": anat_q.find(anat_df, suffix=Suffix.MASK, desc="T1w"),
-        "csf_mask": anat_q.find(anat_df, suffix=Suffix.MASK, desc="csf"),
-        "gm_mask": anat_q.find(anat_df, suffix=Suffix.MASK, desc="gm"),
-        "wm_mask": anat_q.find(anat_df, suffix=Suffix.MASK, desc="wm"),
     }
 
 
@@ -70,21 +67,6 @@ def export_longitudinal_anat(aex: Bids, outputs: AnatomicalLongOutputs) -> None:
         _require_file(outputs.brain_mask, "brain_mask"),
         suffix=Suffix.MASK,
         desc="T1w",
-    )
-    aex.save(
-        _require_file(outputs.csf_mask, "csf_mask"),
-        suffix=Suffix.MASK,
-        desc="csf",
-    )
-    aex.save(
-        _require_file(outputs.gm_mask, "gm_mask"),
-        suffix=Suffix.MASK,
-        desc="gm",
-    )
-    aex.save(
-        _require_file(outputs.wm_mask, "wm_mask"),
-        suffix=Suffix.MASK,
-        desc="wm",
     )
     aex.save(
         outputs.long_to_template_xfm,

@@ -17,6 +17,7 @@ import pytest
 from rbc.context import RunContext
 from rbc.orchestration import Filters
 from rbc.orchestration.longitudinal import process_anat, process_func
+from rbc.workflows.longitudinal.anatomical import AnatomicalLongOutputs
 
 _SCHEMA = [
     "datatype",
@@ -48,17 +49,15 @@ def _func_row(sub: str, ses: str, task: str = "rest") -> tuple:
     return ("func", "bold", ".nii.gz", sub, ses, None, task, None, None, "/data", path)
 
 
-def _mock_anat_outputs() -> Mock:
+def _mock_anat_outputs() -> AnatomicalLongOutputs:
+    """Build a real AnatomicalLongOutputs so typos on missing attrs fail loudly."""
     fake = Path("fake_workdir")
-    m = Mock()
-    m.brain = fake / "brain.nii.gz"
-    m.brain_mask = fake / "brain_mask.nii.gz"
-    m.csf_mask = fake / "csf_mask.nii.gz"
-    m.gm_mask = fake / "gm_mask.nii.gz"
-    m.wm_mask = fake / "wm_mask.nii.gz"
-    m.long_to_template_xfm = fake / "long_to_template_xfm.nii.gz"
-    m.template_to_long_xfm = fake / "template_to_long_xfm.nii.gz"
-    return m
+    return AnatomicalLongOutputs(
+        brain=fake / "brain.nii.gz",
+        brain_mask=fake / "brain_mask.nii.gz",
+        long_to_template_xfm=fake / "long_to_template_xfm.nii.gz",
+        template_to_long_xfm=fake / "template_to_long_xfm.nii.gz",
+    )
 
 
 def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
@@ -302,7 +301,7 @@ class TestProcessAnat:
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         outputs = _mock_anat_outputs()
         if side_effect is None:
-            setattr(outputs, null_field, None)
+            outputs = outputs._replace(**{null_field: None})  # type: ignore[arg-type]
             get_patch = patch(
                 "rbc.bids.query.find_file",
                 return_value=Path("fake_workdir/file.nii.gz"),
