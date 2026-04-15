@@ -3,20 +3,12 @@
 from __future__ import annotations
 
 import json
-import logging
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
-import niwrap
 import pytest
-from styxcache import CachePolicy, CachingRunner
-from styxcache.backends import docker_digest_resolver, podman_digest_resolver
-from styxpodman import PodmanRunner
 
-from rbc.core.niwrap import resolve_runner
 from rbc.metadata import FunctionalMetadata
-from rbc.orchestration import _DEFAULT_ENV_VARS
 from rbc.workflows import anatomical_preprocess, functional_preprocess
 from rbc.workflows.functional import _warp_mask_to_template
 from rbc_resources import REGISTRATION_TEMPLATES
@@ -24,26 +16,12 @@ from rbc_resources import REGISTRATION_TEMPLATES
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    import niwrap
     from conftest import TestSubjectData
 
     from rbc.workflows import AnatomicalOutputs, FunctionalOutputs
 
 MANIFEST_PATH = Path(__file__).parent / ".last_run.json"
-
-
-class _AttrProxyCachingRunner(CachingRunner):
-    # CachingRunner doesn't proxy base-runner attrs, but rbc.core.niwrap
-    # reads/mutates data_dir, uid, execution_counter on the global runner.
-    _OWN_ATTRS = frozenset({"base", "store", "policy"})
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self.__dict__["base"], name)
-
-    def __setattr__(self, name: str, value: object) -> None:
-        if "base" not in self.__dict__ or name in self._OWN_ATTRS:
-            super().__setattr__(name, value)
-        else:
-            setattr(self.__dict__["base"], name, value)
 
 
 class PipelineData(NamedTuple):
@@ -52,61 +30,6 @@ class PipelineData(NamedTuple):
     anat: AnatomicalOutputs
     func: FunctionalOutputs
     template_brain_mask: Path
-
-
-@pytest.fixture(scope="session")
-def _niwrap_session_runner(
-    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
-) -> niwrap.Runner:
-    """Session-scoped niwrap runner for full-pipeline tests."""
-    runner_type, runner_exec = resolve_runner(
-        request.config.getoption("--runner").lower()
-    )
-    match runner_type:
-        case "docker":
-            niwrap.use_docker(docker_executable=runner_exec)
-        case "podman":
-            niwrap.set_global_runner(
-                # UserID = 0 currently necessary for user mapping
-                runner=PodmanRunner(podman_executable=runner_exec, podman_user_id=0)
-            )
-        case "singularity":
-            niwrap.use_singularity(singularity_executable=runner_exec)
-        case _:
-            niwrap.use_local()
-    runner = niwrap.get_global_runner()
-    # Override single-threaded ANTs for e2e tests — deterministic results
-    # aren't needed here, and multi-threading cuts registration time ~3-5x.
-    runner.environ = {
-        **_DEFAULT_ENV_VARS,
-        "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": str(min(os.cpu_count() or 1, 4)),
-    }
-    data_dir = tmp_path_factory.mktemp("full_pipeline") / os.urandom(8).hex()
-    data_dir.mkdir(parents=True, exist_ok=False)
-    runner.data_dir = data_dir
-    logger = logging.getLogger(runner.logger_name)
-    logger.setLevel(logging.DEBUG)
-
-    cache_dir = os.environ.get("RBC_STYXCACHE_DIR")
-    if cache_dir and runner_type in {"docker", "podman"}:
-        resolver = (
-            docker_digest_resolver
-            if runner_type == "docker"
-            else podman_digest_resolver
-        )
-        wrapped = _AttrProxyCachingRunner(
-            base=runner,
-            cache_dir=cache_dir,
-            policy=CachePolicy(
-                image_digest=resolver,
-                # Bump to invalidate when styxcache storage semantics change
-                # (e.g. 0.1.x entries lacked persisted stdout).
-                extra={"cache_generation": "2026-1"},
-            ),
-        )
-        niwrap.set_global_runner(wrapped)
-        return wrapped
-    return runner
 
 
 @pytest.fixture(scope="session")
@@ -129,7 +52,7 @@ def _to_dict(obj: object) -> dict | str | None:
 @pytest.fixture(scope="session")
 def pipeline_data(
     test_subject: TestSubjectData,
-    _niwrap_session_runner: niwrap.Runner,
+    niwrap_runner: niwrap.Runner,  # noqa: ARG001 — ensures runner is configured
     manifest: dict[str, object],
 ) -> PipelineData:
     """Run anatomical and functional preprocessing once for all e2e tests."""
