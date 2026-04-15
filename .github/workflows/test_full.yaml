@@ -50,16 +50,23 @@ jobs:
         # Purge stale staging dirs from crashed previous runs (safe: atomic-rename commits)
         rm -rf "$STYXCACHE_DIR/.incoming" 2>/dev/null || true
 
-        # Drop entries with corrupt .gz streams (from crashed runs that committed
-        # before their stdout finished writing). Reading a truncated gz blows up
-        # the reading test; cheaper to detect and evict than investigate.
+        # Drop entries that contain any truncated .gz (styxcache's own
+        # stdout/stderr streams or cached .nii.gz outputs). Atomic commits
+        # should prevent these, but crashes before commit have been observed.
         corrupt=0
-        while IFS= read -r gz; do
-          if ! gzip -t "$gz" 2>/dev/null; then
-            rm -rf "$(dirname "$gz")"
+        while IFS= read -r entry; do
+          bad=0
+          for gz in $(find "$entry" -type f -name '*.gz'); do
+            if ! gzip -t "$gz" 2>/dev/null; then
+              bad=1
+              break
+            fi
+          done
+          if [ "$bad" = "1" ]; then
+            rm -rf "$entry"
             corrupt=$((corrupt + 1))
           fi
-        done < <(find "$STYXCACHE_DIR" -type f \( -name '.styxcache.stdout.gz' -o -name '.styxcache.stderr.gz' \) 2>/dev/null)
+        done < <(find "$STYXCACHE_DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null)
         if [ "$corrupt" -gt 0 ]; then
           echo "evicted $corrupt entries with corrupt gzip streams"
         fi
