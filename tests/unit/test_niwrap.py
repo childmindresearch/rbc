@@ -25,6 +25,12 @@ if TYPE_CHECKING:
 class TestSetupRunner:
     """Test suite for niwrap.setup_runner."""
 
+    @pytest.fixture(autouse=True)
+    def _no_styxcache_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # setup_runner wraps with a CachingRunner when RBC_STYXCACHE_DIR is set.
+        # Tests here probe the concrete runner type, so drop the env var.
+        monkeypatch.delenv("RBC_STYXCACHE_DIR", raising=False)
+
     def test_default(self, tmp_path: Path) -> None:
         """Test default initialization uses auto-detection."""
         ctx = setup_runner(tmp_dir=tmp_path)
