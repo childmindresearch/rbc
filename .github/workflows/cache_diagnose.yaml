@@ -30,6 +30,9 @@ jobs:
           exit 0
         fi
 
+        # tee output to both stdout (for CI log visibility) and step summary.
+        emit() { tee -a "$GITHUB_STEP_SUMMARY"; }
+
         total=$(find "$DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | wc -l)
         size=$(du -sh "$DIR" 2>/dev/null | cut -f1)
         incoming=$(find "$DIR/.incoming" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
@@ -44,7 +47,7 @@ jobs:
           echo "### Top tools by entry count"
           echo "| tool | count | total size |"
           echo "| --- | ---: | ---: |"
-        } >> "$GITHUB_STEP_SUMMARY"
+        } | emit
 
         tmp=$(mktemp)
         find "$DIR" -mindepth 2 -maxdepth 2 -type d | while read -r shard; do
@@ -56,15 +59,10 @@ jobs:
         awk '{counts[$1]++; sizes[$1]+=$2} END {for(t in counts){printf "%s\t%d\t%d\n",t,counts[t],sizes[t]}}' "$tmp" \
           | sort -k2 -rn \
           | head -n "${TOP_N:-20}" \
-          | awk -v OFS='' '{printf "| `%s` | %d | %.1f MiB |\n", $1, $2, $3/1024}' \
-          >> "$GITHUB_STEP_SUMMARY"
+          | awk '{printf "| `%s` | %d | %.1f MiB |\n", $1, $2, $3/1024}' \
+          | emit
 
-        {
-          echo ""
-          echo "### Newest 10 entries"
-          echo "| when (UTC) | tool | entry |"
-          echo "| --- | --- | --- |"
-        } >> "$GITHUB_STEP_SUMMARY"
+        { echo ""; echo "### Newest 10 entries"; echo "| when (UTC) | tool | entry |"; echo "| --- | --- | --- |"; } | emit
 
         find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
           | sort -rn \
@@ -74,14 +72,9 @@ jobs:
               when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
               key=$(basename "$path")
               echo "| $when | \`$tool\` | \`${key:0:16}\` |"
-            done >> "$GITHUB_STEP_SUMMARY"
+            done | emit
 
-        {
-          echo ""
-          echo "### Oldest 10 entries"
-          echo "| when (UTC) | tool | entry |"
-          echo "| --- | --- | --- |"
-        } >> "$GITHUB_STEP_SUMMARY"
+        { echo ""; echo "### Oldest 10 entries"; echo "| when (UTC) | tool | entry |"; echo "| --- | --- | --- |"; } | emit
 
         find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
           | sort -n \
@@ -91,6 +84,6 @@ jobs:
               when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
               key=$(basename "$path")
               echo "| $when | \`$tool\` | \`${key:0:16}\` |"
-            done >> "$GITHUB_STEP_SUMMARY"
+            done | emit
 
         rm -f "$tmp"
