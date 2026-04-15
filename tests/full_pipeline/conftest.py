@@ -86,11 +86,22 @@ def _niwrap_session_runner(
     runner.data_dir = data_dir
     logger = logging.getLogger(runner.logger_name)
     logger.setLevel(logging.DEBUG)
+
+    cache_dir = os.environ.get("RBC_STYXCACHE_DIR")
+    if cache_dir and runner_type in {"docker", "podman"}:
+        resolver = (
+            docker_digest_resolver
+            if runner_type == "docker"
+            else podman_digest_resolver
+        )
+        wrapped = _AttrProxyCachingRunner(
+            base=runner,
+            cache_dir=cache_dir,
+            policy=CachePolicy(image_digest=resolver),
+        )
+        niwrap.set_global_runner(wrapped)
+        return wrapped
     return runner
-
-
-def _runner_kind(runner: niwrap.Runner) -> str:
-    return type(runner).__name__.lower().replace("runner", "")
 
 
 @pytest.fixture(scope="session")
@@ -116,48 +127,22 @@ def pipeline_data(
     _niwrap_session_runner: niwrap.Runner,
     manifest: dict[str, object],
 ) -> PipelineData:
-    """Run anatomical and functional preprocessing once for all e2e tests.
-
-    The styxcache wrap is scoped to this fixture's computation only.
-    Integration/unit tests that share the worker see the base runner so
-    they don't risk cache hits on tool calls whose semantics exceed what
-    styxcache persists (e.g. stdout-returning tools like ants.print_header).
-    """
-    base = _niwrap_session_runner
-    cache_dir = os.environ.get("RBC_STYXCACHE_DIR")
-    kind = _runner_kind(base)
-    wrapped: niwrap.Runner | None = None
-    if cache_dir and kind in {"docker", "podman"}:
-        resolver = (
-            docker_digest_resolver if kind == "docker" else podman_digest_resolver
-        )
-        wrapped = _AttrProxyCachingRunner(
-            base=base,
-            cache_dir=cache_dir,
-            policy=CachePolicy(image_digest=resolver),
-        )
-        niwrap.set_global_runner(wrapped)
-    try:
-        anat = anatomical_preprocess(test_subject.t1w)
-        func_metadata = FunctionalMetadata.load(test_subject.bold)
-        func = functional_preprocess(
-            in_bold=test_subject.bold,
-            t1w_brain=anat.brain,
-            wm_bbr_mask=anat.wm_bbr_mask,
-            brain_mask=anat.brain_mask,
-            csf_mask=anat.csf_mask,
-            wm_mask=anat.wm_mask,
-            anat_to_template=anat.anat_to_template_xfm,
-            metadata=func_metadata,
-        )
-        template_brain_mask = _warp_mask_to_template(
-            anat.brain_mask,
-            REGISTRATION_TEMPLATES.brain_2mm,
-            anat.anat_to_template_xfm,
-        )
-    finally:
-        if wrapped is not None:
-            niwrap.set_global_runner(base)
+    """Run anatomical and functional preprocessing once for all e2e tests."""
+    anat = anatomical_preprocess(test_subject.t1w)
+    func_metadata = FunctionalMetadata.load(test_subject.bold)
+    func = functional_preprocess(
+        in_bold=test_subject.bold,
+        t1w_brain=anat.brain,
+        wm_bbr_mask=anat.wm_bbr_mask,
+        brain_mask=anat.brain_mask,
+        csf_mask=anat.csf_mask,
+        wm_mask=anat.wm_mask,
+        anat_to_template=anat.anat_to_template_xfm,
+        metadata=func_metadata,
+    )
+    template_brain_mask = _warp_mask_to_template(
+        anat.brain_mask, REGISTRATION_TEMPLATES.brain_2mm, anat.anat_to_template_xfm
+    )
     manifest["anat"] = _to_dict(anat)
     manifest["func"] = _to_dict(func)
     manifest["template_brain_mask"] = str(template_brain_mask)
