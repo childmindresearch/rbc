@@ -1,4 +1,4 @@
-"""``rbc longitudinal template`` subcommand."""
+"""``rbc longitudinal qc`` subcommand (placeholder for Stage 6)."""
 
 from __future__ import annotations
 
@@ -6,22 +6,21 @@ from typing import TYPE_CHECKING
 
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
 from rbc.orchestration import Filters, RunnerConfig
-from rbc.orchestration.longitudinal.template import run
+from rbc.orchestration.longitudinal.qc import run
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
 
 
-TemplateArgs = LongitudinalBaseArgs
+QCLongArgs = LongitudinalBaseArgs
 
 
-def main(args: TemplateArgs) -> int:
-    """Build a robust longitudinal template per matching subject."""
+def main(args: QCLongArgs) -> int:
+    """Run registration QC for longitudinal derivatives."""
     run(
         input_dirs=args.input_dirs,
         output_dir=args.output_dir,
-        fs_license=args.fs_license,
         filters=Filters(
             participant_label=args.participant_label,
             session_label=args.session_label,
@@ -40,19 +39,16 @@ def register_command(
     subparsers: argparse._SubParsersAction,
     parents: Sequence[argparse.ArgumentParser],
 ) -> None:
-    """Register ``rbc longitudinal template`` on a longitudinal subparser group."""
+    """Register ``rbc longitudinal qc`` (Stage 6 placeholder)."""
     parser = subparsers.add_parser(
-        "template",
+        "qc",
         parents=parents,
         description=(
-            "Build a robust within-subject T1w template for longitudinal "
-            "analysis using FreeSurfer's mri_robust_template."
+            "Run registration QC for longitudinal derivatives. Placeholder "
+            "wired up by Stage 3; full implementation ships in Stage 6."
         ),
-        help="Build longitudinal T1w template",
-        usage=(
-            "rbc longitudinal template INPUT_DIR [INPUT_DIR ...] "
-            "-o OUTPUT_DIR [options]"
-        ),
+        help="Longitudinal QC stage (Stage 6)",
+        usage=("rbc longitudinal qc INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]"),
     )
     add_fs_license_argument(parser)
     parser.set_defaults(

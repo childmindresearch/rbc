@@ -41,15 +41,28 @@ Run any command with `--help` for full options.
 
 ## Workflows
 
-| Command          | Description                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------ |
-| `rbc anatomical` | Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152                  |
-| `rbc functional` | Motion correction, slice timing, BBR coregistration, single-step resampling, nuisance regression |
-| `rbc metrics`    | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices          |
-| `rbc qc`         | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds            |
-| `rbc all`        | Runs all four stages in sequence, passing results in memory between stages                       |
+| Command              | Description                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `rbc anatomical`     | Brain extraction (ANTs), tissue segmentation (FSL FAST), registration to MNI152                  |
+| `rbc functional`     | Motion correction, slice timing, BBR coregistration, single-step resampling, nuisance regression |
+| `rbc metrics`        | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices          |
+| `rbc qc`             | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds            |
+| `rbc all`            | Runs all four stages in sequence, passing results in memory between stages                       |
+| `rbc longitudinal …` | Multi-session workflows: `template`, `anatomical`, `functional`, `metrics`, `qc`, `all`          |
 
 Workflows must be run in order: `anatomical` → `functional` → `metrics` / `qc`. The `all` command handles this automatically.
+
+Longitudinal workflows consume cross-sectional derivatives. Typical flow:
+
+```bash
+rbc all /data -o /data/derivatives --runner docker
+rbc longitudinal template /data/derivatives -o /data/derivatives --runner docker
+rbc longitudinal anatomical /data/derivatives -o /data/derivatives --runner docker
+```
+
+`rbc long` is an alias for `rbc longitudinal`. The `metrics`, `qc`, and `all`
+longitudinal stages are registered but raise `NotImplementedError` until
+Stage 6 of the longitudinal refactor lands (tracker: #301).
 
 ## Outputs
 

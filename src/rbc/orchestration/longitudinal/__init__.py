@@ -8,61 +8,54 @@ from typing import TYPE_CHECKING
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import (
-    FUNC_GROUP_ENTITIES,
-    SUB_SES_QUERY,
-    load_table,
-)
-from rbc.bids.session import iter_session_files, load_session
+from rbc.bids import SUB_SES_QUERY, load_table
+from rbc.bids.session import load_session
 from rbc.context import RunContext
-from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal.anatomical import process_anat
 from rbc.orchestration.longitudinal.functional import process_func
-from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
     from pathlib import Path
 
-__all__ = ["process_anat", "process_func", "run"]
+    from rbc.bids.session import SessionTables
+    from rbc.orchestration import Filters
+
+__all__ = ["iter_sessions_with_template", "process_anat", "process_func"]
 
 _logger = logging.getLogger(__name__)
 
 
-def run(
+def iter_sessions_with_template(
     input_dirs: Sequence[Path],
     output_dir: Path,
     *,
     filters: Filters,
-    anatomical: bool = True,
-    functional: bool = True,
-    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
-    runner_config: RunnerConfig | None = None,
-) -> None:
-    """Run the longitudinal pipeline for all matching subjects/sessions.
+    verbose: bool = False,
+) -> Iterator[tuple[RunContext, SessionTables, pl.DataFrame]]:
+    """Yield ``(pipe_ctx, session, tpl_df)`` for each matching subject/session.
+
+    Shared iteration primitive for the longitudinal anatomical and functional
+    stages. Loads the BIDS table, filters out ``ses-longitudinal`` rows, then
+    groups by subject/session. For each non-template session a longitudinal
+    template must exist for that subject, otherwise ``ValueError`` is raised.
 
     Args:
         input_dirs: BIDS dataset directories.
         output_dir: Output directory for derivatives.
-        filters: Participant/session/task filters.
-        anatomical: Run anatomical longitudinal processing.
-        functional: Run functional longitudinal processing.
-        registration_template: Brain template for ANTs registration.
-        runner_config: Execution backend configuration.
-    """
-    config = runner_config or RunnerConfig()
-    init_runner(config)
-    verbose = config.verbose
+        filters: Participant/session filters applied before grouping.
+        verbose: Whether to show a progress bar.
 
-    _logger.warning(
-        "This workflow is experimental and may be sensitive to input file "
-        "naming conventions."
-    )
-    _logger.info("Preparing to run RBC longitudinal workflow")
+    Yields:
+        Tuples of ``(pipe_ctx, session, tpl_df)`` for each subject/session.
+
+    Raises:
+        ValueError: If a matching session has no longitudinal template, or
+            has no session label.
+    """
     df = load_table(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
-
     group_df = filters.apply(df, pl.col("ses") != "longitudinal")
 
     for _, sub_ses_group in tqdm(
@@ -87,22 +80,4 @@ def run(
         )
         if tpl_df.is_empty():
             raise ValueError("No longitudinal template found")
-
-        if anatomical:
-            for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
-                ("run", "acq"), maintain_order=True
-            ):
-                process_anat(
-                    pipe_ctx=pipe_ctx,
-                    anat_df=anat_df,
-                    tpl_df=tpl_df,
-                    registration_template=registration_template,
-                )
-
-        if functional:
-            for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
-                process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-
-        pipe_ctx.ensure_dataset_description()
-
-    _logger.info("RBC longitudinal workflow complete")
+        yield pipe_ctx, session, tpl_df

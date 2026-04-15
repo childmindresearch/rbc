@@ -125,7 +125,7 @@ Produced by `rbc qc`. A single summary file per functional run containing qualit
 
 ## Longitudinal outputs
 
-Produced by `rbc longitudinal`. Anatomical outputs aligned to a subject-specific longitudinal template built from multiple sessions. Note: longitudinal functional processing is not yet implemented.
+Produced by the `rbc longitudinal` subcommand group (`template`, `anatomical`, `functional`, `metrics`, `qc`, `all`). Anatomical outputs aligned to a subject-specific longitudinal template built from multiple sessions. Note: longitudinal metrics, QC, and the combined `all` stage are not yet implemented (tracker: #301).
 
 | File                                               | Suffix | Description                                                               | Created by                                 | Format                       |
 | -------------------------------------------------- | ------ | ------------------------------------------------------------------------- | ------------------------------------------ | ---------------------------- |
