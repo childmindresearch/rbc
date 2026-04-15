@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       top_n:
-        description: "Number of top-tool rows to include"
+        description: "Number of top-tool rows to show in summary"
         default: "20"
         type: string
       styxcache_dir:
@@ -30,10 +30,23 @@ jobs:
           exit 0
         fi
 
-        # tee output to both stdout (for CI log visibility) and step summary.
         emit() { tee -a "$GITHUB_STEP_SUMMARY"; }
 
-        total=$(find "$DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | wc -l)
+        # Build manifest: one row per cache entry with mtime + size + tool + shard id.
+        mkdir -p out
+        MANIFEST=out/styxcache_manifest.tsv
+        printf "mtime_utc\tsize_kb\ttool\tshard\n" > "$MANIFEST"
+        find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@\t%p\n' \
+          | sort -n \
+          | while IFS=$'\t' read -r ts path; do
+              tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$path/run.sh" 2>/dev/null || echo "?")
+              size_kb=$(du -sk "$path" 2>/dev/null | awk '{print $1}')
+              when=$(date -u -d "@${ts%.*}" '+%Y-%m-%dT%H:%M:%SZ')
+              printf "%s\t%s\t%s\t%s\n" "$when" "${size_kb:-0}" "$tool" "$(basename "$path")"
+            done >> "$MANIFEST"
+
+        # Summary stats
+        total=$(tail -n +2 "$MANIFEST" | wc -l)
         size=$(du -sh "$DIR" 2>/dev/null | cut -f1)
         incoming=$(find "$DIR/.incoming" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
 
@@ -43,47 +56,32 @@ jobs:
           echo "- total entries: $total"
           echo "- total size: $size"
           echo "- orphan staging (.incoming): $incoming"
+          echo "- manifest artifact: \`styxcache_manifest.tsv\` (columns: mtime_utc, size_kb, tool, shard)"
           echo ""
           echo "### Top tools by entry count"
           echo "| tool | count | total size |"
           echo "| --- | ---: | ---: |"
         } | emit
 
-        tmp=$(mktemp)
-        find "$DIR" -mindepth 2 -maxdepth 2 -type d | while read -r shard; do
-          tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$shard/run.sh" 2>/dev/null || echo "?")
-          size_kb=$(du -sk "$shard" 2>/dev/null | awk '{print $1}')
-          echo "$tool $size_kb"
-        done > "$tmp"
-
-        awk '{counts[$1]++; sizes[$1]+=$2} END {for(t in counts){printf "%s\t%d\t%d\n",t,counts[t],sizes[t]}}' "$tmp" \
+        tail -n +2 "$MANIFEST" \
+          | awk -F'\t' '{counts[$3]++; sizes[$3]+=$2} END {for(t in counts){printf "%s\t%d\t%d\n",t,counts[t],sizes[t]}}' \
           | sort -k2 -rn \
           | head -n "${TOP_N:-20}" \
           | awk '{printf "| `%s` | %d | %.1f MiB |\n", $1, $2, $3/1024}' \
           | emit
 
-        { echo ""; echo "### Newest 10 entries"; echo "| when (UTC) | tool | entry |"; echo "| --- | --- | --- |"; } | emit
+        { echo ""; echo "### Newest 10 entries"; echo "| when (UTC) | tool | size | shard |"; echo "| --- | --- | ---: | --- |"; } | emit
+        tail -n +2 "$MANIFEST" | sort -rk1 -t$'\t' | head -10 \
+          | awk -F'\t' '{printf "| %s | `%s` | %.1f MiB | `%s` |\n", $1, $3, $2/1024, substr($4,1,16)}' \
+          | emit
 
-        find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
-          | sort -rn \
-          | head -10 \
-          | while read -r ts path; do
-              tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$path/run.sh" 2>/dev/null || echo "?")
-              when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
-              key=$(basename "$path")
-              echo "| $when | \`$tool\` | \`${key:0:16}\` |"
-            done | emit
+        { echo ""; echo "### Oldest 10 entries"; echo "| when (UTC) | tool | size | shard |"; echo "| --- | --- | ---: | --- |"; } | emit
+        tail -n +2 "$MANIFEST" | sort -k1 -t$'\t' | head -10 \
+          | awk -F'\t' '{printf "| %s | `%s` | %.1f MiB | `%s` |\n", $1, $3, $2/1024, substr($4,1,16)}' \
+          | emit
 
-        { echo ""; echo "### Oldest 10 entries"; echo "| when (UTC) | tool | entry |"; echo "| --- | --- | --- |"; } | emit
-
-        find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
-          | sort -n \
-          | head -10 \
-          | while read -r ts path; do
-              tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$path/run.sh" 2>/dev/null || echo "?")
-              when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
-              key=$(basename "$path")
-              echo "| $when | \`$tool\` | \`${key:0:16}\` |"
-            done | emit
-
-        rm -f "$tmp"
+    - name: Upload manifest
+      uses: actions/upload-artifact@v7
+      with:
+        name: styxcache-manifest
+        path: out/styxcache_manifest.tsv
