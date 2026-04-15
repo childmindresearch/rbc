@@ -44,6 +44,11 @@ markers = [
   "full_pipeline: End-to-end workflow tests"
 ]
 
+[tool.deptry.per_rule_ignores]
+# styxcache is optional — imported via try/except so the dependency is only
+# needed on CI where the cache is wired up. src/rbc runs fine without it.
+DEP004 = ["styxcache"]
+
 [tool.coverage.report]
 omit = ["src/rbc_resources/"]
 

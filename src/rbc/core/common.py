@@ -29,6 +29,7 @@ except ImportError:  # styxcache is optional — only used on CI
     def _styxcache_bypass() -> Iterator[None]:
         yield
 
+
 __all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
 
 
