@@ -97,7 +97,12 @@ def _niwrap_session_runner(
         wrapped = _AttrProxyCachingRunner(
             base=runner,
             cache_dir=cache_dir,
-            policy=CachePolicy(image_digest=resolver),
+            policy=CachePolicy(
+                image_digest=resolver,
+                # Bump to invalidate when styxcache storage semantics change
+                # (e.g. 0.1.x entries lacked persisted stdout).
+                extra={"cache_generation": "2026-1"},
+            ),
         )
         niwrap.set_global_runner(wrapped)
         return wrapped

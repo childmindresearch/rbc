@@ -50,17 +50,6 @@ jobs:
         # Purge stale staging dirs from crashed previous runs (safe: atomic-rename commits)
         rm -rf "$STYXCACHE_DIR/.incoming" 2>/dev/null || true
 
-        # Invalidate the whole cache when the styxcache version changes:
-        # legacy entries may lack data (e.g. persisted stdout) that newer
-        # versions expect, and missing-file handling is silent — so we rebuild.
-        version=$(uv run python -c "from importlib.metadata import version; print(version('styxcache'))")
-        marker="$STYXCACHE_DIR/.styxcache_version"
-        if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$version" ]; then
-          echo "styxcache version changed (now $version); wiping cache"
-          find "$STYXCACHE_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-          echo "$version" > "$marker"
-        fi
-
         size_kb=$(du -sk "$STYXCACHE_DIR" 2>/dev/null | awk '{print $1}')
         size_kb=${size_kb:-0}
         cap_kb=$(( STYXCACHE_MAX_GB * 1024 * 1024 ))
