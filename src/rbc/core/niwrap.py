@@ -158,13 +158,17 @@ def setup_runner(
                 "'auto', 'local', 'docker', 'podman', or 'singularity'"
             )
 
-    styx_runner = niwrap.get_global_runner()
+    # A --tmp-dir passed on the CLI should parent both niwrap's data_dir
+    # and rbc's scratch, so downstream generate_exec_folder calls honor
+    # the caller's choice too.
     if tmp_dir is not None:
-        Path(tmp_dir).mkdir(parents=True, exist_ok=True)
-        data_parent = Path(tmp_dir)
-    else:
-        data_parent = _work_root() / "niwrap"
-        data_parent.mkdir(parents=True, exist_ok=True)
+        global _WORK_ROOT
+        _WORK_ROOT = Path(tmp_dir)
+        _WORK_ROOT.mkdir(parents=True, exist_ok=True)
+
+    styx_runner = niwrap.get_global_runner()
+    data_parent = _work_root() / "niwrap"
+    data_parent.mkdir(parents=True, exist_ok=True)
     styx_runner.data_dir = Path(tempfile.mkdtemp(dir=data_parent))
     styx_logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
