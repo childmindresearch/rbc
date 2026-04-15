@@ -7,6 +7,7 @@ output directory; tests just assert on the resulting BIDS tree.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -34,25 +35,35 @@ def _rbc_exe() -> str:
 
 
 def _run_rbc(
-    args: Sequence[str], *, timeout: int = 7200
+    args: Sequence[str], *, timeout: int = 7200, bypass_cache: bool = False
 ) -> subprocess.CompletedProcess[str]:
     """Invoke ``rbc`` with ``-vv`` so container output reaches the subprocess.
 
     Without ``-vv`` the styx runner logger stays at WARNING and
-    container-side failure output (e.g. lta_convert exiting non-zero with
-    its own error text) never makes it into the captured stderr, which
+    container-side output never makes it into the captured stderr, which
     leaves the test with only a bare ``returncode=1`` to diagnose from.
+
+    Set ``bypass_cache=True`` to run with ``RBC_STYXCACHE_DIR`` cleared.
+    styxcache's tee handlers swallow container stderr into an internal
+    gzip that's discarded on exception, so a failing niwrap call under
+    cache leaves no diagnostic trail; bypassing cache restores raw
+    podman stderr passthrough.
     """
+    env = os.environ.copy()
+    if bypass_cache:
+        env.pop("RBC_STYXCACHE_DIR", None)
+
     result = subprocess.run(  # noqa: S603
         [_rbc_exe(), *args, "-vv"],
         capture_output=True,
         text=True,
         timeout=timeout,
+        env=env,
     )
     assert result.returncode == 0, (
         f"rbc {args[0]} exited with code {result.returncode}\n"
-        f"--- stdout ---\n{result.stdout[-4000:]}\n"
-        f"--- stderr ---\n{result.stderr[-4000:]}"
+        f"--- stdout ---\n{result.stdout}\n"
+        f"--- stderr ---\n{result.stderr}"
     )
     return result
 
@@ -147,5 +158,9 @@ def longitudinal_template_output(
             "--participant-label",
             _SUB,
         ],
+        # Template generation is still returning silent non-zero on the
+        # nightly; cache-bypass here gives us raw container stderr on
+        # failure without losing the anat fixture's cache benefit.
+        bypass_cache=True,
     )
     return ds000114_anat_derivatives
