@@ -53,9 +53,6 @@ def _mock_anat_outputs() -> Mock:
     m = Mock()
     m.brain = fake / "brain.nii.gz"
     m.brain_mask = fake / "brain_mask.nii.gz"
-    m.csf_mask = fake / "csf_mask.nii.gz"
-    m.gm_mask = fake / "gm_mask.nii.gz"
-    m.wm_mask = fake / "wm_mask.nii.gz"
     m.long_to_template_xfm = fake / "long_to_template_xfm.nii.gz"
     m.template_to_long_xfm = fake / "template_to_long_xfm.nii.gz"
     return m
