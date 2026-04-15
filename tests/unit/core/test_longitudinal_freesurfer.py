@@ -150,6 +150,16 @@ class TestFsToItkXfm:
         assert mock_fs.lta_convert.call_count == 2
         assert mock_mat_to_itk.call_count == 2
 
+        # Each lta_convert invocation must receive the per-session src
+        # geometry and the shared target (template) geometry. Without
+        # these, FreeSurfer can't resolve the /styx_input paths the
+        # LTA was written with and emits an invalid FSL matrix.
+        for call, expected_source in zip(
+            mock_fs.lta_convert.call_args_list, sources, strict=True
+        ):
+            assert call.kwargs["src_geometry"] == expected_source
+            assert call.kwargs["trg_geometry"] == ref
+
     def test_length_mismatch_raises(self, tmp_path: Path) -> None:
         """Sessions, sources, and in_xfms must agree in length."""
         with pytest.raises(ValueError, match="same length"):

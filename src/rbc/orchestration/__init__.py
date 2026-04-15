@@ -24,6 +24,11 @@ if TYPE_CHECKING:
 _DEFAULT_ENV_VARS = {
     "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1",
     "ANTS_RANDOM_SEED": CPAC_ANTS_SEED,
+    # Required by any FreeSurfer tool that emits FSL-format output
+    # (e.g. lta_convert --outfsl): without it FS exits non-zero with
+    # "FSLOUTPUTTYPE variable is not set". Harmless for tools that
+    # ignore it. NIFTI_GZ matches FSL's conventional default.
+    "FSLOUTPUTTYPE": "NIFTI_GZ",
 }
 
 

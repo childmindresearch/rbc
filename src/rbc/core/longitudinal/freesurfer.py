@@ -139,7 +139,18 @@ def fs_to_itk_xfm(
     itk_xfms: list[Path] = []
     for ses, source, in_xfm in zip(sessions, sources, in_xfms, strict=True):
         fsl_fname = in_xfm.with_suffix(".mat").name
-        lta = freesurfer.lta_convert(in_lta=in_xfm, out_fsl=fsl_fname)
+        # src_geometry/trg_geometry are required here even though the LTA
+        # already carries references to them: mri_robust_template wrote
+        # paths like /styx_input/... inside its container, which don't
+        # resolve when lta_convert runs in a fresh container. Passing the
+        # volumes explicitly makes niwrap bind-mount them and gives
+        # FreeSurfer the geometry it needs to emit a valid FSL matrix.
+        lta = freesurfer.lta_convert(
+            in_lta=in_xfm,
+            out_fsl=fsl_fname,
+            src_geometry=source,
+            trg_geometry=reference,
+        )
         itk_path = generate_exec_folder("itk_xfm") / itk_filename(sub, ses)
         mat_to_itk(
             mat=lta.root / fsl_fname,
