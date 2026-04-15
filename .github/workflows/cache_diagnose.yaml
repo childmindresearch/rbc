@@ -22,6 +22,8 @@ jobs:
     - name: Diagnose styxcache
       shell: bash
       run: |
+        # sort | head trips pipefail when head closes early; accept that SIGPIPE.
+        set +o pipefail
         DIR="${STYXCACHE_DIR_OVERRIDE:-$HOME/.cache/rbc-styxcache}"
         if [ ! -d "$DIR" ]; then
           echo "cache dir missing: $DIR"
