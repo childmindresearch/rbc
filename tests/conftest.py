@@ -114,7 +114,7 @@ def niwrap_runner(
                 image_digest=resolver,
                 # Bump to invalidate when styxcache storage semantics change
                 # (e.g. 0.1.x entries lacked persisted stdout).
-                extra={"cache_generation": "2026-2"},
+                extra={"cache_generation": "2026-1"},
             ),
         )
         niwrap.set_global_runner(wrapped)
