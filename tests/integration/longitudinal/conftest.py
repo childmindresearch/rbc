@@ -161,6 +161,8 @@ def longitudinal_template_output(
         # Template generation is still returning silent non-zero on the
         # nightly; cache-bypass here gives us raw container stderr on
         # failure without losing the anat fixture's cache benefit.
+        # TODO: drop once styx-api/styx-runtime-py#9 lands and surfaces
+        # container stderr through the cache wrapper.
         bypass_cache=True,
     )
     return ds000114_anat_derivatives
