@@ -36,14 +36,9 @@ def _rbc_exe() -> str:
 def _run_rbc(
     args: Sequence[str], *, timeout: int = 7200
 ) -> subprocess.CompletedProcess[str]:
-    """Invoke ``rbc`` with ``-vv`` so container output reaches the subprocess.
-
-    Without ``-vv`` the styx runner logger stays at WARNING and
-    container-side output never makes it into the captured stderr, which
-    leaves the test with only a bare ``returncode=1`` to diagnose from.
-    """
+    """Run the ``rbc`` CLI and assert it exits cleanly."""
     result = subprocess.run(  # noqa: S603
-        [_rbc_exe(), *args, "-vv"],
+        [_rbc_exe(), *args],
         capture_output=True,
         text=True,
         timeout=timeout,
