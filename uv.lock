@@ -1032,6 +1032,7 @@ dependencies = [
     { name = "numpy" },
     { name = "polars" },
     { name = "scipy" },
+    { name = "styxcache" },
     { name = "styxpodman" },
     { name = "tqdm" },
 ]
@@ -1045,7 +1046,6 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "ruff" },
-    { name = "styxcache" },
 ]
 docs = [
     { name = "pdoc" },
@@ -1059,6 +1059,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "polars", specifier = ">=1.38.1" },
     { name = "scipy", specifier = ">=1.17.0" },
+    { name = "styxcache", specifier = ">=0.2.0,<0.3" },
     { name = "styxpodman", specifier = ">=0.1.1" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
@@ -1072,7 +1073,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.8.1" },
-    { name = "styxcache", specifier = ">=0.2.0,<0.3" },
 ]
 docs = [{ name = "pdoc", specifier = ">=15.0.0" }]
 

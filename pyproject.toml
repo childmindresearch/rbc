@@ -13,6 +13,7 @@ dependencies = [
   "numpy>=2.4.2",
   "polars>=1.38.1",
   "scipy>=1.17.0",
+  "styxcache>=0.2.0,<0.3",
   "styxpodman>=0.1.1",
   "tqdm>=4.67.3"
 ]
@@ -28,8 +29,7 @@ dev = [
   "pytest-cov>=7.0.0",
   "ruff>=0.8.1",
   "deptry>=0.23.0",
-  "pytest-xdist[psutil]>=3.8.0",
-  "styxcache>=0.2.0,<0.3"
+  "pytest-xdist[psutil]>=3.8.0"
 ]
 docs = ["pdoc>=15.0.0"]
 
@@ -43,11 +43,6 @@ markers = [
   "slow: Long-running tests (manual marker on individual tests)",
   "full_pipeline: End-to-end workflow tests"
 ]
-
-[tool.deptry.per_rule_ignores]
-# styxcache is optional — imported via try/except so the dependency is only
-# needed on CI where the cache is wired up. src/rbc runs fine without it.
-DEP004 = ["styxcache"]
 
 [tool.coverage.report]
 omit = ["src/rbc_resources/"]

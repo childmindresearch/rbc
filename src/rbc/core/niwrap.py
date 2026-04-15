@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Literal, NamedTuple
 
 import niwrap
+from styxcache import CachePolicy, CachingRunner
+from styxcache.backends import docker_digest_resolver, podman_digest_resolver
 from styxpodman import PodmanRunner
 
 _LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
@@ -25,6 +27,50 @@ _RUNNER_EXECUTABLES: list[tuple[RunnerType, list[str]]] = [
     ("podman", ["podman"]),
     ("singularity", ["apptainer", "singularity"]),
 ]
+
+
+# styxcache's CachingRunner doesn't proxy base-runner attributes, but rbc
+# touches data_dir / uid / execution_counter on the global runner. This shim
+# forwards anything it doesn't own to self.base.
+class _CacheProxyingRunner(CachingRunner):
+    _OWN_ATTRS = frozenset({"base", "store", "policy"})
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self.__dict__["base"], name)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if "base" not in self.__dict__ or name in self._OWN_ATTRS:
+            super().__setattr__(name, value)
+        else:
+            setattr(self.__dict__["base"], name, value)
+
+
+def maybe_wrap_with_cache(
+    runner: niwrap.Runner, runner_type: RunnerType
+) -> niwrap.Runner:
+    """Wrap *runner* with a styxcache CachingRunner if RBC_STYXCACHE_DIR is set.
+
+    Registers the wrapped runner as the niwrap global and returns it. When the
+    env var is unset, or the runner type isn't a container runner with a
+    digest resolver, the runner is returned unchanged.
+    """
+    cache_dir = os.environ.get("RBC_STYXCACHE_DIR")
+    if not cache_dir or runner_type not in {"docker", "podman"}:
+        return runner
+    resolver = (
+        docker_digest_resolver if runner_type == "docker" else podman_digest_resolver
+    )
+    wrapped = _CacheProxyingRunner(
+        base=runner,
+        cache_dir=cache_dir,
+        policy=CachePolicy(
+            image_digest=resolver,
+            # Bump to invalidate when styxcache storage semantics change.
+            extra={"cache_generation": "2026-1"},
+        ),
+    )
+    niwrap.set_global_runner(wrapped)
+    return wrapped
 
 
 class StyxContext(NamedTuple):
@@ -119,6 +165,11 @@ def setup_runner(
     styx_logger = logging.getLogger(styx_runner.logger_name)
     log_level = min(verbose, len(_LOG_LEVELS) - 1)
     styx_logger.setLevel(_LOG_LEVELS[log_level])
+
+    # Opt-in persistent caching: subprocess invocations of `rbc` in CI (e.g.
+    # tests/integration/test_all.py's `rbc all` spawn) pick this up through
+    # the RBC_STYXCACHE_DIR env var inherited from the parent pytest process.
+    styx_runner = maybe_wrap_with_cache(styx_runner, runner_type)
 
     rbc_logger = logging.getLogger("rbc")
     rbc_logger.setLevel(_LOG_LEVELS[log_level])
