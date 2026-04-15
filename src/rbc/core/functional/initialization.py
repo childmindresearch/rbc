@@ -1,12 +1,9 @@
 """BOLD initialization steps.
 
-After reorientation (handled in ``rbc.core.common``), BOLD data undergoes
-two initialization steps before motion correction:
-
-1. **TR truncation** -- discard the first *N* volumes (default 2) to allow
-   the scanner signal to reach steady state.
-2. **Voxel scaling** -- rescale voxel dimensions (divide by 10) to match
-   the coordinate conventions expected downstream.
+After reorientation (handled in ``rbc.core.common``), BOLD data undergoes an
+initialization step before motion correction: TR truncation -- discard the
+first *N* volumes (default 2) to allow the scanner signal to reach steady
+state.
 """
 
 from __future__ import annotations
@@ -41,26 +38,3 @@ def truncate_trs(in_file: Path, start_tr: int) -> Path:
     )
     assert result.output_file is not None  # noqa: S101
     return result.output_file
-
-
-def scale_bold(in_file: Path, scale_factor: float = 0.1) -> afni.V3drefitOutputs:
-    """Rescale BOLD voxel dimensions via ``3drefit -xyzscale``.
-
-    Some pipelines store BOLD data with inflated voxel sizes. This step
-    multiplies all voxel dimensions by *scale_factor* (default 0.1, i.e.
-    divide by 10) to bring them into the expected coordinate range.
-
-    Note:
-        This modifies the NIfTI header in-place; the voxel data are unchanged.
-
-    Args:
-        in_file: BOLD timeseries whose header should be updated.
-        scale_factor: Multiplier for voxel dimensions (default 0.1).
-
-    Returns:
-        AFNI 3drefit outputs.
-    """
-    return afni.v_3drefit(
-        in_file=in_file,
-        xyzscale=scale_factor,
-    )

@@ -20,7 +20,7 @@ from .distortion import (
     is_valid_pe_direction,
 )
 from .erosion import erode_mask_by_distance, erode_mask_to_proportion
-from .initialization import scale_bold, truncate_trs
+from .initialization import truncate_trs
 from .masking import bold_masking
 from .motion import extract_motion_reference, fsl_motion_correction
 from .nuisance import (
@@ -69,7 +69,6 @@ __all__ = [
     "is_valid_pe_direction",
     "nuisance_regression",
     "resample_bold_to_template",
-    "scale_bold",
     "slice_timing_correction",
     "truncate_trs",
     "write_regressor_file",
