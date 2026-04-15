@@ -109,7 +109,7 @@ def bandpass_regressor_file(
         f_data[~freq_mask] = 0.0
         filtered[:, col] = np.real(ifft(f_data))[:n_tp]
 
-    out_path = regressor_file.parent / "regressors_filtered.1D"
+    out_path = generate_exec_folder("regressors_filtered") / "regressors_filtered.1D"
     with out_path.open("w") as f:
         for line in header_lines:
             f.write(line)

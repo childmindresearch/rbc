@@ -15,6 +15,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 from rbc.core.nifti import Volume
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -188,7 +189,7 @@ def compute_reho(
 
     if out_file is None:
         stem = in_file.name.split(".nii")[0]
-        out_file = in_file.parent / f"{stem}_reho.nii.gz"
+        out_file = generate_exec_folder("reho") / f"{stem}_reho.nii.gz"
     out_file = Path(out_file)
 
     bold.derive(reho_map).save(out_file)

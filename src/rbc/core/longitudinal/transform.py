@@ -8,6 +8,7 @@ from niwrap import ants
 
 from rbc.core.common import merge_3d_to_4d, split_4d
 from rbc.core.functional.resampling import _restore_tr
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -142,7 +143,10 @@ def _transform_4d_chunked(in_file: Path, template: Path, xfm: Path) -> Path:
         )
         transformed_vols.append(result.output.output_image_outfile)
 
-    out_path = transformed_vols[0].parent / "bold_to_longitudinal.nii.gz"
+    out_path = (
+        generate_exec_folder("bold_to_longitudinal_merge")
+        / "bold_to_longitudinal.nii.gz"
+    )
     merged = merge_3d_to_4d(transformed_vols, out_path)
     _restore_tr(merged, in_file)
     return merged

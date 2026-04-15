@@ -12,7 +12,6 @@ from niwrap import (
     LocalRunner,
     Runner,
     SingularityRunner,
-    get_global_runner,
 )
 from styxpodman import PodmanRunner
 
@@ -24,6 +23,12 @@ if TYPE_CHECKING:
 
 class TestSetupRunner:
     """Test suite for niwrap.setup_runner."""
+
+    @pytest.fixture(autouse=True)
+    def _no_styxcache_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # setup_runner wraps with a CachingRunner when RBC_STYXCACHE_DIR is set.
+        # Tests here probe the concrete runner type, so drop the env var.
+        monkeypatch.delenv("RBC_STYXCACHE_DIR", raising=False)
 
     def test_default(self, tmp_path: Path) -> None:
         """Test default initialization uses auto-detection."""
@@ -85,23 +90,18 @@ class TestGenExecFolder:
 
     def test_create_folder_default(self) -> None:
         """Test folder successfully generated with default arguments."""
-        runner = get_global_runner()
         result = generate_exec_folder()
         assert result.exists()
         assert result.is_dir()
-        assert runner.execution_counter == 1
-        assert result.name == f"{runner.uid}_{runner.execution_counter - 1}_python"
+        assert result.name.startswith("python_")
 
     def test_create_folder_with_suffix(self) -> None:
-        """Test folder successfully generates with suffix."""
-        runner = get_global_runner()
+        """Test folder successfully generates with suffix prefix."""
         result = generate_exec_folder(suffix="pytest")
-        assert result.name == f"{runner.uid}_{runner.execution_counter - 1}_pytest"
+        assert result.name.startswith("pytest_")
 
-    def test_error_if_folder_exists(self) -> None:
-        """Test folder generation fails if duplicate."""
-        runner = get_global_runner()
-        generate_exec_folder()
-        runner.execution_counter -= 1
-        with pytest.raises(FileExistsError):
-            generate_exec_folder()
+    def test_folders_are_unique(self) -> None:
+        """Each call returns a distinct path, even with the same suffix."""
+        a = generate_exec_folder("same")
+        b = generate_exec_folder("same")
+        assert a != b

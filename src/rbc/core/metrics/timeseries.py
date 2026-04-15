@@ -12,6 +12,8 @@ from typing import NamedTuple
 
 import numpy as np
 
+from rbc.core.niwrap import generate_exec_folder
+
 logger = logging.getLogger(__name__)
 
 
@@ -156,7 +158,7 @@ def compute_timeseries(
     corr = correlation_matrix(ts)
 
     if out_dir is None:
-        out_dir = in_file.parent
+        out_dir = generate_exec_folder("timeseries")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 

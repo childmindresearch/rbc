@@ -11,6 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
+from rbc.core.niwrap import generate_exec_folder
+
 
 def zscore(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
     """Z-score a 3D map within a brain mask.
@@ -71,7 +73,7 @@ def compute_zscore(
 
     if out_file is None:
         stem = in_file.name.split(".nii")[0]
-        out_file = in_file.parent / f"{stem}_zscored.nii.gz"
+        out_file = generate_exec_folder("zscore") / f"{stem}_zscored.nii.gz"
     out_file = Path(out_file)
 
     nib.nifti1.Nifti1Image(zscored, img.affine, img.header).to_filename(str(out_file))

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from niwrap import freesurfer
 
 from rbc.core.fsl2itk import mat_to_itk
+from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -139,7 +140,7 @@ def fs_to_itk_xfm(
     for ses, source, in_xfm in zip(sessions, sources, in_xfms, strict=True):
         fsl_fname = in_xfm.with_suffix(".mat").name
         lta = freesurfer.lta_convert(in_lta=in_xfm, out_fsl=fsl_fname)
-        itk_path = in_xfm.parent / itk_filename(sub, ses)
+        itk_path = generate_exec_folder("itk_xfm") / itk_filename(sub, ses)
         mat_to_itk(
             mat=lta.root / fsl_fname,
             reference=reference,
