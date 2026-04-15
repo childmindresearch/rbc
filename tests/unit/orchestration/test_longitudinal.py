@@ -130,23 +130,6 @@ def func_df_full() -> pl.DataFrame:
     )
 
 
-@pytest.fixture
-def mixed_df() -> pl.DataFrame:
-    """Anat + func dataframe for both-flags tests."""
-    return _df(
-        _anat_row("01", "baseline"),
-        _anat_row("01", "vis2"),
-        _anat_row("02", "baseline"),
-        _anat_row("02", "vis2"),
-        _func_row("01", "baseline"),
-        _func_row("01", "vis2"),
-        _func_row("02", "baseline"),
-        _func_row("02", "vis2"),
-        _anat_row("01", "longitudinal"),
-        _anat_row("02", "longitudinal"),
-    )
-
-
 def _make_groups(
     df: pl.DataFrame, participant: list[str], session: list[str]
 ) -> list[tuple]:
@@ -190,13 +173,10 @@ def _build_iter_side_effect(groups: list[tuple]) -> Callable[..., list]:
 
 
 @contextmanager
-def _patch_run(
+def _patch_anat_run(
     full_df: pl.DataFrame,
-    groups: list[tuple],
-    *,
-    with_bold_mask: bool = True,
-) -> Generator[tuple[Mock, Mock, Mock], None, None]:
-    """Patch external calls made by orchestration.longitudinal.run()."""
+) -> Generator[tuple[Mock, Mock], None, None]:
+    """Patch external calls made by orchestration.longitudinal.anatomical.run()."""
     from rbc.bids.session import SessionTables
 
     mock_anat_df = pl.DataFrame(
@@ -213,12 +193,11 @@ def _patch_run(
     )
     mock_session = SessionTables(anat=mock_anat_df, func=None)
     with (
-        patch("rbc.orchestration.longitudinal.init_runner"),
-        patch("rbc.orchestration.longitudinal.load_table", return_value=full_df),
-        patch("rbc.orchestration.longitudinal.load_session", return_value=mock_session),
+        patch("rbc.orchestration.longitudinal.anatomical.init_runner"),
+        patch("rbc.orchestration.longitudinal._iter.load_table", return_value=full_df),
         patch(
-            "rbc.orchestration.longitudinal.iter_session_files",
-            side_effect=_build_iter_side_effect(groups),
+            "rbc.orchestration.longitudinal._iter.load_session",
+            return_value=mock_session,
         ),
         patch(
             "rbc.bids.query.find_file",
@@ -228,13 +207,56 @@ def _patch_run(
             "rbc.orchestration.longitudinal.anatomical.anatomical_longitudinal",
             return_value=_mock_anat_outputs(),
         ) as mock_anat,
+        patch("rbc.orchestration.longitudinal._iter.RunContext") as mock_ctx_cls,
+    ):
+        yield mock_anat, mock_ctx_cls
+
+
+@contextmanager
+def _patch_func_run(
+    full_df: pl.DataFrame,
+    groups: list[tuple],
+    *,
+    with_bold_mask: bool = True,
+) -> Generator[tuple[Mock, Mock], None, None]:
+    """Patch external calls made by orchestration.longitudinal.functional.run()."""
+    from rbc.bids.session import SessionTables
+
+    mock_anat_df = pl.DataFrame(
+        {
+            "suffix": ["T1w"],
+            "ext": [".nii.gz"],
+            "run": [None],
+            "acq": [None],
+            "space": [None],
+            "desc": [None],
+            "root": ["/data"],
+            "path": ["sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz"],
+        }
+    )
+    mock_session = SessionTables(anat=mock_anat_df, func=None)
+    with (
+        patch("rbc.orchestration.longitudinal.functional.init_runner"),
+        patch("rbc.orchestration.longitudinal._iter.load_table", return_value=full_df),
+        patch(
+            "rbc.orchestration.longitudinal._iter.load_session",
+            return_value=mock_session,
+        ),
+        patch(
+            "rbc.orchestration.longitudinal.functional.iter_session_files",
+            side_effect=_build_iter_side_effect(groups),
+        ),
+        patch(
+            "rbc.bids.query.find_file",
+            return_value=Path("fake_workdir/file.nii.gz"),
+        ),
         patch(
             "rbc.orchestration.longitudinal.functional.functional_longitudinal",
             return_value=_mock_func_outputs(with_bold_mask=with_bold_mask),
         ) as mock_func,
-        patch("rbc.orchestration.longitudinal.RunContext") as mock_ctx_cls,
+        patch("rbc.orchestration.longitudinal._iter.RunContext") as mock_ctx_cls,
     ):
-        yield mock_anat, mock_func, mock_ctx_cls
+        yield mock_func, mock_ctx_cls
 
 
 class TestProcessAnat:
@@ -381,8 +403,8 @@ class TestProcessFunc:
             assert mock_copy.call_count == 3
 
 
-class TestLongitudinalDispatch:
-    """Tests for run() dispatch logic (not filtering, which is in test_filters)."""
+class TestLongitudinalAnatomicalRun:
+    """Tests for the longitudinal anatomical orchestration entrypoint."""
 
     def test_missing_template_raises(
         self,
@@ -390,14 +412,10 @@ class TestLongitudinalDispatch:
         tmp_path: Path,
     ) -> None:
         """Missing longitudinal template raises ValueError."""
-        from rbc.orchestration.longitudinal import run
+        from rbc.orchestration.longitudinal.anatomical import run
 
         df_no_tpl = anat_df_full.filter(pl.col("ses") != "longitudinal")
-        with _patch_run(df_no_tpl, _make_groups(df_no_tpl, [], [])) as (
-            _,
-            __,
-            mock_ctx_cls,
-        ):
+        with _patch_anat_run(df_no_tpl) as (_, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             with pytest.raises(ValueError, match="No longitudinal template found"):
                 run(
@@ -406,75 +424,43 @@ class TestLongitudinalDispatch:
                     filters=Filters(),
                 )
 
-    def test_functional_false_skips_func(
+    def test_dispatches_anat_processing(
         self,
         anat_df_full: pl.DataFrame,
         tmp_path: Path,
     ) -> None:
-        """Functional processing is skipped when functional=False."""
-        from rbc.orchestration.longitudinal import run
+        """Anatomical processing dispatches for each matching session."""
+        from rbc.orchestration.longitudinal.anatomical import run
 
-        with (
-            _patch_run(anat_df_full, _make_groups(anat_df_full, [], [])) as (
-                _,
-                __,
-                mock_ctx_cls,
-            ),
-            patch("rbc.orchestration.longitudinal.process_func") as mock_pf,
-        ):
+        with _patch_anat_run(anat_df_full) as (mock_anat, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             run(
                 input_dirs=[tmp_path],
                 output_dir=tmp_path,
-                filters=Filters(),
-                functional=False,
+                filters=Filters(participant_label=["01"], session_label=["baseline"]),
             )
-            mock_pf.assert_not_called()
+            mock_anat.assert_called_once()
 
-    def test_functional_true_dispatches(
+
+class TestLongitudinalFunctionalRun:
+    """Tests for the longitudinal functional orchestration entrypoint."""
+
+    def test_dispatches_func_processing(
         self,
         func_df_full: pl.DataFrame,
         tmp_path: Path,
     ) -> None:
-        """Functional processing dispatches when functional=True."""
-        from rbc.orchestration.longitudinal import run
+        """Functional processing dispatches for each matching BOLD run."""
+        from rbc.orchestration.longitudinal.functional import run
 
-        with _patch_run(
-            func_df_full, _make_groups(func_df_full, ["01"], ["baseline"])
-        ) as (mock_anat, mock_func, mock_ctx_cls):
+        groups = _make_groups(func_df_full, ["01"], ["baseline"])
+        with _patch_func_run(func_df_full, groups) as (mock_func, mock_ctx_cls):
             mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
             run(
                 input_dirs=[tmp_path],
                 output_dir=tmp_path,
                 filters=Filters(participant_label=["01"], session_label=["baseline"]),
-                anatomical=False,
-                functional=True,
             )
-            mock_func.assert_called_once()
-            mock_anat.assert_not_called()
-
-    def test_both_flags_dispatch(
-        self,
-        mixed_df: pl.DataFrame,
-        tmp_path: Path,
-    ) -> None:
-        """Both anatomical and functional dispatch when both flags are True."""
-        from rbc.orchestration.longitudinal import run
-
-        with _patch_run(mixed_df, _make_groups(mixed_df, ["01"], ["baseline"])) as (
-            mock_anat,
-            mock_func,
-            mock_ctx_cls,
-        ):
-            mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-            run(
-                input_dirs=[tmp_path],
-                output_dir=tmp_path,
-                filters=Filters(participant_label=["01"], session_label=["baseline"]),
-                anatomical=True,
-                functional=True,
-            )
-            mock_anat.assert_called_once()
             mock_func.assert_called_once()
 
     def test_experimental_warning_emitted(
@@ -483,15 +469,17 @@ class TestLongitudinalDispatch:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Experimental warning is logged when run() starts."""
-        from rbc.orchestration.longitudinal import run
+        from rbc.orchestration.longitudinal.functional import run
 
         empty_df = pl.DataFrame(
             {c: [] for c in ["sub", "ses", "datatype", "suffix", "space", "task"]}
         )
         with (
             caplog.at_level(logging.WARNING),
-            patch("rbc.orchestration.longitudinal.init_runner"),
-            patch("rbc.orchestration.longitudinal.load_table", return_value=empty_df),
+            patch("rbc.orchestration.longitudinal.functional.init_runner"),
+            patch(
+                "rbc.orchestration.longitudinal._iter.load_table", return_value=empty_df
+            ),
         ):
             run(
                 input_dirs=[tmp_path],

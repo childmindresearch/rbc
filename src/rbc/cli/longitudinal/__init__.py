@@ -1,15 +1,25 @@
 """``rbc longitudinal`` parent command and nested subcommand registration.
 
-Stage 2 introduces the nested subcommand layout. The pre-existing
-``--anatomical --functional`` flow lives under ``rbc longitudinal process``
-until Stage 3 splits it into per-stage subcommands.
+Stage 3 lands the full nested subcommand layout. Every stage of the
+longitudinal pipeline has a dedicated subcommand; ``metrics``, ``qc``, and
+``all`` are registered so they surface in ``--help`` but raise
+``NotImplementedError`` until Stage 6.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rbc.cli.longitudinal import process, template
+from rbc.cli.longitudinal import (
+    all as all_,
+)
+from rbc.cli.longitudinal import (
+    anatomical,
+    functional,
+    metrics,
+    qc,
+    template,
+)
 
 if TYPE_CHECKING:
     import argparse
@@ -26,7 +36,7 @@ def register_command(
         aliases=["long"],
         description="RBC longitudinal workflows",
         help="Longitudinal workflows",
-        usage="rbc longitudinal {template,process} ...",
+        usage=("rbc longitudinal {template,anatomical,functional,metrics,qc,all} ..."),
     )
     nested = parser.add_subparsers(
         title="longitudinal stages",
@@ -36,4 +46,8 @@ def register_command(
         help="Stage help",
     )
     template.register_command(nested, parents=parents)
-    process.register_command(nested, parents=parents)
+    anatomical.register_command(nested, parents=parents)
+    functional.register_command(nested, parents=parents)
+    metrics.register_command(nested, parents=parents)
+    qc.register_command(nested, parents=parents)
+    all_.register_command(nested, parents=parents)

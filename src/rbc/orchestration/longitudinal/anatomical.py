@@ -1,7 +1,8 @@
-"""Per-group anatomical longitudinal processing."""
+"""Orchestration for the longitudinal anatomical workflow."""
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -11,15 +12,22 @@ from rbc.bids.longitudinal.anatomical import (
     export_longitudinal_anat,
     resolve_longitudinal_anat,
 )
+from rbc.orchestration import Filters, RunnerConfig, init_runner
+from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.anatomical import (
     longitudinal_process as anatomical_longitudinal,
 )
 from rbc_resources import REGISTRATION_TEMPLATES
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from rbc.context import RunContext
+
+__all__ = ["process_anat", "run"]
+
+_logger = logging.getLogger(__name__)
 
 
 def process_anat(
@@ -55,3 +63,48 @@ def process_anat(
     )
     aex = anat_q.derive(entities=ents, space="longitudinal")
     export_longitudinal_anat(aex, outputs)
+
+
+def run(
+    input_dirs: Sequence[Path],
+    output_dir: Path,
+    *,
+    filters: Filters,
+    registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
+    runner_config: RunnerConfig | None = None,
+) -> None:
+    """Run longitudinal anatomical processing for all matching subjects/sessions.
+
+    Args:
+        input_dirs: BIDS dataset directories (must include preprocessed
+            cross-sectional anatomical derivatives and longitudinal templates).
+        output_dir: Output directory for derivatives.
+        filters: Participant/session filters applied before grouping.
+        registration_template: Brain template for ANTs registration.
+        runner_config: Execution backend configuration.
+    """
+    config = runner_config or RunnerConfig()
+    init_runner(config)
+    verbose = config.verbose
+
+    _logger.warning(
+        "This workflow is experimental and may be sensitive to input file "
+        "naming conventions."
+    )
+    _logger.info("Preparing to run RBC longitudinal anatomical workflow")
+
+    for pipe_ctx, session, tpl_df in iter_sessions_with_template(
+        input_dirs, output_dir, filters=filters, verbose=verbose
+    ):
+        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
+            ("run", "acq"), maintain_order=True
+        ):
+            process_anat(
+                pipe_ctx=pipe_ctx,
+                anat_df=anat_df,
+                tpl_df=tpl_df,
+                registration_template=registration_template,
+            )
+        pipe_ctx.ensure_dataset_description()
+
+    _logger.info("RBC longitudinal anatomical workflow complete")
