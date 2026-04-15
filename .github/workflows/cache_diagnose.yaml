@@ -51,7 +51,7 @@ jobs:
 
         tmp=$(mktemp)
         find "$DIR" -mindepth 2 -maxdepth 2 -type d | while read -r shard; do
-          tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$shard/run.sh" 2>/dev/null || echo "?")
+          tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$shard/run.sh" 2>/dev/null || echo "?")
           size_kb=$(du -sk "$shard" 2>/dev/null | awk '{print $1}')
           echo "$tool $size_kb"
         done > "$tmp"
@@ -68,7 +68,7 @@ jobs:
           | sort -rn \
           | head -10 \
           | while read -r ts path; do
-              tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$path/run.sh" 2>/dev/null || echo "?")
+              tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$path/run.sh" 2>/dev/null || echo "?")
               when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
               key=$(basename "$path")
               echo "| $when | \`$tool\` | \`${key:0:16}\` |"
@@ -80,7 +80,7 @@ jobs:
           | sort -n \
           | head -10 \
           | while read -r ts path; do
-              tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$path/run.sh" 2>/dev/null || echo "?")
+              tool=$(awk '/^#!/ || /^set / || /^$/ || /^export / {next} {print $1; exit}' "$path/run.sh" 2>/dev/null || echo "?")
               when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
               key=$(basename "$path")
               echo "| $when | \`$tool\` | \`${key:0:16}\` |"
