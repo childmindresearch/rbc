@@ -1,0 +1,94 @@
+name: Cache Diagnose
+
+on:
+  workflow_dispatch:
+    inputs:
+      top_n:
+        description: "Number of top-tool rows to include"
+        default: "20"
+        type: string
+      styxcache_dir:
+        description: "Override persistent styxcache directory"
+        default: ""
+        type: string
+
+jobs:
+  diagnose:
+    runs-on: arcana
+    env:
+      STYXCACHE_DIR_OVERRIDE: ${{ inputs.styxcache_dir }}
+      TOP_N: ${{ inputs.top_n }}
+    steps:
+    - name: Diagnose styxcache
+      shell: bash
+      run: |
+        DIR="${STYXCACHE_DIR_OVERRIDE:-$HOME/.cache/rbc-styxcache}"
+        if [ ! -d "$DIR" ]; then
+          echo "cache dir missing: $DIR"
+          exit 0
+        fi
+
+        total=$(find "$DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | wc -l)
+        size=$(du -sh "$DIR" 2>/dev/null | cut -f1)
+        incoming=$(find "$DIR/.incoming" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+
+        {
+          echo "## styxcache diagnostic"
+          echo "- dir: \`$DIR\`"
+          echo "- total entries: $total"
+          echo "- total size: $size"
+          echo "- orphan staging (.incoming): $incoming"
+          echo ""
+          echo "### Top tools by entry count"
+          echo "| tool | count | total size |"
+          echo "| --- | ---: | ---: |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        tmp=$(mktemp)
+        find "$DIR" -mindepth 2 -maxdepth 2 -type d | while read -r shard; do
+          tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$shard/run.sh" 2>/dev/null || echo "?")
+          size_kb=$(du -sk "$shard" 2>/dev/null | awk '{print $1}')
+          echo "$tool $size_kb"
+        done > "$tmp"
+
+        awk '{counts[$1]++; sizes[$1]+=$2} END {for(t in counts){printf "%s\t%d\t%d\n",t,counts[t],sizes[t]}}' "$tmp" \
+          | sort -k2 -rn \
+          | head -n "${TOP_N:-20}" \
+          | awk -v OFS='' '{printf "| `%s` | %d | %.1f MiB |\n", $1, $2, $3/1024}' \
+          >> "$GITHUB_STEP_SUMMARY"
+
+        {
+          echo ""
+          echo "### Newest 10 entries"
+          echo "| when (UTC) | tool | entry |"
+          echo "| --- | --- | --- |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
+          | sort -rn \
+          | head -10 \
+          | while read -r ts path; do
+              tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$path/run.sh" 2>/dev/null || echo "?")
+              when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
+              key=$(basename "$path")
+              echo "| $when | \`$tool\` | \`${key:0:16}\` |"
+            done >> "$GITHUB_STEP_SUMMARY"
+
+        {
+          echo ""
+          echo "### Oldest 10 entries"
+          echo "| when (UTC) | tool | entry |"
+          echo "| --- | --- | --- |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        find "$DIR" -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' \
+          | sort -n \
+          | head -10 \
+          | while read -r ts path; do
+              tool=$(awk 'NR==1{for(i=1;i<=NF;i++){if($i!~/^\//){print $i; exit}}}' "$path/run.sh" 2>/dev/null || echo "?")
+              when=$(date -u -d "@${ts%.*}" '+%Y-%m-%d %H:%M')
+              key=$(basename "$path")
+              echo "| $when | \`$tool\` | \`${key:0:16}\` |"
+            done >> "$GITHUB_STEP_SUMMARY"
+
+        rm -f "$tmp"
