@@ -162,23 +162,10 @@ def ds000114_func_derivatives(
     Only ses-test is processed (one session is sufficient to exercise
     the longitudinal functional chain).
     """
-    # Debug: dump bids2table output for derivatives dir
-    import bids2table as b2t
-    import polars as pl
-
-    _datasets = list(b2t.find_bids_datasets(ds000114_anat_derivatives))
-    print(f"\n--- b2t datasets in {ds000114_anat_derivatives}: {_datasets} ---")  # noqa: T201
-    _tables = list(b2t.batch_index_dataset(_datasets, max_workers=0))
-    for _t in _tables:
-        _df = pl.DataFrame(pl.from_arrow(_t))
-        _anat = _df.filter(pl.col("datatype") == "anat")
-        print(  # noqa: T201
-            "b2t anat rows:",
-            _anat.select(["sub", "ses", "suffix", "desc", "space"]).to_dicts(),
-        )
-    print("--- end b2t debug ---\n")  # noqa: T201
-    _run_rbc(
+    # Run rbc functional with verbose to get load_table debug output
+    result = subprocess.run(  # noqa: S603
         [
+            _rbc_exe(),
             "functional",
             str(ds000114_dataset),
             str(ds000114_anat_derivatives),
@@ -192,8 +179,27 @@ def ds000114_func_derivatives(
             "test",
             "--task",
             _TASK,
+            "-v",
         ],
+        capture_output=True,
+        text=True,
+        timeout=7200,
     )
+    if result.returncode != 0:
+        # Dump the derivatives tree for diagnosis
+        _tree = sorted(
+            str(p.relative_to(ds000114_anat_derivatives))
+            for p in ds000114_anat_derivatives.rglob("*")
+            if p.is_file()
+        )
+        msg = (
+            f"rbc functional exited with code {result.returncode}\n"
+            f"--- derivatives dir: {ds000114_anat_derivatives} ---\n"
+            + "\n".join(_tree)
+            + f"\n--- stdout ---\n{result.stdout[-2000:]}\n"
+            f"--- stderr ---\n{result.stderr[-2000:]}"
+        )
+        raise AssertionError(msg)
     return ds000114_anat_derivatives
 
 
