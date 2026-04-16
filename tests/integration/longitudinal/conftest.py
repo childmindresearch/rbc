@@ -25,7 +25,6 @@ _DATASET_SENTINEL = (
 )
 
 _SUB = "01"
-_TASK = "fingerfootlips"
 
 
 def _rbc_exe() -> str:
@@ -162,10 +161,11 @@ def ds000114_func_derivatives(
     Only ses-test is processed (one session is sufficient to exercise
     the longitudinal functional chain).
     """
-    # Run rbc functional with verbose to get load_table debug output
-    result = subprocess.run(  # noqa: S603
+    # Note: do NOT pass --task here.  The Filters.apply() task filter
+    # applies to ALL rows including anat, and anat rows have task=null,
+    # so --task would drop all anat rows and break resolve_functional.
+    _run_rbc(
         [
-            _rbc_exe(),
             "functional",
             str(ds000114_dataset),
             str(ds000114_anat_derivatives),
@@ -177,29 +177,8 @@ def ds000114_func_derivatives(
             _SUB,
             "--session-label",
             "test",
-            "--task",
-            _TASK,
-            "-v",
         ],
-        capture_output=True,
-        text=True,
-        timeout=7200,
     )
-    if result.returncode != 0:
-        # Dump the derivatives tree for diagnosis
-        _tree = sorted(
-            str(p.relative_to(ds000114_anat_derivatives))
-            for p in ds000114_anat_derivatives.rglob("*")
-            if p.is_file()
-        )
-        msg = (
-            f"rbc functional exited with code {result.returncode}\n"
-            f"--- derivatives dir: {ds000114_anat_derivatives} ---\n"
-            + "\n".join(_tree)
-            + f"\n--- stdout ---\n{result.stdout[-2000:]}\n"
-            f"--- stderr ---\n{result.stderr[-2000:]}"
-        )
-        raise AssertionError(msg)
     return ds000114_anat_derivatives
 
 
@@ -230,8 +209,6 @@ def longitudinal_func_output(
             _SUB,
             "--session-label",
             "test",
-            "--task",
-            _TASK,
         ],
     )
     return ds000114_func_derivatives
