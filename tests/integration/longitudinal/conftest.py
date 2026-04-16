@@ -162,18 +162,21 @@ def ds000114_func_derivatives(
     Only ses-test is processed (one session is sufficient to exercise
     the longitudinal functional chain).
     """
-    # Debug: list derivatives tree before running rbc functional
-    _tree = sorted(
-        str(p.relative_to(ds000114_anat_derivatives))
-        for p in ds000114_anat_derivatives.rglob("*")
-        if p.is_file()
-    )
-    print(  # noqa: T201
-        f"\n--- derivatives tree before rbc functional "
-        f"({ds000114_anat_derivatives}) ---\n"
-        + "\n".join(_tree)
-        + "\n--- end tree ---\n"
-    )
+    # Debug: dump bids2table output for derivatives dir
+    import bids2table as b2t
+    import polars as pl
+
+    _datasets = list(b2t.find_bids_datasets(ds000114_anat_derivatives))
+    print(f"\n--- b2t datasets in {ds000114_anat_derivatives}: {_datasets} ---")  # noqa: T201
+    _tables = list(b2t.batch_index_dataset(_datasets, max_workers=0))
+    for _t in _tables:
+        _df = pl.DataFrame(pl.from_arrow(_t))
+        _anat = _df.filter(pl.col("datatype") == "anat")
+        print(  # noqa: T201
+            "b2t anat rows:",
+            _anat.select(["sub", "ses", "suffix", "desc", "space"]).to_dicts(),
+        )
+    print("--- end b2t debug ---\n")  # noqa: T201
     _run_rbc(
         [
             "functional",
