@@ -103,9 +103,7 @@ def run(
     for pipe_ctx, session, tpl_df in iter_sessions_with_template(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
-        for _, anat_df in session.anat.group_by(
-            ("run", "acq"), maintain_order=True
-        ):
+        for _, anat_df in session.anat.group_by(("run", "acq"), maintain_order=True):
             process_anat(
                 pipe_ctx=pipe_ctx,
                 anat_df=anat_df,
