@@ -90,8 +90,8 @@ def _make_metrics_outputs(w: Path, atlases: list[str]) -> MetricsOutputs:
         reho=_dummy(w, "reho.nii.gz"),
         reho_smooth=_dummy(w, "reho_smooth.nii.gz"),
         reho_zscored=_dummy(w, "reho_z.nii.gz"),
-        timeseries={a: _dummy(w, f"ts_{a}.tsv") for a in atlases},
-        correlation_matrix={a: _dummy(w, f"corr_{a}.tsv") for a in atlases},
+        timeseries={a: _dummy(w, f"ts_{a}.parquet") for a in atlases},
+        connectome={a: _dummy(w, f"connectome_{a}.parquet") for a in atlases},
     )
 
 
@@ -296,9 +296,9 @@ class TestExportQC:
             qc_file: dict[str, Path] = field(default_factory=dict)
 
         mni = func_bids.derive(space="MNI152NLin6Asym")
-        qc = _FakeQC(qc_file={"36-parameter": _dummy(workdir, "qc.tsv")})
+        qc = _FakeQC(qc_file={"36-parameter": _dummy(workdir, "qc.parquet")})
         export_qc(mni, qc, regressors=["36-parameter"])  # type: ignore[arg-type]
-        saved = list(pipe_ctx.output_dir.rglob("*.tsv"))
+        saved = list(pipe_ctx.output_dir.rglob("*.parquet"))
         assert len(saved) == 1
         assert "reg-36parameter" in saved[0].name
 
@@ -314,7 +314,7 @@ class TestExportQC:
 
         regs = ["36-parameter", "aCompCor"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
-        qc = _FakeQC(qc_file={r: _dummy(workdir, f"qc_{r}.tsv") for r in regs})
+        qc = _FakeQC(qc_file={r: _dummy(workdir, f"qc_{r}.parquet") for r in regs})
         export_qc(mni, qc, regressors=regs)  # type: ignore[arg-type]
-        saved = list(pipe_ctx.output_dir.rglob("*.tsv"))
+        saved = list(pipe_ctx.output_dir.rglob("*.parquet"))
         assert len(saved) == 2

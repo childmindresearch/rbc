@@ -89,13 +89,13 @@ def export_metrics(
             outputs.timeseries[atl],
             suffix="timeseries",
             desc="mean",
-            extension=".tsv",
+            extension=".parquet",
             atlas=bids_safe_label(atl),
         )
         mex.save(
-            outputs.correlation_matrix[atl],
-            suffix="correlations",
+            outputs.connectome[atl],
+            suffix="connectome",
             desc="pearson",
-            extension=".tsv",
+            extension=".parquet",
             atlas=bids_safe_label(atl),
         )

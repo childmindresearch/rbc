@@ -160,7 +160,7 @@ def single_session_qc(
         # 9. Write QC TSV
         qc_outputs.qc_file[regressor] = write_xcp_qc(
             qc_outputs.metrics[regressor],
-            work_dir / f"reg-{regressor}_qc.tsv",
+            work_dir / f"reg-{regressor}_qc.parquet",
         )
 
     # 10. RBC pass/fail

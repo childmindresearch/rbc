@@ -39,8 +39,8 @@ class MetricsOutputs(NamedTuple):
         reho: Raw ReHo map.
         reho_smooth: Smoothed ReHo map.
         reho_zscored: Z-scored (smoothed) ReHo map.
-        timeseries: Atlas-based mean timeseries TSV.
-        correlation_matrix: Pairwise correlation matrix TSV.
+        timeseries: Atlas-based mean timeseries file.
+        connectome: Pairwise connectome file.
     """
 
     alff: Path
@@ -53,7 +53,7 @@ class MetricsOutputs(NamedTuple):
     reho_smooth: Path
     reho_zscored: Path
     timeseries: dict[str, Path]
-    correlation_matrix: dict[str, Path]
+    connectome: dict[str, Path]
 
 
 def single_session_metrics(
@@ -127,7 +127,5 @@ def single_session_metrics(
         reho_smooth=reho_smooth_path,
         reho_zscored=reho_zscored_path,
         timeseries={label: ts.timeseries for label, ts in ts_outputs.items()},
-        correlation_matrix={
-            label: ts.correlation_matrix for label, ts in ts_outputs.items()
-        },
+        connectome={label: ts.connectome for label, ts in ts_outputs.items()},
     )
