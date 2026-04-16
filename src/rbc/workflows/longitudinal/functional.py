@@ -19,9 +19,7 @@ from rbc.core.longitudinal.transform import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
     from pathlib import Path
-    from typing import Literal
 
 _logger = logging.getLogger("rbc")
 
@@ -57,7 +55,6 @@ def longitudinal_process(
     bold: Path,
     bold_mask: Path,
     regressor_files: dict[str, Path],
-    regressor_set: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
 ) -> FunctionalLongOutputs:
     """Transform preprocessed functional outputs to longitudinal template space.
 
@@ -65,6 +62,10 @@ def longitudinal_process(
     raw (unfiltered) regressors produced by the cross-sectional pipeline.
     No regressor recomputation is performed: the same regressor matrix is
     applied in the new target space.
+
+    Regression is applied for every strategy present in *regressor_files*.
+    The caller controls which strategies to run by passing only the desired
+    keys (the resolve layer filters to the requested ``--regressor`` set).
 
     Args:
         template: Longitudinal template image.
@@ -74,9 +75,8 @@ def longitudinal_process(
         bold: Preprocessed bold image.
         bold_mask: Bold brain mask.
         regressor_files: Raw (unfiltered) regressor ``.1D`` files from
-            the cross-sectional run, keyed by strategy name.
-        regressor_set: Which regressor strategies to apply.  Must be a
-            subset of the keys in *regressor_files*.
+            the cross-sectional run, keyed by strategy name.  Regression
+            is applied for every key in this dict.
 
     Returns:
         :class:`FunctionalLongOutputs` with all inputs transformed to
@@ -98,8 +98,7 @@ def longitudinal_process(
 
     regressed: dict[str, Path] = {}
     cleaned: dict[str, Path] = {}
-    for reg in regressor_set:
-        reg_file = regressor_files[reg]
+    for reg, reg_file in regressor_files.items():
         _logger.info("Longitudinal %s nuisance regression (no bandpass)", reg)
         regressed[reg] = apply_regression(
             bold_file=long_bold,

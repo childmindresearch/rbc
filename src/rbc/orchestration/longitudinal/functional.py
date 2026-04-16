@@ -60,10 +60,7 @@ def process_func(
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
         regressors=regressors,
     )
-    func_outputs = functional_longitudinal(
-        **resolved,  # type: ignore[arg-type]
-        regressor_set=regressors,
-    )
+    func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
     fex = func_q.derive(space="longitudinal")
     export_longitudinal_func(fex, func_outputs, regressors=regressors)
 

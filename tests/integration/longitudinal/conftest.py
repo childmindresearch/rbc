@@ -25,6 +25,7 @@ _DATASET_SENTINEL = (
 )
 
 _SUB = "01"
+_TASK = "fingerfootlips"
 
 
 def _rbc_exe() -> str:
@@ -143,3 +144,70 @@ def longitudinal_template_output(
         ],
     )
     return ds000114_anat_derivatives
+
+
+@pytest.fixture(scope="session")
+def ds000114_func_derivatives(
+    ds000114_dataset: Path,
+    longitudinal_template_output: Path,
+    _runner: str,
+) -> Path:
+    """Run ``rbc functional`` on ds000114 sub-01 ses-test.
+
+    Produces cross-sectional functional derivatives (including raw
+    regressor ``.1D`` files) that the longitudinal functional stage
+    consumes.  Writes into the same derivatives tree as the template
+    stage so all outputs are visible to downstream fixtures.
+
+    Only ses-test is processed (one session is sufficient to exercise
+    the longitudinal functional chain).
+    """
+    _run_rbc(
+        [
+            "functional",
+            str(ds000114_dataset),
+            str(longitudinal_template_output),
+            "-o",
+            str(longitudinal_template_output),
+            "--runner",
+            _runner,
+            "--participant-label",
+            _SUB,
+            "--session-label",
+            "test",
+            "--task",
+            _TASK,
+        ],
+    )
+    return longitudinal_template_output
+
+
+@pytest.fixture(scope="session")
+def longitudinal_func_output(
+    ds000114_func_derivatives: Path,
+    _runner: str,
+) -> Path:
+    """Run ``rbc longitudinal functional`` on ds000114 sub-01 ses-test.
+
+    Produces longitudinal functional derivatives (warped BOLD,
+    per-regressor regressed/cleaned BOLD) by consuming the
+    cross-sectional functional outputs and the longitudinal template.
+    """
+    _run_rbc(
+        [
+            "longitudinal",
+            "functional",
+            str(ds000114_func_derivatives),
+            "-o",
+            str(ds000114_func_derivatives),
+            "--runner",
+            _runner,
+            "--participant-label",
+            _SUB,
+            "--session-label",
+            "test",
+            "--task",
+            _TASK,
+        ],
+    )
+    return ds000114_func_derivatives
