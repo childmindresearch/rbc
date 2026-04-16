@@ -59,6 +59,8 @@ class MetricsArgs(BaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsArgs:
         """Validate metrics-specific arguments."""
         _validate_task(ns.task)
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_positive(ns.tr, "TR")
         atlas_files = _resolve_atlas_args(ns.atlas)
         return cls(

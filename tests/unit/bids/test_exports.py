@@ -73,9 +73,7 @@ def _make_func_outputs(w: Path, regressors: list[str]) -> FunctionalOutputs:
         template_bold=_dummy(w, "template_bold.nii.gz"),
         regressed_bold={r: _dummy(w, f"regressed_{r}.nii.gz") for r in regressors},
         cleaned_bold={r: _dummy(w, f"cleaned_{r}.nii.gz") for r in regressors},
-        cleaned_bold_smooth={
-            r: _dummy(w, f"cleaned_{r}_smooth.nii.gz") for r in regressors
-        },
+        cleaned_bold_smooth=None,
         regressor_file={r: _dummy(w, f"regressors_{r}.1D") for r in regressors},
         bpf_regressor_file={r: _dummy(w, f"regressors_bpf_{r}.1D") for r in regressors},
         template_brain_mask=_dummy(w, "template_mask.nii.gz"),
@@ -224,6 +222,31 @@ class TestExportFunctional:
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 18
 
+    def test_bold_smooth_not_exported_if_none(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """No smoothed BOLD files are exported when cleaned_bold_smooth is None."""
+        outputs = _make_func_outputs(workdir, ["36-parameter"])
+        export_functional(func_bids, outputs, regressors=["36-parameter"])
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        assert not any("desc-sm" in name for name in saved)
+
+    def test_cleaned_bold_smooth_exported_with_correct_desc(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """Smoothed BOLD is exported with correct fwhm label."""
+        smooth_outputs = _make_func_outputs(workdir, ["36-parameter"])._replace(
+            cleaned_bold_smooth={
+                "36-parameter": _dummy(workdir, "cleaned_smooth.nii.gz")
+            }
+        )
+        export_functional(
+            func_bids, smooth_outputs, regressors=["36-parameter"], smooth=8.0
+        )
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        sm_files = [n for n in saved if "desc-sm8preproc" in n]
+        assert len(sm_files) == 1
+
 
 # ---------------------------------------------------------------------------
 # Metrics exports
@@ -240,7 +263,11 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
         export_metrics(
-            mni, outputs, regressor="36-parameter", atlases=["schaefer_200"], smooth=6.0
+            mni,
+            outputs,
+            regressor="36-parameter",
+            atlases=["schaefer_200"],
+            smooth=None,
         )
         atlas_files = [
             p.name for p in pipe_ctx.output_dir.rglob("*.*") if "atlas-" in p.name
@@ -257,7 +284,7 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["aal"])
         export_metrics(
-            mni, outputs, regressor="36-parameter", atlases=["aal"], smooth=6.0
+            mni, outputs, regressor="36-parameter", atlases=["aal"], smooth=None
         )
         all_names = [p.name for p in pipe_ctx.output_dir.rglob("*.*")]
         reg_files = [n for n in all_names if "reg-" in n]
@@ -272,7 +299,7 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
         export_metrics(
-            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], smooth=6.0
+            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], smooth=None
         )
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 8
@@ -284,9 +311,58 @@ class TestExportMetrics:
         atlases = ["schaefer_200", "aal"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, atlases)
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, smooth=6.0)
+        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, smooth=None)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 10
+
+    def test_file_count_single_atlas_with_smooth(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """3 raw + 3 zscored + 3 smooth + 3 smooth zscored + 2 atlas files = 14."""
+        mni = func_bids.derive(space="MNI152NLin6Asym")
+        smooth_outputs = _make_metrics_outputs(workdir, ["schaefer_200"])._replace(
+            alff_smooth=_dummy(workdir, "alff_sm.nii.gz"),
+            falff_smooth=_dummy(workdir, "falff_sm.nii.gz"),
+            reho_smooth=_dummy(workdir, "reho_sm.nii.gz"),
+            alff_smooth_zscored=_dummy(workdir, "alff_sm_z.nii.gz"),
+            falff_smooth_zscored=_dummy(workdir, "falff_sm_z.nii.gz"),
+            reho_smooth_zscored=_dummy(workdir, "reho_sm_z.nii.gz"),
+        )
+        export_metrics(
+            mni,
+            smooth_outputs,
+            regressor="aCompCor",
+            atlases=["schaefer_200"],
+            smooth=6.0,
+        )
+        saved = list(pipe_ctx.output_dir.rglob("*.*"))
+        assert len(saved) == 14
+
+    def test_smooth_maps_have_correct_desc(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """Smoothed maps are exported with correct fwhm labels."""
+        mni = func_bids.derive(space="MNI152NLin6Asym")
+        smooth_outputs = _make_metrics_outputs(workdir, ["schaefer_200"])._replace(
+            alff_smooth=_dummy(workdir, "alff_sm.nii.gz"),
+            falff_smooth=_dummy(workdir, "falff_sm.nii.gz"),
+            reho_smooth=_dummy(workdir, "reho_sm.nii.gz"),
+            alff_smooth_zscored=_dummy(workdir, "alff_sm_z.nii.gz"),
+            falff_smooth_zscored=_dummy(workdir, "falff_sm_z.nii.gz"),
+            reho_smooth_zscored=_dummy(workdir, "reho_sm_z.nii.gz"),
+        )
+        export_metrics(
+            mni,
+            smooth_outputs,
+            regressor="aCompCor",
+            atlases=["schaefer_200"],
+            smooth=8.0,
+        )
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        sm_only = [n for n in saved if "desc-sm8" in n and "Zstd" not in n]
+        sm_zstd = [n for n in saved if "desc-sm8Zstd" in n]
+        assert len(sm_only) == 3
+        assert len(sm_zstd) == 3
 
 
 # ---------------------------------------------------------------------------

@@ -29,7 +29,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         session_label=[],
         task=None,
         atlas=["schaefer_200"],
-        fwhm=6.0,
+        smooth=None,
         regressor=["36-parameter"],
         tr=None,
         tmp_dir=None,
@@ -55,7 +55,7 @@ class TestMetricsArgs:
         args = MetricsArgs.validate_namespace(base_args)
         assert args.task is None
         assert "schaefer_200" in args.atlas_files
-        assert args.smooth == 6.0
+        assert args.smooth is None
         assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
         assert args.session_label == []
@@ -150,13 +150,13 @@ class TestMetricsRegistration:
         )
         assert args.atlas == ["aal"]
 
-    def test_metrics_parser_has_fwhm(self) -> None:
-        """Test metrics subparser includes --fwhm argument."""
+    def test_metrics_parser_has_smooth(self) -> None:
+        """Test metrics subparser includes --smooth argument."""
         parser = create_parser()
         args = parser.parse_args(
-            ["metrics", "/input", "-o", "/output", "--fwhm", "8.0"]
+            ["metrics", "/input", "-o", "/output", "--smooth", "8.0"]
         )
-        assert args.fwhm == 8.0
+        assert args.smooth == 8.0
 
     def test_metrics_parser_has_task(self) -> None:
         """Test metrics subparser includes --task argument."""
@@ -178,11 +178,11 @@ class TestMetricsRegistration:
         args = parser.parse_args(["metrics", "/input", "-o", "/output"])
         assert args.task is None
 
-    def test_metrics_parser_fwhm_default(self) -> None:
-        """Test metrics subparser --fwhm defaults to 6.0."""
+    def test_metrics_parser_smooth_default(self) -> None:
+        """Test metrics subparser --smooth defaults to None."""
         parser = create_parser()
         args = parser.parse_args(["metrics", "/input", "-o", "/output"])
-        assert args.fwhm == 6.0
+        assert args.smooth is None
 
 
 class TestResolveAtlasArgs:

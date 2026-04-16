@@ -30,7 +30,7 @@ def base_args(tmp_path: Path) -> argparse.Namespace:
         regressor=["36-parameter"],
         task=None,
         atlas=["schaefer_200"],
-        fwhm=6.0,
+        smooth=None,
         start_tr=2,
         tr=None,
         tmp_dir=None,
@@ -64,7 +64,7 @@ class TestAllArgs:
         assert args.regressor == ["36-parameter"]
         assert args.task is None
         assert "schaefer_200" in args.atlas_files
-        assert args.smooth == 6.0
+        assert args.smooth is None
         assert args.start_tr == 2
         assert args.participant_label == []
         assert args.session_label == []
@@ -184,11 +184,11 @@ class TestAllRegistration:
         args = parser.parse_args(["all", "/input", "-o", "/output", "--atlas", "aal"])
         assert args.atlas == ["aal"]
 
-    def test_all_parser_has_fwhm(self) -> None:
-        """Test all subparser includes --fwhm argument."""
+    def test_all_parser_has_smooth(self) -> None:
+        """Test all subparser includes --smooth argument."""
         parser = create_parser()
-        args = parser.parse_args(["all", "/input", "-o", "/output", "--fwhm", "8.0"])
-        assert args.fwhm == 8.0
+        args = parser.parse_args(["all", "/input", "-o", "/output", "--smooth", "8.0"])
+        assert args.smooth == 8.0
 
     def test_all_parser_has_start_tr(self) -> None:
         """Test all subparser includes --start-tr argument."""
@@ -203,10 +203,10 @@ class TestAllRegistration:
         assert args.task is None
 
     def test_all_parser_fwhm_default(self) -> None:
-        """Test all subparser --fwhm defaults to 6.0."""
+        """Test all subparser --smooth defaults to None."""
         parser = create_parser()
         args = parser.parse_args(["all", "/input", "-o", "/output"])
-        assert args.fwhm == 6.0
+        assert args.smooth is None
 
     def test_all_parser_start_tr_default(self) -> None:
         """Test all subparser --start-tr defaults to 2."""

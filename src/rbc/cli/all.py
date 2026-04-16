@@ -51,6 +51,8 @@ class AllArgs(BaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
         """Validate all-workflow arguments."""
         _validate_task(ns.task)
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_positive(ns.start_tr, "Start TR")
         _validate_positive(ns.tr, "TR")
         atlas_files = _resolve_atlas_args(ns.atlas)

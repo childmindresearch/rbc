@@ -45,6 +45,8 @@ class FunctionalArgs(BaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalArgs:
         """Validation of functional workflow specific arguments to NamedTuple."""
         _validate_task(ns.task)
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_positive(ns.tr, "TR")
         return cls(
             **BaseArgs.validate_namespace(ns).__dict__,
