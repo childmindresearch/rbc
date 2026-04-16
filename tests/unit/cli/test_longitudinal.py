@@ -107,15 +107,18 @@ class TestMetricsLongArgs:
         base_ns.atlas = ["schaefer_200"]
         base_ns.fwhm = 6.0
         base_ns.task = None
+        base_ns.regressor = ["36-parameter"]
         args = MetricsLongArgs.validate_namespace(base_ns)
         assert args.fwhm == 6.0
         assert "schaefer_200" in args.atlas_files
+        assert args.regressor == ["36-parameter"]
 
     def test_nonpositive_fwhm_rejected(self, base_ns: argparse.Namespace) -> None:
         """FWHM must be strictly positive."""
         base_ns.atlas = ["schaefer_200"]
         base_ns.fwhm = 0.0
         base_ns.task = None
+        base_ns.regressor = ["36-parameter"]
         with pytest.raises(ValueError, match="FWHM"):
             MetricsLongArgs.validate_namespace(base_ns)
 

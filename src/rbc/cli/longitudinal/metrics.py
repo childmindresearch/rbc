@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from rbc.cli.base import _validate_positive, _validate_task
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
@@ -25,6 +25,7 @@ class MetricsLongArgs(LongitudinalBaseArgs):
     atlas_files: dict[str, Path]
     fwhm: float
     task: str | None
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsLongArgs:
@@ -36,6 +37,7 @@ class MetricsLongArgs(LongitudinalBaseArgs):
             atlas_files=_resolve_atlas_args(ns.atlas),
             fwhm=ns.fwhm,
             task=ns.task,
+            regressor=ns.regressor,
         )
 
 
@@ -49,6 +51,7 @@ def main(args: MetricsLongArgs) -> int:
             session_label=args.session_label,
             task=args.task,
         ),
+        regressors=args.regressor,
         atlas_files=args.atlas_files,
         fwhm=args.fwhm,
         runner_config=RunnerConfig(
@@ -79,6 +82,13 @@ def register_command(
         ),
     )
     add_fs_license_argument(parser)
+    parser.add_argument(
+        "--regressor",
+        nargs="+",
+        choices=["36-parameter", "aCompCor"],
+        default=["36-parameter"],
+        help=("Space-delimited nuisance regression method(s) to compute metrics for."),
+    )
     parser.add_argument(
         "--atlas",
         nargs="+",

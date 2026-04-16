@@ -93,6 +93,7 @@ def run(
     output_dir: Path,
     *,
     filters: Filters,
+    regressors: Sequence[str],
     atlas_files: Mapping[str, Path],
     fwhm: float,
     runner_config: RunnerConfig | None = None,
@@ -109,6 +110,7 @@ def run(
             functional derivatives).
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters.
+        regressors: Regressor strategy names to compute metrics for.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
         runner_config: Execution backend configuration.
@@ -132,22 +134,6 @@ def run(
             # Build a DataFrame of longitudinal-space functional derivatives
             full_df = pl.concat([func_df, tpl_df])
             func_long_df = full_df.filter(pl.col("space") == "longitudinal")
-
-            # Discover which regressors were produced
-            reg_rows = func_long_df.filter(
-                pl.col("suffix") == "bold",
-                pl.col("desc") == "regressed",
-                pl.col("reg").is_not_null(),
-            )
-            regressors = reg_rows["reg"].unique().to_list()
-            if not regressors:
-                _logger.warning(
-                    "No regressed BOLD found in longitudinal space for "
-                    "sub-%s ses-%s; skipping metrics.",
-                    pipe_ctx.sub,
-                    pipe_ctx.ses,
-                )
-                continue
 
             for regressor in regressors:
                 resolved = resolve_longitudinal_metrics(
