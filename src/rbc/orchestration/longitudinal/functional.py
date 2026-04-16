@@ -20,6 +20,7 @@ from rbc.workflows.longitudinal.functional import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+    from typing import Literal
 
     import polars as pl
 
@@ -34,6 +35,8 @@ def process_func(
     pipe_ctx: RunContext,
     func_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
+    *,
+    regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
 ) -> None:
     """Handle functional longitudinal processing for one BOLD run.
 
@@ -41,6 +44,7 @@ def process_func(
         pipe_ctx: RunContext bound to this subject/session.
         func_df: Functional derivative DataFrame for this run.
         tpl_df: Longitudinal template DataFrame.
+        regressors: Regressor strategies to apply in longitudinal space.
     """
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
@@ -54,10 +58,11 @@ def process_func(
         func_df,
         tpl_df,
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
+        regressors=regressors,
     )
     func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
     fex = func_q.derive(space="longitudinal")
-    export_longitudinal_func(fex, func_outputs)
+    export_longitudinal_func(fex, func_outputs, regressors=regressors)
 
 
 def run(
@@ -65,6 +70,7 @@ def run(
     output_dir: Path,
     *,
     filters: Filters,
+    regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run longitudinal functional processing for all matching subjects/sessions.
@@ -75,6 +81,7 @@ def run(
             and longitudinal templates).
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters applied before grouping.
+        regressors: Regressor strategies to apply in longitudinal space.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -91,7 +98,12 @@ def run(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
         for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
-            process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
+            process_func(
+                pipe_ctx=pipe_ctx,
+                func_df=func_df,
+                tpl_df=tpl_df,
+                regressors=regressors,
+            )
         pipe_ctx.ensure_dataset_description()
 
     _logger.info("RBC longitudinal functional workflow complete")

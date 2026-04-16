@@ -76,7 +76,12 @@ class FunctionalOutputs(NamedTuple):
         template_bold: BOLD resampled to template space.
         regressed_bold: Nuisance-regressed & non-bandpassed BOLD.
         cleaned_bold: Nuisance-regressed & bandpass-filtered BOLD.
-        regressor_file: Bandpass-filtered nuisance regressor ``.1D`` file.
+        regressor_file: Raw (unfiltered) nuisance regressor ``.1D`` file,
+            as computed from native-space BOLD.  Carried forward so
+            longitudinal regression can reuse it without recomputation.
+        bpf_regressor_file: Bandpass-filtered nuisance regressor ``.1D``
+            file, matching what ``3dTproject -bandpass`` actually applied.
+            For BIDS export only.
         template_brain_mask: Brain mask warped to template space.
     """
 
@@ -100,6 +105,7 @@ class FunctionalOutputs(NamedTuple):
     regressed_bold: dict[str, Path]
     cleaned_bold: dict[str, Path]
     regressor_file: dict[str, Path]
+    bpf_regressor_file: dict[str, Path]
     template_brain_mask: Path
 
 
@@ -329,6 +335,7 @@ def single_session_preprocess(
 
     regression: dict[str, ApplyRegressionOutputs] = {}
     cleaned: dict[str, ApplyRegressionOutputs] = {}
+    raw_regressors: dict[str, Path] = {}
     filtered_regressors: dict[str, Path] = {}
     for regressor in regressor_set:
         # 15. Nuisance regression without bandpass (pre-bandpass residuals
@@ -350,8 +357,11 @@ def single_session_preprocess(
             regressor_file=regressors[regressor].regressor_file,
         )
 
-        # 17. Export bandpass-filtered regressors (matches what 3dTproject
-        #     actually applied; raw regressors still in compute_regressors output)
+        # 17a. Carry raw (unfiltered) regressors forward for longitudinal reuse
+        raw_regressors[regressor] = regressors[regressor].regressor_file
+
+        # 17b. Export bandpass-filtered regressors (matches what 3dTproject
+        #      actually applied)
         filtered_regressors[regressor] = bandpass_regressor_file(
             regressors[regressor].regressor_file,
             tr=metadata.tr,
@@ -379,6 +389,7 @@ def single_session_preprocess(
         template_bold=template_bold,
         regressed_bold={r: regression[r].regressed_bold for r in regressor_set},
         cleaned_bold={r: cleaned[r].regressed_bold for r in regressor_set},
-        regressor_file=filtered_regressors,
+        regressor_file=raw_regressors,
+        bpf_regressor_file=filtered_regressors,
         template_brain_mask=tmpl_brain,
     )

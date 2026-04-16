@@ -63,7 +63,7 @@ class Filters:
         if len(self.session_label) > 0:
             exprs.append(pl.col("ses").is_in(self.session_label))
         if self.task is not None:
-            exprs.append(pl.col("task") == self.task)
+            exprs.append(pl.col("task").is_null() | (pl.col("task") == self.task))
         if not exprs:
             return df
         return df.filter(pl.all_horizontal(exprs))

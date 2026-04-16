@@ -70,10 +70,13 @@ class TestFiltersApply:
         result = Filters(session_label=["baseline"]).apply(bids_df)
         assert set(result["ses"].unique().to_list()) == {"baseline"}
 
-    def test_task_filter(self, bids_df: pl.DataFrame) -> None:
-        """Task filter keeps only matching tasks (nulls excluded)."""
+    def test_task_filter_preserves_anat(self, bids_df: pl.DataFrame) -> None:
+        """Task filter keeps matching tasks AND rows with null task (anat)."""
         result = Filters(task="rest").apply(bids_df)
-        assert all(t == "rest" for t in result["task"].to_list())
+        tasks = result["task"].to_list()
+        assert all(t in ("rest", None) for t in tasks)
+        # Anat rows (task=null) must survive
+        assert result.filter(pl.col("datatype") == "anat").height > 0
 
     def test_combined_filters(self, bids_df: pl.DataFrame) -> None:
         """Participant + session + task filters compose correctly."""
@@ -82,7 +85,8 @@ class TestFiltersApply:
             session_label=["baseline"],
             task="rest",
         ).apply(bids_df)
-        assert len(result) == 3  # raw bold + MNI preproc + T1w preproc
+        # anat T1w (task=null) + raw bold + MNI preproc + T1w preproc = 4
+        assert len(result) == 4
         assert all(s == "01" for s in result["sub"].to_list())
         assert all(s == "baseline" for s in result["ses"].to_list())
 
