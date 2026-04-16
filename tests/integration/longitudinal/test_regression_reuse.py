@@ -37,8 +37,8 @@ def test_longitudinal_functional_produces_expected_tree(
         f"{stem}_space-longitudinal_sbref.nii.gz",
         f"{stem}_space-longitudinal_desc-preproc_bold.nii.gz",
         f"{stem}_space-longitudinal_desc-brain_mask.nii.gz",
-        f"{stem}_space-longitudinal_desc-regressed_reg-36parameter_bold.nii.gz",
-        f"{stem}_space-longitudinal_desc-preproc_reg-36parameter_bold.nii.gz",
+        f"{stem}_space-longitudinal_reg-36parameter_desc-regressed_bold.nii.gz",
+        f"{stem}_space-longitudinal_reg-36parameter_desc-preproc_bold.nii.gz",
     ]
     tree = sorted(
         str(p.relative_to(longitudinal_func_output))
@@ -62,7 +62,7 @@ def test_regressed_bold_non_degenerate(
         / "ses-test"
         / "func"
         / "sub-01_ses-test_task-fingerfootlips"
-        "_space-longitudinal_desc-regressed_reg-36parameter_bold.nii.gz"
+        "_space-longitudinal_reg-36parameter_desc-regressed_bold.nii.gz"
     )
     img = nib.nifti1.load(path)
     data = img.get_fdata()
@@ -80,7 +80,7 @@ def test_cleaned_bold_non_degenerate(
         / "ses-test"
         / "func"
         / "sub-01_ses-test_task-fingerfootlips"
-        "_space-longitudinal_desc-preproc_reg-36parameter_bold.nii.gz"
+        "_space-longitudinal_reg-36parameter_desc-preproc_bold.nii.gz"
     )
     img = nib.nifti1.load(path)
     data = img.get_fdata()
