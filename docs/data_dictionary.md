@@ -56,7 +56,8 @@ Produced by `rbc functional`. These are functional MRI (BOLD) processing results
 | `*_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`                 | `bold`       | BOLD timeseries resampled to MNI152NLin6Asym template space in a single interpolation step (before denoising)                             | ANTs resampling                                  | 4D NIfTI                     |
 | `*_space-MNI152NLin6Asym_desc-bold_mask.nii.gz`                    | `mask`       | Brain mask warped to template space at the BOLD resolution                                                                                | ANTs resampling                                  | 3D NIfTI, binary mask        |
 | `*_space-MNI152NLin6Asym_reg-{regressor}_desc-preproc_bold.nii.gz` | `bold`       | Denoised BOLD timeseries in template space after nuisance regression and bandpass filtering. `{regressor}` is `36parameter` or `aCompCor` | Nuisance regression                              | 4D NIfTI                     |
-| `*_desc-{regressor}_regressors.1D`                                 | `regressors` | Nuisance regressor matrix used for denoising. `{regressor}` is `36parameter` or `aCompCor`                                                | Computed from motion parameters and tissue masks | Text, multi-column 1D file   |
+| `*_desc-{regressor}_regressors.1D`                                 | `regressors` | Raw (unfiltered) nuisance regressor matrix. `{regressor}` is `36parameter` or `aCompCor`. Carried forward for longitudinal regression reuse | Computed from motion parameters and tissue masks | Text, multi-column 1D file   |
+| `*_desc-{regressor}Filtered_regressors.1D`                         | `regressors` | Bandpass-filtered nuisance regressor matrix matching what `3dTproject -bandpass` applied. For provenance only | FFT-based bandpass filter | Text, multi-column 1D file   |
 
 ---
 
@@ -133,3 +134,9 @@ Produced by the `rbc longitudinal` subcommand group (`template`, `anatomical`, `
 | `*_space-longitudinal_desc-T1w_mask.nii.gz`        | `mask` | Brain mask in longitudinal template space                                 | ANTs registration to longitudinal template | 3D NIfTI, binary mask        |
 | `*_from-T1w_to-longitudinal_mode-image_xfm.nii.gz` | `xfm`  | Warp field mapping subject anatomy to the longitudinal template           | ANTs registration                          | 3D NIfTI, displacement field |
 | `*_from-longitudinal_to-T1w_mode-image_xfm.nii.gz` | `xfm`  | Inverse warp field mapping longitudinal template back to subject anatomy  | ANTs registration                          | 3D NIfTI, displacement field |
+| `*_space-longitudinal_sbref.nii.gz`                | `sbref` | Motion reference volume warped to longitudinal template space             | ANTs warping (composed BOLD-to-longitudinal) | 3D NIfTI                   |
+| `*_space-longitudinal_desc-preproc_bold.nii.gz`    | `bold` | Preprocessed BOLD warped to longitudinal template space                    | ANTs warping (composed BOLD-to-longitudinal) | 4D NIfTI                   |
+| `*_space-longitudinal_desc-brain_mask.nii.gz`      | `mask` | BOLD brain mask in longitudinal template space                             | ANTs warping (nearest-neighbor)              | 3D NIfTI, binary mask      |
+| `*_from-bold_to-longitudinal_...xfm.nii.gz`       | `xfm`  | Composite BOLD-to-longitudinal-template warp field                         | ANTs compose transforms                      | 3D NIfTI, displacement field |
+| `*_space-longitudinal_desc-regressed_reg-<strategy>_bold.nii.gz` | `bold` | Nuisance-regressed BOLD (no bandpass) in longitudinal space, per regressor strategy | AFNI 3dTproject | 4D NIfTI |
+| `*_space-longitudinal_desc-preproc_reg-<strategy>_bold.nii.gz`   | `bold` | Nuisance-regressed + bandpass-filtered BOLD in longitudinal space, per regressor strategy | AFNI 3dTproject -bandpass | 4D NIfTI |

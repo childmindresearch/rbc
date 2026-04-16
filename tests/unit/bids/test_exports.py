@@ -74,6 +74,7 @@ def _make_func_outputs(w: Path, regressors: list[str]) -> FunctionalOutputs:
         regressed_bold={r: _dummy(w, f"regressed_{r}.nii.gz") for r in regressors},
         cleaned_bold={r: _dummy(w, f"cleaned_{r}.nii.gz") for r in regressors},
         regressor_file={r: _dummy(w, f"regressors_{r}.1D") for r in regressors},
+        bpf_regressor_file={r: _dummy(w, f"regressors_bpf_{r}.1D") for r in regressors},
         template_brain_mask=_dummy(w, "template_mask.nii.gz"),
     )
 
@@ -195,26 +196,27 @@ class TestExportFunctional:
     ) -> None:
         """Correct file count with one regressor.
 
-        8 native-space fixed + 1 regressor file + 2 per-regressor MNI
-        + 2 fixed MNI = 13.
+        8 native-space fixed + 2 regressor files (raw + filtered)
+        + 2 per-regressor MNI + 2 fixed MNI = 14.
         """
         outputs = _make_func_outputs(workdir, ["36-parameter"])
         export_functional(func_bids, outputs, regressors=["36-parameter"])
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 13
+        assert len(saved) == 14
 
     def test_file_count_two_regressors(
         self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
         """Correct file count with two regressors.
 
-        8 fixed + 2 regressor files + 4 per-regressor MNI + 2 fixed MNI = 16.
+        8 fixed + 4 regressor files (2x raw + 2x filtered)
+        + 4 per-regressor MNI + 2 fixed MNI = 18.
         """
         regs = ["36-parameter", "aCompCor"]
         outputs = _make_func_outputs(workdir, regs)
         export_functional(func_bids, outputs, regressors=regs)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 16
+        assert len(saved) == 18
 
 
 # ---------------------------------------------------------------------------
