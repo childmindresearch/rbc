@@ -14,7 +14,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import nibabel as nib
-import polars as pl
 from tqdm import tqdm
 
 from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities, load_table
@@ -108,7 +107,7 @@ def run(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
         # Anatomical
-        for _, anat_df in session.anat.filter(pl.col("suffix") == "T1w").group_by(
+        for _, anat_df in session.anat.group_by(
             ("run", "acq"), maintain_order=True
         ):
             anat_outputs = process_anat(
