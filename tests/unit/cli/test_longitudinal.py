@@ -80,14 +80,23 @@ class TestFunctionalLongArgs:
     def test_valid_task(self, base_ns: argparse.Namespace) -> None:
         """Alphanumeric task labels pass validation."""
         base_ns.task = "rest"
+        base_ns.regressor = ["36-parameter"]
         args = FunctionalLongArgs.validate_namespace(base_ns)
         assert args.task == "rest"
 
     def test_invalid_task_rejected(self, base_ns: argparse.Namespace) -> None:
         """Task labels with special characters are rejected."""
         base_ns.task = "rest/invalid"
+        base_ns.regressor = ["36-parameter"]
         with pytest.raises(ValueError, match="Task"):
             FunctionalLongArgs.validate_namespace(base_ns)
+
+    def test_regressor_preserved(self, base_ns: argparse.Namespace) -> None:
+        """Regressor choices round-trip through validation."""
+        base_ns.task = None
+        base_ns.regressor = ["36-parameter", "aCompCor"]
+        args = FunctionalLongArgs.validate_namespace(base_ns)
+        assert list(args.regressor) == ["36-parameter", "aCompCor"]
 
 
 class TestMetricsLongArgs:

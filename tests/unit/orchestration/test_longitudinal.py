@@ -67,6 +67,8 @@ def _mock_func_outputs(*, with_bold_mask: bool = True) -> Mock:
     m.bold = fake / "bold.nii.gz"
     m.bold_to_long_xfm = fake / "bold_to_long_xfm.nii.gz"
     m.bold_mask = (fake / "bold_mask.nii.gz") if with_bold_mask else None
+    m.regressed_bold = {"36-parameter": fake / "regressed_36.nii.gz"}
+    m.cleaned_bold = {"36-parameter": fake / "cleaned_36.nii.gz"}
     return m
 
 
@@ -382,24 +384,23 @@ class TestProcessFunc:
         ):
             process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
 
-    def test_optional_bold_mask_file_not_found(
+    def test_missing_bold_mask_raises(
         self, func_df: pl.DataFrame, tpl_df: pl.DataFrame, tmp_path: Path
     ) -> None:
-        """Optional bold_mask not found is caught; 3 exports emitted."""
+        """bold_mask is now mandatory; missing file raises FileNotFoundError."""
         pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
         with (
             patch(
                 "rbc.orchestration.longitudinal.functional.functional_longitudinal",
-                return_value=_mock_func_outputs(with_bold_mask=False),
+                return_value=_mock_func_outputs(),
             ),
             patch(
                 "rbc.bids.query.find_file",
                 side_effect=_none_for(suffix="mask", desc="brain"),
             ),
-            patch("rbc.bids.builder.shutil.copy2") as mock_copy,
+            pytest.raises(FileNotFoundError),
         ):
             process_func(pipe_ctx=pipe_ctx, func_df=func_df, tpl_df=tpl_df)
-            assert mock_copy.call_count == 3
 
 
 class TestLongitudinalAnatomicalRun:

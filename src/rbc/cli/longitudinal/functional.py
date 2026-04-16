@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from rbc.cli.base import _validate_task
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
@@ -20,6 +20,7 @@ class FunctionalLongArgs(LongitudinalBaseArgs):
     """Arguments for ``rbc longitudinal functional``."""
 
     task: str | None
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalLongArgs:
@@ -28,6 +29,7 @@ class FunctionalLongArgs(LongitudinalBaseArgs):
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
             task=ns.task,
+            regressor=ns.regressor,
         )
 
 
@@ -41,6 +43,7 @@ def main(args: FunctionalLongArgs) -> int:
             session_label=args.session_label,
             task=args.task,
         ),
+        regressors=args.regressor,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -61,7 +64,7 @@ def register_command(
         parents=parents,
         description=(
             "Warp preprocessed BOLD derivatives into each subject's "
-            "longitudinal template space."
+            "longitudinal template space and re-run nuisance regression."
         ),
         help="Longitudinal functional stage",
         usage=(
@@ -74,6 +77,13 @@ def register_command(
         "--task",
         default=None,
         help="Task label to filter BOLD runs (without 'task-' prefix).",
+    )
+    parser.add_argument(
+        "--regressor",
+        nargs="+",
+        choices=["36-parameter", "aCompCor"],
+        default=["36-parameter"],
+        help="Space-delimited nuisance regression method(s) to apply.",
     )
 
     parser.set_defaults(
