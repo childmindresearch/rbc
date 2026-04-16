@@ -14,6 +14,9 @@ from rbc.bids.session import iter_session_files
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.functional import (
+    FunctionalLongOutputs,
+)
+from rbc.workflows.longitudinal.functional import (
     longitudinal_process as functional_longitudinal,
 )
 
@@ -37,7 +40,7 @@ def process_func(
     tpl_df: pl.DataFrame,
     *,
     regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
-) -> None:
+) -> FunctionalLongOutputs:
     """Handle functional longitudinal processing for one BOLD run.
 
     Args:
@@ -45,6 +48,9 @@ def process_func(
         func_df: Functional derivative DataFrame for this run.
         tpl_df: Longitudinal template DataFrame.
         regressors: Regressor strategies to apply in longitudinal space.
+
+    Returns:
+        Workflow outputs for in-memory handoff to downstream stages.
     """
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
     ents = extract_entities(row, ["task", "run"])
@@ -63,6 +69,7 @@ def process_func(
     func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
     fex = func_q.derive(space="longitudinal")
     export_longitudinal_func(fex, func_outputs, regressors=regressors)
+    return func_outputs
 
 
 def run(

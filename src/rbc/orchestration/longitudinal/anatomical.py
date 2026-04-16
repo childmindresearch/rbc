@@ -15,6 +15,9 @@ from rbc.bids.longitudinal.anatomical import (
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.anatomical import (
+    AnatomicalLongOutputs,
+)
+from rbc.workflows.longitudinal.anatomical import (
     longitudinal_process as anatomical_longitudinal,
 )
 from rbc_resources import REGISTRATION_TEMPLATES
@@ -35,7 +38,7 @@ def process_anat(
     anat_df: pl.DataFrame,
     tpl_df: pl.DataFrame,
     registration_template: Path = REGISTRATION_TEMPLATES.brain_1mm,
-) -> None:
+) -> AnatomicalLongOutputs:
     """Handle anatomical longitudinal processing for one anat group.
 
     Args:
@@ -43,6 +46,9 @@ def process_anat(
         anat_df: Anatomical derivative DataFrame for this group.
         tpl_df: Longitudinal template DataFrame.
         registration_template: Brain template for ANTs registration.
+
+    Returns:
+        Workflow outputs for in-memory handoff to downstream stages.
     """
     anat_df = anat_df.filter(pl.col("space").is_null())
     ents = extract_entities(anat_df.row(0, named=True), ["run"])
@@ -63,6 +69,7 @@ def process_anat(
     )
     aex = anat_q.derive(entities=ents, space="longitudinal")
     export_longitudinal_anat(aex, outputs)
+    return outputs
 
 
 def run(

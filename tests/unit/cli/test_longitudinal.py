@@ -128,10 +128,14 @@ class TestAllLongArgs:
         base_ns.anat_template = None
         base_ns.atlas = ["schaefer_200"]
         base_ns.fwhm = 6.0
+        base_ns.regressor = ["36-parameter"]
+        base_ns.task = None
         args = AllLongArgs.validate_namespace(base_ns)
         assert args.fwhm == 6.0
         assert "schaefer_200" in args.atlas_files
         assert args.registration_template.name.endswith(".nii.gz")
+        assert args.regressor == ["36-parameter"]
+        assert args.task is None
 
 
 class TestParentSubparser:
@@ -196,29 +200,59 @@ class TestLongitudinalDispatch:
             assert rc == 0
             mock_run.assert_called_once()
 
-    def test_metrics_subcommand_registers(self, tmp_path: Path) -> None:
-        """Metrics subcommand is registered; Stage 6 raises NotImplementedError."""
+    def test_metrics_dispatches(self, tmp_path: Path) -> None:
+        """``rbc longitudinal metrics`` routes to the metrics orchestration."""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
         output_dir = tmp_path / "output"
 
-        with pytest.raises(NotImplementedError, match="Stage 6"):
-            cli(["longitudinal", "metrics", str(input_dir), "-o", str(output_dir)])
+        with patch("rbc.cli.longitudinal.metrics.run") as mock_run:
+            rc = cli(
+                [
+                    "longitudinal",
+                    "metrics",
+                    str(input_dir),
+                    "-o",
+                    str(output_dir),
+                ]
+            )
+            assert rc == 0
+            mock_run.assert_called_once()
 
-    def test_qc_subcommand_registers(self, tmp_path: Path) -> None:
-        """QC subcommand is registered; Stage 6 raises NotImplementedError."""
+    def test_qc_dispatches(self, tmp_path: Path) -> None:
+        """``rbc longitudinal qc`` routes to the QC orchestration."""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
         output_dir = tmp_path / "output"
 
-        with pytest.raises(NotImplementedError, match="Stage 6"):
-            cli(["longitudinal", "qc", str(input_dir), "-o", str(output_dir)])
+        with patch("rbc.cli.longitudinal.qc.run") as mock_run:
+            rc = cli(
+                [
+                    "longitudinal",
+                    "qc",
+                    str(input_dir),
+                    "-o",
+                    str(output_dir),
+                ]
+            )
+            assert rc == 0
+            mock_run.assert_called_once()
 
-    def test_all_subcommand_registers(self, tmp_path: Path) -> None:
-        """All subcommand is registered; Stage 6 raises NotImplementedError."""
+    def test_all_dispatches(self, tmp_path: Path) -> None:
+        """``rbc longitudinal all`` routes to the all orchestration."""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
         output_dir = tmp_path / "output"
 
-        with pytest.raises(NotImplementedError, match="Stage 6"):
-            cli(["longitudinal", "all", str(input_dir), "-o", str(output_dir)])
+        with patch("rbc.cli.longitudinal.all.run") as mock_run:
+            rc = cli(
+                [
+                    "longitudinal",
+                    "all",
+                    str(input_dir),
+                    "-o",
+                    str(output_dir),
+                ]
+            )
+            assert rc == 0
+            mock_run.assert_called_once()
