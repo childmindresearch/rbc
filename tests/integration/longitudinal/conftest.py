@@ -25,6 +25,7 @@ _DATASET_SENTINEL = (
 )
 
 _SUB = "01"
+_TASK = "fingerfootlips"
 
 
 def _rbc_exe() -> str:
@@ -161,9 +162,6 @@ def ds000114_func_derivatives(
     Only ses-test is processed (one session is sufficient to exercise
     the longitudinal functional chain).
     """
-    # Note: do NOT pass --task here.  The Filters.apply() task filter
-    # applies to ALL rows including anat, and anat rows have task=null,
-    # so --task would drop all anat rows and break resolve_functional.
     _run_rbc(
         [
             "functional",
@@ -177,6 +175,8 @@ def ds000114_func_derivatives(
             _SUB,
             "--session-label",
             "test",
+            "--task",
+            _TASK,
         ],
     )
     return ds000114_anat_derivatives
@@ -209,6 +209,8 @@ def longitudinal_func_output(
             _SUB,
             "--session-label",
             "test",
+            "--task",
+            _TASK,
         ],
     )
     return ds000114_func_derivatives
