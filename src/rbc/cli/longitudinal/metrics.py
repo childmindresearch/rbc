@@ -1,4 +1,4 @@
-"""``rbc longitudinal metrics`` subcommand (placeholder for Stage 6)."""
+"""``rbc longitudinal metrics`` subcommand."""
 
 from __future__ import annotations
 
@@ -65,15 +65,15 @@ def register_command(
     subparsers: argparse._SubParsersAction,
     parents: Sequence[argparse.ArgumentParser],
 ) -> None:
-    """Register ``rbc longitudinal metrics`` (Stage 6 placeholder)."""
+    """Register ``rbc longitudinal metrics``."""
     parser = subparsers.add_parser(
         "metrics",
         parents=parents,
         description=(
-            "Compute resting-state metrics in longitudinal space. Placeholder "
-            "wired up by Stage 3; full implementation ships in Stage 6."
+            "Compute resting-state metrics (ALFF, fALFF, ReHo, atlas "
+            "timeseries) on longitudinal-space functional derivatives."
         ),
-        help="Longitudinal metrics stage (Stage 6)",
+        help="Compute resting-state metrics in longitudinal space",
         usage=(
             "rbc longitudinal metrics INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]"
         ),
