@@ -41,6 +41,7 @@ def process_session(
     regressors: Sequence[str],
     anat_inputs: FunctionalInputs | None = None,
     tr: float | None = None,
+    smooth: float | None = None,
     func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
     func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
     func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
@@ -55,6 +56,7 @@ def process_session(
             the combined ``all`` pipeline), skips the DataFrame-based resolve
             and uses these paths directly for every BOLD run.
         tr: TR override in seconds, or ``None`` to read from headers.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
         func_template: Brain template for functional resampling (default: MNI152 2 mm).
         func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
@@ -84,6 +86,7 @@ def process_session(
             wm_mask=resolved["wm_mask"],
             anat_to_template=resolved["anat_to_template"],
             metadata=func_metadata,
+            smooth=smooth,
             regressor_set=regressors,  # type: ignore[arg-type]
             func_template=func_template,
             func_template_mask=func_template_mask,
@@ -91,7 +94,7 @@ def process_session(
         )
 
         func = pipe_ctx.bids(datatype=Datatype.FUNC, entities=func_run.entities)
-        mni = export_functional(func, outputs, regressors=regressors)
+        mni = export_functional(func, outputs, regressors=regressors, smooth=smooth)
         results.append((outputs, mni, func_metadata))
 
     return results
@@ -104,6 +107,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     tr: float | None = None,
+    smooth: float | None = None,
     func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
     func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
     func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
@@ -117,6 +121,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         tr: TR override in seconds.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
         func_template: Brain template for functional resampling (default: MNI152 2 mm).
         func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
@@ -151,6 +156,7 @@ def run(
             pipe_ctx,
             regressors=regressors,
             tr=tr,
+            smooth=smooth,
             func_template=func_template,
             func_template_mask=func_template_mask,
             func_template_ref=func_template_ref,

@@ -36,6 +36,7 @@ class FunctionalArgs(BaseArgs):
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
     tr: float | None
+    smooth: float | None
     func_template: Path
     func_template_mask: Path
     func_template_ref: Path
@@ -50,6 +51,7 @@ class FunctionalArgs(BaseArgs):
             regressor=ns.regressor,
             task=ns.task,
             tr=ns.tr,
+            smooth=ns.smooth,
             func_template=_or_default(
                 ns.func_template, REGISTRATION_TEMPLATES.brain_2mm
             ),
@@ -74,6 +76,7 @@ def main(args: FunctionalArgs) -> int:
         ),
         regressors=args.regressor,
         tr=args.tr,
+        smooth=args.smooth,
         func_template=args.func_template,
         func_template_mask=args.func_template_mask,
         func_template_ref=args.func_template_ref,
@@ -115,6 +118,15 @@ def register_command(
         type=float,
         default=None,
         help="Repetition time in seconds. Overrides BIDS sidecar and NIfTI header.",
+    )
+    parser.add_argument(
+        "--smooth",
+        type=float,
+        default=None,
+        metavar="FWHM",
+        help="Smooth the cleaned (post-regression, bandpass-filtered) BOLD with "
+        "the kernel of specified FWHM in mm (e.g. --smooth 6.0) "
+        "If omitted, no smoothing is applied.",
     )
 
     templates = parser.add_argument_group("template overrides")

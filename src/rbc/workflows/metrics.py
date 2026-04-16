@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from rbc.core.metrics.alff import compute_alff
 from rbc.core.metrics.reho import compute_reho
-from rbc.core.metrics.smoothing import smooth
+from rbc.core.metrics.smoothing import smooth as apply_smooth
 from rbc.core.metrics.standardization import compute_zscore
 from rbc.core.metrics.timeseries import compute_timeseries
 from rbc.core.niwrap import generate_exec_folder
@@ -68,9 +68,8 @@ def single_session_metrics(
     template_brain_mask: Path,
     tr: float,
     atlas_files: Mapping[str, Path],
-    fwhm: float = 6.0,
     *,
-    apply_smooth: bool = False,
+    smooth: float | None = None,
 ) -> MetricsOutputs:
     """Compute all derivative metrics for a single functional run.
 
@@ -80,9 +79,9 @@ def single_session_metrics(
         template_brain_mask: Brain mask warped to template space.
         tr: Repetition time in seconds.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
-        apply_smooth: If True, produce smoothed and z-scored variants of all
-            derivative maps in addition to the raw maps.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
+            Produces smoothed and z-scored variants of all derivative maps
+            in addition to the raw maps.
 
     Returns:
         All metric outputs bundled in a :class:`MetricsOutputs` tuple.
@@ -117,11 +116,11 @@ def single_session_metrics(
         None
     )
 
-    if apply_smooth:
-        _logger.info("Smoothing derivative maps (FWHM=%.1f mm)", fwhm)
-        alff_smooth_path = smooth(alff_path, template_brain_mask, fwhm=fwhm)
-        falff_smooth_path = smooth(falff_path, template_brain_mask, fwhm=fwhm)
-        reho_smooth_path = smooth(reho_path, template_brain_mask, fwhm=fwhm)
+    if smooth is not None:
+        _logger.info("Smoothing derivative maps (FWHM=%.1f mm)", smooth)
+        alff_smooth_path = apply_smooth(alff_path, template_brain_mask, fwhm=smooth)
+        falff_smooth_path = apply_smooth(falff_path, template_brain_mask, fwhm=smooth)
+        reho_smooth_path = apply_smooth(reho_path, template_brain_mask, fwhm=smooth)
 
         _logger.info("Z-scoring smoothed maps")
         alff_smooth_zscored_path = compute_zscore(alff_smooth_path, template_brain_mask)

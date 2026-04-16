@@ -64,7 +64,7 @@ def export_metrics(
     *,
     regressor: str,
     atlases: Sequence[str],
-    fwhm: float,
+    smooth: float | None,
 ) -> None:
     """Export metrics for a single regressor to BIDS-named derivatives.
 
@@ -79,10 +79,10 @@ def export_metrics(
         outputs: Results from the metrics workflow.
         regressor: The regressor this run used.
         atlases: Atlas names used for timeseries extraction.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` if smoothing
+            was not requested.
     """
     mex = mni.derive(extra={"reg": bids_safe_label(regressor)})
-    sm_desc = f"sm{int(fwhm)}"
 
     # Raw maps
     mex.save(outputs.alff, suffix="alff")
@@ -94,19 +94,23 @@ def export_metrics(
     mex.save(outputs.falff_zscored, suffix="falff", desc="zstd")
     mex.save(outputs.reho_zscored, suffix="reho", desc="zstd")
 
-    # Smoothed + z-scored smoothed -> only when smooth=True
-    if outputs.alff_smooth is not None:
-        mex.save(outputs.alff_smooth, suffix="alff", desc=sm_desc)
-        assert outputs.alff_smooth_zscored is not None  # noqa: S101
-        mex.save(outputs.alff_smooth_zscored, suffix="alff", desc=f"{sm_desc}Zstd")
-    if outputs.falff_smooth is not None:
-        mex.save(outputs.falff_smooth, suffix="falff", desc=sm_desc)
-        assert outputs.falff_smooth_zscored is not None  # noqa: S101
-        mex.save(outputs.falff_smooth_zscored, suffix="falff", desc=f"{sm_desc}Zstd")
-    if outputs.reho_smooth is not None:
-        mex.save(outputs.reho_smooth, suffix="reho", desc=sm_desc)
-        assert outputs.reho_smooth_zscored is not None  # noqa: S101
-        mex.save(outputs.reho_smooth_zscored, suffix="reho", desc=f"{sm_desc}Zstd")
+    # Smoothed + z-scored smoothed
+    if smooth is not None:
+        sm_desc = f"sm{int(smooth)}"
+        if outputs.alff_smooth is not None:
+            mex.save(outputs.alff_smooth, suffix="alff", desc=sm_desc)
+            assert outputs.alff_smooth_zscored is not None  # noqa: S101
+            mex.save(outputs.alff_smooth_zscored, suffix="alff", desc=f"{sm_desc}Zstd")
+        if outputs.falff_smooth is not None:
+            mex.save(outputs.falff_smooth, suffix="falff", desc=sm_desc)
+            assert outputs.falff_smooth_zscored is not None  # noqa: S101
+            mex.save(
+                outputs.falff_smooth_zscored, suffix="falff", desc=f"{sm_desc}Zstd"
+            )
+        if outputs.reho_smooth is not None:
+            mex.save(outputs.reho_smooth, suffix="reho", desc=sm_desc)
+            assert outputs.reho_smooth_zscored is not None  # noqa: S101
+            mex.save(outputs.reho_smooth_zscored, suffix="reho", desc=f"{sm_desc}Zstd")
 
     for atl in atlases:
         mex.save(

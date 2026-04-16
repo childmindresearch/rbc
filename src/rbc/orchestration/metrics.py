@@ -47,7 +47,7 @@ def process_run(
     tr: float,
     regressor: str,
     atlas_files: Mapping[str, Path],
-    fwhm: float,
+    smooth: float | None = None,
 ) -> MetricsOutputs:
     """Run metrics for a single regressor on a single BOLD run.
 
@@ -59,7 +59,7 @@ def process_run(
         tr: Repetition time in seconds.
         regressor: Regressor name.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm.
 
     Returns:
         Metrics outputs for this run/regressor.
@@ -70,10 +70,10 @@ def process_run(
         template_brain_mask=func_outputs.template_brain_mask,
         tr=tr,
         atlas_files=atlas_files,
-        fwhm=fwhm,
+        smooth=smooth,
     )
     export_metrics(
-        mni, outputs, regressor=regressor, atlases=list(atlas_files), fwhm=fwhm
+        mni, outputs, regressor=regressor, atlases=list(atlas_files), smooth=smooth
     )
     return outputs
 
@@ -84,7 +84,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     atlas_files: Mapping[str, Path],
-    fwhm: float,
+    smooth: float | None = None,
     tr: float | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
@@ -95,7 +95,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm.
         tr: TR override in seconds, or ``None`` to read from headers.
         runner_config: Execution backend configuration.
     """
@@ -142,14 +142,14 @@ def run(
                     template_brain_mask=resolved["template_brain_mask"],
                     tr=run_tr,
                     atlas_files=atlas_files,
-                    fwhm=fwhm,
+                    smooth=smooth,
                 )
                 export_metrics(
                     mni_q,
                     outputs,
                     regressor=regressor,
                     atlases=list(atlas_files),
-                    fwhm=fwhm,
+                    smooth=smooth,
                 )
 
         pipe_ctx.ensure_dataset_description()
