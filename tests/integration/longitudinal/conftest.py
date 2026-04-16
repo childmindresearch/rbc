@@ -149,14 +149,14 @@ def longitudinal_template_output(
 @pytest.fixture(scope="session")
 def ds000114_func_derivatives(
     ds000114_dataset: Path,
-    longitudinal_template_output: Path,
+    ds000114_anat_derivatives: Path,
     _runner: str,
 ) -> Path:
     """Run ``rbc functional`` on ds000114 sub-01 ses-test.
 
     Produces cross-sectional functional derivatives (including raw
     regressor ``.1D`` files) that the longitudinal functional stage
-    consumes.  Writes into the same derivatives tree as the template
+    consumes.  Writes into the same derivatives tree as the anatomical
     stage so all outputs are visible to downstream fixtures.
 
     Only ses-test is processed (one session is sufficient to exercise
@@ -166,9 +166,9 @@ def ds000114_func_derivatives(
         [
             "functional",
             str(ds000114_dataset),
-            str(longitudinal_template_output),
+            str(ds000114_anat_derivatives),
             "-o",
-            str(longitudinal_template_output),
+            str(ds000114_anat_derivatives),
             "--runner",
             _runner,
             "--participant-label",
@@ -179,12 +179,13 @@ def ds000114_func_derivatives(
             _TASK,
         ],
     )
-    return longitudinal_template_output
+    return ds000114_anat_derivatives
 
 
 @pytest.fixture(scope="session")
 def longitudinal_func_output(
     ds000114_func_derivatives: Path,
+    longitudinal_template_output: Path,  # noqa: ARG001 — fixture dep for ordering
     _runner: str,
 ) -> Path:
     """Run ``rbc longitudinal functional`` on ds000114 sub-01 ses-test.
@@ -192,6 +193,8 @@ def longitudinal_func_output(
     Produces longitudinal functional derivatives (warped BOLD,
     per-regressor regressed/cleaned BOLD) by consuming the
     cross-sectional functional outputs and the longitudinal template.
+    Both ``ds000114_func_derivatives`` and ``longitudinal_template_output``
+    write into the same derivatives directory, so all files are visible.
     """
     _run_rbc(
         [
