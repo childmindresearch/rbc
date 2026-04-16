@@ -55,7 +55,7 @@ class TestMetricsArgs:
         args = MetricsArgs.validate_namespace(base_args)
         assert args.task is None
         assert "schaefer_200" in args.atlas_files
-        assert args.fwhm == 6.0
+        assert args.smooth == 6.0
         assert args.regressor == ["36-parameter"]
         assert args.participant_label == []
         assert args.session_label == []
@@ -85,20 +85,20 @@ class TestMetricsArgs:
         with pytest.raises(FileNotFoundError):
             MetricsArgs.validate_namespace(base_args)
 
-    @pytest.mark.parametrize("fwhm", [0.1, 1.0, 6.0, 10.0])
-    def test_valid_fwhm(self, base_args: argparse.Namespace, fwhm: float) -> None:
+    @pytest.mark.parametrize("smooth", [0.1, 1.0, 6.0, 10.0])
+    def test_valid_fwhm(self, base_args: argparse.Namespace, smooth: float) -> None:
         """Positive FWHM values pass validation."""
-        base_args.fwhm = fwhm
+        base_args.smooth = smooth
         args = MetricsArgs.validate_namespace(base_args)
-        assert args.fwhm == fwhm
+        assert args.smooth == smooth
 
-    @pytest.mark.parametrize("fwhm", [0.0, -1.0, -6.0])
+    @pytest.mark.parametrize("smooth", [0.0, -1.0, -6.0])
     def test_invalid_fwhm_raises(
-        self, base_args: argparse.Namespace, fwhm: float
+        self, base_args: argparse.Namespace, smooth: float
     ) -> None:
         """Zero or negative FWHM raises ValueError."""
-        base_args.fwhm = fwhm
-        with pytest.raises(ValueError, match="FWHM"):
+        base_args.smooth = smooth
+        with pytest.raises(ValueError, match="smooth"):
             MetricsArgs.validate_namespace(base_args)
 
     @pytest.mark.parametrize(

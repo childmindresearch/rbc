@@ -73,6 +73,9 @@ def _make_func_outputs(w: Path, regressors: list[str]) -> FunctionalOutputs:
         template_bold=_dummy(w, "template_bold.nii.gz"),
         regressed_bold={r: _dummy(w, f"regressed_{r}.nii.gz") for r in regressors},
         cleaned_bold={r: _dummy(w, f"cleaned_{r}.nii.gz") for r in regressors},
+        cleaned_bold_smooth={
+            r: _dummy(w, f"cleaned_{r}_smooth.nii.gz") for r in regressors
+        },
         regressor_file={r: _dummy(w, f"regressors_{r}.1D") for r in regressors},
         bpf_regressor_file={r: _dummy(w, f"regressors_bpf_{r}.1D") for r in regressors},
         template_brain_mask=_dummy(w, "template_mask.nii.gz"),
@@ -237,7 +240,7 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
         export_metrics(
-            mni, outputs, regressor="36-parameter", atlases=["schaefer_200"], fwhm=6.0
+            mni, outputs, regressor="36-parameter", atlases=["schaefer_200"], smooth=6.0
         )
         atlas_files = [
             p.name for p in pipe_ctx.output_dir.rglob("*.*") if "atlas-" in p.name
@@ -254,7 +257,7 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["aal"])
         export_metrics(
-            mni, outputs, regressor="36-parameter", atlases=["aal"], fwhm=6.0
+            mni, outputs, regressor="36-parameter", atlases=["aal"], smooth=6.0
         )
         all_names = [p.name for p in pipe_ctx.output_dir.rglob("*.*")]
         reg_files = [n for n in all_names if "reg-" in n]
@@ -269,7 +272,7 @@ class TestExportMetrics:
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
         export_metrics(
-            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], fwhm=6.0
+            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], smooth=6.0
         )
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 8
@@ -281,7 +284,7 @@ class TestExportMetrics:
         atlases = ["schaefer_200", "aal"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, atlases)
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, fwhm=6.0)
+        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, smooth=6.0)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 10
 

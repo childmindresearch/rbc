@@ -42,7 +42,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     atlas_files: Mapping[str, Path],
-    fwhm: float,
+    smooth: float | None = None,
     start_tr: int,
     tr: float | None = None,
     brain_extraction_templates: BrainExtractionTemplates = BRAIN_EXTRACTION_TEMPLATES,
@@ -63,7 +63,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor names.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm.
         start_tr: Number of initial TRs discarded during preprocessing.
         tr: TR override in seconds, or ``None`` to read from headers.
         brain_extraction_templates: Brain extraction template bundle.
@@ -140,14 +140,14 @@ def run(
                     template_brain_mask=func_outputs.template_brain_mask,
                     tr=func_metadata.tr,
                     atlas_files=atlas_files,
-                    fwhm=fwhm,
+                    smooth=smooth,
                 )
                 export_metrics(
                     mni,
                     metrics_outputs,
                     regressor=regressor,
                     atlases=list(atlas_files),
-                    fwhm=fwhm,
+                    smooth=smooth,
                 )
 
             # QC

@@ -386,9 +386,7 @@ def single_session_preprocess(
     if smooth is not None:
         cleaned_bold_smooth = {}
         for regressor in regressor_set:
-            _logger.info(
-                "%s smoothing cleaned BOLD (fwhm=%.1f mm)", regressor, smooth
-            )
+            _logger.info("%s smoothing cleaned BOLD (fwhm=%.1f mm)", regressor, smooth)
             cleaned_bold_smooth[regressor] = apply_smooth(
                 cleaned[regressor].regressed_bold,
                 tmpl_brain,
