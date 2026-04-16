@@ -162,6 +162,18 @@ def ds000114_func_derivatives(
     Only ses-test is processed (one session is sufficient to exercise
     the longitudinal functional chain).
     """
+    # Debug: list derivatives tree before running rbc functional
+    _tree = sorted(
+        str(p.relative_to(ds000114_anat_derivatives))
+        for p in ds000114_anat_derivatives.rglob("*")
+        if p.is_file()
+    )
+    print(  # noqa: T201
+        f"\n--- derivatives tree before rbc functional "
+        f"({ds000114_anat_derivatives}) ---\n"
+        + "\n".join(_tree)
+        + "\n--- end tree ---\n"
+    )
     _run_rbc(
         [
             "functional",
