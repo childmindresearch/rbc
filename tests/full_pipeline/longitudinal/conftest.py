@@ -263,7 +263,7 @@ def longitudinal_all_data(
         ]
     )
 
-    # Full longitudinal pipeline
+    # Full longitudinal pipeline (ses-test only, matching sequential run)
     _run_rbc(
         [
             "longitudinal",
@@ -272,6 +272,8 @@ def longitudinal_all_data(
             "-o",
             deriv,
             *common,
+            "--session-label",
+            "test",
             "--task",
             _TASK,
         ]
