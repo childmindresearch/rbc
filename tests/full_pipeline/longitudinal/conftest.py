@@ -278,6 +278,8 @@ def longitudinal_all_data(
             "test",
             "--task",
             _TASK,
+            "--smooth",
+            "6",
         ]
     )
 
