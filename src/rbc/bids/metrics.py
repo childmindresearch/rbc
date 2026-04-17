@@ -16,6 +16,22 @@ if TYPE_CHECKING:
     from rbc.workflows.metrics import MetricsOutputs
 
 
+def _smooth_label(fwhm: float, precision: int | None = None) -> str:
+    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1').
+
+    Trailing zeros are stripped and '.' is replaced with 'p' for BIDS compliance.
+
+    Args:
+        fwhm: Smoothing kernel FWHM in mm.
+        precision: Optional number of decimal places to format to before stripping.
+
+    Returns:
+        BIDS-safe label string (e.g. 'sm6', 'sm0p1').
+    """
+    s = f"{fwhm:.{precision}f}" if precision is not None else str(fwhm)
+    return "sm" + s.rstrip("0").rstrip(".").replace(".", "p")
+
+
 class MetricsInputs(TypedDict):
     """Resolved functional inputs for the metrics workflow."""
 
@@ -70,7 +86,7 @@ def export_metrics(
 
     Raw and z-scored raw maps are always exported. Smoothed and
     z-scored smoothed variants are exported only when the corresponding
-    fields are not None (i.e. when ``smooth=True`` was passed to
+    fields are not None (i.e. when ``smooth`` is not ``None`` in
     ``single_session_metrics``).
 
     Args:
@@ -96,7 +112,7 @@ def export_metrics(
 
     # Smoothed + z-scored smoothed
     if smooth is not None:
-        sm_desc = f"sm{int(smooth)}"
+        sm_desc = _smooth_label(smooth)
         if outputs.alff_smooth is not None:
             mex.save(outputs.alff_smooth, suffix="alff", desc=sm_desc)
             assert outputs.alff_smooth_zscored is not None  # noqa: S101

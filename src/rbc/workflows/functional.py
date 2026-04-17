@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
+from rbc.core.common import smooth as apply_smooth
 from rbc.core.fsl2itk import mat_to_itk
 from rbc.core.functional import (
     PEPolarFieldmap,
@@ -34,7 +35,6 @@ from rbc.core.functional import (
     slice_timing_correction,
     truncate_trs,
 )
-from rbc.core.metrics.smoothing import smooth as apply_smooth
 from rbc.core.niwrap import generate_exec_folder
 from rbc_resources import REGISTRATION_TEMPLATES
 
@@ -84,7 +84,7 @@ class FunctionalOutputs(NamedTuple):
             file, matching what ``3dTproject -bandpass`` actually applied.
             For BIDS export only.
         cleaned_bold_smooth: Spatially smoothed nuisance-regressed
-            & bandpass-filtered BOLD, or *None* is no smoothing requested.
+            & bandpass-filtered BOLD, or *None* if no smoothing requested.
         regressor_file: Bandpass-filtered nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """

@@ -13,7 +13,7 @@ import pytest
 
 from rbc.bids.anatomical import export_anatomical
 from rbc.bids.functional import export_functional
-from rbc.bids.metrics import export_metrics
+from rbc.bids.metrics import _smooth_label, export_metrics
 from rbc.bids.qc import export_qc
 from rbc.context import RunContext
 from rbc.workflows.anatomical import AnatomicalOutputs
@@ -363,6 +363,10 @@ class TestExportMetrics:
         sm_zstd = [n for n in saved if "desc-sm8Zstd" in n]
         assert len(sm_only) == 3
         assert len(sm_zstd) == 3
+
+    def test_smooth_label_non_integer(self) -> None:
+        """Non-integer FWHM values are formatted with 'p' instead of '.'."""
+        assert _smooth_label(0.1) == "sm0p1"
 
 
 # ---------------------------------------------------------------------------

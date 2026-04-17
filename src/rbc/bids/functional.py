@@ -17,6 +17,22 @@ if TYPE_CHECKING:
     from rbc.workflows.functional import FunctionalOutputs
 
 
+def _smooth_label(fwhm: float, precision: int | None = None) -> str:
+    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1').
+
+    Trailing zeros are stripped and '.' is replaced with 'p' for BIDS compliance.
+
+    Args:
+        fwhm: Smoothing kernel FWHM in mm.
+        precision: Optional number of decimal places to format to before stripping.
+
+    Returns:
+        BIDS-safe label string (e.g. 'sm6', 'sm0p1').
+    """
+    s = f"{fwhm:.{precision}f}" if precision is not None else str(fwhm)
+    return "sm" + s.rstrip("0").rstrip(".").replace(".", "p")
+
+
 class FunctionalRun(NamedTuple):
     """A single functional run discovered from a BIDS session.
 
@@ -186,7 +202,7 @@ def export_functional(
             mni.save(
                 outputs.cleaned_bold_smooth[reg],
                 suffix=Suffix.BOLD,
-                desc=f"sm{int(smooth)}preproc",
+                desc=f"{_smooth_label(smooth)}preproc",
                 extra={"reg": bids_safe_label(reg)},
             )
     mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")

@@ -12,9 +12,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
+from rbc.core.common import smooth as apply_smooth
 from rbc.core.metrics.alff import compute_alff
 from rbc.core.metrics.reho import compute_reho
-from rbc.core.metrics.smoothing import smooth as apply_smooth
 from rbc.core.metrics.standardization import compute_zscore
 from rbc.core.metrics.timeseries import compute_timeseries
 from rbc.core.niwrap import generate_exec_folder
