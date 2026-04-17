@@ -267,7 +267,7 @@ class TestComputeTimeseries:
         assert len(result.labels) == 2
 
         ts_loaded = pl.read_parquet(result.timeseries)
-        assert ts_loaded.shape == (10, 2)
+        assert ts_loaded.shape == (2, 10)
 
         corr_loaded = pl.read_parquet(result.connectome)
         assert corr_loaded.shape == (2, 2)

@@ -167,10 +167,13 @@ def compute_timeseries(
     ts_path = out_dir / f"{stem}_timeseries.parquet"
     corr_path = out_dir / f"{stem}_connectome.parquet"
 
-    col_names = [str(label) for label in labels]
+    # ROIs
+    roi_names = [str(label) for label in labels]
+    # Timepoints
+    tp_names = [str(i) for i in range(ts.shape[1])]
 
-    pl.DataFrame(ts, schema=col_names).write_parquet(ts_path)
-    pl.DataFrame(corr, schema=col_names).write_parquet(corr_path)
+    pl.DataFrame(ts, schema=tp_names).write_parquet(ts_path)
+    pl.DataFrame(corr, schema=roi_names).write_parquet(corr_path)
 
     return TimeseriesOutputs(
         timeseries=ts_path,
