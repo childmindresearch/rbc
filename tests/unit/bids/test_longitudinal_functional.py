@@ -105,6 +105,10 @@ def _make_long_outputs(workdir: Path) -> FunctionalLongOutputs:
             "36-parameter": _dummy("cleaned_36p.nii.gz"),
             "aCompCor": _dummy("cleaned_acompcor.nii.gz"),
         },
+        cleaned_bold_smooth={
+            "36-parameter": _dummy("cleaned_36p_smooth.nii.gz"),
+            "aCompCor": _dummy("cleaned_acompcor_smooth.nii.gz"),
+        },
     )
 
 

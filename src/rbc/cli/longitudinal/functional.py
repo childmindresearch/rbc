@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import _validate_task, _validate_positive
+from rbc.cli.base import _validate_positive, _validate_task
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.longitudinal.functional import run

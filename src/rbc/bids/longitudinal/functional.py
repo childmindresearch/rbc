@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from rbc.bids import Bids
     from rbc.workflows.longitudinal.functional import FunctionalLongOutputs
 
+
 def _smooth_label(fwhm: float, precision: int | None = None) -> str:
     """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1').
 

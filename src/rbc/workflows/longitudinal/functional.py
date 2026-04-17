@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from rbc.core.functional import apply_regression, apply_regression_bandpass
 from rbc.core.common import smooth as apply_smooth
+from rbc.core.functional import apply_regression, apply_regression_bandpass
 from rbc.core.longitudinal.transform import (
     compose_transform,
     func_transform,
@@ -37,7 +37,7 @@ class FunctionalLongOutputs(NamedTuple):
             in longitudinal template space, keyed by strategy name.
         cleaned_bold: Per-regressor nuisance-regressed + bandpass-filtered
             BOLD in longitudinal template space, keyed by strategy name.
-        cleaned_bold_smooth: Per-regressor spatially smoothed nuisance-regressed 
+        cleaned_bold_smooth: Per-regressor spatially smoothed nuisance-regressed
             + bandpass-filtered in longitudinal template space, or *None*.
     """
 
@@ -120,7 +120,7 @@ def longitudinal_process(
             brain_mask_file=long_mask,
             regressor_file=reg_file,
         ).regressed_bold
-    
+
     # Optionally smooth cleaned BOLD (export-only)
     cleaned_bold_smooth: dict[str, Path] | None = None
     if smooth is not None:
@@ -134,7 +134,7 @@ def longitudinal_process(
                 long_mask,
                 fwhm=smooth,
             )
-            
+
     return FunctionalLongOutputs(
         bold_to_long_xfm=bold_to_tpl_xfm,
         sbref=long_sbref,
