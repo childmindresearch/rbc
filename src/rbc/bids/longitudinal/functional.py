@@ -17,17 +17,7 @@ if TYPE_CHECKING:
 
 
 def _smooth_label(fwhm: float, precision: int | None = None) -> str:
-    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1').
-
-    Trailing zeros are stripped and '.' is replaced with 'p' for BIDS compliance.
-
-    Args:
-        fwhm: Smoothing kernel FWHM in mm.
-        precision: Optional number of decimal places to format to before stripping.
-
-    Returns:
-        BIDS-safe label string (e.g. 'sm6', 'sm0p1').
-    """
+    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1')."""
     s = f"{fwhm:.{precision}f}" if precision is not None else str(fwhm)
     return "sm" + s.rstrip("0").rstrip(".").replace(".", "p")
 

@@ -31,6 +31,7 @@ def base_ns(tmp_path: Path) -> argparse.Namespace:
         output_dir=tmp_path / "output",
         participant_label=[],
         session_label=[],
+        smooth=None,
         tmp_dir=None,
         ants_threads=1,
         fs_license=None,
