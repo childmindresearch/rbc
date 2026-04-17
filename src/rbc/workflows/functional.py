@@ -413,12 +413,8 @@ def single_session_preprocess(
         template_bold=template_bold,
         regressed_bold={r: regression[r].regressed_bold for r in regressor_set},
         cleaned_bold={r: cleaned[r].regressed_bold for r in regressor_set},
-<<<<<<< HEAD
         regressor_file=raw_regressors,
         bpf_regressor_file=filtered_regressors,
-=======
         cleaned_bold_smooth=cleaned_bold_smooth,
-        regressor_file=filtered_regressors,
->>>>>>> 54227e6 (update metrics to one flag and add functional smoothing)
         template_brain_mask=tmpl_brain,
     )
