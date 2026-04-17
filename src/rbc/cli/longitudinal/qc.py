@@ -1,4 +1,4 @@
-"""``rbc longitudinal qc`` subcommand (placeholder for Stage 6)."""
+"""``rbc longitudinal qc`` subcommand."""
 
 from __future__ import annotations
 
@@ -39,15 +39,16 @@ def register_command(
     subparsers: argparse._SubParsersAction,
     parents: Sequence[argparse.ArgumentParser],
 ) -> None:
-    """Register ``rbc longitudinal qc`` (Stage 6 placeholder)."""
+    """Register ``rbc longitudinal qc``."""
     parser = subparsers.add_parser(
         "qc",
         parents=parents,
         description=(
-            "Run registration QC for longitudinal derivatives. Placeholder "
-            "wired up by Stage 3; full implementation ships in Stage 6."
+            "Run registration QC for longitudinal derivatives. Computes "
+            "Dice/Jaccard overlap between anatomical and BOLD brain masks "
+            "in longitudinal template space."
         ),
-        help="Longitudinal QC stage (Stage 6)",
+        help="Longitudinal registration QC (mask overlap)",
         usage=("rbc longitudinal qc INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]"),
     )
     add_fs_license_argument(parser)

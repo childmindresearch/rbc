@@ -10,7 +10,7 @@ import polars as pl
 import pytest
 
 from rbc.orchestration import Filters
-from rbc.orchestration.longitudinal.template import _setup_freesurfer_auth, run
+from rbc.orchestration.longitudinal.template import run, setup_freesurfer_auth
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -70,7 +70,7 @@ class TestSetupFreesurferAuth:
                 "rbc.orchestration.longitudinal.template.mount_fs_license"
             ) as mock_mount,
         ):
-            _setup_freesurfer_auth(license_path)
+            setup_freesurfer_auth(license_path)
             mock_mount.assert_called_once_with(runner, license_path)
 
     def test_env_fallback(
@@ -91,7 +91,7 @@ class TestSetupFreesurferAuth:
                 "rbc.orchestration.longitudinal.template.mount_fs_license"
             ) as mock_mount,
         ):
-            _setup_freesurfer_auth(None)
+            setup_freesurfer_auth(None)
             mock_mount.assert_called_once_with(runner, license_path)
 
     def test_bypass_when_no_license(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -109,7 +109,7 @@ class TestSetupFreesurferAuth:
                 "rbc.orchestration.longitudinal.template.mount_fs_license"
             ) as mock_mount,
         ):
-            _setup_freesurfer_auth(None)
+            setup_freesurfer_auth(None)
             assert runner.environ["SURFER_SIDEDOOR"] == "1"
             mock_mount.assert_not_called()
 
@@ -129,13 +129,13 @@ class TestSetupFreesurferAuth:
                 "rbc.orchestration.longitudinal.template.mount_fs_license"
             ) as mock_mount,
         ):
-            _setup_freesurfer_auth(None)
+            setup_freesurfer_auth(None)
             mock_mount.assert_not_called()
 
     def test_missing_license_raises(self, tmp_path: Path) -> None:
         """A non-existent license path raises before reaching the runner."""
         with pytest.raises(FileNotFoundError, match="not found"):
-            _setup_freesurfer_auth(tmp_path / "missing.txt")
+            setup_freesurfer_auth(tmp_path / "missing.txt")
 
 
 class TestRunSkipWarning:
@@ -152,7 +152,7 @@ class TestRunSkipWarning:
         )
         with (
             patch("rbc.orchestration.longitudinal.template.init_runner"),
-            patch("rbc.orchestration.longitudinal.template._setup_freesurfer_auth"),
+            patch("rbc.orchestration.longitudinal.template.setup_freesurfer_auth"),
             patch(
                 "rbc.orchestration.longitudinal.template.load_table",
                 return_value=df,

@@ -24,7 +24,7 @@ _TR_PLAUSIBLE_LOW = 0.1  # fastest multiband sequences ~100 ms
 _TR_PLAUSIBLE_HIGH = 20.0  # very slow sparse designs
 
 
-def _resolve_tr(
+def resolve_tr(
     *,
     sidecar_tr: float | None,
     header_tr: float | None,
@@ -90,7 +90,7 @@ def _resolve_tr(
     raise ValueError(msg)
 
 
-def _warn_implausible_tr(tr: float) -> None:
+def warn_implausible_tr(tr: float) -> None:
     """Log a warning if TR falls outside the plausible fMRI range."""
     if tr < _TR_PLAUSIBLE_LOW:
         _logger.warning(
@@ -169,12 +169,12 @@ class FunctionalMetadata:
         raw_pixdim = float(hdr["pixdim"][4])  # type: ignore[index]
         header_tr: float | None = raw_pixdim if raw_pixdim > 0 else None
 
-        tr = _resolve_tr(
+        tr = resolve_tr(
             sidecar_tr=sidecar_tr,
             header_tr=header_tr,
             override=tr_override,
         )
-        _warn_implausible_tr(tr)
+        warn_implausible_tr(tr)
 
         slice_timing: list[float] | None = sidecar.get("SliceTiming")
         if slice_timing is not None:

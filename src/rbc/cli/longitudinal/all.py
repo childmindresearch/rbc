@@ -1,11 +1,16 @@
-"""``rbc longitudinal all`` subcommand (placeholder for Stage 6)."""
+"""``rbc longitudinal all`` subcommand."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import _or_default, _validate_nifti_path, _validate_positive
+from rbc.cli.base import (
+    _or_default,
+    _validate_nifti_path,
+    _validate_positive,
+    _validate_task,
+)
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
 from rbc.cli.metrics import _resolve_atlas_args
 from rbc.orchestration import Filters, RunnerConfig
@@ -25,11 +30,14 @@ class AllLongArgs(LongitudinalBaseArgs):
     registration_template: Path
     atlas_files: dict[str, Path]
     fwhm: float
+    regressor: Sequence[Literal["36-parameter", "aCompCor"]]
+    task: str | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AllLongArgs:
         """Validate namespace for the full longitudinal pipeline subcommand."""
         _validate_positive(ns.fwhm, "FWHM")
+        _validate_task(ns.task)
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
             registration_template=_or_default(
@@ -37,6 +45,8 @@ class AllLongArgs(LongitudinalBaseArgs):
             ),
             atlas_files=_resolve_atlas_args(ns.atlas),
             fwhm=ns.fwhm,
+            regressor=ns.regressor,
+            task=ns.task,
         )
 
 
@@ -48,7 +58,9 @@ def main(args: AllLongArgs) -> int:
         filters=Filters(
             participant_label=args.participant_label,
             session_label=args.session_label,
+            task=args.task,
         ),
+        regressors=args.regressor,
         fs_license=args.fs_license,
         atlas_files=args.atlas_files,
         fwhm=args.fwhm,
@@ -66,21 +78,33 @@ def register_command(
     subparsers: argparse._SubParsersAction,
     parents: Sequence[argparse.ArgumentParser],
 ) -> None:
-    """Register ``rbc longitudinal all`` (Stage 6 placeholder)."""
+    """Register ``rbc longitudinal all``."""
     parser = subparsers.add_parser(
         "all",
         parents=parents,
         description=(
-            "Run the full longitudinal pipeline (template → anat → func → "
-            "metrics → qc). Placeholder wired up by Stage 3; full "
-            "implementation ships in Stage 6."
+            "Run the full longitudinal pipeline (template -> anat -> func -> "
+            "metrics -> qc). Passes functional outputs in-memory to metrics "
+            "and QC stages."
         ),
-        help="Full longitudinal pipeline (Stage 6)",
+        help="Full longitudinal pipeline",
         usage=(
             "rbc longitudinal all INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]"
         ),
     )
     add_fs_license_argument(parser)
+    parser.add_argument(
+        "--regressor",
+        nargs="+",
+        choices=["36-parameter", "aCompCor"],
+        default=["36-parameter"],
+        help="Space-delimited nuisance regression method(s) to apply.",
+    )
+    parser.add_argument(
+        "--task",
+        default=None,
+        help="Task label to filter BOLD runs (without 'task-' prefix).",
+    )
     parser.add_argument(
         "--atlas",
         nargs="+",

@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from rbc.bids.longitudinal.template import TemplateInputs
 
-__all__ = ["process_subject", "run"]
+__all__ = ["process_subject", "run", "setup_freesurfer_auth"]
 
 _logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def run(
     """
     config = runner_config or RunnerConfig()
     init_runner(config)
-    _setup_freesurfer_auth(fs_license)
+    setup_freesurfer_auth(fs_license)
     verbose = config.verbose
 
     _logger.warning(
@@ -111,7 +111,7 @@ def run(
     _logger.info("Longitudinal template construction complete")
 
 
-def _setup_freesurfer_auth(fs_license: Path | None) -> None:
+def setup_freesurfer_auth(fs_license: Path | None) -> None:
     """Resolve the FS license; fall back to the chklc bypass if absent."""
     license_path = fs_license
     if license_path is None and (env := os.environ.get("FS_LICENSE")):
