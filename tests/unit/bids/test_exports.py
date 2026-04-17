@@ -296,9 +296,9 @@ class TestExportQC:
             qc_file: dict[str, Path] = field(default_factory=dict)
 
         mni = func_bids.derive(space="MNI152NLin6Asym")
-        qc = _FakeQC(qc_file={"36-parameter": _dummy(workdir, "qc.parquet")})
+        qc = _FakeQC(qc_file={"36-parameter": _dummy(workdir, "qc.tsv")})
         export_qc(mni, qc, regressors=["36-parameter"])  # type: ignore[arg-type]
-        saved = list(pipe_ctx.output_dir.rglob("*.parquet"))
+        saved = list(pipe_ctx.output_dir.rglob("*.tsv"))
         assert len(saved) == 1
         assert "reg-36parameter" in saved[0].name
 
@@ -314,7 +314,7 @@ class TestExportQC:
 
         regs = ["36-parameter", "aCompCor"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
-        qc = _FakeQC(qc_file={r: _dummy(workdir, f"qc_{r}.parquet") for r in regs})
+        qc = _FakeQC(qc_file={r: _dummy(workdir, f"qc_{r}.tsv") for r in regs})
         export_qc(mni, qc, regressors=regs)  # type: ignore[arg-type]
-        saved = list(pipe_ctx.output_dir.rglob("*.parquet"))
+        saved = list(pipe_ctx.output_dir.rglob("*.tsv"))
         assert len(saved) == 2
