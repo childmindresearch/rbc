@@ -10,7 +10,7 @@ import polars as pl
 import pytest
 
 from rbc.orchestration import Filters
-from rbc.orchestration.longitudinal.template import setup_freesurfer_auth, run
+from rbc.orchestration.longitudinal.template import run, setup_freesurfer_auth
 
 if TYPE_CHECKING:
     from pathlib import Path
