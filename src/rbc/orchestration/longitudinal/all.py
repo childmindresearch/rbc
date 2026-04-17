@@ -88,7 +88,10 @@ def run(
     df = load_table(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
-    tpl_inputs, skipped = discover_template_inputs(filters.apply(df))
+    # Template discovery needs all sessions (not just the filtered ones),
+    # so apply only the participant filter here.
+    tpl_filters = Filters(participant_label=filters.participant_label)
+    tpl_inputs, skipped = discover_template_inputs(tpl_filters.apply(df))
     for sub in skipped:
         _logger.warning(
             "Skipping sub-%s: only one preprocessed T1w brain volume found.",
