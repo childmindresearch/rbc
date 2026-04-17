@@ -8,36 +8,27 @@
 > [!WARNING]
 > This software is under active development and not yet intended for production use. APIs, outputs, and behavior may change without notice. Use at your own risk.
 
-Reference implementation of the [Reproducible Brain Charts (RBC)](https://doi.org/10.1016/j.neuron.2024.08.026) preprocessing protocol for structural and functional MRI. Built on [NiWrap](https://github.com/styx-api/niwrap).
+Reference implementation of the [Reproducible Brain Charts (RBC)](https://reprobrainchart.github.io/) preprocessing protocol for structural and functional MRI, built on [NiWrap](https://github.com/styx-api/niwrap). Handles brain extraction, tissue segmentation, registration, motion correction, nuisance regression, and resting-state metrics, with optional longitudinal (multi-session) support. See [Shafiei et al. (2025)](https://doi.org/10.1016/j.neuron.2024.08.026) for the full protocol description.
 
 <p align="center">
   <img src="docs/pipeline_flow.svg" alt="RBC pipeline flow" width="720">
 </p>
 
-## Installation
+## Quick start
+
+Input must be a [BIDS-organized](https://bids-specification.readthedocs.io/) dataset. Neuroimaging tools (AFNI, FSL, ANTs, FreeSurfer) run automatically via Docker by default.
 
 ```bash
 pip install git+https://github.com/childmindresearch/rbc.git
+
+# Run the full cross-sectional pipeline
+rbc all /data -o /data/derivatives
+
+# Run a single stage for specific subjects
+rbc functional /data -o /data/derivatives --task rest --participant-label 01 02
 ```
 
-Requires Python 3.12+. Neuroimaging tools (AFNI, FSL, ANTs) are needed at runtime. Pass `--runner docker` to pull and run them automatically via containers. See the [NiWrap docs](https://github.com/styx-api/niwrap) for runner configuration.
-
-## Quick start
-
-```bash
-# Usage: rbc {workflow} INPUT_DIR [INPUT_DIR ...] -o OUTPUT_DIR [options]
-
-# Run the full pipeline
-rbc all /data -o /data/derivatives --runner docker
-
-# Or run a single stage for specific subjects
-rbc functional /data -o /data/derivatives --task rest --participant-label 01 02 --runner docker
-
-# Multiple input directories (e.g., raw BIDS + prior derivatives)
-rbc functional /data /data/derivatives -o /data/derivatives --runner docker
-```
-
-Run any command with `--help` for full options.
+Run any command with `--help` for full options (e.g., `rbc functional --help`). Requires Python 3.12+. Pass `--runner docker` explicitly if auto-detection doesn't find your container runtime, or see the [NiWrap docs](https://github.com/styx-api/niwrap) for other runners (Podman, Singularity, local installs).
 
 ## Workflows
 
@@ -48,75 +39,46 @@ Run any command with `--help` for full options.
 | `rbc metrics`        | ALFF/fALFF, ReHo, smoothing, z-scoring, atlas-based timeseries and correlation matrices          |
 | `rbc qc`             | XCP-D format quality metrics, framewise displacement, DVARS, RBC pass/fail thresholds            |
 | `rbc all`            | Runs all four stages in sequence, passing results in memory between stages                       |
-| `rbc longitudinal …` | Multi-session workflows: `template`, `anatomical`, `functional`, `metrics`, `qc`, `all`          |
 
-Workflows must be run in order: `anatomical` → `functional` → `metrics` / `qc`. The `all` command handles this automatically.
+Stages must be run in order: `anatomical` -> `functional` -> `metrics` / `qc`. The `all` command handles this automatically.
 
-Longitudinal workflows consume cross-sectional derivatives. Typical flow:
+Multiple input directories are supported when raw data and derivatives live in separate trees:
 
 ```bash
-rbc all /data -o /data/derivatives --runner docker
-rbc longitudinal template /data/derivatives -o /data/derivatives --runner docker
-rbc longitudinal anatomical /data/derivatives -o /data/derivatives --runner docker
+rbc functional /data /pipelines/rbc -o /pipelines/rbc
 ```
 
-`rbc long` is an alias for `rbc longitudinal`. The `metrics`, `qc`, and `all`
-longitudinal stages are registered but raise `NotImplementedError` until
-Stage 6 of the longitudinal refactor lands (tracker: #301).
+### Longitudinal
 
-## Outputs
+For multi-session datasets, longitudinal workflows build a within-subject template and reprocess derivatives in that common space. Run the cross-sectional pipeline first:
 
-See the [data dictionary](docs/data_dictionary.md) for a complete description of every output file, including format details and the processing step that produces each one.
+```bash
+rbc all /data -o /data/derivatives
+rbc longitudinal all /data/derivatives -o /data/derivatives
+```
+
+`rbc long` is an alias for `rbc longitudinal`.
 
 <details>
-<summary>Example BIDS derivative tree</summary>
+<summary>Individual longitudinal stages</summary>
 
-```
-derivatives/rbc/
-  sub-01/
-    ses-01/
-      anat/
-        sub-01_ses-01_desc-brain_T1w.nii.gz
-        sub-01_ses-01_desc-T1w_mask.nii.gz
-        sub-01_ses-01_desc-{csf,gm,wm}_mask.nii.gz
-        sub-01_ses-01_from-T1w_to-template_mode-image_xfm.nii.gz
-        sub-01_ses-01_from-template_to-T1w_mode-image_xfm.nii.gz
-      func/
-        sub-01_ses-01_task-rest_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_desc-preproc_bold.nii.gz
-        sub-01_ses-01_task-rest_desc-motionParams_motion.1D
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_desc-xcp_quality.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_alff.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_reg-36parameter_reho.nii.gz
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36parameter_desc-mean_timeseries.tsv
-        sub-01_ses-01_task-rest_space-MNI152NLin6ASym_atlas-schaefer200_reg-36parameter_desc-pearson_correlations.tsv
+```bash
+rbc longitudinal template   /data/derivatives -o /data/derivatives
+rbc longitudinal anatomical /data/derivatives -o /data/derivatives
+rbc longitudinal functional /data/derivatives -o /data/derivatives --regressor 36-parameter
+rbc longitudinal metrics    /data/derivatives -o /data/derivatives --atlas schaefer_200
+rbc longitudinal qc         /data/derivatives -o /data/derivatives
 ```
 
 </details>
 
-## Testing
+## Outputs
 
-```bash
-# Unit tests (fast, no runner needed)
-uv run pytest -m unit
+See the [data dictionary](docs/data_dictionary.md) for a complete description of every output file.
 
-# Integration tests (requires Docker)
-uv run pytest -m "integration and not slow" --runner docker
-
-# Full pipeline (~30+ min)
-uv run pytest -m full_pipeline --runner docker
-```
-
-See [tests/README.md](tests/README.md) for the full testing strategy.
-
-## Contributing
-
-```bash
-uv sync && uv run pre-commit install
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+<p align="center">
+  <img src="docs/output_tree.svg" alt="RBC output tree" width="720">
+</p>
 
 ## Citation
 
@@ -136,20 +98,22 @@ If you use this pipeline, please cite:
 }
 ```
 
-## About RBC
+## Development
 
-[Reproducible Brain Charts (RBC)](https://reprobrainchart.github.io/) is an open resource integrating data from 5 large studies of brain development in youth from three continents (N = 6,346). The resource provides:
+```bash
+uv sync && uv run pre-commit install
+```
 
-- Harmonized psychiatric phenotypes using bifactor models
-- Quality-assured neuroimaging data processed with consistent pipelines
-- All data openly shared via the International Neuroimaging Data-sharing Initiative (INDI)
+```bash
+uv run pytest -m unit                             # fast, no runner needed
+uv run pytest -m "integration and not slow"        # integration tests
+uv run pytest -m full_pipeline                     # full pipeline (~30+ min)
+```
 
-RBC facilitates large-scale, reproducible, and generalizable research in developmental and psychiatric neuroscience. The RBC pipeline was developed originally in the [Configurable Pipeline for the Analysis of Connectomes](https://github.com/FCP-INDI/C-PAC/), and has been remade here using NiWrap to increase readability, portability, and runtime efficiency.
+See [tests/README.md](tests/README.md) for the full testing strategy and [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-[MIT License](LICENSE)
+[LGPL-3.0-or-later](LICENSE)
 
-## Acknowledgments
-
-This implementation is based on the RBC protocol described in Shafiei et al. (2025) and originally implemented in [C-PAC](https://fcp-indi.github.io/). Development is supported by the [Child Mind Institute](https://childmind.org).
+This implementation is based on the RBC protocol originally implemented in [C-PAC](https://fcp-indi.github.io/). Development is supported by the [Child Mind Institute](https://childmind.org). All data are openly shared via the [International Neuroimaging Data-sharing Initiative (INDI)](https://fcon_1000.projects.nitrc.org/).

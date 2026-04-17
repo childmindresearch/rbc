@@ -57,6 +57,11 @@ def load_table(
     for d in dirs:
         all_roots.extend(b2t.find_bids_datasets(d))
 
+    # Deduplicate: when one input dir is a subdirectory of another (e.g.
+    # /data and /data/derivatives), find_bids_datasets discovers the nested
+    # dataset from both roots. Use dict.fromkeys to preserve discovery order.
+    all_roots = list(dict.fromkeys(r.resolve() for r in all_roots))
+
     tables = b2t.batch_index_dataset(
         all_roots,
         max_workers=max_workers,
