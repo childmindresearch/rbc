@@ -32,7 +32,7 @@ def test_xcp_qc_from_bold(
     motion_corrected_bold: MotionCorrectedBOLD,
     tmp_path: Path,
 ) -> None:
-    """Compute all sub-metrics from real data, generate XCP TSV, and verify."""
+    """Compute all sub-metrics from real data, generate XCP Parquet, and verify."""
     mc = motion_corrected_bold.mc
     bold_data = motion_corrected_bold.bold_data
     mask = motion_corrected_bold.mask
@@ -71,7 +71,7 @@ def test_xcp_qc_from_bold(
     assert metrics.meanFD >= 0
     assert metrics.meanDVInit >= 0
 
-    # Write TSV and verify
+    # Write Parquet and verify
     out_path = tmp_path / "xcp_qc.parquet"
     write_xcp_qc(metrics, out_path)
     assert out_path.exists()

@@ -220,7 +220,7 @@ class TestGenerateXcpQc:
 # write_xcp_qc
 # ===================================================================
 class TestWriteXcpQc:
-    """Tests for writing XCP QC metrics to TSV."""
+    """Tests for writing XCP QC metrics to Parquet."""
 
     def test_writes_file(self, tmp_path: Path) -> None:
         """Output file is created."""
@@ -237,7 +237,7 @@ class TestWriteXcpQc:
         assert df.columns == EXPECTED_COLUMNS
 
     def test_correct_values(self, tmp_path: Path) -> None:
-        """Values in TSV match the input metrics."""
+        """Values in Parquet match the input metrics."""
         m = _sample_xcp_metrics()
         out = tmp_path / "qc.parquet"
         write_xcp_qc(m, out)
@@ -247,7 +247,7 @@ class TestWriteXcpQc:
         assert df["meanFD"][0] == m.meanFD
 
     def test_round_trip_polars(self, tmp_path: Path) -> None:
-        """Polars can read back the TSV and recover the values."""
+        """Polars can read back the Parquet and recover the values."""
         m = _sample_xcp_metrics()
         out = tmp_path / "qc.parquet"
         write_xcp_qc(m, out)

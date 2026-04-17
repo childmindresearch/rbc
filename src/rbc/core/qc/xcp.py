@@ -148,7 +148,7 @@ def write_xcp_qc(metrics: XCPQCMetrics, out_path: Path) -> Path:
     Args:
         metrics: A populated :class:`XCPQCMetrics` row.
         out_path: Destination file path (parent dirs created if needed).
-            Should have a ``.parquet`` extension.
+            Parquet content will be written to this path.
 
     Returns:
         The output path (same as *out_path*).
