@@ -143,12 +143,11 @@ def generate_xcp_qc(
 
 
 def write_xcp_qc(metrics: XCPQCMetrics, out_path: Path) -> Path:
-    """Write XCP QC metrics as a single-row Parquet file.
+    """Write XCP QC metrics as a single-row TSV file.
 
     Args:
         metrics: A populated :class:`XCPQCMetrics` row.
         out_path: Destination file path (parent dirs created if needed).
-            Parquet content will be written to this path.
 
     Returns:
         The output path (same as *out_path*).
@@ -157,7 +156,7 @@ def write_xcp_qc(metrics: XCPQCMetrics, out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     df = pl.DataFrame([metrics._asdict()])
-    df.write_parquet(out_path)
+    df.write_csv(out_path, separator="\t")
 
     return out_path
 

@@ -114,6 +114,6 @@ def export_qc(
             outputs.qc_file[reg],
             suffix="quality",
             desc="xcp",
-            extension=".parquet",
+            extension=".tsv",
             extra={"reg": bids_safe_label(reg)},
         )

@@ -110,8 +110,8 @@ def _sample_xcp_metrics() -> XCPQCMetrics:
 class TestXCPQCMetrics:
     """Tests for XCPQCMetrics NamedTuple structure."""
 
-    def test_field_names_match_pq_columns(self) -> None:
-        """NamedTuple field names exactly match expected Parquet columns."""
+    def test_field_names_match_tsv_columns(self) -> None:
+        """NamedTuple field names exactly match expected TSV columns."""
         assert list(XCPQCMetrics._fields) == EXPECTED_COLUMNS
 
     def test_field_count(self) -> None:
@@ -220,38 +220,42 @@ class TestGenerateXcpQc:
 # write_xcp_qc
 # ===================================================================
 class TestWriteXcpQc:
-    """Tests for writing XCP QC metrics to Parquet."""
+    """Tests for writing XCP QC metrics to TSV."""
 
     def test_writes_file(self, tmp_path: Path) -> None:
         """Output file is created."""
-        out = tmp_path / "qc.parquet"
+        out = tmp_path / "qc.tsv"
         result = write_xcp_qc(_sample_xcp_metrics(), out)
         assert result == out
         assert out.exists()
 
     def test_correct_headers(self, tmp_path: Path) -> None:
-        """Parquet column names match expected column names."""
-        out = tmp_path / "qc.parquet"
+        """TSV header row matches expected column names."""
+        out = tmp_path / "qc.tsv"
         write_xcp_qc(_sample_xcp_metrics(), out)
-        df = pl.read_parquet(out)
-        assert df.columns == EXPECTED_COLUMNS
+        header = out.read_text().splitlines()[0].split("\t")
+        assert header == EXPECTED_COLUMNS
 
     def test_correct_values(self, tmp_path: Path) -> None:
-        """Values in Parquet match the input metrics."""
+        """Values in TSV match the input metrics."""
         m = _sample_xcp_metrics()
-        out = tmp_path / "qc.parquet"
+        out = tmp_path / "qc.tsv"
         write_xcp_qc(m, out)
-        df = pl.read_parquet(out)
-        assert df["sub"][0] == "01"  # sub
-        assert df["run"][0] == 1  # run
-        assert df["meanFD"][0] == m.meanFD
+        values = out.read_text().splitlines()[1].split("\t")
+        assert values[0] == "01"  # sub
+        assert values[3] == "1"  # run
+        assert float(values[7]) == m.meanFD
 
     def test_round_trip_polars(self, tmp_path: Path) -> None:
-        """Polars can read back the Parquet and recover the values."""
+        """Polars can read back the TSV and recover the values."""
         m = _sample_xcp_metrics()
-        out = tmp_path / "qc.parquet"
+        out = tmp_path / "qc.tsv"
         write_xcp_qc(m, out)
-        df = pl.read_parquet(out)
+        df = pl.read_csv(
+            out,
+            separator="\t",
+            schema_overrides={"sub": pl.Utf8, "ses": pl.Utf8},
+        )
         assert df.shape == (1, 24)
         assert df["sub"][0] == "01"
         assert df["meanFD"][0] == m.meanFD
@@ -259,16 +263,16 @@ class TestWriteXcpQc:
 
     def test_creates_parent_dirs(self, tmp_path: Path) -> None:
         """Parent directories are created if they don't exist."""
-        out = tmp_path / "a" / "b" / "c" / "qc.parquet"
+        out = tmp_path / "a" / "b" / "c" / "qc.tsv"
         write_xcp_qc(_sample_xcp_metrics(), out)
         assert out.exists()
 
     def test_single_data_row(self, tmp_path: Path) -> None:
-        """Parquet has exactly one data row."""
-        out = tmp_path / "qc.parquet"
+        """TSV has exactly one header row and one data row."""
+        out = tmp_path / "qc.tsv"
         write_xcp_qc(_sample_xcp_metrics(), out)
-        df = pl.read_parquet(out)
-        assert df.shape[0] == 1
+        lines = out.read_text().strip().splitlines()
+        assert len(lines) == 2
 
 
 # ===================================================================

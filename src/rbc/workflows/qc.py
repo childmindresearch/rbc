@@ -37,7 +37,7 @@ class QCOutputs:
 
     Attributes:
         metrics: All 24 XCP-style QC fields for the run.
-        qc_file: Path to the written single-row Parquet.
+        qc_file: Path to the written single-row TSV.
         passed: Whether the run passes RBC QC thresholds.
     """
 
@@ -157,10 +157,10 @@ def single_session_qc(
             norm=norm,
         )
 
-        # 9. Write QC Parquet
+        # 9. Write QC TSV
         qc_outputs.qc_file[regressor] = write_xcp_qc(
             qc_outputs.metrics[regressor],
-            work_dir / f"reg-{regressor}_qc.parquet",
+            work_dir / f"reg-{regressor}_qc.tsv",
         )
 
     # 10. RBC pass/fail
