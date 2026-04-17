@@ -11,9 +11,9 @@ import pytest
 
 from rbc.metadata import (
     FunctionalMetadata,
-    _resolve_tr,
     _validate_slice_timing,
-    _warn_implausible_tr,
+    resolve_tr,
+    warn_implausible_tr,
 )
 
 if TYPE_CHECKING:
@@ -25,68 +25,68 @@ class TestResolveTr:
 
     def test_override_wins(self) -> None:
         """CLI override takes priority over sidecar and header."""
-        tr = _resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=1.5)
+        tr = resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=1.5)
         assert tr == 1.5
 
     def test_override_warns_on_sidecar_mismatch(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """CLI override logs warning when sidecar disagrees."""
-        _resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=1.5)
+        resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=1.5)
         assert any("differs from sidecar" in msg for msg in caplog.messages)
 
     def test_override_warns_on_header_mismatch(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """CLI override logs warning when header disagrees."""
-        _resolve_tr(sidecar_tr=1.5, header_tr=2.0, override=1.5)
+        resolve_tr(sidecar_tr=1.5, header_tr=2.0, override=1.5)
         assert any("differs from NIfTI header" in msg for msg in caplog.messages)
 
     def test_sidecar_used_when_no_override(self) -> None:
         """Sidecar TR is used when no override is provided."""
-        tr = _resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=None)
+        tr = resolve_tr(sidecar_tr=2.0, header_tr=2.0, override=None)
         assert tr == 2.0
 
     def test_sidecar_header_mismatch_raises(self) -> None:
         """Sidecar/header mismatch without override raises ValueError."""
         with pytest.raises(ValueError, match="TR mismatch"):
-            _resolve_tr(sidecar_tr=2.0, header_tr=1.5, override=None)
+            resolve_tr(sidecar_tr=2.0, header_tr=1.5, override=None)
 
     def test_sidecar_header_within_tolerance(self) -> None:
         """Sidecar/header difference within tolerance is OK."""
-        tr = _resolve_tr(sidecar_tr=2.0, header_tr=2.0005, override=None)
+        tr = resolve_tr(sidecar_tr=2.0, header_tr=2.0005, override=None)
         assert tr == 2.0
 
     def test_header_fallback_when_no_sidecar(self) -> None:
         """Header TR is used when sidecar has no RepetitionTime."""
-        tr = _resolve_tr(sidecar_tr=None, header_tr=2.0, override=None)
+        tr = resolve_tr(sidecar_tr=None, header_tr=2.0, override=None)
         assert tr == 2.0
 
     def test_header_fallback_logs_warning(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Header fallback logs a warning."""
-        _resolve_tr(sidecar_tr=None, header_tr=2.0, override=None)
+        resolve_tr(sidecar_tr=None, header_tr=2.0, override=None)
         assert any("falling back to NIfTI header" in msg for msg in caplog.messages)
 
     def test_no_tr_anywhere_raises(self) -> None:
         """Missing TR from all sources raises ValueError."""
         with pytest.raises(ValueError, match="Cannot determine TR"):
-            _resolve_tr(sidecar_tr=None, header_tr=None, override=None)
+            resolve_tr(sidecar_tr=None, header_tr=None, override=None)
 
     def test_zero_header_treated_as_missing(self) -> None:
         """Zero header TR is treated as missing."""
         with pytest.raises(ValueError, match="Cannot determine TR"):
-            _resolve_tr(sidecar_tr=None, header_tr=0.0, override=None)
+            resolve_tr(sidecar_tr=None, header_tr=0.0, override=None)
 
     def test_zero_sidecar_treated_as_missing(self) -> None:
         """Zero sidecar TR falls through to header."""
-        tr = _resolve_tr(sidecar_tr=0.0, header_tr=2.0, override=None)
+        tr = resolve_tr(sidecar_tr=0.0, header_tr=2.0, override=None)
         assert tr == 2.0
 
     def test_negative_sidecar_treated_as_missing(self) -> None:
         """Negative sidecar TR falls through to header."""
-        tr = _resolve_tr(sidecar_tr=-1.0, header_tr=2.0, override=None)
+        tr = resolve_tr(sidecar_tr=-1.0, header_tr=2.0, override=None)
         assert tr == 2.0
 
 
@@ -269,27 +269,27 @@ class TestWarnImplausibleTr:
 
     def test_normal_tr_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
         """Normal TR values produce no warning."""
-        _warn_implausible_tr(2.0)
+        warn_implausible_tr(2.0)
         assert not any("unusually" in msg for msg in caplog.messages)
 
     def test_very_short_tr_warns(self, caplog: pytest.LogCaptureFixture) -> None:
         """TR below 0.1s triggers a warning."""
-        _warn_implausible_tr(0.05)
+        warn_implausible_tr(0.05)
         assert any("unusually short" in msg for msg in caplog.messages)
 
     def test_very_long_tr_warns(self, caplog: pytest.LogCaptureFixture) -> None:
         """TR above 20s triggers a warning."""
-        _warn_implausible_tr(30.0)
+        warn_implausible_tr(30.0)
         assert any("unusually long" in msg for msg in caplog.messages)
 
     def test_boundary_low_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
         """TR exactly at the low boundary does not warn."""
-        _warn_implausible_tr(0.1)
+        warn_implausible_tr(0.1)
         assert not any("unusually" in msg for msg in caplog.messages)
 
     def test_boundary_high_no_warning(self, caplog: pytest.LogCaptureFixture) -> None:
         """TR exactly at the high boundary does not warn."""
-        _warn_implausible_tr(20.0)
+        warn_implausible_tr(20.0)
         assert not any("unusually" in msg for msg in caplog.messages)
 
 

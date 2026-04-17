@@ -13,7 +13,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import nibabel as nib
 from tqdm import tqdm
 
 from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities, load_table
@@ -25,8 +24,12 @@ from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.orchestration.longitudinal.anatomical import process_anat
 from rbc.orchestration.longitudinal.functional import process_func
+from rbc.orchestration.longitudinal.metrics import _read_derivative_tr
 from rbc.orchestration.longitudinal.qc import process_qc
-from rbc.orchestration.longitudinal.template import process_subject
+from rbc.orchestration.longitudinal.template import (
+    process_subject,
+    setup_freesurfer_auth,
+)
 from rbc.workflows.metrics import single_session_metrics
 
 if TYPE_CHECKING:
@@ -79,11 +82,7 @@ def run(
     _logger.info("Preparing to run RBC full longitudinal pipeline")
 
     # --- Step 1: Template generation (cross-session, writes to disk) ---
-    from rbc.orchestration.longitudinal.template import (
-        _setup_freesurfer_auth,
-    )
-
-    _setup_freesurfer_auth(fs_license)
+    setup_freesurfer_auth(fs_license)
 
     df = load_table(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
@@ -131,9 +130,7 @@ def run(
 
             # Metrics (per regressor, in-memory from func_outputs)
             if atlas_files:
-                tr = float(
-                    nib.nifti1.load(func_outputs.bold).header["pixdim"][4]  # type: ignore[index]
-                )
+                tr = _read_derivative_tr(func_outputs.bold)
                 for regressor in regressors:
                     _logger.info(
                         "Longitudinal metrics: sub-%s ses-%s regressor-%s",

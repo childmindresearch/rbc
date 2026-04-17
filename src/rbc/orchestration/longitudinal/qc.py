@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import nibabel as nib
 import polars as pl
 
-from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities
+from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities, load_table
 from rbc.bids.longitudinal.qc import (
     LongitudinalQCOutputs,
     export_longitudinal_qc,
@@ -134,20 +134,22 @@ def run(
     verbose = config.verbose
 
     _logger.info("Preparing to run RBC longitudinal QC workflow")
+    full_df = load_table(
+        dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
+    )
 
-    for pipe_ctx, session, tpl_df in iter_sessions_with_template(
+    for pipe_ctx, session, _tpl_df in iter_sessions_with_template(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
         anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
         anat_long_q = anat_q.derive(space="longitudinal")
-
-        # Build a DataFrame of all derivatives (including longitudinal)
-        dfs = [session.anat, tpl_df]
-        if session.func is not None:
-            dfs.append(session.func)
-        full_df = pl.concat(dfs)
         anat_long_df = full_df.filter(
             pl.col("datatype") == "anat",
+            pl.col("space") == "longitudinal",
+        )
+
+        func_long_df = full_df.filter(
+            pl.col("datatype") == "func",
             pl.col("space") == "longitudinal",
         )
 
@@ -157,11 +159,6 @@ def run(
 
             func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
             func_long_q = func_q.derive(space="longitudinal")
-
-            func_long_df = full_df.filter(
-                pl.col("datatype") == "func",
-                pl.col("space") == "longitudinal",
-            )
 
             resolved = resolve_longitudinal_qc(
                 anat_long_q, func_long_q, anat_long_df, func_long_df

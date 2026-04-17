@@ -18,6 +18,7 @@ from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities
 from rbc.bids.longitudinal.metrics import resolve_longitudinal_metrics
 from rbc.bids.metrics import export_metrics
 from rbc.bids.session import iter_session_files
+from rbc.metadata import resolve_tr, warn_implausible_tr
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.metrics import single_session_metrics
@@ -34,20 +35,19 @@ __all__ = ["process_metrics", "run"]
 
 _logger = logging.getLogger(__name__)
 
-# Dice threshold for longitudinal BOLD-to-template registration.
-_DICE_THRESHOLD = 0.85
 
+def _read_derivative_tr(nifti_path: Path, *, override: float | None = None) -> float:
+    """Resolve TR from a derivative NIfTI, with optional CLI override.
 
-def _read_header_tr(nifti_path: Path) -> float:
-    """Read TR from a NIfTI header, raising on missing/zero values."""
+    Pipes through :func:`~rbc.metadata.resolve_tr` for validation and
+    plausibility warnings, matching the cross-sectional metadata path.
+    Derivatives have no BIDS sidecar, so ``sidecar_tr`` is always None.
+    """
     hdr = nib.nifti1.load(nifti_path).header
-    tr = float(hdr["pixdim"][4])  # type: ignore[index]
-    if tr <= 0:
-        msg = (
-            f"NIfTI header TR is {tr} for {nifti_path}. Pass --tr to specify manually."
-        )
-        raise ValueError(msg)
-    _logger.info("TR: %.4f s (from NIfTI header)", tr)
+    raw_pixdim = float(hdr["pixdim"][4])  # type: ignore[index]
+    header_tr = raw_pixdim if raw_pixdim > 0 else None
+    tr = resolve_tr(sidecar_tr=None, header_tr=header_tr, override=override)
+    warn_implausible_tr(tr)
     return tr
 
 
@@ -96,13 +96,14 @@ def run(
     regressors: Sequence[str],
     atlas_files: Mapping[str, Path],
     fwhm: float,
+    tr: float | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Compute resting-state metrics in longitudinal space.
 
     Resolves per-regressor ``regressed_bold``/``cleaned_bold`` and the
     brain mask from longitudinal-space functional derivatives, reads TR
-    from the NIfTI header, and calls
+    from the NIfTI header (with optional CLI override), and calls
     :func:`~rbc.workflows.metrics.single_session_metrics` unchanged.
 
     Args:
@@ -113,6 +114,7 @@ def run(
         regressors: Regressor strategy names to compute metrics for.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
         fwhm: Smoothing kernel FWHM in mm.
+        tr: TR override in seconds, or ``None`` to read from headers.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -139,12 +141,16 @@ def run(
                 resolved = resolve_longitudinal_metrics(
                     func_long_q, func_long_df, regressor=regressor
                 )
-                tr = _read_header_tr(resolved["regressed_bold"])
+                run_tr = (
+                    tr
+                    if tr is not None
+                    else _read_derivative_tr(resolved["regressed_bold"])
+                )
                 outputs = single_session_metrics(
                     regressed_bold=resolved["regressed_bold"],
                     cleaned_bold=resolved["cleaned_bold"],
                     template_brain_mask=resolved["template_brain_mask"],
-                    tr=tr,
+                    tr=run_tr,
                     atlas_files=atlas_files,
                     fwhm=fwhm,
                 )

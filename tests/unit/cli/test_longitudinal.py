@@ -106,10 +106,12 @@ class TestMetricsLongArgs:
         """FWHM defaults to 6 mm and atlas resolves from the registry."""
         base_ns.atlas = ["schaefer_200"]
         base_ns.fwhm = 6.0
+        base_ns.tr = None
         base_ns.task = None
         base_ns.regressor = ["36-parameter"]
         args = MetricsLongArgs.validate_namespace(base_ns)
         assert args.fwhm == 6.0
+        assert args.tr is None
         assert "schaefer_200" in args.atlas_files
         assert args.regressor == ["36-parameter"]
 
@@ -117,6 +119,7 @@ class TestMetricsLongArgs:
         """FWHM must be strictly positive."""
         base_ns.atlas = ["schaefer_200"]
         base_ns.fwhm = 0.0
+        base_ns.tr = None
         base_ns.task = None
         base_ns.regressor = ["36-parameter"]
         with pytest.raises(ValueError, match="FWHM"):

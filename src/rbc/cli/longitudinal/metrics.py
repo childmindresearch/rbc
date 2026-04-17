@@ -24,6 +24,7 @@ class MetricsLongArgs(LongitudinalBaseArgs):
 
     atlas_files: dict[str, Path]
     fwhm: float
+    tr: float | None
     task: str | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
 
@@ -32,10 +33,12 @@ class MetricsLongArgs(LongitudinalBaseArgs):
         """Validate namespace for the longitudinal metrics subcommand."""
         _validate_task(ns.task)
         _validate_positive(ns.fwhm, "FWHM")
+        _validate_positive(ns.tr, "TR")
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
             atlas_files=_resolve_atlas_args(ns.atlas),
             fwhm=ns.fwhm,
+            tr=ns.tr,
             task=ns.task,
             regressor=ns.regressor,
         )
@@ -54,6 +57,7 @@ def main(args: MetricsLongArgs) -> int:
         regressors=args.regressor,
         atlas_files=args.atlas_files,
         fwhm=args.fwhm,
+        tr=args.tr,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -105,6 +109,12 @@ def register_command(
         type=float,
         default=6.0,
         help="Smoothing kernel FWHM in mm.",
+    )
+    parser.add_argument(
+        "--tr",
+        type=float,
+        default=None,
+        help="Repetition time in seconds. Overrides NIfTI header.",
     )
     parser.add_argument(
         "--task",
