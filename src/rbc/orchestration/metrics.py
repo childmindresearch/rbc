@@ -9,7 +9,7 @@ import nibabel as nib
 import polars as pl
 from tqdm import tqdm
 
-from rbc.bids import SUB_SES_QUERY, Datatype, TemplateSpace, load_table
+from rbc.bids import SUB_SES_QUERY, Datatype, Suffix, TemplateSpace, load_table
 from rbc.bids.metrics import export_metrics, resolve_metrics
 from rbc.bids.session import discover_derivative_runs
 from rbc.context import RunContext
@@ -109,8 +109,8 @@ def run(
 
     df = filters.apply(
         full_df,
-        pl.col("datatype") == "func",
-        pl.col("suffix") == "bold",
+        pl.col("datatype") == Datatype.FUNC,
+        pl.col("suffix") == Suffix.BOLD,
         pl.col("desc") == "preproc",
         pl.col("space") == TemplateSpace.MNI152NLIN6ASYM,
     )

@@ -144,12 +144,12 @@ def run(
         anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
         anat_long_q = anat_q.derive(space="longitudinal")
         anat_long_df = full_df.filter(
-            pl.col("datatype") == "anat",
+            pl.col("datatype") == Datatype.ANAT,
             pl.col("space") == "longitudinal",
         )
 
         func_long_df = full_df.filter(
-            pl.col("datatype") == "func",
+            pl.col("datatype") == Datatype.FUNC,
             pl.col("space") == "longitudinal",
         )
 

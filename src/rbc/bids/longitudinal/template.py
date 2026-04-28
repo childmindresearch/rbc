@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
 
-from rbc.bids import Suffix, bids_safe_label
+from rbc.bids import Datatype, Suffix, bids_safe_label
 
 if TYPE_CHECKING:
     from rbc.bids import Bids
@@ -47,9 +47,9 @@ def discover_template_inputs(
     """
     filtered = df.filter(
         pl.col("ses") != "longitudinal",
-        pl.col("datatype") == "anat",
+        pl.col("datatype") == Datatype.ANAT,
         pl.col("desc") == "brain",
-        pl.col("suffix") == "T1w",
+        pl.col("suffix") == Suffix.T1W,
         # Native-space brains only; the MNI-registered desc-brain T1w that
         # cross-sectional anat also writes would otherwise be picked up as
         # a second input per session, producing duplicate LTA filenames in
