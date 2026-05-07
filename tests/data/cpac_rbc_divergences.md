@@ -3,7 +3,7 @@
 Findings from cross-referencing C-PAC source code and actual RBC pipeline run logs.
 
 **Sources:**
-- C-PAC code: `CPAC/anat_preproc/anat_preproc.py`, `CPAC/anat_preproc/ants.py`, `CPAC/pipeline/cpac_pipeline.py`, `CPAC/func_preproc/func_preproc.py`, `CPAC/alff/alff.py`
+- C-PAC code: `CPAC/anat_preproc/anat_preproc.py`, `CPAC/anat_preproc/ants.py`, `CPAC/pipeline/cpac_pipeline.py`, `CPAC/func_preproc/func_preproc.py`, `CPAC/alff/alff.py`, `CPAC/qc/xcp.py`
 - C-PAC RBC run logs (ds000001, sub-01_ses-1)
 
 ---
