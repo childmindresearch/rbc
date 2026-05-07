@@ -62,6 +62,16 @@ This bug affects all outputs downstream of the frequency filter: cleaned BOLD, R
 
 ---
 
+## 5. DVFinal metrics computed from pre-regression BOLD (same as DVInit)
+
+The XCP-style QC file reports `meanDVFinal` and `motionDVCorrFinal` as post-regression DVARS metrics (per the XCP dictionary: "correlation of RMS and DVARS after regression"). However, inspecting the C-PAC source code (`xcp.py`) reveals that both `DVInit` and `DVFinal` are computed from the same pre-nuisance regression BOLD input.
+
+This was confirmed empirically: `meanDVInit = meanDVFinal` and `motionDVCorrInit = motionDVCorrFinal` for every subject across all three datasets (HBN, PNC, NKI) during the small benchmarking study.
+
+In contrast, RBC correctly computes `DVFinal` from the post-regression bandpass-filtered BOLD (`cleaned_bold`), as intended.
+
+---
+
 ## Notes
 
 ### Two parallel motion correction paths
