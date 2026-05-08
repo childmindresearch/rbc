@@ -17,22 +17,18 @@ def resample_img_to_bold_grid(bold_ref: Path, img: Path) -> Path:
     """Resample template to BOLD grid if shapes differ.
 
     Args:
-        bold_ref: BOLD reference volume (used for ITK conversion).
+        bold_ref: BOLD reference volume.
         img: 3D image in target space to resample.
 
     Returns:
         Resampled 3D image with BOLD grid
-
-    Raises:
-        FileNotFoundError: No motion .mat files found in the directory.
-        ValueError: Number of motion matrices does not match STC volumes.
     """
     bold_ref_img = nib.nifti1.load(bold_ref)
     img_obj = nib.nifti1.load(img)
 
     # If 4D, extract first volume
     if len(bold_ref_img.shape) > 3:
-        bold_ref_img = nib.four_to_three(bold_ref_img)[0]
+        bold_ref_img = nib.four_to_three(bold_ref_img.slicer[..., 0])[0]
     # If same shape, no need to resample
     if bold_ref_img.shape == img_obj.shape:
         return img

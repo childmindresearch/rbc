@@ -21,7 +21,7 @@ class TemplateInputs(NamedTuple):
         sub: Subject label.
         sessions: Per-input session labels (parallel to ``files``).
         files: Per-session preprocessed T1w brain volumes.
-        bold_ref: First BOLD volume for grid reference
+        bold_ref: First BOLD volume for grid reference.
     """
 
     sub: str
