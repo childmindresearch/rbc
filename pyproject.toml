@@ -8,13 +8,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "bids2table>=2.1.2",
-  "nibabel>=5.3.3",
+  "nibabel>=5.4.2",
   "niwrap>=0.9.3",
-  "numpy>=2.4.2",
-  "polars>=1.38.1",
-  "scipy>=1.17.0",
-  "styxcache>=0.2.0,<0.3",
-  "styxpodman>=0.1.1",
+  "numpy>=2.4.4",
+  "polars>=1.40.1",
+  "scipy>=1.17.1",
+  "styxcache>=0.2.2,<0.3",
+  "styxpodman>=0.2.0",
   "tqdm>=4.67.3"
 ]
 
