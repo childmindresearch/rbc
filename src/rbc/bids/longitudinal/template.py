@@ -21,11 +21,13 @@ class TemplateInputs(NamedTuple):
         sub: Subject label.
         sessions: Per-input session labels (parallel to ``files``).
         files: Per-session preprocessed T1w brain volumes.
+        bold_ref: First BOLD volume for grid reference
     """
 
     sub: str
     sessions: list[str]
     files: list[Path]
+    bold_ref: Path | None
 
 
 def discover_template_inputs(
@@ -56,6 +58,17 @@ def discover_template_inputs(
         # the mri_robust_template invocation.
         pl.col("space").is_null(),
     )
+    bold_ref_rows = df.filter(
+        pl.col("ses") != "longitudinal",
+        pl.col("datatype") == "func",
+        pl.col("suffix") == "bold",
+        pl.col("space").is_null(),
+    )
+    bold_ref = (
+        None
+        if bold_ref_rows.is_empty()
+        else Path(bold_ref_rows["root"][0]) / bold_ref_rows["path"][0]
+    )
 
     inputs: list[TemplateInputs] = []
     skipped: list[str] = []
@@ -68,7 +81,9 @@ def discover_template_inputs(
         files = [
             Path(row["root"]) / row["path"] for row in sub_group.iter_rows(named=True)
         ]
-        inputs.append(TemplateInputs(sub=sub, sessions=sessions, files=files))
+        inputs.append(
+            TemplateInputs(sub=sub, sessions=sessions, files=files, bold_ref=bold_ref)
+        )
     return inputs, skipped
 
 
@@ -81,6 +96,8 @@ def export_template(tpl: Bids, outputs: LongitudinalTemplateOutputs) -> None:
         outputs: Results from the longitudinal template workflow.
     """
     tpl.save(outputs.template, suffix=Suffix.T1W)
+    if outputs.bold_template is not None:
+        tpl.save(outputs.bold_template, res="bold", suffix=Suffix.T1W)
     for ses, xfm in zip(outputs.sessions, outputs.transforms, strict=True):
         ses_label = bids_safe_label(ses)
         tpl.save(
