@@ -59,6 +59,7 @@ def _anat_row(
     sub: str,
     ses: str,
     suffix: str,
+    res: str | None = None,
     desc: str | None = None,
     ext: str = ".nii.gz",
     extra: list[dict[str, str]] | None = None,
@@ -73,6 +74,7 @@ def _anat_row(
         "sub": sub,
         "ses": ses,
         "space": None,
+        "res": res,
         "desc": desc,
         "root": "/data",
         "path": path,
@@ -143,7 +145,7 @@ class TestResolveLongitudinalFunc:
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="bold", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -218,7 +220,7 @@ class TestResolveLongitudinalFunc:
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="bold", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -275,7 +277,7 @@ class TestResolveLongitudinalFunc:
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="bold", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -328,7 +330,7 @@ class TestResolveLongitudinalFunc:
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="bold", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
