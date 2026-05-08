@@ -13,34 +13,33 @@ if TYPE_CHECKING:
 from rbc.core.niwrap import generate_exec_folder
 
 
-def resample_template_to_bold_grid(bold_ref: Path, template: Path) -> Path:
+def resample_img_to_bold_grid(bold_ref: Path, img: Path) -> Path:
     """Resample template to BOLD grid if shapes differ.
 
     Args:
         bold_ref: BOLD reference volume (used for ITK conversion).
-        template: Brain template in target space.
+        img: 3D image in target space to resample.
 
     Returns:
-        Resampled template image with BOLD grid
+        Resampled 3D image with BOLD grid
 
     Raises:
         FileNotFoundError: No motion .mat files found in the directory.
         ValueError: Number of motion matrices does not match STC volumes.
     """
     bold_ref_img = nib.nifti1.load(bold_ref)
-    template_img = nib.nifti1.load(template)
+    img_obj = nib.nifti1.load(img)
 
     # If 4D, extract first volume
     if len(bold_ref_img.shape) > 3:
         bold_ref_img = nib.four_to_three(bold_ref_img)[0]
     # If same shape, no need to resample
-    if bold_ref_img.shape == template_img.shape:
-        return template_img
+    if bold_ref_img.shape == img_obj.shape:
+        return img
 
-    template_img = resample_from_to(template_img, bold_ref_img)
-    template_img_path = (
-        generate_exec_folder("template_resample_to_bold_grid")
-        / "template_resampled.nii.gz"
+    img_resampled = resample_from_to(img_obj, bold_ref_img)
+    img_resampled_path = (
+        generate_exec_folder("img_resample_to_bold_grid") / "resampled.nii.gz"
     )
-    nib.save(template_img, template_img_path)
-    return template_img_path
+    nib.save(img_resampled, img_resampled_path)
+    return img_resampled_path
