@@ -70,12 +70,13 @@ def generate_subject_template(
         in_xfms=robust.transforms,
     )
 
-    if bold_ref is not None:
-        bold_ref = resample_img_to_bold_grid(bold_ref, robust.template)
+    bold_template = (
+        resample_img_to_bold_grid(bold_ref, robust.template) if bold_ref else None
+    )
 
     return LongitudinalTemplateOutputs(
         template=robust.template,
-        bold_template=bold_ref,
+        bold_template=bold_template,
         sessions=list(sessions),
         transforms=itk_xfms,
     )

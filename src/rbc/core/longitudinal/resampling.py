@@ -28,7 +28,7 @@ def resample_img_to_bold_grid(bold_ref: Path, img: Path) -> Path:
 
     # If 4D, extract first volume
     if len(bold_ref_img.shape) > 3:
-        bold_ref_img = nib.four_to_three(bold_ref_img.slicer[..., 0])[0]
+        bold_ref_img = bold_ref_img.slicer[..., 0]
     # If same shape, no need to resample
     if bold_ref_img.shape == img_obj.shape:
         return img
