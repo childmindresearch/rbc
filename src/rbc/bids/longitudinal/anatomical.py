@@ -43,7 +43,7 @@ def resolve_longitudinal_anat(
         Dict with keys matching ``longitudinal_process`` parameters.
     """
     return {
-        "template": tpl_q.expect(tpl_df, suffix=Suffix.T1W),
+        "template": tpl_q.expect(tpl_df, suffix=Suffix.T1W, without=["res"]),
         "subj_to_template_xfm": tpl_q.expect(
             tpl_df,
             suffix="xfm",

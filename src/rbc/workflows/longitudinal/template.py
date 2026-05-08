@@ -14,7 +14,7 @@ from rbc.core.longitudinal.freesurfer import (
     fs_to_itk_xfm,
     generate_robust_template,
 )
-from rbc.core.longitudinal.resampling import resample_template_to_bold
+from rbc.core.longitudinal.resampling import resample_template_to_bold_grid
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -71,7 +71,7 @@ def generate_subject_template(
     )
 
     if bold_ref is not None:
-        bold_ref = resample_template_to_bold(bold_ref, robust.template)
+        bold_ref = resample_template_to_bold_grid(bold_ref, robust.template)
 
     return LongitudinalTemplateOutputs(
         template=robust.template,

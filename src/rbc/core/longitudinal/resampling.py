@@ -1,4 +1,4 @@
-"""Resampling utiltiies for longitudinal templates."""
+"""Resampling utilities for longitudinal templates."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from rbc.core.niwrap import generate_exec_folder
 
 
-def resample_template_to_bold(bold_ref: Path, template: Path) -> Path:
+def resample_template_to_bold_grid(bold_ref: Path, template: Path) -> Path:
     """Resample template to BOLD grid if shapes differ.
 
     Args:
@@ -32,7 +32,7 @@ def resample_template_to_bold(bold_ref: Path, template: Path) -> Path:
 
     # If 4D, extract first volume
     if len(bold_ref_img.shape) > 3:
-        bold_ref_img = bold_ref_img[..., 0]
+        bold_ref_img = nib.four_to_three(bold_ref_img)[0]
     # If same shape, no need to resample
     if bold_ref_img.shape == template_img.shape:
         return template_img
