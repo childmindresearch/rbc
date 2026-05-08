@@ -12,6 +12,7 @@ import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from rbc.core.functional import apply_regression, apply_regression_bandpass
+from rbc.core.longitudinal.resampling import resample_template_to_bold
 from rbc.core.longitudinal.transform import (
     compose_transform,
     func_transform,
@@ -82,8 +83,10 @@ def longitudinal_process(
         :class:`FunctionalLongOutputs` with all inputs transformed to
         longitudinal template space and per-regressor regression outputs.
     """
+    template_resampled = resample_template_to_bold(bold_ref=sbref, template=template)
+
     bold_to_tpl_xfm = compose_transform(
-        ref=template,
+        ref=template_resampled,
         bold_to_anat_itk=bold_to_anat_itk,
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
