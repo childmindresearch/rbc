@@ -3,7 +3,7 @@
 Findings from cross-referencing C-PAC source code and actual RBC pipeline run logs.
 
 **Sources:**
-- C-PAC code: `CPAC/anat_preproc/anat_preproc.py`, `CPAC/anat_preproc/ants.py`, `CPAC/pipeline/cpac_pipeline.py`, `CPAC/func_preproc/func_preproc.py`, `CPAC/alff/alff.py`
+- C-PAC code: `CPAC/anat_preproc/anat_preproc.py`, `CPAC/anat_preproc/ants.py`, `CPAC/pipeline/cpac_pipeline.py`, `CPAC/func_preproc/func_preproc.py`, `CPAC/alff/alff.py`, `CPAC/qc/xcp.py`
 - C-PAC RBC run logs (ds000001, sub-01_ses-1)
 
 ---
@@ -59,6 +59,16 @@ The `ideal_bandpass` function uses `sample_period` to compute FFT frequency bin 
 Confirmed by reproducing the filter: applying `ideal_bandpass` with TR=1.0 to C-PAC's raw regressors produces r=1.000 correlation with C-PAC's exported filtered regressors, while TR=2.0 (correct) produces r=0.758.
 
 This bug affects all outputs downstream of the frequency filter: cleaned BOLD, ReHo, timeseries extraction, and connectivity matrices. ALFF/fALFF are also affected since they are computed from the bandpassed BOLD.
+
+---
+
+## 5. DVFinal metrics computed from pre-regression BOLD (same as DVInit)
+
+The XCP-style QC file reports `meanDVFinal` and `motionDVCorrFinal` as post-regression DVARS metrics (per the XCP dictionary: "correlation of RMS and DVARS after regression"). However, inspecting the C-PAC source code (`xcp.py`) reveals that both `DVInit` and `DVFinal` are computed from the same pre-nuisance regression BOLD input.
+
+This was confirmed empirically: `meanDVInit = meanDVFinal` and `motionDVCorrInit = motionDVCorrFinal` for every subject across all three datasets (HBN, PNC, NKI) during the small benchmarking study.
+
+In contrast, RBC correctly computes `DVFinal` from the post-regression bandpass-filtered BOLD (`cleaned_bold`), as intended.
 
 ---
 
