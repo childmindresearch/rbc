@@ -155,7 +155,7 @@ class TestExportTemplate:
 
         outputs = LongitudinalTemplateOutputs(
             template=template_src,
-            bold_template=template_bold_src,
+            bold_templates={"test": template_bold_src},
             sessions=["baseline", "vis2"],
             transforms=[xfm_baseline, xfm_vis2],
         )

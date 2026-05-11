@@ -49,7 +49,7 @@ def process_subject(
         sub=inputs.sub,
         sessions=inputs.sessions,
         in_files=inputs.files,
-        bold_ref=inputs.bold_ref,
+        bold_files=inputs.bold_files,
     )
     tpl = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
     export_template(tpl, outputs)

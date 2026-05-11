@@ -50,8 +50,9 @@ def resolve_longitudinal_func(
             without=["space"],
         )
 
+    task = func_df["task"].unique()[0]
     return {
-        "template": tpl_q.expect(tpl_df, res="bold", suffix="T1w"),
+        "template": tpl_q.expect(tpl_df, suffix="T1w", res=task),
         "anat_to_template_xfm": tpl_q.expect(
             tpl_df,
             suffix="xfm",
