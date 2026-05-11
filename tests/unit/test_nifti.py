@@ -634,13 +634,14 @@ class TestLogImageSummary:
     """Tests for log_image_summary()."""
 
     def test_3d_summary(self, nifti_3d: Path, caplog: pytest.LogCaptureFixture) -> None:
-        """3D input logs shape, dtype, voxel size, orientation, and spaces."""
+        """3D input logs shape, dtype, size, voxel size, orientation, spaces."""
         caplog.set_level(logging.INFO, logger="rbc.core.nifti")
         log_image_summary(nifti_3d, label="Anatomical T1w")
         text = "\n".join(caplog.messages)
         assert "Anatomical T1w" in text
         assert "shape=(5, 6, 7)" in text
         assert "dtype=float64" in text
+        assert "uncompressed size=1.6 KiB" in text  # 5*6*7 * 8 = 1680 bytes
         assert "voxel size=1 x 1 x 1 mm" in text
         assert "orientation=RAS" in text
         assert "sform=MNI" in text
@@ -663,18 +664,30 @@ class TestLogImageSummary:
         log_image_summary(nifti_4d, label="Functional BOLD")
         text = "\n".join(caplog.messages)
         assert "shape=(5, 6, 7, 10)" in text
+        assert "uncompressed size=16.4 KiB" in text  # 5*6*7*10 * 8 bytes
         assert "volumes=10" in text
         assert "slices=7" in text
         assert "header TR=2 s" in text
 
-    def test_dtype_reflects_on_disk_type(
+    def test_dtype_and_size_reflect_on_disk_type(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Logged dtype is the on-disk dtype, not float from get_fdata()."""
+        """Logged dtype/size use the on-disk dtype, not float64 get_fdata()."""
         path = _make_nifti(tmp_path, "int16.nii.gz", (4, 5, 6), dtype=np.int16)
         caplog.set_level(logging.INFO, logger="rbc.core.nifti")
         log_image_summary(path)
-        assert any("dtype=int16" in m for m in caplog.messages)
+        text = "\n".join(caplog.messages)
+        assert "dtype=int16" in text
+        assert "uncompressed size=240 B" in text  # 4*5*6 * 2 bytes
+
+    def test_size_uses_binary_units(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Uncompressed size scales to binary units."""
+        path = _make_nifti(tmp_path, "big.nii.gz", (64, 64, 64), dtype=np.int16)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("uncompressed size=512.0 KiB" in m for m in caplog.messages)
 
     def test_emitted_at_info_level(
         self, nifti_3d: Path, caplog: pytest.LogCaptureFixture

@@ -546,14 +546,24 @@ def _space_label(code: int) -> str:
         return str(code)
 
 
+def _human_bytes(n: int) -> str:
+    """Format a byte count with a binary (B/KiB/MiB/GiB) suffix."""
+    size = float(n)
+    for unit in ("B", "KiB", "MiB"):
+        if size < 1024:
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GiB"
+
+
 def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
     """Log array shape, dtype, and geometry of a raw NIfTI input.
 
     Reads only the NIfTI header (no voxel data is loaded), then emits an
     INFO-level summary so the run log records exactly what entered the
-    pipeline: array shape, on-disk dtype, voxel size, axis orientation,
-    sform/qform coordinate spaces, and (for 4D images) volume count, slice
-    count, and TR.
+    pipeline: array shape, on-disk dtype, uncompressed in-memory size,
+    voxel size, axis orientation, sform/qform coordinate spaces, and (for
+    4D images) volume count, slice count, and TR.
 
     Args:
         in_file: Path to a ``.nii``/``.nii.gz`` file.
@@ -564,9 +574,11 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
     img = nib.nifti1.load(path)
     hdr = img.header
     shape = img.shape
+    dtype = hdr.get_data_dtype()
     zooms = hdr.get_zooms()
     spatial_unit = hdr.get_xyzt_units()[0]
 
+    n_bytes = int(np.prod(shape, dtype=np.int64)) * dtype.itemsize
     voxel = " x ".join(f"{z:.3g}" for z in zooms[:3])
     if spatial_unit != "unknown":
         voxel = f"{voxel} {spatial_unit}"
@@ -574,10 +586,11 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
 
     _logger.info("%s: %s", label, path)
     _logger.info(
-        "%s: shape=%s, dtype=%s, voxel size=%s",
+        "%s: shape=%s, dtype=%s, uncompressed size=%s, voxel size=%s",
         label,
         shape,
-        hdr.get_data_dtype(),
+        dtype,
+        _human_bytes(n_bytes),
         voxel,
     )
     _logger.info(
