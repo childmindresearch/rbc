@@ -2,11 +2,13 @@
 
 Provides :class:`Volume` for type-safe loading, deriving, and saving of NIfTI
 images, plus lightweight metadata queries (:func:`nifti_num_volumes`,
-:func:`nifti_num_slices`) that avoid loading full image data.
+:func:`nifti_num_slices`, :func:`log_image_summary`) that avoid loading full
+image data.
 """
 
 from __future__ import annotations
 
+import logging
 import warnings
 from enum import Enum, IntEnum
 from pathlib import Path
@@ -24,10 +26,13 @@ __all__ = [
     "Space",
     "Units",
     "Volume",
+    "log_image_summary",
     "nifti_num_slices",
     "nifti_num_volumes",
     "strip_afni_volatile_metadata",
 ]
+
+_logger = logging.getLogger(__name__)
 
 # AFNI embeds a NIfTI extension (code 4) with an XML payload that contains
 # wall-clock timestamps and a random per-invocation UUID. Those poison
@@ -531,6 +536,70 @@ def nifti_num_slices(in_file: str | Path) -> int:
         return img.shape[slice_axis]
 
     return img.shape[2] if len(img.shape) >= 3 else 1
+
+
+def _space_label(code: int) -> str:
+    """Human-readable name for a NIfTI sform/qform code, or the raw int."""
+    try:
+        return Space(code).name
+    except ValueError:
+        return str(code)
+
+
+def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
+    """Log array shape, dtype, and geometry of a raw NIfTI input.
+
+    Reads only the NIfTI header (no voxel data is loaded), then emits an
+    INFO-level summary so the run log records exactly what entered the
+    pipeline: array shape, on-disk dtype, voxel size, axis orientation,
+    sform/qform coordinate spaces, and (for 4D images) volume count, slice
+    count, and TR.
+
+    Args:
+        in_file: Path to a ``.nii``/``.nii.gz`` file.
+        label: Short prefix identifying the input in the log (e.g.
+            ``"Anatomical T1w"``).
+    """
+    path = Path(in_file)
+    img = nib.nifti1.load(path)
+    hdr = img.header
+    shape = img.shape
+    zooms = hdr.get_zooms()
+    spatial_unit = hdr.get_xyzt_units()[0]
+
+    voxel = " x ".join(f"{z:.3g}" for z in zooms[:3])
+    if spatial_unit != "unknown":
+        voxel = f"{voxel} {spatial_unit}"
+    orientation = "".join(nib.aff2axcodes(img.affine))
+
+    _logger.info("%s: %s", label, path)
+    _logger.info(
+        "%s: shape=%s, dtype=%s, voxel size=%s",
+        label,
+        shape,
+        hdr.get_data_dtype(),
+        voxel,
+    )
+    _logger.info(
+        "%s: orientation=%s, sform=%s, qform=%s",
+        label,
+        orientation,
+        _space_label(int(hdr["sform_code"])),
+        _space_label(int(hdr["qform_code"])),
+    )
+
+    if len(shape) > 3:
+        raw_tr = float(hdr["pixdim"][4])
+        tr = f"{raw_tr:.4g} s" if raw_tr > 0 else "unknown"
+        slice_axis = hdr.get_dim_info()[2]
+        n_slices = shape[slice_axis] if slice_axis is not None else shape[2]
+        _logger.info(
+            "%s: volumes=%d, slices=%d, header TR=%s",
+            label,
+            shape[3],
+            n_slices,
+            tr,
+        )
 
 
 def strip_afni_volatile_metadata(path: str | Path) -> None:

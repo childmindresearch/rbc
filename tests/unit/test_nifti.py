@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import nibabel as nib
@@ -12,6 +13,7 @@ from rbc.core.nifti import (
     Space,
     Units,
     Volume,
+    log_image_summary,
     nifti_num_slices,
     nifti_num_volumes,
 )
@@ -626,3 +628,58 @@ class TestExistingFunctions:
     def test_nifti_num_slices_3d(self, nifti_3d: Path) -> None:
         """3D image reports correct slice count."""
         assert nifti_num_slices(nifti_3d) == 7
+
+
+class TestLogImageSummary:
+    """Tests for log_image_summary()."""
+
+    def test_3d_summary(self, nifti_3d: Path, caplog: pytest.LogCaptureFixture) -> None:
+        """3D input logs shape, dtype, voxel size, orientation, and spaces."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d, label="Anatomical T1w")
+        text = "\n".join(caplog.messages)
+        assert "Anatomical T1w" in text
+        assert "shape=(5, 6, 7)" in text
+        assert "dtype=float64" in text
+        assert "voxel size=1 x 1 x 1 mm" in text
+        assert "orientation=RAS" in text
+        assert "sform=MNI" in text
+        assert "qform=MNI" in text
+
+    def test_3d_summary_omits_4d_fields(
+        self, nifti_3d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """3D input does not log volume/slice/TR fields."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d)
+        assert not any("volumes=" in m for m in caplog.messages)
+        assert not any("TR=" in m for m in caplog.messages)
+
+    def test_4d_summary_includes_volumes_and_tr(
+        self, nifti_4d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """4D input also logs volume count, slice count, and header TR."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_4d, label="Functional BOLD")
+        text = "\n".join(caplog.messages)
+        assert "shape=(5, 6, 7, 10)" in text
+        assert "volumes=10" in text
+        assert "slices=7" in text
+        assert "header TR=2 s" in text
+
+    def test_dtype_reflects_on_disk_type(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Logged dtype is the on-disk dtype, not float from get_fdata()."""
+        path = _make_nifti(tmp_path, "int16.nii.gz", (4, 5, 6), dtype=np.int16)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("dtype=int16" in m for m in caplog.messages)
+
+    def test_emitted_at_info_level(
+        self, nifti_3d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Summary is emitted at INFO level (suppressed by default)."""
+        caplog.set_level(logging.WARNING, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d)
+        assert caplog.messages == []

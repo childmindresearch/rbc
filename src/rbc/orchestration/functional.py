@@ -17,6 +17,7 @@ from rbc.bids.functional import (
 )
 from rbc.bids.session import load_session
 from rbc.context import RunContext
+from rbc.core.nifti import log_image_summary
 from rbc.metadata import FunctionalMetadata
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.functional import single_session_preprocess
@@ -64,7 +65,7 @@ def process_session(
     """
     results = []
     for func_run in discover_functional(session):
-        _logger.info("Functional: %s", func_run.path)
+        log_image_summary(func_run.path, label="Functional BOLD")
 
         if anat_inputs is not None:
             resolved = anat_inputs
