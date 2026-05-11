@@ -659,16 +659,38 @@ class TestLogImageSummary:
     def test_4d_summary_includes_volumes_and_tr(
         self, nifti_4d: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """4D input also logs volume count, slice count, and header TR."""
+        """4D input logs volume count, slice axis/count/order, and header TR."""
         caplog.set_level(logging.INFO, logger="rbc.core.nifti")
         log_image_summary(nifti_4d, label="Functional BOLD")
         text = "\n".join(caplog.messages)
         assert "shape=(5, 6, 7, 10)" in text
         assert "size=16.4 KiB" in text  # 5*6*7*10 * 8 bytes
         assert "volumes=10" in text
-        assert "slices=7" in text
+        assert "slices=7 along axis 2 (assumed; no dim_info)" in text
+        assert "slice order=unknown" in text
         assert "header TR=2 s" in text
         assert "extra dims" not in text
+
+    def test_4d_slice_axis_and_order_from_header(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A header that sets dim_info / slice_code has them reported."""
+        rng = np.random.default_rng(0)
+        img = nib.Nifti1Image(rng.standard_normal((4, 5, 6, 3)), np.eye(4))
+        hdr = img.header
+        hdr.set_dim_info(slice=1)
+        hdr["slice_code"] = 1  # sequential increasing
+        pixdim = hdr["pixdim"].copy()
+        pixdim[4] = 2.0
+        hdr["pixdim"] = pixdim
+        path = tmp_path / "slices.nii.gz"
+        img.to_filename(str(path))
+
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        text = "\n".join(caplog.messages)
+        assert "slices=5 along axis 1" in text
+        assert "slice order=sequential increasing" in text
 
     def test_5d_reports_extra_dims(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture

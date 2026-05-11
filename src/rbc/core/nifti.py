@@ -563,7 +563,8 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
     INFO-level summary so the run log records exactly what entered the
     pipeline: array shape, on-disk dtype, data size (``shape`` x dtype
     itemsize), voxel size, axis orientation, sform/qform coordinate spaces,
-    and (for 4D+ images) volume count, slice count, and TR.
+    and (for 4D+ images) volume count, slice axis/count, slice acquisition
+    order, and TR.
 
     This is best-effort diagnostics only: a header that cannot be read
     produces a warning, not an exception, so the real failure surfaces
@@ -611,13 +612,19 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
             # dim_info names the slice axis; BOLD usually omits it, so fall
             # back to the conventional third axis.
             slice_axis = hdr.get_dim_info()[2]
-            n_slices = shape[slice_axis] if slice_axis is not None else shape[2]
+            if slice_axis is not None:
+                n_slices, axis_desc = shape[slice_axis], f"axis {slice_axis}"
+            else:
+                n_slices, axis_desc = shape[2], "axis 2 (assumed; no dim_info)"
+            slice_order = hdr.get_value_label("slice_code")  # "unknown" if unset
             extra = f", extra dims={tuple(shape[4:])}" if len(shape) > 4 else ""
             _logger.info(
-                "%s: volumes=%d, slices=%d%s, header TR=%s",
+                "%s: volumes=%d, slices=%d along %s, slice order=%s%s, header TR=%s",
                 label,
                 shape[3],
                 n_slices,
+                axis_desc,
+                slice_order,
                 extra,
                 tr,
             )
