@@ -561,9 +561,13 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
 
     Reads only the NIfTI header (no voxel data is loaded), then emits an
     INFO-level summary so the run log records exactly what entered the
-    pipeline: array shape, on-disk dtype, uncompressed in-memory size,
-    voxel size, axis orientation, sform/qform coordinate spaces, and (for
-    4D images) volume count, slice count, and TR.
+    pipeline: array shape, on-disk dtype, data size (``shape`` x dtype
+    itemsize), voxel size, axis orientation, sform/qform coordinate spaces,
+    and (for 4D+ images) volume count, slice count, and TR.
+
+    This is best-effort diagnostics only: a header that cannot be read
+    produces a warning, not an exception, so the real failure surfaces
+    later when processing actually touches the file.
 
     Args:
         in_file: Path to a ``.nii``/``.nii.gz`` file.
@@ -571,48 +575,55 @@ def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
             ``"Anatomical T1w"``).
     """
     path = Path(in_file)
-    img = nib.nifti1.load(path)
-    hdr = img.header
-    shape = img.shape
-    dtype = hdr.get_data_dtype()
-    zooms = hdr.get_zooms()
-    spatial_unit = hdr.get_xyzt_units()[0]
+    try:
+        img = nib.nifti1.load(path)
+        hdr = img.header
+        shape = img.shape
+        dtype = hdr.get_data_dtype()
+        zooms = hdr.get_zooms()
+        spatial_unit = hdr.get_xyzt_units()[0]
 
-    n_bytes = int(np.prod(shape, dtype=np.int64)) * dtype.itemsize
-    voxel = " x ".join(f"{z:.3g}" for z in zooms[:3])
-    if spatial_unit != "unknown":
-        voxel = f"{voxel} {spatial_unit}"
-    orientation = "".join(nib.aff2axcodes(img.affine))
+        n_bytes = int(np.prod(shape, dtype=np.int64)) * dtype.itemsize
+        voxel = " x ".join(f"{z:.3g}" for z in zooms[:3])
+        voxel += f" {spatial_unit}" if spatial_unit != "unknown" else " (units unknown)"
+        orientation = "".join(nib.aff2axcodes(img.affine))
 
-    _logger.info("%s: %s", label, path)
-    _logger.info(
-        "%s: shape=%s, dtype=%s, uncompressed size=%s, voxel size=%s",
-        label,
-        shape,
-        dtype,
-        _human_bytes(n_bytes),
-        voxel,
-    )
-    _logger.info(
-        "%s: orientation=%s, sform=%s, qform=%s",
-        label,
-        orientation,
-        _space_label(int(hdr["sform_code"])),
-        _space_label(int(hdr["qform_code"])),
-    )
-
-    if len(shape) > 3:
-        raw_tr = float(hdr["pixdim"][4])
-        tr = f"{raw_tr:.4g} s" if raw_tr > 0 else "unknown"
-        slice_axis = hdr.get_dim_info()[2]
-        n_slices = shape[slice_axis] if slice_axis is not None else shape[2]
+        _logger.info("%s: %s", label, path)
         _logger.info(
-            "%s: volumes=%d, slices=%d, header TR=%s",
+            "%s: shape=%s, dtype=%s, size=%s, voxel size=%s",
             label,
-            shape[3],
-            n_slices,
-            tr,
+            shape,
+            dtype,
+            _human_bytes(n_bytes),
+            voxel,
         )
+        _logger.info(
+            "%s: orientation=%s, sform=%s, qform=%s",
+            label,
+            orientation,
+            _space_label(int(hdr["sform_code"])),
+            _space_label(int(hdr["qform_code"])),
+        )
+
+        if len(shape) > 3:
+            raw_tr = float(hdr["pixdim"][4])
+            tr = f"{raw_tr:.4g} s" if raw_tr > 0 else "unknown"
+            # dim_info names the slice axis; BOLD usually omits it, so fall
+            # back to the conventional third axis.
+            slice_axis = hdr.get_dim_info()[2]
+            n_slices = shape[slice_axis] if slice_axis is not None else shape[2]
+            extra = f", extra dims={tuple(shape[4:])}" if len(shape) > 4 else ""
+            _logger.info(
+                "%s: volumes=%d, slices=%d%s, header TR=%s",
+                label,
+                shape[3],
+                n_slices,
+                extra,
+                tr,
+            )
+    except Exception as exc:
+        # Diagnostics must never abort a run; the real failure surfaces later.
+        _logger.warning("%s: could not read NIfTI header for %s (%s)", label, path, exc)
 
 
 def strip_afni_volatile_metadata(path: str | Path) -> None:

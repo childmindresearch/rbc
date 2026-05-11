@@ -641,7 +641,7 @@ class TestLogImageSummary:
         assert "Anatomical T1w" in text
         assert "shape=(5, 6, 7)" in text
         assert "dtype=float64" in text
-        assert "uncompressed size=1.6 KiB" in text  # 5*6*7 * 8 = 1680 bytes
+        assert "size=1.6 KiB" in text  # 5*6*7 * 8 = 1680 bytes
         assert "voxel size=1 x 1 x 1 mm" in text
         assert "orientation=RAS" in text
         assert "sform=MNI" in text
@@ -664,10 +664,20 @@ class TestLogImageSummary:
         log_image_summary(nifti_4d, label="Functional BOLD")
         text = "\n".join(caplog.messages)
         assert "shape=(5, 6, 7, 10)" in text
-        assert "uncompressed size=16.4 KiB" in text  # 5*6*7*10 * 8 bytes
+        assert "size=16.4 KiB" in text  # 5*6*7*10 * 8 bytes
         assert "volumes=10" in text
         assert "slices=7" in text
         assert "header TR=2 s" in text
+        assert "extra dims" not in text
+
+    def test_5d_reports_extra_dims(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """5D input reports the trailing dims rather than mislabeling them."""
+        path = _make_nifti(tmp_path, "multi.nii.gz", (4, 5, 6, 7, 2))
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("extra dims=(2,)" in m for m in caplog.messages)
 
     def test_dtype_and_size_reflect_on_disk_type(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -678,16 +688,25 @@ class TestLogImageSummary:
         log_image_summary(path)
         text = "\n".join(caplog.messages)
         assert "dtype=int16" in text
-        assert "uncompressed size=240 B" in text  # 4*5*6 * 2 bytes
+        assert "size=240 B" in text  # 4*5*6 * 2 bytes
 
     def test_size_uses_binary_units(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Uncompressed size scales to binary units."""
+        """Data size scales to binary units."""
         path = _make_nifti(tmp_path, "big.nii.gz", (64, 64, 64), dtype=np.int16)
         caplog.set_level(logging.INFO, logger="rbc.core.nifti")
         log_image_summary(path)
-        assert any("uncompressed size=512.0 KiB" in m for m in caplog.messages)
+        assert any("size=512.0 KiB" in m for m in caplog.messages)
+
+    def test_unknown_units_flagged(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Voxel size notes when spatial units are unset in the header."""
+        path = _make_nifti(tmp_path, "nounit.nii.gz", (4, 5, 6), xyzt_units=0)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("voxel size=1 x 1 x 1 (units unknown)" in m for m in caplog.messages)
 
     def test_emitted_at_info_level(
         self, nifti_3d: Path, caplog: pytest.LogCaptureFixture
@@ -696,3 +715,14 @@ class TestLogImageSummary:
         caplog.set_level(logging.WARNING, logger="rbc.core.nifti")
         log_image_summary(nifti_3d)
         assert caplog.messages == []
+
+    def test_unreadable_file_warns_without_raising(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A missing/corrupt file logs a warning instead of aborting the run."""
+        caplog.set_level(logging.WARNING, logger="rbc.core.nifti")
+        log_image_summary(tmp_path / "does_not_exist.nii.gz", label="Anatomical T1w")
+        assert any(
+            "could not read NIfTI header" in m and m.startswith("Anatomical T1w")
+            for m in caplog.messages
+        )
