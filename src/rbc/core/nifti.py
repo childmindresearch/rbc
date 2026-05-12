@@ -2,11 +2,13 @@
 
 Provides :class:`Volume` for type-safe loading, deriving, and saving of NIfTI
 images, plus lightweight metadata queries (:func:`nifti_num_volumes`,
-:func:`nifti_num_slices`) that avoid loading full image data.
+:func:`nifti_num_slices`, :func:`log_image_summary`) that avoid loading full
+image data.
 """
 
 from __future__ import annotations
 
+import logging
 import warnings
 from enum import Enum, IntEnum
 from pathlib import Path
@@ -24,10 +26,13 @@ __all__ = [
     "Space",
     "Units",
     "Volume",
+    "log_image_summary",
     "nifti_num_slices",
     "nifti_num_volumes",
     "strip_afni_volatile_metadata",
 ]
+
+_logger = logging.getLogger(__name__)
 
 # AFNI embeds a NIfTI extension (code 4) with an XML payload that contains
 # wall-clock timestamps and a random per-invocation UUID. Those poison
@@ -531,6 +536,101 @@ def nifti_num_slices(in_file: str | Path) -> int:
         return img.shape[slice_axis]
 
     return img.shape[2] if len(img.shape) >= 3 else 1
+
+
+def _space_label(code: int) -> str:
+    """Human-readable name for a NIfTI sform/qform code, or the raw int."""
+    try:
+        return Space(code).name
+    except ValueError:
+        return str(code)
+
+
+def _human_bytes(n: int) -> str:
+    """Format a byte count with a binary (B/KiB/MiB/GiB) suffix."""
+    size = float(n)
+    for unit in ("B", "KiB", "MiB"):
+        if size < 1024:
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GiB"
+
+
+def log_image_summary(in_file: str | Path, *, label: str = "Raw input") -> None:
+    """Log array shape, dtype, and geometry of a raw NIfTI input.
+
+    Reads only the NIfTI header (no voxel data is loaded), then emits an
+    INFO-level summary so the run log records exactly what entered the
+    pipeline: array shape, on-disk dtype, data size (``shape`` x dtype
+    itemsize), voxel size, axis orientation, sform/qform coordinate spaces,
+    and (for 4D+ images) volume count, slice axis/count, slice acquisition
+    order, and TR.
+
+    This is best-effort diagnostics only: a header that cannot be read
+    produces a warning, not an exception, so the real failure surfaces
+    later when processing actually touches the file.
+
+    Args:
+        in_file: Path to a ``.nii``/``.nii.gz`` file.
+        label: Short prefix identifying the input in the log (e.g.
+            ``"Anatomical T1w"``).
+    """
+    path = Path(in_file)
+    try:
+        img = nib.nifti1.load(path)
+        hdr = img.header
+        shape = img.shape
+        dtype = hdr.get_data_dtype()
+        zooms = hdr.get_zooms()
+        spatial_unit = hdr.get_xyzt_units()[0]
+
+        n_bytes = int(np.prod(shape, dtype=np.int64)) * dtype.itemsize
+        voxel = " x ".join(f"{z:.3g}" for z in zooms[:3])
+        voxel += f" {spatial_unit}" if spatial_unit != "unknown" else " (units unknown)"
+        orientation = "".join(nib.aff2axcodes(img.affine))
+
+        _logger.info("%s: %s", label, path)
+        _logger.info(
+            "%s: shape=%s, dtype=%s, size=%s, voxel size=%s",
+            label,
+            shape,
+            dtype,
+            _human_bytes(n_bytes),
+            voxel,
+        )
+        _logger.info(
+            "%s: orientation=%s, sform=%s, qform=%s",
+            label,
+            orientation,
+            _space_label(int(hdr["sform_code"])),
+            _space_label(int(hdr["qform_code"])),
+        )
+
+        if len(shape) > 3:
+            raw_tr = float(hdr["pixdim"][4])
+            tr = f"{raw_tr:.4g} s" if raw_tr > 0 else "unknown"
+            # dim_info names the slice axis; BOLD usually omits it, so fall
+            # back to the conventional third axis.
+            slice_axis = hdr.get_dim_info()[2]
+            if slice_axis is not None:
+                n_slices, axis_desc = shape[slice_axis], f"axis {slice_axis}"
+            else:
+                n_slices, axis_desc = shape[2], "axis 2 (assumed; no dim_info)"
+            slice_order = hdr.get_value_label("slice_code")  # "unknown" if unset
+            extra = f", extra dims={tuple(shape[4:])}" if len(shape) > 4 else ""
+            _logger.info(
+                "%s: volumes=%d, slices=%d along %s, slice order=%s%s, header TR=%s",
+                label,
+                shape[3],
+                n_slices,
+                axis_desc,
+                slice_order,
+                extra,
+                tr,
+            )
+    except Exception as exc:
+        # Diagnostics must never abort a run; the real failure surfaces later.
+        _logger.warning("%s: could not read NIfTI header for %s (%s)", label, path, exc)
 
 
 def strip_afni_volatile_metadata(path: str | Path) -> None:

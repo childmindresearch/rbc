@@ -12,6 +12,7 @@ from rbc.bids import SUB_SES_QUERY, Datatype, load_table
 from rbc.bids.anatomical import discover_anatomical, export_anatomical
 from rbc.bids.session import load_session
 from rbc.context import RunContext
+from rbc.core.nifti import log_image_summary
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.workflows.anatomical import AnatomicalOutputs, single_session_preprocess
 from rbc_resources import (
@@ -48,7 +49,7 @@ def process_session(
     """
     outputs: AnatomicalOutputs | None = None
     for anat_run in discover_anatomical(session):
-        _logger.info("Anatomical: %s", anat_run.path)
+        log_image_summary(anat_run.path, label="Anatomical T1w")
         outputs = single_session_preprocess(
             in_t1w=anat_run.path,
             brain_extraction_templates=brain_extraction_templates,

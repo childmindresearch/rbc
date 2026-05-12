@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import nibabel as nib
@@ -12,6 +13,7 @@ from rbc.core.nifti import (
     Space,
     Units,
     Volume,
+    log_image_summary,
     nifti_num_slices,
     nifti_num_volumes,
 )
@@ -626,3 +628,123 @@ class TestExistingFunctions:
     def test_nifti_num_slices_3d(self, nifti_3d: Path) -> None:
         """3D image reports correct slice count."""
         assert nifti_num_slices(nifti_3d) == 7
+
+
+class TestLogImageSummary:
+    """Tests for log_image_summary()."""
+
+    def test_3d_summary(self, nifti_3d: Path, caplog: pytest.LogCaptureFixture) -> None:
+        """3D input logs shape, dtype, size, voxel size, orientation, spaces."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d, label="Anatomical T1w")
+        text = "\n".join(caplog.messages)
+        assert "Anatomical T1w" in text
+        assert "shape=(5, 6, 7)" in text
+        assert "dtype=float64" in text
+        assert "size=1.6 KiB" in text  # 5*6*7 * 8 = 1680 bytes
+        assert "voxel size=1 x 1 x 1 mm" in text
+        assert "orientation=RAS" in text
+        assert "sform=MNI" in text
+        assert "qform=MNI" in text
+
+    def test_3d_summary_omits_4d_fields(
+        self, nifti_3d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """3D input does not log volume/slice/TR fields."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d)
+        assert not any("volumes=" in m for m in caplog.messages)
+        assert not any("TR=" in m for m in caplog.messages)
+
+    def test_4d_summary_includes_volumes_and_tr(
+        self, nifti_4d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """4D input logs volume count, slice axis/count/order, and header TR."""
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(nifti_4d, label="Functional BOLD")
+        text = "\n".join(caplog.messages)
+        assert "shape=(5, 6, 7, 10)" in text
+        assert "size=16.4 KiB" in text  # 5*6*7*10 * 8 bytes
+        assert "volumes=10" in text
+        assert "slices=7 along axis 2 (assumed; no dim_info)" in text
+        assert "slice order=unknown" in text
+        assert "header TR=2 s" in text
+        assert "extra dims" not in text
+
+    def test_4d_slice_axis_and_order_from_header(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A header that sets dim_info / slice_code has them reported."""
+        rng = np.random.default_rng(0)
+        img = nib.Nifti1Image(rng.standard_normal((4, 5, 6, 3)), np.eye(4))
+        hdr = img.header
+        hdr.set_dim_info(slice=1)
+        hdr["slice_code"] = 1  # sequential increasing
+        pixdim = hdr["pixdim"].copy()
+        pixdim[4] = 2.0
+        hdr["pixdim"] = pixdim
+        path = tmp_path / "slices.nii.gz"
+        img.to_filename(str(path))
+
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        text = "\n".join(caplog.messages)
+        assert "slices=5 along axis 1" in text
+        assert "slice order=sequential increasing" in text
+
+    def test_5d_reports_extra_dims(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """5D input reports the trailing dims rather than mislabeling them."""
+        path = _make_nifti(tmp_path, "multi.nii.gz", (4, 5, 6, 7, 2))
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("extra dims=(2,)" in m for m in caplog.messages)
+
+    def test_dtype_and_size_reflect_on_disk_type(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Logged dtype/size use the on-disk dtype, not float64 get_fdata()."""
+        path = _make_nifti(tmp_path, "int16.nii.gz", (4, 5, 6), dtype=np.int16)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        text = "\n".join(caplog.messages)
+        assert "dtype=int16" in text
+        assert "size=240 B" in text  # 4*5*6 * 2 bytes
+
+    def test_size_uses_binary_units(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Data size scales to binary units."""
+        path = _make_nifti(tmp_path, "big.nii.gz", (64, 64, 64), dtype=np.int16)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("size=512.0 KiB" in m for m in caplog.messages)
+
+    def test_unknown_units_flagged(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Voxel size notes when spatial units are unset in the header."""
+        path = _make_nifti(tmp_path, "nounit.nii.gz", (4, 5, 6), xyzt_units=0)
+        caplog.set_level(logging.INFO, logger="rbc.core.nifti")
+        log_image_summary(path)
+        assert any("voxel size=1 x 1 x 1 (units unknown)" in m for m in caplog.messages)
+
+    def test_emitted_at_info_level(
+        self, nifti_3d: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Summary is emitted at INFO level (suppressed by default)."""
+        caplog.set_level(logging.WARNING, logger="rbc.core.nifti")
+        log_image_summary(nifti_3d)
+        assert caplog.messages == []
+
+    def test_unreadable_file_warns_without_raising(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A missing/corrupt file logs a warning instead of aborting the run."""
+        caplog.set_level(logging.WARNING, logger="rbc.core.nifti")
+        log_image_summary(tmp_path / "does_not_exist.nii.gz", label="Anatomical T1w")
+        assert any(
+            "could not read NIfTI header" in m and m.startswith("Anatomical T1w")
+            for m in caplog.messages
+        )

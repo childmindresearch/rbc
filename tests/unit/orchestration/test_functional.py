@@ -108,6 +108,7 @@ def _patch_process_session() -> Generator[tuple[Mock, Mock, FunctionalRun], None
             "rbc.orchestration.functional.discover_functional",
             return_value=[func_run],
         ),
+        patch("rbc.orchestration.functional.log_image_summary"),
         patch(
             "rbc.orchestration.functional.resolve_functional",
             return_value=_ANAT_INPUTS,
