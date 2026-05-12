@@ -28,7 +28,8 @@ class LongitudinalTemplateOutputs(NamedTuple):
 
     Attributes:
         template: Robust within-subject template volume.
-        bold_template: Within-subject template volume resampled to BOLD resolution.
+        bold_templates: Within-subject template volumes resampled to task-specific BOLD
+            resolutions.
         sessions: Session labels in the same order as ``transforms``.
         transforms: Per-session ITK-format session-to-template transforms.
     """

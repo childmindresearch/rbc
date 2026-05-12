@@ -23,6 +23,7 @@ def resolve_longitudinal_func(
     tpl_df: pl.DataFrame,
     *,
     ses: str,
+    task: str,
     regressors: Sequence[str] = ("36-parameter",),
 ) -> dict[str, Path | dict[str, Path]]:
     """Resolve inputs for longitudinal functional processing.
@@ -33,6 +34,7 @@ def resolve_longitudinal_func(
         func_df: DataFrame of functional derivatives.
         tpl_df: DataFrame of longitudinal template files.
         ses: Session label (used for template xfm lookup).
+        task: Task entity value to denote BOLD reference for template resampling.
         regressors: Regressor strategy names to resolve raw regressor
             files for.
 
@@ -50,7 +52,6 @@ def resolve_longitudinal_func(
             without=["space"],
         )
 
-    task = func_df["task"].unique()[0]
     return {
         "template": tpl_q.expect(tpl_df, suffix="T1w", res=task),
         "anat_to_template_xfm": tpl_q.expect(

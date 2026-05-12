@@ -176,6 +176,7 @@ class TestResolveLongitudinalFunc:
             func_df,
             tpl_df,
             ses="baseline",
+            task="rest",
             regressors=["36-parameter"],
         )
 
@@ -258,6 +259,7 @@ class TestResolveLongitudinalFunc:
             func_df,
             tpl_df,
             ses="baseline",
+            task="rest",
             regressors=["36-parameter", "aCompCor"],
         )
 
@@ -322,6 +324,7 @@ class TestResolveLongitudinalFunc:
                 func_df,
                 tpl_df,
                 ses="baseline",
+                task="rest",
                 regressors=["aCompCor"],
             )
 
@@ -379,6 +382,7 @@ class TestResolveLongitudinalFunc:
                 func_df,
                 tpl_df,
                 ses="baseline",
+                task="rest",
                 regressors=["36-parameter"],
             )
 

@@ -64,6 +64,7 @@ def process_func(
         func_df,
         tpl_df,
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
+        task=ents["task"],
         regressors=regressors,
     )
     func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]

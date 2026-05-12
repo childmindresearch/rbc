@@ -80,7 +80,21 @@ def discover_template_inputs(
         # Filter for first found session; only single reference per task is needed
         sub_bold = bold_rows.filter(
             (pl.col("sub") == sub) & (pl.col("ses") == sessions[0])
-        )
+        ).unique(subset=("task", "root", "path"))
+        # Check each task is unique, otherwise raise assertion error with details
+        if sub_bold.height != sub_bold["task"].n_unique():
+            conflicts = (
+                sub_bold.filter(pl.col("task").is_duplicated())
+                .group_by("task")
+                .agg(pl.format("{}/{}", "root", "path").alias("paths"))
+            )
+            raise AssertionError(
+                f"Found multiple non-matching grids for subject {sub}:\n"
+                + "\n".join(
+                    f"Task '{row['task']}': {row['paths']}"
+                    for row in conflicts.iter_rows(named=True)
+                )
+            )
         bold_files = {
             row["task"]: Path(row["root"]) / row["path"]
             for row in sub_bold.iter_rows(named=True)
