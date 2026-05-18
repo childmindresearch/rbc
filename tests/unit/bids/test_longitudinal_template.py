@@ -23,6 +23,11 @@ _SCHEMA = [
     "sub",
     "ses",
     "space",
+    "acq",
+    "dir",
+    "echo",
+    "part",
+    "rec",
     "task",
     "run",
     "desc",
@@ -50,6 +55,11 @@ def _anat_row(sub: str, ses: str, space: str | None = None) -> tuple:
         space,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
         "brain",
         "/data",
         path,
@@ -58,7 +68,24 @@ def _anat_row(sub: str, ses: str, space: str | None = None) -> tuple:
 
 def _func_row(sub: str, ses: str, task: str = "rest") -> tuple:
     path = f"sub-{sub}/ses-{ses}/func/sub-{sub}_ses-{ses}_task-{task}_bold.nii.gz"
-    return ("func", "bold", ".nii.gz", sub, ses, None, task, None, None, "/data", path)
+    return (
+        "func",
+        "bold",
+        ".nii.gz",
+        sub,
+        ses,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        task,
+        None,
+        None,
+        "/data",
+        path,
+    )
 
 
 class TestDiscoverTemplateInputs:

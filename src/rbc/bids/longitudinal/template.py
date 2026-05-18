@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
 
-from rbc.bids import Suffix, bids_safe_label
+from rbc.bids import FUNC_GROUP_ENTITIES, Suffix, bids_safe_label
 
 if TYPE_CHECKING:
     from rbc.bids import Bids
@@ -77,23 +77,19 @@ def discover_template_inputs(
         files = [
             Path(row["root"]) / row["path"] for row in sub_group.iter_rows(named=True)
         ]
-        # Filter for first found session; only single reference per task is needed
         sub_bold = bold_rows.filter(
             (pl.col("sub") == sub) & (pl.col("ses") == sessions[0])
-        ).unique(subset=("task", "root", "path"))
+        ).unique(subset=(*FUNC_GROUP_ENTITIES, "root", "path"))
         # Check each task is unique, otherwise raise assertion error with details
-        if sub_bold.height != sub_bold["task"].n_unique():
+        if sub_bold.height != sub_bold.unique().height:
             conflicts = (
-                sub_bold.filter(pl.col("task").is_duplicated())
-                .group_by("task")
+                sub_bold.filter(pl.struct(FUNC_GROUP_ENTITIES).is_duplicated())
+                .group_by(FUNC_GROUP_ENTITIES)
                 .agg(pl.format("{}/{}", "root", "path").alias("paths"))
             )
             raise AssertionError(
                 f"Found multiple non-matching grids for subject {sub}:\n"
-                + "\n".join(
-                    f"Task '{row['task']}': {row['paths']}"
-                    for row in conflicts.iter_rows(named=True)
-                )
+                + "\n".join(str(dict(row)) for row in conflicts.iter_rows(named=True))
             )
         bold_files = {
             row["task"]: Path(row["root"]) / row["path"]
