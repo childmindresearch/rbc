@@ -20,7 +20,7 @@ from rbc.bids.longitudinal.qc import (
     resolve_longitudinal_qc,
     write_longitudinal_qc_tsv,
 )
-from rbc.bids.session import iter_session_files
+from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
 from rbc.core.longitudinal.resampling import resample_img_to_bold_grid
 from rbc.core.niwrap import generate_exec_folder
 from rbc.core.qc.registration import registration_qc_metrics
@@ -160,7 +160,7 @@ def run(
 
         for func_df, _ in iter_session_files(session, groupby=FUNC_GROUP_ENTITIES):
             row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
-            ents = extract_entities(row, ["task", "run"])
+            ents = extract_entities(row, _FUNC_ENTITY_KEYS)
 
             func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
             func_long_q = func_q.derive(space="longitudinal")

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 
 from rbc.bids.longitudinal.template import (
+    BoldKey,
     discover_template_inputs,
     export_template,
 )
@@ -182,7 +183,7 @@ class TestExportTemplate:
 
         outputs = LongitudinalTemplateOutputs(
             template=template_src,
-            bold_templates={"test": template_bold_src},
+            bold_templates={BoldKey(task="test"): template_bold_src},
             sessions=["baseline", "vis2"],
             transforms=[xfm_baseline, xfm_vis2],
         )

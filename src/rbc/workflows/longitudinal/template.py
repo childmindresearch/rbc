@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from pathlib import Path
 
+    from rbc.bids.longitudinal.template import BoldKey
+
 _logger = logging.getLogger("rbc")
 
 
@@ -35,7 +37,7 @@ class LongitudinalTemplateOutputs(NamedTuple):
     """
 
     template: Path
-    bold_templates: dict[str, Path]
+    bold_templates: dict[BoldKey, Path]
     sessions: list[str]
     transforms: list[Path]
 
@@ -44,7 +46,7 @@ def generate_subject_template(
     sub: str,
     sessions: Sequence[str],
     in_files: Sequence[Path],
-    bold_files: Mapping[str, Path],
+    bold_files: Mapping[BoldKey, Path],
 ) -> LongitudinalTemplateOutputs:
     """Build a robust template and ITK transforms for one subject.
 

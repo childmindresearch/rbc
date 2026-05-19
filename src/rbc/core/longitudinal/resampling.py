@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import nibabel as nib
+import numpy as np
 from nibabel.processing import resample_from_to
 
 if TYPE_CHECKING:
@@ -31,7 +32,9 @@ def resample_img_to_bold_grid(bold_ref: Path, img: Path, order: int = 3) -> Path
     if len(bold_ref_img.shape) > 3:
         bold_ref_img = bold_ref_img.slicer[..., 0]
     # If same shape, no need to resample
-    if bold_ref_img.shape == img_obj.shape:
+    if bold_ref_img.shape == img_obj.shape and np.allclose(
+        bold_ref_img.affine, img_obj.affine
+    ):
         return img
 
     img_resampled = resample_from_to(img_obj, bold_ref_img, order=order)

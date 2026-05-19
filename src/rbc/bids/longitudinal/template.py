@@ -21,13 +21,36 @@ class TemplateInputs(NamedTuple):
         sub: Subject label.
         sessions: Per-input session labels (parallel to ``files``).
         files: Per-session preprocessed T1w brain volumes.
-        bold_ref: Per-session preprocessed BOLD volumes (all tasks).
+        bold_files: Per-session, unique preprocessed BOLD volumes (all tasks).
     """
 
     sub: str
     sessions: list[str]
     files: list[Path]
-    bold_files: dict[str, Path]
+    bold_files: dict[BoldKey, Path]
+
+
+# Use typing library instead of collections for static type hints
+class BoldKey(NamedTuple):
+    """Key with associated entities to use as dict key to represent bold filepath found.
+
+    Attributes:
+        task: Task associated with file.
+        run: Run associated with file.
+        acq: Acquisition associated with file.
+        dir: Direction associated with file.
+        echo: Echo associated with file.
+        part: Part associated with file.
+        rec: Recording associated with file.
+    """
+
+    task: str
+    run: str | None = None
+    acq: str | None = None
+    dir: str | None = None
+    echo: str | None = None
+    part: str | None = None
+    rec: str | None = None
 
 
 def discover_template_inputs(
@@ -80,19 +103,9 @@ def discover_template_inputs(
         sub_bold = bold_rows.filter(
             (pl.col("sub") == sub) & (pl.col("ses") == sessions[0])
         ).unique(subset=(*FUNC_GROUP_ENTITIES, "root", "path"))
-        # Check each task is unique, otherwise raise assertion error with details
-        if sub_bold.height != sub_bold.unique().height:
-            conflicts = (
-                sub_bold.filter(pl.struct(FUNC_GROUP_ENTITIES).is_duplicated())
-                .group_by(FUNC_GROUP_ENTITIES)
-                .agg(pl.format("{}/{}", "root", "path").alias("paths"))
-            )
-            raise AssertionError(
-                f"Found multiple non-matching grids for subject {sub}:\n"
-                + "\n".join(str(dict(row)) for row in conflicts.iter_rows(named=True))
-            )
-        bold_files = {
-            row["task"]: Path(row["root"]) / row["path"]
+        bold_files: dict[BoldKey, Path] = {
+            BoldKey(**{ent: row[ent] for ent in FUNC_GROUP_ENTITIES}): Path(row["root"])
+            / row["path"]
             for row in sub_bold.iter_rows(named=True)
         }
         inputs.append(
@@ -112,8 +125,8 @@ def export_template(tpl: Bids, outputs: LongitudinalTemplateOutputs) -> None:
         outputs: Results from the longitudinal template workflow.
     """
     tpl.save(outputs.template, suffix=Suffix.T1W)
-    for btask, bold_template in outputs.bold_templates.items():
-        tpl.save(bold_template, res=btask, suffix=Suffix.T1W)
+    for bold_key, bold_template in outputs.bold_templates.items():
+        tpl.save(bold_template, res=bids_safe_label(bold_key.task), suffix=Suffix.T1W)
     for ses, xfm in zip(outputs.sessions, outputs.transforms, strict=True):
         ses_label = bids_safe_label(ses)
         tpl.save(
