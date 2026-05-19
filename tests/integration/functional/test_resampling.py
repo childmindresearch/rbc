@@ -54,20 +54,21 @@ def _create_synthetic_wm(t1w: Path) -> Path:
     return wm_file
 
 
-def _create_identity_affine() -> Path:
-    """Create an ITK-format identity affine transform for testing."""
+def _create_identity_warp(reference: Path) -> Path:
+    """Create an identity ANTs/ITK displacement field on the reference grid.
+
+    The new nitransforms-based resampler expects ``anat_to_template`` to
+    be a composite displacement field (the format produced by
+    ``ants_apply_transforms`` in production), not a `.txt` affine.
+    """
+    ref_img = nib.nifti1.load(reference)
+    warp = np.zeros((*ref_img.shape[:3], 1, 3), dtype=np.float32)
+    img = nib.Nifti1Image(warp, ref_img.affine)
+    img.header.set_intent("vector")
     out_dir = generate_exec_folder("synthetic_transform")
-    mat_file = out_dir / "identity_affine.txt"
-
-    mat_file.write_text(
-        "#Insight Transform File V1.0\n"
-        "#Transform 0\n"
-        "Transform: MatrixOffsetTransformBase_double_3_3\n"
-        "Parameters: 1 0 0 0 1 0 0 0 1 0 0 0\n"
-        "FixedParameters: 0 0 0\n"
-    )
-
-    return mat_file
+    out_path = out_dir / "identity_warp.nii.gz"
+    nib.save(img, out_path)
+    return out_path
 
 
 @pytest.mark.slow
@@ -75,7 +76,7 @@ def test_resample_bold_to_template(test_subject: TestSubjectData) -> None:
     """Test single-step resampling of STC BOLD to template space."""
     template_mni = REGISTRATION_TEMPLATES.brain_2mm
     synthetic_wm = _create_synthetic_wm(test_subject.t1w)
-    anat_to_template = _create_identity_affine()
+    anat_to_template = _create_identity_warp(template_mni)
 
     reoriented = deoblique_and_reorient(in_file=test_subject.bold)
     truncated = afni.v_3dcalc(

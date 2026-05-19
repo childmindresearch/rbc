@@ -23,7 +23,7 @@ import numpy as np
 from niwrap import fsl
 from scipy.ndimage import binary_erosion
 
-from rbc.core.functional.resampling import merge_3d_to_4d
+from rbc.core.common import merge_3d_to_4d
 from rbc.core.niwrap import generate_exec_folder
 
 if TYPE_CHECKING:
@@ -187,7 +187,9 @@ def _shiftmap_to_itk_warp(
 
     FUGUE shift maps contain per-voxel shifts (in voxels) along the PE
     axis.  This converts to a 3-component mm displacement field in LPS
-    (ANTs/ITK convention).
+    (ANTs/ITK convention), written in the canonical ANTs 5D shape
+    ``(X, Y, Z, 1, 3)`` so it loads cleanly via
+    :class:`nitransforms.io.itk.ITKDisplacementsField`.
 
     Args:
         shiftmap: FUGUE shift map NIfTI (voxel units, single component).
@@ -202,17 +204,15 @@ def _shiftmap_to_itk_warp(
     voxel_sizes = np.array(shift_img.header.get_zooms()[:3])
 
     axis = _pe_axis_index(pe_direction)
+    warp = np.zeros((*shift_data.shape[:3], 1, 3), dtype=np.float32)
+    warp[..., 0, axis] = shift_data * voxel_sizes[axis]
 
-    # Build 3-component displacement field (mm, RAS)
-    warp = np.zeros((*shift_data.shape[:3], 3), dtype=np.float32)
-    warp[..., axis] = shift_data * voxel_sizes[axis]
-
-    # RAS → LPS for ANTs
-    warp[..., 0] *= -1
-    warp[..., 1] *= -1
+    # RAS -> LPS for ANTs
+    warp[..., 0, 0] *= -1
+    warp[..., 0, 1] *= -1
 
     header = shift_img.header.copy()
-    header.set_intent(1007)  # NIFTI_INTENT_VECTOR
+    header.set_intent("vector")
     header.set_data_dtype(np.float32)
 
     nib.save(nib.Nifti1Image(warp, shift_img.affine, header), output)
@@ -249,15 +249,15 @@ def _fieldmap_hz_to_itk_warp(
     axis = _pe_axis_index(pe_direction)
     sign = _pe_sign(pe_direction)
 
-    warp = np.zeros((*fmap_data.shape[:3], 3), dtype=np.float32)
-    warp[..., axis] = fmap_data * readout_time * voxel_sizes[axis] * sign
+    warp = np.zeros((*fmap_data.shape[:3], 1, 3), dtype=np.float32)
+    warp[..., 0, axis] = fmap_data * readout_time * voxel_sizes[axis] * sign
 
     # RAS -> LPS for ANTs
-    warp[..., 0] *= -1
-    warp[..., 1] *= -1
+    warp[..., 0, 0] *= -1
+    warp[..., 0, 1] *= -1
 
     header = fmap_img.header.copy()
-    header.set_intent(1007)
+    header.set_intent("vector")
     header.set_data_dtype(np.float32)
 
     nib.save(nib.Nifti1Image(warp, fmap_img.affine, header), output)

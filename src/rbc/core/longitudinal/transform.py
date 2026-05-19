@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from niwrap import ants
 
-from rbc.core.common import merge_3d_to_4d, split_4d
-from rbc.core.functional.resampling import _restore_tr
-from rbc.core.niwrap import generate_exec_folder
+from rbc.core.functional.resampling import resample_image
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -73,83 +71,26 @@ def compose_transform(ref: Path, bold_to_anat_itk: Path, anat_to_tpl_xfm: Path) 
     ).output.output_image_outfile
 
 
-def func_transform(
-    in_file: Path,
-    template: Path,
-    xfm: Path,
-    strategy: Literal["single", "chunked"] = "chunked",
-) -> Path:
-    """Apply transformation to functional data using ANTs.
+def func_transform(in_file: Path, template: Path, xfm: Path) -> Path:
+    """Apply *xfm* to a 3D or 4D functional image with linear interpolation.
 
     Args:
         in_file: Input file path to apply transform to.
         template: Longitudinal template file path for reference.
-        xfm: Transformation to apply.
-        strategy: Transformation strategy to apply.
+        xfm: ANTs/ITK composite displacement field.
 
     Returns:
         Path to transformed file.
 
     Raises:
         FileNotFoundError: if input file or transformation not found.
-        ValueError: if strategy is unknown (not 'single' or 'chunked')
     """
     if not in_file.exists():
         raise FileNotFoundError(f"Input file not found: {in_file}")
     if not xfm.exists():
         raise FileNotFoundError(f"Transformation not found: {xfm}")
 
-    match strategy:
-        case "chunked":
-            return _transform_4d_chunked(in_file=in_file, template=template, xfm=xfm)
-        case "single":
-            return _transform_4d(in_file=in_file, template=template, xfm=xfm)
-        case _:
-            raise ValueError(
-                f"Unknown strategy: {strategy!r}. Must be 'single' or 'chunked'"
-            )
-
-
-def _transform_4d(in_file: Path, template: Path, xfm: Path) -> Path:
-    """Apply transformation directly on 4D image."""
-    return ants.ants_apply_transforms(
-        dimensionality=3,
-        reference_image=template,
-        input_image=in_file,
-        input_image_type=3,
-        transform=[ants.ants_apply_transforms_transform_file_name(xfm)],
-        output=ants.ants_apply_transforms_warped_output("subj_bold_to_template.nii.gz"),
-        interpolation=ants.ants_apply_transforms_linear(),
-    ).output.output_image_outfile
-
-
-def _transform_4d_chunked(in_file: Path, template: Path, xfm: Path) -> Path:
-    """Apply transformation using a chunked strategy (split 4D image into 3D)."""
-    func_vols = split_4d(in_file)
-
-    transformed_vols = []
-    for idx, func_vol in enumerate(func_vols):
-        result = ants.ants_apply_transforms(
-            input_image=func_vol,
-            reference_image=template,
-            transform=[ants.ants_apply_transforms_transform_file_name(xfm)],
-            float_=True,
-            default_value=0,
-            dimensionality=3,
-            interpolation=ants.ants_apply_transforms_linear(),
-            output=ants.ants_apply_transforms_warped_output(
-                f"vol_{idx:04d}_template.nii"
-            ),
-        )
-        transformed_vols.append(result.output.output_image_outfile)
-
-    out_path = (
-        generate_exec_folder("bold_to_longitudinal_merge")
-        / "bold_to_longitudinal.nii.gz"
-    )
-    merged = merge_3d_to_4d(transformed_vols, out_path)
-    _restore_tr(merged, in_file)
-    return merged
+    return resample_image(src=in_file, reference=template, warp=xfm, order=1)
 
 
 def mask_transform(mask: Path, template: Path, xfm: Path) -> Path:

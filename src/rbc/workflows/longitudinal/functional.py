@@ -88,12 +88,8 @@ def longitudinal_process(
         anat_to_tpl_xfm=anat_to_template_xfm,
     )
 
-    long_sbref = func_transform(
-        in_file=sbref, template=template, xfm=bold_to_tpl_xfm, strategy="single"
-    )
-    long_bold = func_transform(
-        in_file=bold, template=template, xfm=bold_to_tpl_xfm, strategy="chunked"
-    )
+    long_sbref = func_transform(in_file=sbref, template=template, xfm=bold_to_tpl_xfm)
+    long_bold = func_transform(in_file=bold, template=template, xfm=bold_to_tpl_xfm)
     long_mask = mask_transform(mask=bold_mask, template=template, xfm=bold_to_tpl_xfm)
 
     regressed: dict[str, Path] = {}

@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
   "bids2table>=2.1.2",
   "nibabel>=5.3.3",
+  "nitransforms>=24.0.0",
   "niwrap>=0.9.3",
   "numpy>=2.4.2",
   "polars>=1.38.1",
