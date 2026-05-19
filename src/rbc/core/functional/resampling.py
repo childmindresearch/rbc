@@ -117,9 +117,7 @@ def _resample_4d(
     for t in range(n_vols):
         if motion_xfms is not None:
             vol_coords_ras = motion_xfms[t].map(static_coords_ras, inverse=True)
-            voxel_grid = _ras_to_voxel_grid(
-                vol_coords_ras, src_affine_inv, ref_shape
-            )
+            voxel_grid = _ras_to_voxel_grid(vol_coords_ras, src_affine_inv, ref_shape)
         else:
             assert static_voxel_grid is not None  # noqa: S101
             voxel_grid = static_voxel_grid
@@ -140,9 +138,7 @@ def _resample_4d(
     final_data = out_data if is_4d else out_data[..., 0]
     out_img = nib.Nifti1Image(final_data, reference_img.affine)
     if is_4d:
-        zooms = (
-            reference_img.header.get_zooms()[:3] + src_img.header.get_zooms()[3:4]
-        )
+        zooms = reference_img.header.get_zooms()[:3] + src_img.header.get_zooms()[3:4]
     else:
         zooms = reference_img.header.get_zooms()[:3]
     out_img.header.set_zooms(zooms)
@@ -192,9 +188,7 @@ def _load_motion_xfms(
     if not motion_mats:
         raise FileNotFoundError(f"No motion .mat files found in {motion_mat_dir}")
     return [
-        nt.linear.load(
-            str(m), fmt="fsl", reference=bold_ref_img, moving=bold_ref_img
-        )
+        nt.linear.load(str(m), fmt="fsl", reference=bold_ref_img, moving=bold_ref_img)
         for m in motion_mats
     ]
 
