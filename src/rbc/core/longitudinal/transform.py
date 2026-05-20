@@ -36,6 +36,7 @@ def anat_transform(in_file: Path, template: Path, xfm: Path) -> Path:
     return ants.ants_apply_transforms(
         reference_image=template,
         input_image=in_file,
+        transform=[ants.ants_apply_transforms_transform_file_name(xfm)],
         output=ants.ants_apply_transforms_warped_output("subject_to_template.nii.gz"),
         dimensionality=3,
         interpolation=ants.ants_apply_transforms_linear(),
