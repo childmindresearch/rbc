@@ -1096,7 +1096,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bids2table", specifier = ">=2.1.2" },
+    { name = "bids2table", specifier = "==2.1.2" },
     { name = "nibabel", specifier = ">=5.3.3" },
     { name = "niwrap", specifier = ">=0.9.3" },
     { name = "numpy", specifier = ">=2.4.2" },
