@@ -27,12 +27,15 @@ from rbc.core.fsl2itk import mat_to_itk
 from rbc.core.niwrap import generate_exec_folder
 
 
-def _restore_tr(resampled: Path, source: Path) -> None:
+def restore_tr(resampled: Path, source: Path) -> None:
     """Copy pixdim[4] (TR) from *source* into *resampled* NIfTI header.
 
     antsApplyTransforms sets pixdim from the reference image, which for
     template-space outputs is a 3D template with no meaningful TR.  This
     restores the original temporal zoom from the source BOLD.
+
+    Also used by external tooling (e.g. the data-release TR-fix script)
+    to patch headers whose pixdim[4] was lost upstream.
     """
     src_img = nib.nifti1.load(source)
     res_img = nib.nifti1.load(resampled)
@@ -109,7 +112,7 @@ def apply_motion_transforms(
 
     # antsApplyTransforms writes the reference image's pixdim into the output
     # header, so pixdim[4] (TR) is lost.  Restore it from the source BOLD.
-    _restore_tr(merged, stc_img)
+    restore_tr(merged, stc_img)
 
     return merged
 
@@ -207,6 +210,6 @@ def resample_bold_to_template(
     # antsApplyTransforms writes the reference (template) image's pixdim into
     # the output header, so pixdim[4] (TR) is lost.  Restore it from the
     # source BOLD.
-    _restore_tr(merged, stc_bold)
+    restore_tr(merged, stc_bold)
 
     return merged

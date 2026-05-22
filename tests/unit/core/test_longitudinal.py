@@ -91,7 +91,7 @@ class TestFunctionalLongitudinalTransforms:
     @patch("rbc.core.longitudinal.transform.ants")
     @patch("rbc.core.longitudinal.transform.split_4d")
     @patch("rbc.core.longitudinal.transform.merge_3d_to_4d")
-    @patch("rbc.core.longitudinal.transform._restore_tr")
+    @patch("rbc.core.longitudinal.transform.restore_tr")
     @pytest.mark.parametrize("strategy", ["chunked", "single"])
     def test_returns_output_path(
         self,
