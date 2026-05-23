@@ -108,12 +108,15 @@ def single_session_metrics(
     reho_zscored_path = compute_zscore(reho_smooth_path, template_brain_mask)
 
     # 5. Atlas timeseries + correlation matrix from nuisance-regressed,
-    # bandpass-filtered BOLD
+    # bandpass-filtered BOLD. Each atlas needs its own ``out_dir`` so the
+    # BOLD-stem-derived output filename doesn't collide across atlases.
     ts_outputs = {}
     for label, atlas_path in atlas_files.items():
         _logger.info("Extracting atlas timeseries (%s)", label)
+        atlas_dir = work_dir / f"atlas-{label}"
+        atlas_dir.mkdir(parents=True, exist_ok=True)
         ts_outputs[label] = compute_timeseries(
-            cleaned_bold, atlas_path, out_dir=work_dir
+            cleaned_bold, atlas_path, out_dir=atlas_dir
         )
 
     return MetricsOutputs(

@@ -148,7 +148,10 @@ def compute_timeseries(
     if atlas_img.shape[:3] != img.shape[:3]:
         atlas_img = resample_from_to(atlas_img, (img.shape[:3], img.affine), order=0)
 
-    atlas_data = atlas_img.get_fdata().astype(int)
+    # Read via ``dataobj`` so the on-disk integer labels survive verbatim;
+    # ``get_fdata`` would apply ``scl_slope``/``scl_inter`` and scale small
+    # labels into garbage floats if the atlas ships with non-trivial scaling.
+    atlas_data = np.asarray(atlas_img.dataobj).astype(int)
 
     data = img.get_fdata()
     labels = np.unique(atlas_data)
