@@ -28,7 +28,7 @@ Usage::
         --input-dir /path/to/rbc_release --output-dir /path/to/fixed \\
         [--participant-label sub-X ...] [--bandpass 0.01 0.1] \\
         [--tr-override 2.0] [--runner auto] [--skip-metrics] \\
-        [--overwrite] [--dry-run | --verify]
+        [--work-dir /scratch] [--overwrite] [--dry-run | --verify]
 
 Or standalone, no clone::
 
@@ -621,6 +621,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="NiWrap runner for AFNI 3dTproject (default: auto).",
     )
     parser.add_argument(
+        "--work-dir",
+        type=Path,
+        default=None,
+        help="Parent directory under which to create the (auto-cleaned) scratch "
+        "folder for patched headers and niwrap exec dirs. Defaults to the "
+        "system temp dir (honors $TMPDIR/$TEMP/$TMP). Point this at a roomy "
+        "disk for multi-thousand-run releases.",
+    )
+    parser.add_argument(
         "--skip-metrics",
         action="store_true",
         help="Only regenerate the cleaned BOLD + bandpassed regressors; do not "
@@ -729,7 +738,11 @@ def main(argv: list[str] | None = None) -> int:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     atlases: Mapping[str, Path] = {} if args.skip_metrics else _resolve_atlases()
-    with tempfile.TemporaryDirectory(prefix="rbc_tr_fix_") as work_str:
+    if args.work_dir is not None:
+        args.work_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="rbc_tr_fix_", dir=args.work_dir
+    ) as work_str:
         # Route niwrap exec folders under the same temp root so they get
         # cleaned up; else ``generate_exec_folder`` accumulates GBs across
         # a multi-thousand-run release.
