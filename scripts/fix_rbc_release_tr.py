@@ -244,7 +244,7 @@ def _restore_tr(resampled: Path, source: Path) -> None:
 def _patch_head_bold(head_bold: Path, native_bold: Path, work_dir: Path) -> Path:
     work_dir.mkdir(parents=True, exist_ok=True)
     patched = work_dir / head_bold.name
-    shutil.copy2(head_bold, patched)
+    shutil.copyfile(head_bold, patched)
     _restore_tr(patched, native_bold)
     return patched
 
@@ -394,11 +394,11 @@ def _export_metrics(
         zstd_dst = (
             out_func_dir / f"{stem_with_space}_reg-{reg_set}_desc-zstd_{metric}.nii.gz"
         )
-        shutil.copy2(srcs["sm6"], sm6_dst)
-        shutil.copy2(srcs["smZstd"], smzstd_dst)
+        shutil.copyfile(srcs["sm6"], sm6_dst)
+        shutil.copyfile(srcs["smZstd"], smzstd_dst)
         # ``zstd`` = z-scored raw (no smoothing); not in MetricsOutputs.
         zstd_src = compute_zscore(srcs["raw"], template_brain_mask)
-        shutil.copy2(zstd_src, zstd_dst)
+        shutil.copyfile(zstd_src, zstd_dst)
 
     for atl in atlases:
         base = f"{stem_no_space}_atlas-{atl}_space-{run.space}_reg-{reg_set}"
@@ -408,7 +408,7 @@ def _export_metrics(
         # Transpose to ``(T, n_rois)`` to match AFNI's ``.1D`` and the release.
         ts_arr = np.loadtxt(metrics.timeseries[atl])
         np.savetxt(ts_dst, ts_arr.T, delimiter="\t")
-        shutil.copy2(metrics.correlation_matrix[atl], pearson_dst)
+        shutil.copyfile(metrics.correlation_matrix[atl], pearson_dst)
         _compute_partial_correlation(ts_dst, partial_dst)
 
 
@@ -479,13 +479,13 @@ def _process_run(
                 f_low=bandpass[0],
                 f_high=bandpass[1],
             )
-            shutil.copy2(bp_result.regressed_bold, out_bold)
+            shutil.copyfile(bp_result.regressed_bold, out_bold)
             cleaned_bold = bp_result.regressed_bold
 
             bpf_reg = bandpass_regressor_file(
                 reg_file, tr=tr, f_low=bandpass[0], f_high=bandpass[1]
             )
-            shutil.copy2(bpf_reg, out_reg)
+            shutil.copyfile(bpf_reg, out_reg)
             LOG.info("  wrote reg-%s -> %s", reg_set, out_bold.name)
 
         if metrics_done:
