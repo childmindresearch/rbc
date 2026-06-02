@@ -7,11 +7,11 @@ license = "LGPL-3.0-or-later"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "bids2table==2.1.2",
+  "bids2table==2.2.1",
   "nibabel>=5.3.3",
   "niwrap>=0.9.3",
-  "numpy>=2.4.2",
-  "polars>=1.38.1",
+  "numpy>=2.4.6",
+  "polars>=1.41.2",
   "scipy>=1.17.0",
   "styxcache>=0.2.0,<0.3",
   "styxpodman>=0.1.1",
