@@ -2,7 +2,7 @@
 
 Currently provides:
 - Deobliquing and RPI reorientation (initial preprocessing for T1w and BOLD).
-- 4D NIfTI splitting and merging utilities.
+- 4D NIfTI merging utility.
 """
 
 from __future__ import annotations
@@ -19,9 +19,8 @@ if TYPE_CHECKING:
 
 from rbc.core.fileops import file_tmp_copy
 from rbc.core.nifti import strip_afni_volatile_metadata
-from rbc.core.niwrap import generate_exec_folder
 
-__all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
+__all__ = ["deoblique_and_reorient", "merge_3d_to_4d"]
 
 
 def deoblique_and_reorient(
@@ -53,29 +52,6 @@ def deoblique_and_reorient(
         return afni.v_3dresample(
             in_file=tmp_file, prefix=output_fname, orientation="RPI"
         )
-
-
-def split_4d(img_4d: Path) -> list[Path]:
-    """Split a 4D NIfTI timeseries into individual 3D volumes.
-
-    Volumes are written as uncompressed NIfTI (.nii) to avoid gzip
-    overhead on float intermediates that are read back immediately.
-
-    Args:
-        img_4d: Path to a 4D NIfTI image.
-
-    Returns:
-        Sorted list of paths to the individual 3D volume files.
-    """
-    img = nib.nifti1.load(img_4d)
-    volumes = nib.four_to_three(img)
-    out_dir = generate_exec_folder(suffix="split4d")
-    paths: list[Path] = []
-    for idx, vol in enumerate(volumes):
-        out_path = out_dir / f"vol_{idx:04d}.nii"
-        nib.save(vol, out_path)
-        paths.append(out_path)
-    return paths
 
 
 def merge_3d_to_4d(volumes: Sequence[Path], output: Path) -> Path:

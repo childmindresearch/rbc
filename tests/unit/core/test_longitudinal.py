@@ -88,43 +88,22 @@ class TestFunctionalLongitudinalTransforms:
         with pytest.raises(FileNotFoundError, match="not found"):
             func_transform(in_file=in_file, template=template, xfm=xfm)
 
-    @patch("rbc.core.longitudinal.transform.ants")
-    @patch("rbc.core.longitudinal.transform.split_4d")
-    @patch("rbc.core.longitudinal.transform.merge_3d_to_4d")
-    @patch("rbc.core.longitudinal.transform._restore_tr")
-    @pytest.mark.parametrize("strategy", ["chunked", "single"])
+    @patch("rbc.core.longitudinal.transform.resample_image")
     def test_returns_output_path(
         self,
-        mock_restore_tr: MagicMock,
-        mock_merge_3d_to_4d: MagicMock,
-        mock_split_4d: MagicMock,
-        mock_ants: MagicMock,
+        mock_resample_image: MagicMock,
         tmp_files: tuple[Path, ...],
-        strategy: str,
     ) -> None:
         """Successful functional transformation to template."""
         in_file, template, xfm = tmp_files
-        expected = Path("/out/subj_bold_to_template.nii.gz")
+        expected = Path("/out/resampled.nii.gz")
+        mock_resample_image.return_value = expected
 
-        mock_ants.ants_apply_transforms.return_value.output.output_image_outfile = (
-            expected
-        )
-        mock_ants.ants_apply_transforms_warped_output.return_value = MagicMock()
-        mock_ants.ants_apply_transforms_linear.return_value = MagicMock()
-        mock_ants.ants_apply_transforms_transform_file_name.return_value = MagicMock()
-
-        if strategy == "chunked":
-            mock_split_4d.return_value = [in_file]
-            mock_merge_3d_to_4d.return_value = expected
-            mock_restore_tr.return_value = None
-
-        result = func_transform(
-            in_file=in_file,
-            template=template,
-            xfm=xfm,
-            strategy=strategy,  # type: ignore [arg-type]
-        )
+        result = func_transform(in_file=in_file, template=template, xfm=xfm)
         assert result == expected
+        mock_resample_image.assert_called_once_with(
+            src=in_file, reference=template, warp=xfm, order=1
+        )
 
 
 class TestComposeTransform:
