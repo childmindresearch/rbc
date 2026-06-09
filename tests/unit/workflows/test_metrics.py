@@ -93,7 +93,7 @@ def test_atlas_outputs_are_per_atlas(
         template_brain_mask=mask_path,
         tr=2.0,
         atlas_files={"atl3": atlas_3_path, "atl5": atlas_5_path},
-        fwhm=6.0,
+        smooth=6.0,
     )
 
     # Distinct files per atlas, never overwriting each other.
