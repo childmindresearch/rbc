@@ -148,7 +148,7 @@ def register_command(
         "--smooth",
         type=float,
         default=None,
-        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0) "
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
         "If omitted, no smoothing is applied.",
     )
     parser.add_argument(
@@ -193,13 +193,13 @@ def register_command(
         "--func-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom brain template for functional resampling (default: MNI152 2 mm).",
+        help="Custom brain template for functional resampling (default: MNI152 2mm).",
     )
     templates.add_argument(
         "--func-template-mask",
         type=_validate_nifti_path,
         default=None,
-        help="Custom brain mask for functional masking (default: MNI152 2 mm).",
+        help="Custom brain mask for functional masking (default: MNI152 2mm).",
     )
     templates.add_argument(
         "--func-template-ref",

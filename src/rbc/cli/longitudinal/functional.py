@@ -88,7 +88,7 @@ def register_command(
         type=float,
         default=None,
         metavar="FWHM",
-        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0) "
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
         "If omitted, no smoothing is applied.",
     )
     parser.add_argument(

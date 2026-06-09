@@ -127,7 +127,7 @@ def register_command(
         default=None,
         metavar="FWHM",
         help="Smooth the cleaned (post-regression, bandpass-filtered) BOLD with "
-        "the kernel of specified FWHM in mm (e.g. --smooth 6.0) "
+        "the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
         "If omitted, no smoothing is applied.",
     )
 
