@@ -84,7 +84,7 @@ def test_atlas_outputs_are_per_atlas(
 
     monkeypatch.setattr(metrics_mod, "compute_alff", _scalar_pair)
     monkeypatch.setattr(metrics_mod, "compute_reho", _scalar_single)
-    monkeypatch.setattr(metrics_mod, "smooth", _smooth)
+    monkeypatch.setattr(metrics_mod, "apply_smooth", _smooth)
     monkeypatch.setattr(metrics_mod, "compute_zscore", _scalar_single)
 
     outputs = single_session_metrics(
