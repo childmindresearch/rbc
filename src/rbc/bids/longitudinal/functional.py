@@ -53,7 +53,7 @@ def resolve_longitudinal_func(
         )
 
     return {
-        "template": tpl_q.expect(tpl_df, suffix="T1w", res=task),
+        "template": tpl_q.expect(tpl_df, suffix="T1w", res=bids_safe_label(task)),
         "anat_to_template_xfm": tpl_q.expect(
             tpl_df,
             suffix="xfm",
