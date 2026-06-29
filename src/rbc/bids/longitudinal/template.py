@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
 
-from rbc.bids import Suffix, bids_safe_label
+from rbc.bids import FUNC_GROUP_ENTITIES, Suffix, bids_safe_label
 
 if TYPE_CHECKING:
     from rbc.bids import Bids
@@ -21,11 +21,36 @@ class TemplateInputs(NamedTuple):
         sub: Subject label.
         sessions: Per-input session labels (parallel to ``files``).
         files: Per-session preprocessed T1w brain volumes.
+        bold_files: Per-session, unique preprocessed BOLD volumes (all tasks).
     """
 
     sub: str
     sessions: list[str]
     files: list[Path]
+    bold_files: dict[BoldKey, Path]
+
+
+# Use typing library instead of collections for static type hints
+class BoldKey(NamedTuple):
+    """Key with associated entities to use as dict key to represent bold filepath found.
+
+    Attributes:
+        task: Task associated with file.
+        run: Run associated with file.
+        acq: Acquisition associated with file.
+        dir: Direction associated with file.
+        echo: Echo associated with file.
+        part: Part associated with file.
+        rec: Recording associated with file.
+    """
+
+    task: str
+    run: str | None = None
+    acq: str | None = None
+    dir: str | None = None
+    echo: str | None = None
+    part: str | None = None
+    rec: str | None = None
 
 
 def discover_template_inputs(
@@ -56,6 +81,13 @@ def discover_template_inputs(
         # the mri_robust_template invocation.
         pl.col("space").is_null(),
     )
+    bold_rows = df.filter(
+        pl.col("ses") != "longitudinal",
+        pl.col("datatype") == "func",
+        pl.col("desc") == "preproc",
+        pl.col("suffix") == "bold",
+        pl.col("space").is_null(),
+    )
 
     inputs: list[TemplateInputs] = []
     skipped: list[str] = []
@@ -68,7 +100,19 @@ def discover_template_inputs(
         files = [
             Path(row["root"]) / row["path"] for row in sub_group.iter_rows(named=True)
         ]
-        inputs.append(TemplateInputs(sub=sub, sessions=sessions, files=files))
+        sub_bold = bold_rows.filter(
+            (pl.col("sub") == sub) & (pl.col("ses") == sessions[0])
+        ).unique(subset=(*FUNC_GROUP_ENTITIES, "root", "path"))
+        bold_files: dict[BoldKey, Path] = {
+            BoldKey(**{ent: row[ent] for ent in FUNC_GROUP_ENTITIES}): Path(row["root"])
+            / row["path"]
+            for row in sub_bold.iter_rows(named=True)
+        }
+        inputs.append(
+            TemplateInputs(
+                sub=sub, sessions=sessions, files=files, bold_files=bold_files
+            )
+        )
     return inputs, skipped
 
 
@@ -81,6 +125,8 @@ def export_template(tpl: Bids, outputs: LongitudinalTemplateOutputs) -> None:
         outputs: Results from the longitudinal template workflow.
     """
     tpl.save(outputs.template, suffix=Suffix.T1W)
+    for bold_key, bold_template in outputs.bold_templates.items():
+        tpl.save(bold_template, res=bids_safe_label(bold_key.task), suffix=Suffix.T1W)
     for ses, xfm in zip(outputs.sessions, outputs.transforms, strict=True):
         ses_label = bids_safe_label(ses)
         tpl.save(

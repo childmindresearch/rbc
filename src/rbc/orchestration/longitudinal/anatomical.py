@@ -51,7 +51,7 @@ def process_anat(
         Workflow outputs for in-memory handoff to downstream stages.
     """
     anat_df = anat_df.filter(pl.col("space").is_null())
-    ents = extract_entities(anat_df.row(0, named=True), ["run"])
+    ents = extract_entities(anat_df.row(0, named=True), ["run", "acq", "rec", "echo"])
 
     anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
     tpl_q = anat_q.derive(ses="longitudinal")

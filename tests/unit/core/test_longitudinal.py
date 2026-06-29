@@ -70,6 +70,25 @@ class TestAnatomicalLongitudinalTransforms:
         result = anat_transform(in_file=in_file, template=template, xfm=xfm)
         assert result == expected
 
+    @patch("rbc.core.longitudinal.transform.ants")
+    def test_applies_xfm(
+        self, mock_ants: MagicMock, tmp_files: tuple[Path, ...]
+    ) -> None:
+        """The session-to-template xfm is passed to ants_apply_transforms.
+
+        Regression guard: the transform argument was previously omitted, so the
+        subject->template registration was silently never applied.
+        """
+        in_file, template, xfm = tmp_files
+
+        anat_transform(in_file=in_file, template=template, xfm=xfm)
+
+        mock_ants.ants_apply_transforms_transform_file_name.assert_called_once_with(xfm)
+        _, kwargs = mock_ants.ants_apply_transforms.call_args
+        assert kwargs["transform"] == [
+            mock_ants.ants_apply_transforms_transform_file_name.return_value
+        ]
+
 
 class TestFunctionalLongitudinalTransforms:
     """Test suite for transformation between functional and longitudinal templates."""

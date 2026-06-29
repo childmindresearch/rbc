@@ -28,6 +28,7 @@ def _func_row(
     sub: str,
     ses: str,
     suffix: str,
+    task: str,
     desc: str | None = None,
     ext: str = ".nii.gz",
     space: str | None = None,
@@ -38,11 +39,12 @@ def _func_row(
     space_part = f"_space-{space}" if space else ""
     path = (
         f"sub-{sub}/ses-{ses}/func/"
-        f"sub-{sub}_ses-{ses}{space_part}{desc_part}_{suffix}{ext}"
+        f"sub-{sub}_ses-{ses}{space_part}_task-{task}{desc_part}_{suffix}{ext}"
     )
     return {
         "datatype": "func",
         "suffix": suffix,
+        "task": task,
         "ext": ext,
         "sub": sub,
         "ses": ses,
@@ -59,6 +61,7 @@ def _anat_row(
     sub: str,
     ses: str,
     suffix: str,
+    res: str | None = None,
     desc: str | None = None,
     ext: str = ".nii.gz",
     extra: list[dict[str, str]] | None = None,
@@ -73,6 +76,7 @@ def _anat_row(
         "sub": sub,
         "ses": ses,
         "space": None,
+        "res": res,
         "desc": desc,
         "root": "/data",
         "path": path,
@@ -119,12 +123,17 @@ class TestResolveLongitudinalFunc:
     def test_resolves_single_regressor(self, tmp_path: Path) -> None:
         """Single regressor resolves raw regressor file from derivatives."""
         func_df = _df(
-            _func_row(sub="01", ses="baseline", suffix="sbref"),
-            _func_row(sub="01", ses="baseline", suffix="bold", desc="preproc"),
-            _func_row(sub="01", ses="baseline", suffix="mask", desc="brain"),
+            _func_row(sub="01", ses="baseline", task="rest", suffix="sbref"),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="bold", desc="preproc"
+            ),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="mask", desc="brain"
+            ),
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="xfm",
                 desc="linearITK",
                 ext=".txt",
@@ -137,13 +146,14 @@ class TestResolveLongitudinalFunc:
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="regressors",
                 desc="36parameter",
                 ext=".1D",
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="rest", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -166,6 +176,7 @@ class TestResolveLongitudinalFunc:
             func_df,
             tpl_df,
             ses="baseline",
+            task="rest",
             regressors=["36-parameter"],
         )
 
@@ -187,12 +198,17 @@ class TestResolveLongitudinalFunc:
     def test_resolves_multiple_regressors(self, tmp_path: Path) -> None:
         """Multiple regressors each get their own raw regressor file resolved."""
         func_df = _df(
-            _func_row(sub="01", ses="baseline", suffix="sbref"),
-            _func_row(sub="01", ses="baseline", suffix="bold", desc="preproc"),
-            _func_row(sub="01", ses="baseline", suffix="mask", desc="brain"),
+            _func_row(sub="01", ses="baseline", task="rest", suffix="sbref"),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="bold", desc="preproc"
+            ),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="mask", desc="brain"
+            ),
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="xfm",
                 desc="linearITK",
                 ext=".txt",
@@ -205,6 +221,7 @@ class TestResolveLongitudinalFunc:
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="regressors",
                 desc="36parameter",
                 ext=".1D",
@@ -212,13 +229,14 @@ class TestResolveLongitudinalFunc:
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="regressors",
                 desc="aCompCor",
                 ext=".1D",
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="rest", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -241,6 +259,7 @@ class TestResolveLongitudinalFunc:
             func_df,
             tpl_df,
             ses="baseline",
+            task="rest",
             regressors=["36-parameter", "aCompCor"],
         )
 
@@ -251,12 +270,17 @@ class TestResolveLongitudinalFunc:
     def test_missing_regressor_raises(self, tmp_path: Path) -> None:
         """Requesting a regressor not present in derivatives raises."""
         func_df = _df(
-            _func_row(sub="01", ses="baseline", suffix="sbref"),
-            _func_row(sub="01", ses="baseline", suffix="bold", desc="preproc"),
-            _func_row(sub="01", ses="baseline", suffix="mask", desc="brain"),
+            _func_row(sub="01", ses="baseline", task="rest", suffix="sbref"),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="bold", desc="preproc"
+            ),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="mask", desc="brain"
+            ),
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="xfm",
                 desc="linearITK",
                 ext=".txt",
@@ -269,13 +293,14 @@ class TestResolveLongitudinalFunc:
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="regressors",
                 desc="36parameter",
                 ext=".1D",
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="rest", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -299,17 +324,21 @@ class TestResolveLongitudinalFunc:
                 func_df,
                 tpl_df,
                 ses="baseline",
+                task="rest",
                 regressors=["aCompCor"],
             )
 
     def test_bold_mask_mandatory(self, tmp_path: Path) -> None:
         """bold_mask is now resolved with expect(), so missing raises."""
         func_df = _df(
-            _func_row(sub="01", ses="baseline", suffix="sbref"),
-            _func_row(sub="01", ses="baseline", suffix="bold", desc="preproc"),
+            _func_row(sub="01", ses="baseline", task="rest", suffix="sbref"),
+            _func_row(
+                sub="01", ses="baseline", task="rest", suffix="bold", desc="preproc"
+            ),
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="xfm",
                 desc="linearITK",
                 ext=".txt",
@@ -322,13 +351,14 @@ class TestResolveLongitudinalFunc:
             _func_row(
                 sub="01",
                 ses="baseline",
+                task="rest",
                 suffix="regressors",
                 desc="36parameter",
                 ext=".1D",
             ),
         )
         tpl_df = _df(
-            _anat_row(sub="01", ses="longitudinal", suffix="T1w"),
+            _anat_row(sub="01", ses="longitudinal", res="rest", suffix="T1w"),
             _anat_row(
                 sub="01",
                 ses="longitudinal",
@@ -352,6 +382,7 @@ class TestResolveLongitudinalFunc:
                 func_df,
                 tpl_df,
                 ses="baseline",
+                task="rest",
                 regressors=["36-parameter"],
             )
 

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 
 from rbc.bids.longitudinal.template import (
+    BoldKey,
     discover_template_inputs,
     export_template,
 )
@@ -23,6 +24,11 @@ _SCHEMA = [
     "sub",
     "ses",
     "space",
+    "acq",
+    "dir",
+    "echo",
+    "part",
+    "rec",
     "task",
     "run",
     "desc",
@@ -35,7 +41,7 @@ def _df(*rows: tuple) -> pl.DataFrame:
     return pl.DataFrame(dict(zip(_SCHEMA, zip(*rows, strict=True), strict=True)))
 
 
-def _brain_row(sub: str, ses: str, space: str | None = None) -> tuple:
+def _anat_row(sub: str, ses: str, space: str | None = None) -> tuple:
     space_part = f"_space-{space}" if space else ""
     path = (
         f"sub-{sub}/ses-{ses}/anat/"
@@ -50,7 +56,34 @@ def _brain_row(sub: str, ses: str, space: str | None = None) -> tuple:
         space,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
         "brain",
+        "/data",
+        path,
+    )
+
+
+def _func_row(sub: str, ses: str, task: str = "rest") -> tuple:
+    path = f"sub-{sub}/ses-{ses}/func/sub-{sub}_ses-{ses}_task-{task}_bold.nii.gz"
+    return (
+        "func",
+        "bold",
+        ".nii.gz",
+        sub,
+        ses,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        task,
+        None,
+        None,
         "/data",
         path,
     )
@@ -62,10 +95,14 @@ class TestDiscoverTemplateInputs:
     def test_groups_by_subject(self) -> None:
         """Multi-session subjects yield one TemplateInputs each."""
         df = _df(
-            _brain_row("01", "baseline"),
-            _brain_row("01", "vis2"),
-            _brain_row("02", "baseline"),
-            _brain_row("02", "vis2"),
+            _anat_row("01", "baseline"),
+            _anat_row("01", "vis2"),
+            _anat_row("02", "baseline"),
+            _anat_row("02", "vis2"),
+            _func_row("01", "baseline"),
+            _func_row("01", "vis2"),
+            _func_row("02", "baseline"),
+            _func_row("02", "vis2"),
         )
         inputs, skipped = discover_template_inputs(df)
         assert {ti.sub for ti in inputs} == {"01", "02"}
@@ -77,9 +114,12 @@ class TestDiscoverTemplateInputs:
     def test_reports_single_session_subject(self) -> None:
         """Single-session subjects are reported separately (bug #19)."""
         df = _df(
-            _brain_row("01", "baseline"),
-            _brain_row("01", "vis2"),
-            _brain_row("02", "baseline"),
+            _anat_row("01", "baseline"),
+            _anat_row("01", "vis2"),
+            _anat_row("02", "baseline"),
+            _func_row("01", "baseline"),
+            _func_row("01", "vis2"),
+            _func_row("02", "baseline"),
         )
         inputs, skipped = discover_template_inputs(df)
         assert [ti.sub for ti in inputs] == ["01"]
@@ -88,9 +128,12 @@ class TestDiscoverTemplateInputs:
     def test_excludes_existing_longitudinal(self) -> None:
         """Pre-existing longitudinal templates are not re-included as inputs."""
         df = _df(
-            _brain_row("01", "baseline"),
-            _brain_row("01", "vis2"),
-            _brain_row("01", "longitudinal"),
+            _anat_row("01", "baseline"),
+            _anat_row("01", "vis2"),
+            _anat_row("01", "longitudinal"),
+            _func_row("01", "baseline"),
+            _func_row("01", "vis2"),
+            _func_row("01", "longitudinal"),
         )
         inputs, skipped = discover_template_inputs(df)
         assert len(inputs) == 1
@@ -111,10 +154,10 @@ class TestDiscoverTemplateInputs:
         duplicate LTA filenames in the mri_robust_template invocation.
         """
         df = _df(
-            _brain_row("01", "test"),
-            _brain_row("01", "test", space="MNI152NLin6Asym"),
-            _brain_row("01", "retest"),
-            _brain_row("01", "retest", space="MNI152NLin6Asym"),
+            _anat_row("01", "test"),
+            _anat_row("01", "test", space="MNI152NLin6Asym"),
+            _anat_row("01", "retest"),
+            _anat_row("01", "retest", space="MNI152NLin6Asym"),
         )
         inputs, skipped = discover_template_inputs(df)
         assert len(inputs) == 1
@@ -131,6 +174,8 @@ class TestExportTemplate:
         """Template + per-session xfms land at the expected BIDS paths."""
         template_src = tmp_path / "src_template.nii.gz"
         template_src.write_bytes(b"\x00")
+        template_bold_src = tmp_path / "src_bold_template.nii.gz"
+        template_bold_src.write_bytes(b"\x00")
         xfm_baseline = tmp_path / "xfm_baseline.txt"
         xfm_baseline.write_text("baseline")
         xfm_vis2 = tmp_path / "xfm_vis2.txt"
@@ -138,6 +183,7 @@ class TestExportTemplate:
 
         outputs = LongitudinalTemplateOutputs(
             template=template_src,
+            bold_templates={BoldKey(task="test"): template_bold_src},
             sessions=["baseline", "vis2"],
             transforms=[xfm_baseline, xfm_vis2],
         )

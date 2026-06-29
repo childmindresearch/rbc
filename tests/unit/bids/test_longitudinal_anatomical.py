@@ -99,6 +99,7 @@ def _anat_row(
         "sub": sub,
         "ses": ses,
         "desc": desc,
+        "res": None,
         "root": "/data",
         "path": path,
         "extra_entities": extra or [],

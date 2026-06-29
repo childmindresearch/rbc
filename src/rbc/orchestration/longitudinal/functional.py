@@ -10,7 +10,7 @@ from rbc.bids.longitudinal.functional import (
     export_longitudinal_func,
     resolve_longitudinal_func,
 )
-from rbc.bids.session import iter_session_files
+from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.workflows.longitudinal.functional import (
@@ -53,7 +53,7 @@ def process_func(
         Workflow outputs for in-memory handoff to downstream stages.
     """
     row = func_df.filter(suffix=Suffix.BOLD).row(0, named=True)
-    ents = extract_entities(row, ["task", "run"])
+    ents = extract_entities(row, list(_FUNC_ENTITY_KEYS))
 
     func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities=ents)
     tpl_q = pipe_ctx.bids(datatype=Datatype.ANAT).derive(ses="longitudinal")
@@ -64,6 +64,7 @@ def process_func(
         func_df,
         tpl_df,
         ses=pipe_ctx.ses,  # type: ignore[arg-type]
+        task=ents["task"],
         regressors=regressors,
     )
     func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
