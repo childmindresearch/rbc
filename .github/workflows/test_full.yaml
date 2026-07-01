@@ -39,7 +39,7 @@ jobs:
     - run: uv sync
 
     - name: Cache ds000114 longitudinal fixture
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: tests/data/ds000114
         key: ds000114-${{ hashFiles('scripts/download_ds000114.py') }}
