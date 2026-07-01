@@ -17,7 +17,7 @@ on:
         type: boolean
       styxcache_dir:
         description: Override persistent styxcache directory on the self-hosted runner
-        default: ""
+        default: ''
         type: string
 
 concurrency:
@@ -27,14 +27,15 @@ concurrency:
 jobs:
   test:
     runs-on: arcana
+    environment: self-hosted-actions
     env:
       STYXCACHE_DIR_OVERRIDE: ${{ inputs.styxcache_dir }}
-      STYXCACHE_MAX_GB: "50"
+      STYXCACHE_MAX_GB: '50'
     steps:
     - uses: actions/checkout@v6
     - uses: astral-sh/setup-uv@v8.1.0
       with:
-        version: "0.11.3"
+        version: 0.11.3
         enable-cache: true # not automatic on self-hosted runners
     - run: uv sync
 
