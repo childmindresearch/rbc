@@ -1098,7 +1098,7 @@ docs = [
 requires-dist = [
     { name = "bids2table", specifier = "==2.1.2" },
     { name = "nibabel", specifier = ">=5.3.3" },
-    { name = "niwrap", specifier = ">=0.9.3" },
+    { name = "niwrap", specifier = ">=0.9.3,<1.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "polars", specifier = ">=1.41.2" },
     { name = "scipy", specifier = ">=1.17.0" },
