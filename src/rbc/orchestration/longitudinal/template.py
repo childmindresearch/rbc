@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import niwrap
+import polars as pl
 from tqdm import tqdm
 
 from rbc.bids import Datatype, load_table
@@ -89,7 +90,7 @@ def run(
     df = load_table(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
-    df = filters.apply(df)
+    df = filters.apply(df, pl.col("datatype").is_not_null())
 
     inputs, skipped = discover_template_inputs(df)
     for sub in skipped:

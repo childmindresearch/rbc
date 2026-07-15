@@ -59,7 +59,11 @@ def iter_sessions_with_template(
     df = load_table(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
-    group_df = filters.apply(df, pl.col("ses") != "longitudinal")
+    group_df = filters.apply(
+        df,
+        pl.col("datatype").is_not_null(),
+        pl.col("ses") != "longitudinal",
+    )
 
     for _, sub_ses_group in tqdm(
         group_df.group_by(SUB_SES_QUERY, maintain_order=True),

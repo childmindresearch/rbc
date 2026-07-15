@@ -133,6 +133,7 @@ def run(
 
     df = filters.apply(
         df,
+        pl.col("datatype").is_not_null(),
         pl.col("ses").ne_missing("longitudinal"),
         pl.col("space").is_null(),
     )
