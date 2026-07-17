@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import numpy as np
+import polars as pl
 
 from rbc.core.niwrap import generate_exec_folder
 
@@ -113,7 +114,7 @@ class TimeseriesOutputs(NamedTuple):
     """Outputs from :func:`compute_timeseries`."""
 
     timeseries: Path
-    correlation_matrix: Path
+    connectome: Path
     labels: np.ndarray
 
 
@@ -134,7 +135,7 @@ def compute_timeseries(
             *in_file*.
 
     Returns:
-        :class:`TimeseriesOutputs` containing paths to the TSV files and
+        :class:`TimeseriesOutputs` containing paths to the Parquet files and
         the ROI labels array.
     """
     import nibabel as nib
@@ -166,14 +167,19 @@ def compute_timeseries(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     stem = in_file.name.split(".nii")[0]
-    ts_path = out_dir / f"{stem}_timeseries.tsv"
-    corr_path = out_dir / f"{stem}_correlation_matrix.tsv"
+    ts_path = out_dir / f"{stem}_timeseries.parquet"
+    corr_path = out_dir / f"{stem}_connectome.parquet"
 
-    np.savetxt(ts_path, ts, delimiter="\t")
-    np.savetxt(corr_path, corr, delimiter="\t")
+    # ROIs
+    roi_names = [str(label) for label in labels]
+    # Timepoints
+    tp_names = [str(i) for i in range(ts.shape[1])]
+
+    pl.DataFrame(ts, schema=tp_names).write_parquet(ts_path)
+    pl.DataFrame(corr, schema=roi_names).write_parquet(corr_path)
 
     return TimeseriesOutputs(
         timeseries=ts_path,
-        correlation_matrix=corr_path,
+        connectome=corr_path,
         labels=labels,
     )
