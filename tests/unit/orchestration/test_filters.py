@@ -22,7 +22,7 @@ def bids_df() -> pl.DataFrame:
     """
     return pl.DataFrame(
         {
-            "sub": ["01", "01", "01", "02", "02", "01", "01", "01"],
+            "sub": ["01", "01", "01", "02", "02", "01", "01", "01", "01"],
             "ses": [
                 "baseline",
                 "baseline",
@@ -32,6 +32,7 @@ def bids_df() -> pl.DataFrame:
                 "longitudinal",
                 "baseline",
                 "baseline",
+                None,
             ],
             "datatype": [
                 "anat",
@@ -42,11 +43,32 @@ def bids_df() -> pl.DataFrame:
                 "anat",
                 "func",
                 "func",
+                None,
             ],
-            "suffix": ["T1w", "bold", "bold", "T1w", "bold", "T1w", "bold", "bold"],
-            "task": [None, "rest", "nback", None, "rest", None, "rest", "rest"],
-            "space": [None, None, None, None, None, None, "MNI152NLin6Asym", "T1w"],
-            "desc": [None, None, None, None, None, None, "preproc", "preproc"],
+            "suffix": [
+                "T1w",
+                "bold",
+                "bold",
+                "T1w",
+                "bold",
+                "T1w",
+                "bold",
+                "bold",
+                "sessions",
+            ],
+            "task": [None, "rest", "nback", None, "rest", None, "rest", "rest", None],
+            "space": [
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                "MNI152NLin6Asym",
+                "T1w",
+                None,
+            ],
+            "desc": [None, None, None, None, None, None, "preproc", "preproc", None],
         }
     )
 
@@ -63,7 +85,7 @@ class TestFiltersApply:
         """Participant filter keeps only matching subjects."""
         result = Filters(participant_label=["01"]).apply(bids_df)
         assert set(result["sub"].unique().to_list()) == {"01"}
-        assert len(result) == 6
+        assert len(result) == 7
 
     def test_session_filter(self, bids_df: pl.DataFrame) -> None:
         """Session filter keeps only matching sessions."""
@@ -105,6 +127,12 @@ class TestFiltersApply:
         """Multiple session labels are OR-combined."""
         result = Filters(session_label=["baseline", "vis2"]).apply(bids_df)
         assert "longitudinal" not in result["ses"].to_list()
+
+    def test_datatype_filter(self, bids_df: pl.DataFrame) -> None:
+        """Datatype filter keeps only those in a datatype directory."""
+        result = Filters().apply(bids_df, pl.col("datatype").is_not_null())
+        assert len(result) == 8
+        assert all(result["datatype"].is_not_null())
 
 
 class TestFiltersWithBaseExpressions:
