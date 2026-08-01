@@ -24,10 +24,10 @@ rbc = "rbc.cli.main:main"
 [dependency-groups]
 dev = [
   "pytest>=9.1.1",
-  "mypy>=2.1.0",
-  "pre-commit>=4.0.1",
+  "mypy>=2.3.0",
+  "pre-commit>=4.6.1",
   "pytest-cov>=7.0.0",
-  "ruff>=0.15.20",
+  "ruff>=0.16.0",
   "deptry>=0.23.0",
   "pytest-xdist[psutil]>=3.8.0"
 ]
@@ -117,5 +117,5 @@ convention = "google"
 module-name = ["rbc", "rbc_resources"]
 
 [build-system]
-requires = ["uv_build>=0.11.26,<0.12.0"]
+requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
