@@ -15,7 +15,7 @@ dependencies = [
   "scipy>=1.18.0",
   "styxcache>=0.2.0,<0.3",
   "styxpodman>=0.1.1",
-  "tqdm>=4.68.3"
+  "tqdm>=4.70.0"
 ]
 
 [project.scripts]
