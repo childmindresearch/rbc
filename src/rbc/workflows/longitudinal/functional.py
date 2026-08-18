@@ -82,6 +82,7 @@ def longitudinal_process(
         :class:`FunctionalLongOutputs` with all inputs transformed to
         longitudinal template space and per-regressor regression outputs.
     """
+    _logger.info("Transforming functional outputs to longitudinal template space")
     bold_to_tpl_xfm = compose_transform(
         ref=template,
         bold_to_anat_itk=bold_to_anat_itk,
