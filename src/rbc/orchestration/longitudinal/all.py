@@ -50,7 +50,7 @@ def run(
     regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
     fs_license: Path | None = None,
     atlas_files: Mapping[str, Path] | None = None,
-    fwhm: float = 6.0,
+    smooth: float | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run the full longitudinal pipeline (template -> anat -> func -> metrics -> qc).
@@ -68,7 +68,7 @@ def run(
         fs_license: Optional FreeSurfer license for template generation.
         atlas_files: Mapping of atlas labels to NIfTI file paths.
             If ``None``, metrics are skipped.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -144,13 +144,14 @@ def run(
                         template_brain_mask=func_outputs.bold_mask,
                         tr=tr,
                         atlas_files=atlas_files,
-                        fwhm=fwhm,
+                        smooth=smooth,
                     )
                     export_metrics(
                         func_long,
                         metrics_outputs,
                         regressor=regressor,
                         atlases=list(atlas_files),
+                        smooth=smooth,
                     )
 
             # QC (in-memory from func_outputs + anat_outputs)

@@ -40,6 +40,7 @@ def process_func(
     tpl_df: pl.DataFrame,
     *,
     regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
+    smooth: float | None = None,
 ) -> FunctionalLongOutputs:
     """Handle functional longitudinal processing for one BOLD run.
 
@@ -48,6 +49,7 @@ def process_func(
         func_df: Functional derivative DataFrame for this run.
         tpl_df: Longitudinal template DataFrame.
         regressors: Regressor strategies to apply in longitudinal space.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
 
     Returns:
         Workflow outputs for in-memory handoff to downstream stages.
@@ -67,9 +69,9 @@ def process_func(
         task=ents["task"],
         regressors=regressors,
     )
-    func_outputs = functional_longitudinal(**resolved)  # type: ignore[arg-type]
+    func_outputs = functional_longitudinal(**resolved, smooth=smooth)  # type: ignore[arg-type]
     fex = func_q.derive(space="longitudinal")
-    export_longitudinal_func(fex, func_outputs, regressors=regressors)
+    export_longitudinal_func(fex, func_outputs, regressors=regressors, smooth=smooth)
     return func_outputs
 
 
@@ -79,6 +81,7 @@ def run(
     *,
     filters: Filters,
     regressors: Sequence[Literal["36-parameter", "aCompCor"]] = ("36-parameter",),
+    smooth: float | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
     """Run longitudinal functional processing for all matching subjects/sessions.
@@ -90,6 +93,7 @@ def run(
         output_dir: Output directory for derivatives.
         filters: Participant/session/task filters applied before grouping.
         regressors: Regressor strategies to apply in longitudinal space.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
         runner_config: Execution backend configuration.
     """
     config = runner_config or RunnerConfig()
@@ -111,6 +115,7 @@ def run(
                 func_df=func_df,
                 tpl_df=tpl_df,
                 regressors=regressors,
+                smooth=smooth,
             )
         pipe_ctx.ensure_dataset_description()
 

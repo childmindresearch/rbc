@@ -33,6 +33,7 @@ class TestFunctionalArgs:
             regressor=["36-parameter"],
             task=None,
             tr=None,
+            smooth=None,
             tmp_dir=None,
             func_template=None,
             func_template_mask=None,

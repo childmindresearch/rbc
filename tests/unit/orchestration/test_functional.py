@@ -248,7 +248,7 @@ class TestAllPipelineAnatHandoff:
                 filters=Filters(participant_label=["01"]),
                 regressors=["36-parameter"],
                 atlas_files={},
-                fwhm=6.0,
+                smooth=6.0,
                 start_tr=2,
             )
 

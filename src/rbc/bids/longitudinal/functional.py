@@ -16,6 +16,12 @@ if TYPE_CHECKING:
     from rbc.workflows.longitudinal.functional import FunctionalLongOutputs
 
 
+def _smooth_label(fwhm: float, precision: int | None = None) -> str:
+    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1')."""
+    s = f"{fwhm:.{precision}f}" if precision is not None else str(fwhm)
+    return "sm" + s.rstrip("0").rstrip(".").replace(".", "p")
+
+
 def resolve_longitudinal_func(
     func_q: Bids,
     tpl_q: Bids,
@@ -83,6 +89,7 @@ def export_longitudinal_func(
     outputs: FunctionalLongOutputs,
     *,
     regressors: Sequence[str],
+    smooth: float | None = None,
 ) -> None:
     """Export longitudinal functional outputs.
 
@@ -90,6 +97,7 @@ def export_longitudinal_func(
         fex: Bids builder with ``space="longitudinal"`` and identity entities.
         outputs: Results from the longitudinal functional workflow.
         regressors: Regressor strategy names that were applied.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` if not requested.
     """
     fex.save(outputs.sbref, suffix=Suffix.SBREF)
     fex.save(outputs.bold, suffix=Suffix.BOLD, desc="preproc")
@@ -114,3 +122,10 @@ def export_longitudinal_func(
             desc="preproc",
             extra={"reg": bids_safe_label(reg)},
         )
+        if outputs.cleaned_bold_smooth is not None and smooth is not None:
+            fex.save(
+                outputs.cleaned_bold_smooth[reg],
+                suffix=Suffix.BOLD,
+                desc=f"{_smooth_label(smooth)}preproc",
+                extra={"reg": bids_safe_label(reg)},
+            )

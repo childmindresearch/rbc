@@ -29,14 +29,15 @@ class AllLongArgs(LongitudinalBaseArgs):
 
     registration_template: Path
     atlas_files: dict[str, Path]
-    fwhm: float
+    smooth: float | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> AllLongArgs:
         """Validate namespace for the full longitudinal pipeline subcommand."""
-        _validate_positive(ns.fwhm, "FWHM")
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_task(ns.task)
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
@@ -44,7 +45,7 @@ class AllLongArgs(LongitudinalBaseArgs):
                 ns.anat_template, REGISTRATION_TEMPLATES.brain_1mm
             ),
             atlas_files=_resolve_atlas_args(ns.atlas),
-            fwhm=ns.fwhm,
+            smooth=ns.smooth,
             regressor=ns.regressor,
             task=ns.task,
         )
@@ -63,7 +64,7 @@ def main(args: AllLongArgs) -> int:
         regressors=args.regressor,
         fs_license=args.fs_license,
         atlas_files=args.atlas_files,
-        fwhm=args.fwhm,
+        smooth=args.smooth,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -117,10 +118,12 @@ def register_command(
         ),
     )
     parser.add_argument(
-        "--fwhm",
+        "--smooth",
         type=float,
-        default=6.0,
-        help="Smoothing kernel FWHM in mm.",
+        default=None,
+        metavar="FWHM",
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
+        "If omitted, no smoothing is applied.",
     )
 
     templates = parser.add_argument_group("template overrides")

@@ -38,7 +38,7 @@ class AllArgs(BaseArgs):
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
     task: str | None
     atlas_files: dict[str, Path]
-    fwhm: float
+    smooth: float | None
     start_tr: int
     tr: float | None
     brain_extraction_templates: BrainExtractionTemplates
@@ -51,7 +51,8 @@ class AllArgs(BaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> AllArgs:
         """Validate all-workflow arguments."""
         _validate_task(ns.task)
-        _validate_positive(ns.fwhm, "FWHM")
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_positive(ns.start_tr, "Start TR")
         _validate_positive(ns.tr, "TR")
         atlas_files = _resolve_atlas_args(ns.atlas)
@@ -60,7 +61,7 @@ class AllArgs(BaseArgs):
             regressor=ns.regressor,
             task=ns.task,
             atlas_files=atlas_files,
-            fwhm=ns.fwhm,
+            smooth=ns.smooth,
             start_tr=ns.start_tr,
             tr=ns.tr,
             brain_extraction_templates=_build_brain_extraction_templates(ns),
@@ -91,7 +92,7 @@ def main(args: AllArgs) -> int:
         ),
         regressors=args.regressor,
         atlas_files=args.atlas_files,
-        fwhm=args.fwhm,
+        smooth=args.smooth,
         start_tr=args.start_tr,
         tr=args.tr,
         brain_extraction_templates=args.brain_extraction_templates,
@@ -144,10 +145,11 @@ def register_command(
         ),
     )
     parser.add_argument(
-        "--fwhm",
+        "--smooth",
         type=float,
-        default=6.0,
-        help="Smoothing kernel FWHM in mm.",
+        default=None,
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
+        "If omitted, no smoothing is applied.",
     )
     parser.add_argument(
         "--start-tr",
@@ -191,13 +193,13 @@ def register_command(
         "--func-template",
         type=_validate_nifti_path,
         default=None,
-        help="Custom brain template for functional resampling (default: MNI152 2 mm).",
+        help="Custom brain template for functional resampling (default: MNI152 2mm).",
     )
     templates.add_argument(
         "--func-template-mask",
         type=_validate_nifti_path,
         default=None,
-        help="Custom brain mask for functional masking (default: MNI152 2 mm).",
+        help="Custom brain mask for functional masking (default: MNI152 2mm).",
     )
     templates.add_argument(
         "--func-template-ref",

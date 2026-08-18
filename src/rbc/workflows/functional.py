@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from niwrap import ants
 
 from rbc.core.common import deoblique_and_reorient
+from rbc.core.common import smooth as apply_smooth
 from rbc.core.fsl2itk import mat_to_itk
 from rbc.core.functional import (
     PEPolarFieldmap,
@@ -82,6 +83,9 @@ class FunctionalOutputs(NamedTuple):
         bpf_regressor_file: Bandpass-filtered nuisance regressor ``.1D``
             file, matching what ``3dTproject -bandpass`` actually applied.
             For BIDS export only.
+        cleaned_bold_smooth: Spatially smoothed nuisance-regressed
+            & bandpass-filtered BOLD, or *None* if no smoothing requested.
+        regressor_file: Bandpass-filtered nuisance regressor ``.1D`` file.
         template_brain_mask: Brain mask warped to template space.
     """
 
@@ -104,6 +108,7 @@ class FunctionalOutputs(NamedTuple):
     template_bold: Path
     regressed_bold: dict[str, Path]
     cleaned_bold: dict[str, Path]
+    cleaned_bold_smooth: dict[str, Path] | None
     regressor_file: dict[str, Path]
     bpf_regressor_file: dict[str, Path]
     template_brain_mask: Path
@@ -152,6 +157,8 @@ def single_session_preprocess(
     func_template: Path = REGISTRATION_TEMPLATES.brain_2mm,
     func_template_mask: Path = REGISTRATION_TEMPLATES.brain_mask_2mm,
     func_template_ref: Path = REGISTRATION_TEMPLATES.bold_ref,
+    *,
+    smooth: float | None = None,
 ) -> FunctionalOutputs:
     """Run the full functional preprocessing pipeline for one session.
 
@@ -181,6 +188,7 @@ def single_session_preprocess(
     16. Nuisance regression with simultaneous bandpass filtering
         on template-space BOLD (Hallquist 2013).
     17. Export bandpass-filtered regressors.
+    18. Optionally export smoothed nuisance regressed & bandpass-filtered BOLD.
 
     Args:
         in_bold: Raw BOLD timeseries to preprocess.
@@ -200,6 +208,9 @@ def single_session_preprocess(
         func_template: Brain template for functional resampling (default: MNI152 2 mm).
         func_template_mask: Brain mask for functional masking (default: MNI152 2 mm).
         func_template_ref: BOLD reference image for functional masking.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
+            Applied to cleaned BOLD after regression and bandpass filtering,
+            export-only.
 
     Returns:
         All output paths bundled in a :class:`FunctionalOutputs` tuple.
@@ -369,6 +380,19 @@ def single_session_preprocess(
             f_high=0.1,
         )
 
+    # 18. Optionally smooth cleaned BOLD (export-only, post-regression).
+    #     Smoothing is applied after regression and bandpass filtering.
+    cleaned_bold_smooth: dict[str, Path] | None = None
+    if smooth is not None:
+        cleaned_bold_smooth = {}
+        for regressor in regressor_set:
+            _logger.info("%s smoothing cleaned BOLD (fwhm=%.1f mm)", regressor, smooth)
+            cleaned_bold_smooth[regressor] = apply_smooth(
+                cleaned[regressor].regressed_bold,
+                tmpl_brain,
+                fwhm=smooth,
+            )
+
     return FunctionalOutputs(
         reoriented_bold=reoriented.out_file,
         truncated_bold=truncated,
@@ -391,5 +415,6 @@ def single_session_preprocess(
         cleaned_bold={r: cleaned[r].regressed_bold for r in regressor_set},
         regressor_file=raw_regressors,
         bpf_regressor_file=filtered_regressors,
+        cleaned_bold_smooth=cleaned_bold_smooth,
         template_brain_mask=tmpl_brain,
     )

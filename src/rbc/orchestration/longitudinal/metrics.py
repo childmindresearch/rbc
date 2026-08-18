@@ -58,7 +58,7 @@ def process_metrics(
     tr: float,
     regressor: str,
     atlas_files: Mapping[str, Path],
-    fwhm: float,
+    smooth: float | None = None,
 ) -> MetricsOutputs:
     """Run metrics for a single regressor on a single longitudinal BOLD run.
 
@@ -71,7 +71,7 @@ def process_metrics(
         tr: Repetition time in seconds.
         regressor: Regressor name.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
 
     Returns:
         Metrics outputs for this run/regressor.
@@ -82,9 +82,15 @@ def process_metrics(
         template_brain_mask=func_outputs.bold_mask,
         tr=tr,
         atlas_files=atlas_files,
-        fwhm=fwhm,
+        smooth=smooth,
     )
-    export_metrics(func_long, outputs, regressor=regressor, atlases=list(atlas_files))
+    export_metrics(
+        func_long,
+        outputs,
+        regressor=regressor,
+        atlases=list(atlas_files),
+        smooth=smooth,
+    )
     return outputs
 
 
@@ -95,7 +101,7 @@ def run(
     filters: Filters,
     regressors: Sequence[str],
     atlas_files: Mapping[str, Path],
-    fwhm: float,
+    smooth: float | None = None,
     tr: float | None = None,
     runner_config: RunnerConfig | None = None,
 ) -> None:
@@ -113,7 +119,7 @@ def run(
         filters: Participant/session/task filters.
         regressors: Regressor strategy names to compute metrics for.
         atlas_files: Mapping of atlas labels to resolved NIfTI file paths.
-        fwhm: Smoothing kernel FWHM in mm.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
         tr: TR override in seconds, or ``None`` to read from headers.
         runner_config: Execution backend configuration.
     """
@@ -152,13 +158,14 @@ def run(
                     template_brain_mask=resolved["template_brain_mask"],
                     tr=run_tr,
                     atlas_files=atlas_files,
-                    fwhm=fwhm,
+                    smooth=smooth,
                 )
                 export_metrics(
                     func_long_q,
                     outputs,
                     regressor=regressor,
                     atlases=list(atlas_files),
+                    smooth=smooth,
                 )
 
         pipe_ctx.ensure_dataset_description()
