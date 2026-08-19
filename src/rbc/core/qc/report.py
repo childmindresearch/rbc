@@ -63,7 +63,8 @@ DVARS_COLORS = ("#4fc3f7", "#fdd835", "#66bb6a", "#ce93d8", "#ffb74d")
 
 # -- Rendering limits --
 MAX_BG_VOLUMES = 32
-MAX_CARPET_ELEMENTS = 20_000_000
+N_CARPET_VOXELS = 2000
+CARPET_VMAX = 2.0
 MOSAIC_WIDTH = 1600
 N_SLICES = 7
 PANEL_ALPHA = 0.35
@@ -405,40 +406,54 @@ def render_displacement_traces(
     )
 
 
-def render_carpet(ax: Axes, data4d: np.ndarray, mask3d: np.ndarray) -> None:
-    """Plot an in-mask voxel-by-time carpet of 4-D BOLD data.
+def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> None:
+    """Plot a carpet of sampled in-mask BOLD timeseries with an axial slice.
+
+    Layout: the left panel shows the axial mean slice with the most signal
+    for orientation; the right panel draws a seeded random sample of
+    in-mask voxels, ordered by tSNR, z-scored per voxel and displayed
+    grayscale with a +/-2 range.
 
     Args:
-        ax: Matplotlib axes to render into.
+        fig: Matplotlib figure to render into.
         data4d: 4-D array ``(X, Y, Z, T)``.
         mask3d: 3-D boolean-compatible brain mask.
     """
-    voxels = np.ascontiguousarray(data4d[mask3d > 0], dtype=np.float32)  # (V, T)
-    v, t = voxels.shape
-    stride = 1
-    while v * t > MAX_CARPET_ELEMENTS and stride * 2 <= v:
-        stride *= 2
-    if stride > 1:
-        voxels = voxels[::stride]
+    t = data4d.shape[-1]
+    voxel_idx = np.flatnonzero(mask3d.reshape(-1))
+    n = min(N_CARPET_VOXELS, voxel_idx.size)
+    rng = np.random.default_rng(42)
+    ts = data4d.reshape(-1, t)[rng.permutation(voxel_idx)[:n]]
 
-    mu = voxels.mean(axis=1, keepdims=True)
-    sd = voxels.std(axis=1, keepdims=True)
-    sd[sd == 0] = 1.0
-    z = (voxels - mu) / sd
+    # Order rows by tSNR (high-SNR on top) for a banded, structured look.
+    tsnr = ts.mean(axis=1) / (ts.std(axis=1) + 1e-6)
+    ts = ts[np.argsort(tsnr)[::-1]]
 
-    ax.imshow(
-        z.T,
-        aspect="auto",
-        cmap="viridis",
-        interpolation="nearest",
-        origin="lower",
-        vmin=-3,
-        vmax=3,
+    carpet = ts - ts.mean(axis=1, keepdims=True)
+    carpet = carpet / (carpet.std(axis=1, keepdims=True) + 1e-6)
+
+    gs = fig.add_gridspec(1, 3)
+    ax_slice = fig.add_subplot(gs[0, 0])
+    mean_data = data4d.mean(axis=-1)
+    z = _axial_slices(mean_data, 1)[0]
+    ax_slice.imshow(
+        mean_data[:, :, z].T, cmap="gray", vmin=0, vmax=_robust_vmax(mean_data)
     )
-    ax.set_xlabel("Volume", fontsize=8)
-    ax.set_ylabel("In-mask voxel (z-scored)", fontsize=8)
-    ax.set_title("Cleaned BOLD carpet", fontsize=10, fontweight="bold")
-    _style_axes(ax)
+    ax_slice.axis("off")
+
+    ax_carpet = fig.add_subplot(gs[0, 1:])
+    ax_carpet.imshow(
+        carpet,
+        aspect="auto",
+        cmap="gray",
+        interpolation="nearest",
+        vmin=-CARPET_VMAX,
+        vmax=CARPET_VMAX,
+    )
+    ax_carpet.set_yticks([])
+    ax_carpet.set_xticks(np.arange(0, t, max(1, t // 10)))
+    ax_carpet.set_xlabel("Volume", fontsize=8)
+    _style_axes(ax_carpet)
 
 
 def generate_qc_report(
@@ -556,7 +571,7 @@ def generate_qc_report(
     # -- Coregistration: BOLD mask warped into T1w space --
     warped_bold_mask = _warp_mask(bold_mask, brain_mask, bold_to_anat_matrix)
     brain_mask_data = _load_data(brain_mask)
-    fig = plt.figure(figsize=(14, 4))
+    fig = plt.figure(figsize=(16, 5))
     fig.set_facecolor(BG_COLOR)
     render_lightbox(
         fig.add_subplot(1, 1, 1),
@@ -577,7 +592,7 @@ def generate_qc_report(
     ]
 
     # -- Normalization: template brain mask vs. MNI standard --
-    fig = plt.figure(figsize=(14, 4))
+    fig = plt.figure(figsize=(16, 5))
     fig.set_facecolor(BG_COLOR)
     render_lightbox(
         fig.add_subplot(1, 1, 1),
@@ -607,7 +622,7 @@ def generate_qc_report(
         dvars_curves[section.regressor] = dvars(data, tmpl_mask_data)
         del data
 
-    fig = plt.figure(figsize=(16, 4))
+    fig = plt.figure(figsize=(18, 7))
     fig.set_facecolor(BG_COLOR)
     render_motion_parameters(fig.add_subplot(1, 2, 1), mparams)
     render_displacement_traces(
@@ -628,9 +643,9 @@ def generate_qc_report(
     # -- One carpet section per regressor --
     for section in sections:
         data = _load_data(section.cleaned_bold)
-        fig = plt.figure(figsize=(14, 6))
+        fig = plt.figure(figsize=(16, 7))
         fig.set_facecolor(BG_COLOR)
-        render_carpet(fig.add_subplot(1, 1, 1), data, tmpl_mask_data)
+        render_carpet(fig, data, tmpl_mask_data)
         carpet_png = figure_to_png(fig)
         del data
         label = section.regressor
@@ -640,14 +655,15 @@ def generate_qc_report(
             "<figure>",
             f'<img alt="{esc(label)} carpet plot" src="{carpet_png}">',
             f"<figcaption>Carpet plot of the cleaned BOLD for {esc(label)}: "
-            "in-mask voxels versus time (z-scored, &plusmn;3).</figcaption>",
+            "a seeded sample of in-mask voxels (2,000) ordered by tSNR, z-scored "
+            "(&plusmn;2), beside the axial mean slice for orientation.</figcaption>",
             "</figure>",
             "</section>",
         ]
 
     parts += [
         "<footer>",
-        f"<p>Generated by RBC. Pass criteria: {criteria}. "
+        f"<p>Generated by RBC. "
         f"Regressor(s): {esc(', '.join(s.regressor for s in sections))}.</p>",
         "</footer>",
         "</body>",

@@ -249,6 +249,6 @@ class TestSharedUtilities:
         rng = np.random.default_rng(0)
         data4d = rng.random((*_SHAPE3, _N_VOLS)).astype(np.float32)
         fig = plt.figure()
-        render_carpet(fig.add_subplot(1, 1, 1), data4d, _sphere())
+        render_carpet(fig, data4d, _sphere())
         uri = figure_to_png(fig)
         assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
