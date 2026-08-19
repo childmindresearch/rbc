@@ -164,8 +164,10 @@ class TestGenerateQcReport:
             "aCompCor",
             "0.2",
             "0.8",
-            "PASS",
-            "FAIL",
+            "Dice",
+            "Jaccard",
+            "Coverage",
+            "QC FAILED",
         ):
             assert needle in html, needle
         pngs = re.findall(r"data:image/png;base64,([A-Za-z0-9+/=]+)", html)
@@ -220,16 +222,11 @@ class TestSharedUtilities:
         assert uri.startswith("data:image/png;base64,")
         assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
 
-    def test_metric_rows_passed(self) -> None:
-        """metric_rows returns five cells ending in PASS."""
-        rows = metric_rows(_metrics("36-parameter"), passed=True)
-        assert len(rows) == 5
-        assert rows[-1] == "PASS"
-
-    def test_metric_rows_failed(self) -> None:
-        """metric_rows ends in FAIL when the run did not pass."""
-        rows = metric_rows(_metrics("36-parameter"), passed=False)
-        assert rows[-1] == "FAIL"
+    def test_metric_rows(self) -> None:
+        """metric_rows returns the eleven numeric summary cells."""
+        rows = metric_rows(_metrics("36-parameter"))
+        assert len(rows) == 11
+        assert all(re.fullmatch(r"[\d.]+", v) for v in rows)
 
     def test_render_lightbox_with_overlay(self) -> None:
         """render_lightbox draws a background mosaic plus a mask overlay."""

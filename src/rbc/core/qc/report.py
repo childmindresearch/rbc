@@ -71,7 +71,7 @@ PANEL_ALPHA = 0.35
 
 SUMMARY_CSS: str = """
 :root { color-scheme: dark; }
-body { margin: 0 auto; max-width: 1100px; padding: 24px; background: #1a1a2e;
+body { margin: 0 auto; max-width: 1400px; padding: 24px; background: #1a1a2e;
        color: #e0e0e0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
 h1 { font-size: 1.5rem; margin: 0 0 8px; }
 h2 { border-bottom: 1px solid #4fc3f7; padding-bottom: 4px; font-size: 1.1rem;
@@ -87,8 +87,6 @@ th, td { padding: 6px 10px; border: 1px solid #444444; text-align: left;
          font-size: 0.9rem; }
 thead th { background: #333355; color: #4fc3f7; }
 tbody tr { background: #262640; }
-td.pass { color: #66bb6a; font-weight: 700; }
-td.fail { color: #ef5350; font-weight: 700; }
 figure { margin: 0 0 16px; background: #0d0d1a; border: 1px solid #333333;
          padding: 8px; }
 img { max-width: 100%; height: auto; display: block; }
@@ -238,23 +236,30 @@ def section_header(title: str) -> str:
     return f"<h2>{html.escape(title)}</h2>"
 
 
-def metric_rows(metrics: XCPQCMetrics, *, passed: bool) -> list[str]:
+def metric_rows(metrics: XCPQCMetrics) -> list[str]:
     """Return the formatted summary-table cells for one regressor.
 
     Args:
         metrics: XCP-style QC metrics row.
-        passed: Whether this run passes the RBC QC thresholds.
 
     Returns:
         Cell values in column order: mean FD (mm), censored volumes,
-        final mean DVARS, normalization cross-correlation, status.
+        final mean DVARS, then coregistration Dice, Jaccard,
+        cross-correlation, and coverage, then the same four for
+        normalization.
     """
     return [
         f"{metrics.meanFD:.4f}",
         str(metrics.nVolCensored),
         f"{metrics.meanDVFinal:.4f}",
-        f"{metrics.normCrossCorr:.4f}",
-        "PASS" if passed else "FAIL",
+        f"{metrics.coregDice:.3f}",
+        f"{metrics.coregJaccard:.3f}",
+        f"{metrics.coregCrossCorr:.3f}",
+        f"{metrics.coregCoverage:.3f}",
+        f"{metrics.normDice:.3f}",
+        f"{metrics.normJaccard:.3f}",
+        f"{metrics.normCrossCorr:.3f}",
+        f"{metrics.normCoverage:.3f}",
     ]
 
 
@@ -407,12 +412,10 @@ def render_displacement_traces(
 
 
 def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> None:
-    """Plot a carpet of sampled in-mask BOLD timeseries with an axial slice.
+    """Plot a carpet of sampled in-mask BOLD timeseries.
 
-    Layout: the left panel shows the axial mean slice with the most signal
-    for orientation; the right panel draws a seeded random sample of
-    in-mask voxels, ordered by tSNR, z-scored per voxel and displayed
-    grayscale with a +/-2 range.
+    Draws a seeded random sample of in-mask voxels, ordered by tSNR,
+    z-scored per voxel and displayed grayscale with a +/-2 range.
 
     Args:
         fig: Matplotlib figure to render into.
@@ -432,16 +435,7 @@ def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> No
     carpet = ts - ts.mean(axis=1, keepdims=True)
     carpet = carpet / (carpet.std(axis=1, keepdims=True) + 1e-6)
 
-    gs = fig.add_gridspec(1, 3)
-    ax_slice = fig.add_subplot(gs[0, 0])
-    mean_data = data4d.mean(axis=-1)
-    z = _axial_slices(mean_data, 1)[0]
-    ax_slice.imshow(
-        mean_data[:, :, z].T, cmap="gray", vmin=0, vmax=_robust_vmax(mean_data)
-    )
-    ax_slice.axis("off")
-
-    ax_carpet = fig.add_subplot(gs[0, 1:])
+    ax_carpet = fig.add_subplot(1, 1, 1)
     ax_carpet.imshow(
         carpet,
         aspect="auto",
@@ -550,28 +544,27 @@ def generate_qc_report(
         section_header("QC Summary"),
         "<table>",
         "<thead>",
-        "<tr><th>Regressor</th><th>Mean FD (mm)</th><th>Vols censored</th>"
-        "<th>Mean DVARS (final)</th><th>Norm cross-corr</th>"
-        "<th>Criteria</th><th>Status</th></tr>",
+        '<tr><th rowspan="2">Regressor</th>'
+        '<th colspan="3">Denoising</th>'
+        '<th colspan="4">Coregistration</th>'
+        '<th colspan="4">Normalization</th></tr>',
+        "<tr><th>Mean FD (mm)</th><th>Vols censored</th>"
+        "<th>Mean DVARS (final)</th>"
+        "<th>Dice</th><th>Jaccard</th><th>X-corr</th><th>Coverage</th>"
+        "<th>Dice</th><th>Jaccard</th><th>X-corr</th><th>Coverage</th></tr>",
         "</thead>",
         "<tbody>",
     ]
 
     for section in sections:
-        values = metric_rows(section.metrics, passed=section.passed)
-        status_class = "pass" if section.passed else "fail"
-        cells = "".join(f"<td>{esc(v)}</td>" for v in values[:-1])
-        parts.append(
-            f"<tr><td>{esc(section.regressor)}</td>{cells}"
-            f"<td>{criteria}</td>"
-            f'<td class="{status_class}">{esc(values[-1])}</td></tr>'
-        )
+        cells = "".join(f"<td>{esc(v)}</td>" for v in metric_rows(section.metrics))
+        parts.append(f"<tr><td>{esc(section.regressor)}</td>{cells}</tr>")
     parts += ["</tbody>", "</table>", "</section>"]
 
     # -- Coregistration: BOLD mask warped into T1w space --
     warped_bold_mask = _warp_mask(bold_mask, brain_mask, bold_to_anat_matrix)
     brain_mask_data = _load_data(brain_mask)
-    fig = plt.figure(figsize=(16, 5))
+    fig = plt.figure(figsize=(14, 5))
     fig.set_facecolor(BG_COLOR)
     render_lightbox(
         fig.add_subplot(1, 1, 1),
@@ -622,7 +615,7 @@ def generate_qc_report(
         dvars_curves[section.regressor] = dvars(data, tmpl_mask_data)
         del data
 
-    fig = plt.figure(figsize=(18, 7))
+    fig = plt.figure(figsize=(14, 7))
     fig.set_facecolor(BG_COLOR)
     render_motion_parameters(fig.add_subplot(1, 2, 1), mparams)
     render_displacement_traces(
@@ -643,7 +636,7 @@ def generate_qc_report(
     # -- One carpet section per regressor --
     for section in sections:
         data = _load_data(section.cleaned_bold)
-        fig = plt.figure(figsize=(16, 7))
+        fig = plt.figure(figsize=(14, 7))
         fig.set_facecolor(BG_COLOR)
         render_carpet(fig, data, tmpl_mask_data)
         carpet_png = figure_to_png(fig)
@@ -655,8 +648,8 @@ def generate_qc_report(
             "<figure>",
             f'<img alt="{esc(label)} carpet plot" src="{carpet_png}">',
             f"<figcaption>Carpet plot of the cleaned BOLD for {esc(label)}: "
-            "a seeded sample of in-mask voxels (2,000) ordered by tSNR, z-scored "
-            "(&plusmn;2), beside the axial mean slice for orientation.</figcaption>",
+            "a seeded sample of in-mask voxels (2,000) ordered by tSNR, "
+            "z-scored (&plusmn;2).</figcaption>",
             "</figure>",
             "</section>",
         ]
