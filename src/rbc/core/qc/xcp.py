@@ -161,13 +161,18 @@ def write_xcp_qc(metrics: XCPQCMetrics, out_path: Path) -> Path:
     return out_path
 
 
+# QC pass/fail thresholds (single source of truth; see :func:`passes_rbc_qc`).
+FD_THRESHOLD_MM = 0.2
+NORM_CROSS_CORR_THRESHOLD = 0.8
+
+
 def passes_rbc_qc(fd: np.ndarray, norm_cross_corr: float) -> bool:
     """Check whether a run passes RBC quality thresholds.
 
     A run passes if **both** conditions are met:
 
-    - ``median(fd) <= 0.2``
-    - ``norm_cross_corr >= 0.8``
+    - ``median(fd) <= FD_THRESHOLD_MM``
+    - ``norm_cross_corr >= NORM_CROSS_CORR_THRESHOLD``
 
     Args:
         fd: Full framewise displacement timeseries (for median).
@@ -177,4 +182,7 @@ def passes_rbc_qc(fd: np.ndarray, norm_cross_corr: float) -> bool:
         ``True`` if the run passes both thresholds.
     """
     fd = np.asarray(fd, dtype=np.float64).ravel()
-    return bool(float(np.median(fd)) <= 0.2 and norm_cross_corr >= 0.8)
+    return bool(
+        float(np.median(fd)) <= FD_THRESHOLD_MM
+        and norm_cross_corr >= NORM_CROSS_CORR_THRESHOLD
+    )
