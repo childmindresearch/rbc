@@ -32,6 +32,7 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from nibabel.processing import resample_from_to
 
+from rbc.core.fsl2itk import _fsl_to_ras
 from rbc.core.qc.dvars import dvars
 from rbc.core.qc.motion import framewise_displacement_jenkinson
 from rbc.core.qc.xcp import FD_THRESHOLD_MM, NORM_CROSS_CORR_THRESHOLD
@@ -173,23 +174,27 @@ def _load_data(path: Path) -> np.ndarray:
 
 
 def _warp_mask(mask_path: Path, reference_path: Path, xfm_path: Path) -> np.ndarray:
-    """Warp a mask into a reference image's space with an affine matrix.
+    """Warp a mask into a reference image's space with a FSL affine matrix.
 
     Args:
-        mask_path: Source mask NIfTI.
-        reference_path: NIfTI defining the target grid.
-        xfm_path: 4x4 world-space (mm) affine, source -> reference,
-            FSL convention (as written by FLIRT/BBR).
+        mask_path: Source mask NIfTI (native-space BOLD brain mask).
+        reference_path: NIfTI defining the target grid (T1w brain mask).
+        xfm_path: 4x4 FSL matrix (FLIRT/BBR ``.mat``) mapping the source
+            image to the reference in FSL's internal (spacing-scaled,
+            radiological) voxel coordinates -- not a RAS world affine.
 
     Returns:
-        The warped mask data resampled onto the reference grid.
+        The warped mask data resampled onto the reference grid, matching
+        what FSL itself produces with ``flirt -applyxfm -inmat``.
     """
     mask_img = nib.nifti1.load(mask_path)
     ref_img = nib.nifti1.load(reference_path)
     xfm = np.loadtxt(xfm_path)
-    # Compose in world space: the source affine for resample_from_to must
-    # be X @ A_mask so that reference indices map back to mask indices.
-    warped = nib.Nifti1Image(mask_img.get_fdata(), xfm @ mask_img.affine)
+    # Recover the RAS world transform from the FSL matrix with the same
+    # fsl2ras sandwich used for the ANTs conversion; it yields the
+    # reference->source map, so invert for source->reference.
+    source_to_ref = np.linalg.inv(_fsl_to_ras(xfm, ref_img, mask_img))
+    warped = nib.Nifti1Image(mask_img.get_fdata(), source_to_ref @ mask_img.affine)
     warped = resample_from_to(warped, ref_img, order=0)
     return warped.get_fdata()
 

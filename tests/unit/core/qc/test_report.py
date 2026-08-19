@@ -33,9 +33,15 @@ _N_VOLS = 20
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
-def _write_nifti(path: Path, data: np.ndarray, spacing: float = 2.0) -> Path:
-    """Write *data* to *path* as a float32 NIfTI with a diagonal affine."""
-    affine = np.diag([spacing, spacing, spacing, 1.0])
+def _write_nifti(
+    path: Path,
+    data: np.ndarray,
+    spacing: float = 2.0,
+    affine: np.ndarray | None = None,
+) -> Path:
+    """Write *data* to *path* as a float32 NIfTI."""
+    if affine is None:
+        affine = np.diag([spacing, spacing, spacing, 1.0])
     nib.Nifti1Image(data.astype(np.float32), affine).to_filename(str(path))
     return path
 
@@ -244,27 +250,43 @@ class TestSharedUtilities:
         uri = figure_to_png(fig)
         assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
 
-    def test_warp_mask_world_space_composition(self, tmp_path: Path) -> None:
-        """A translated blob lands at the world-space-expected reference index.
+    def test_warp_mask_fsl_internal_units(self, tmp_path: Path) -> None:
+        """A FSL .mat (internal voxel units) lands the blob in T1w space.
 
-        Catches the (A_ref @ X) composition error: the warp must compose the
-        world-space matrix with the *mask's* affine, not the reference's.
+        FSL matrices map in->ref voxels in FSL's spacing-scaled, radiological
+        internal coordinates -- they are NOT RAS world affines. This catches
+        the regression of treating the .mat as a world-mm matrix, which would
+        place the blob at the wrong location (or out of volume).
         """
-        n = 16
-        mask = np.zeros((n, n, n), dtype=np.float32)
+        bold_affine = np.array(
+            [[-2, 0, 0, 40], [0, 2, 0, -40], [0, 0, 2, -40], [0, 0, 0, 1]],
+            dtype=float,
+        )
+        t1w_affine = np.array(
+            [[-1, 0, 0, 50], [0, 1, 0, -50], [0, 0, 1, -50], [0, 0, 0, 1]],
+            dtype=float,
+        )
+        mask = np.zeros((16, 16, 16), dtype=np.float32)
         mask[8, 8, 8] = 1.0
-        bold_mask = _write_nifti(tmp_path / "bold_mask.nii.gz", mask, spacing=3.0)
-        brain_mask = _write_nifti(tmp_path / "brain_mask.nii.gz", np.zeros_like(mask))
-        xfm = np.eye(4)
-        xfm[:3, 3] = (4.0, 0.0, 0.0)
+        bold_mask = _write_nifti(
+            tmp_path / "bold_mask.nii.gz", mask, affine=bold_affine
+        )
+        brain_mask = _write_nifti(
+            tmp_path / "brain_mask.nii.gz", np.zeros((48, 48, 48)), affine=t1w_affine
+        )
+        # World transform BOLD->T1w is a +10 mm x-shift; the equivalent FSL
+        # internal matrix (in->ref, spacing-scaled coordinates) is:
+        xfm = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 10], [0, 0, 1, 10], [0, 0, 0, 1]], dtype=float
+        )
         xfm_path = tmp_path / "xfm.txt"
         np.savetxt(xfm_path, xfm)
 
         warped = _warp_mask(bold_mask, brain_mask, xfm_path)
-        # Blob at mask index (8, 8, 8) is at 24 mm in BOLD world space;
-        # +4 mm shift -> 28 mm in T1w -> index 28 / 2 = 14 along x.
-        assert warped[14, 12, 12] > 0.5
-        assert warped[8, 12, 12] == 0
+        # Blob world (24, -24, -24) + 10 mm x -> (34, -24, -24) -> index (16, 26, 26).
+        assert warped[16, 26, 26] > 0.5
+        # Misreading the .mat as a RAS world affine lands at (26, 36, 36).
+        assert warped[26, 36, 36] == 0
 
     def test_render_carpet(self) -> None:
         """render_carpet handles a 4-D volume without error."""
