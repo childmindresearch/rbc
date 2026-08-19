@@ -17,6 +17,8 @@ from rbc.bids.metrics import export_metrics
 from rbc.bids.qc import export_qc
 from rbc.bids.session import load_session
 from rbc.context import RunContext
+from rbc.core.niwrap import generate_exec_folder
+from rbc.core.qc.report import ReportSection, generate_qc_report
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.anatomical import process_session as process_anat
 from rbc.orchestration.functional import process_session as process_func
@@ -170,6 +172,32 @@ def run(
                 mni_brain_mask_2mm=func_template_mask,
             )
             export_qc(mni, qc_outputs, regressors=regressors)
+
+            report_html = generate_qc_report(
+                sub=pipe_ctx.sub,
+                ses=pipe_ctx.ses or "",
+                task=str(mni._entities.get("task", "")),
+                run=int(mni._entities.get("run", 0)),
+                sections=[
+                    ReportSection(
+                        regressor=reg,
+                        metrics=qc_outputs.metrics[reg],
+                        passed=qc_outputs.passed,
+                        cleaned_bold=func_outputs.cleaned_bold[reg],
+                    )
+                    for reg in regressors
+                ],
+                template_bold=func_outputs.template_bold,
+                template_brain_mask=func_outputs.template_brain_mask,
+                bold_mask=func_outputs.bold_mask,
+                brain_mask=anat_outputs.brain_mask,
+                bold_to_anat_matrix=func_outputs.bold_to_anat_matrix,
+                motion_params=func_outputs.motion_params,
+                rms_rel=func_outputs.rms_rel,
+                out_path=generate_exec_folder("qc") / "quality_report.html",
+                mni_brain_mask=func_template_mask,
+            )
+            mni.save(report_html, suffix="QC", extension=".html")
 
             status = "PASSED" if qc_outputs.passed else "FAILED"
             _logger.info("QC %s for sub-%s", status, pipe_ctx.sub)

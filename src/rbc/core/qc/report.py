@@ -34,6 +34,7 @@ from nibabel.processing import resample_from_to
 
 from rbc.core.qc.dvars import dvars
 from rbc.core.qc.motion import framewise_displacement_jenkinson
+from rbc.core.qc.xcp import FD_THRESHOLD_MM, NORM_CROSS_CORR_THRESHOLD
 from rbc_resources import REGISTRATION_TEMPLATES
 
 matplotlib.use("Agg", force=False)
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
 
     Overlay = tuple[np.ndarray, str, float]
 
-# -- Dark theme (shared with scripts/visualize_pipeline.py) --
+# -- Dark theme --
 BG_COLOR = "#1a1a2e"
 TEXT_COLOR = "#e0e0e0"
 ACCENT_COLOR = "#4fc3f7"
@@ -59,10 +60,6 @@ BOLD_MASK_COLOR = "#ffb74d"
 TEMPLATE_MASK_COLOR = "#4fc3f7"
 FD_COLOR = "#ef5350"
 DVARS_COLORS = ("#4fc3f7", "#fdd835", "#66bb6a", "#ce93d8", "#ffb74d")
-
-# -- QC pass/fail thresholds (mirror passes_rbc_qc in rbc.core.qc.xcp) --
-FD_THRESHOLD_MM = 0.2
-NORM_CROSS_CORR_THRESHOLD = 0.8
 
 # -- Rendering limits --
 MAX_BG_VOLUMES = 32
@@ -114,11 +111,6 @@ class ReportSection:
     metrics: XCPQCMetrics
     passed: bool
     cleaned_bold: Path
-
-
-# ---------------------------------------------------------------------------
-# Private helpers
-# ---------------------------------------------------------------------------
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
@@ -214,11 +206,6 @@ def _style_axes(ax: Axes) -> None:
 def _id_label(label: str) -> str:
     """Return an HTML-id-safe rendering of a regressor label."""
     return "".join(ch if ch.isalnum() else "-" for ch in label)
-
-
-# ---------------------------------------------------------------------------
-# Public rendering primitives (reused by future report types)
-# ---------------------------------------------------------------------------
 
 
 def figure_to_png(fig: plt.Figure, *, dpi: int = 100) -> str:
@@ -454,11 +441,6 @@ def render_carpet(ax: Axes, data4d: np.ndarray, mask3d: np.ndarray) -> None:
     _style_axes(ax)
 
 
-# ---------------------------------------------------------------------------
-# Report assembly
-# ---------------------------------------------------------------------------
-
-
 def generate_qc_report(
     *,
     sub: str,
@@ -522,7 +504,8 @@ def generate_qc_report(
     subject = f"sub-{esc(sub)}"
     if ses:
         subject += f"_ses-{esc(ses)}"
-    subject += f"_task-{esc(task)}"
+    if task:
+        subject += f"_task-{esc(task)}"
     if run:
         subject += f"_run-{run}"
 
