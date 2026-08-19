@@ -16,6 +16,7 @@ from rbc.core.qc.motion import MotionQCMetrics
 from rbc.core.qc.registration import RegistrationQCMetrics
 from rbc.core.qc.report import (
     ReportSection,
+    _warp_mask,
     figure_to_png,
     generate_qc_report,
     metric_rows,
@@ -55,11 +56,11 @@ def qc_dataset(tmp_path: Path) -> dict[str, Path]:
     dataset: dict[str, Path] = {
         "brain_mask": _write_nifti(tmp_path / "brain_mask.nii.gz", sphere),
         "bold_mask": _write_nifti(tmp_path / "bold_mask.nii.gz", sphere, spacing=2.5),
-        "template_bold": _write_nifti(
-            tmp_path / "template_bold.nii.gz", rng.random((*_SHAPE3, _N_VOLS)) * 100
-        ),
         "template_brain_mask": _write_nifti(
             tmp_path / "template_brain_mask.nii.gz", sphere
+        ),
+        "func_template": _write_nifti(
+            tmp_path / "func_template.nii.gz", rng.random(_SHAPE3) * 100
         ),
         "cleaned_36": _write_nifti(
             tmp_path / "cleaned_36.nii.gz", rng.random((*_SHAPE3, _N_VOLS)) * 10
@@ -132,7 +133,6 @@ def _generate(
         task="rest",
         run=1,
         sections=sections,
-        template_bold=qc_dataset["template_bold"],
         template_brain_mask=qc_dataset["template_brain_mask"],
         bold_mask=qc_dataset["bold_mask"],
         brain_mask=qc_dataset["brain_mask"],
@@ -141,6 +141,7 @@ def _generate(
         rms_rel=qc_dataset["rms_rel"],
         out_path=out,
         mni_brain_mask=qc_dataset["template_brain_mask"],
+        func_template=qc_dataset["func_template"],
     )
     return out
 
@@ -166,7 +167,9 @@ class TestGenerateQcReport:
             "0.8",
             "Dice",
             "Jaccard",
+            "Cross Corr",
             "Coverage",
+            "Final mean DVARS",
             "QC FAILED",
         ):
             assert needle in html, needle
@@ -223,9 +226,9 @@ class TestSharedUtilities:
         assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
 
     def test_metric_rows(self) -> None:
-        """metric_rows returns the eleven numeric summary cells."""
+        """metric_rows returns the ten numeric run-level cells."""
         rows = metric_rows(_metrics("36-parameter"))
-        assert len(rows) == 11
+        assert len(rows) == 10
         assert all(re.fullmatch(r"[\d.]+", v) for v in rows)
 
     def test_render_lightbox_with_overlay(self) -> None:
@@ -240,6 +243,28 @@ class TestSharedUtilities:
         )
         uri = figure_to_png(fig)
         assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
+
+    def test_warp_mask_world_space_composition(self, tmp_path: Path) -> None:
+        """A translated blob lands at the world-space-expected reference index.
+
+        Catches the (A_ref @ X) composition error: the warp must compose the
+        world-space matrix with the *mask's* affine, not the reference's.
+        """
+        n = 16
+        mask = np.zeros((n, n, n), dtype=np.float32)
+        mask[8, 8, 8] = 1.0
+        bold_mask = _write_nifti(tmp_path / "bold_mask.nii.gz", mask, spacing=3.0)
+        brain_mask = _write_nifti(tmp_path / "brain_mask.nii.gz", np.zeros_like(mask))
+        xfm = np.eye(4)
+        xfm[:3, 3] = (4.0, 0.0, 0.0)
+        xfm_path = tmp_path / "xfm.txt"
+        np.savetxt(xfm_path, xfm)
+
+        warped = _warp_mask(bold_mask, brain_mask, xfm_path)
+        # Blob at mask index (8, 8, 8) is at 24 mm in BOLD world space;
+        # +4 mm shift -> 28 mm in T1w -> index 28 / 2 = 14 along x.
+        assert warped[14, 12, 12] > 0.5
+        assert warped[8, 12, 12] == 0
 
     def test_render_carpet(self) -> None:
         """render_carpet handles a 4-D volume without error."""

@@ -105,7 +105,6 @@ def run(
                     )
                     for reg in regressors
                 ],
-                template_bold=resolved["template_bold"],
                 template_brain_mask=resolved["template_brain_mask"],
                 bold_mask=resolved["bold_mask"],
                 brain_mask=resolved["brain_mask"],

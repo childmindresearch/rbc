@@ -187,7 +187,6 @@ def run(
                     )
                     for reg in regressors
                 ],
-                template_bold=func_outputs.template_bold,
                 template_brain_mask=func_outputs.template_brain_mask,
                 bold_mask=func_outputs.bold_mask,
                 brain_mask=anat_outputs.brain_mask,

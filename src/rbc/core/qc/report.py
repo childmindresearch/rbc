@@ -62,7 +62,6 @@ FD_COLOR = "#ef5350"
 DVARS_COLORS = ("#4fc3f7", "#fdd835", "#66bb6a", "#ce93d8", "#ffb74d")
 
 # -- Rendering limits --
-MAX_BG_VOLUMES = 32
 N_CARPET_VOXELS = 2000
 CARPET_VMAX = 2.0
 MOSAIC_WIDTH = 1600
@@ -81,6 +80,7 @@ h2 { border-bottom: 1px solid #4fc3f7; padding-bottom: 4px; font-size: 1.1rem;
 .banner.passed { background: #1b3a1b; color: #66bb6a; border: 1px solid #66bb6a; }
 .banner.failed { background: #3a1b1b; color: #ef5350; border: 1px solid #ef5350; }
 .thresholds { color: #9e9e9e; font-size: 0.9rem; }
+.caption { color: #9e9e9e; font-size: 0.9rem; font-weight: 600; margin: 14px 0 6px; }
 section { margin-top: 28px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { padding: 6px 10px; border: 1px solid #444444; text-align: left;
@@ -178,7 +178,8 @@ def _warp_mask(mask_path: Path, reference_path: Path, xfm_path: Path) -> np.ndar
     Args:
         mask_path: Source mask NIfTI.
         reference_path: NIfTI defining the target grid.
-        xfm_path: 4x4 affine (source -> reference) text matrix.
+        xfm_path: 4x4 world-space (mm) affine, source -> reference,
+            FSL convention (as written by FLIRT/BBR).
 
     Returns:
         The warped mask data resampled onto the reference grid.
@@ -186,7 +187,9 @@ def _warp_mask(mask_path: Path, reference_path: Path, xfm_path: Path) -> np.ndar
     mask_img = nib.nifti1.load(mask_path)
     ref_img = nib.nifti1.load(reference_path)
     xfm = np.loadtxt(xfm_path)
-    warped = nib.Nifti1Image(mask_img.get_fdata(), ref_img.affine @ xfm)
+    # Compose in world space: the source affine for resample_from_to must
+    # be X @ A_mask so that reference indices map back to mask indices.
+    warped = nib.Nifti1Image(mask_img.get_fdata(), xfm @ mask_img.affine)
     warped = resample_from_to(warped, ref_img, order=0)
     return warped.get_fdata()
 
@@ -237,21 +240,22 @@ def section_header(title: str) -> str:
 
 
 def metric_rows(metrics: XCPQCMetrics) -> list[str]:
-    """Return the formatted summary-table cells for one regressor.
+    """Return the formatted run-level summary-table cells.
+
+    Run-level metrics are identical across regressors, so they are shown
+    once; per-regressor cells (final mean DVARS) are rendered separately.
 
     Args:
         metrics: XCP-style QC metrics row.
 
     Returns:
         Cell values in column order: mean FD (mm), censored volumes,
-        final mean DVARS, then coregistration Dice, Jaccard,
-        cross-correlation, and coverage, then the same four for
-        normalization.
+        then coregistration Dice, Jaccard, cross-correlation, and
+        coverage, then the same four for normalization.
     """
     return [
         f"{metrics.meanFD:.4f}",
         str(metrics.nVolCensored),
-        f"{metrics.meanDVFinal:.4f}",
         f"{metrics.coregDice:.3f}",
         f"{metrics.coregJaccard:.3f}",
         f"{metrics.coregCrossCorr:.3f}",
@@ -457,7 +461,6 @@ def generate_qc_report(
     task: str,
     run: int,
     sections: Sequence[ReportSection],
-    template_bold: Path,
     template_brain_mask: Path,
     bold_mask: Path,
     brain_mask: Path,
@@ -466,6 +469,7 @@ def generate_qc_report(
     rms_rel: Path,
     out_path: Path,
     mni_brain_mask: Path | None = None,
+    func_template: Path | None = None,
 ) -> Path:
     """Render a self-contained HTML QC report for one functional run.
 
@@ -475,7 +479,6 @@ def generate_qc_report(
         task: Task label.
         run: Run number.
         sections: One section per regressor, in display order.
-        template_bold: Pre-denoising BOLD in template space (4-D).
         template_brain_mask: Brain mask warped to template space.
         bold_mask: Native-space BOLD brain mask.
         brain_mask: Anatomical (T1w-space) brain mask.
@@ -485,6 +488,9 @@ def generate_qc_report(
         out_path: Destination HTML file (parent dirs created if needed).
         mni_brain_mask: MNI standard brain mask for the normalization
             panel (default: :data:`REGISTRATION_TEMPLATES.brain_mask_2mm`).
+        func_template: Standard-space template brain used as the
+            normalization panel background (default:
+            :data:`REGISTRATION_TEMPLATES.brain_2mm`).
 
     Returns:
         The report path (same as *out_path*).
@@ -492,16 +498,16 @@ def generate_qc_report(
     esc = html.escape
     if mni_brain_mask is None:
         mni_brain_mask = REGISTRATION_TEMPLATES.brain_mask_2mm
+    if func_template is None:
+        func_template = REGISTRATION_TEMPLATES.brain_2mm
 
     # -- Shared display arrays --
     rms = np.loadtxt(rms_rel)
     fd = framewise_displacement_jenkinson(rms)
     mparams = np.loadtxt(motion_params)
 
-    tmpl_ref = nib.nifti1.load(template_bold)
-    tmpl_bg = _load_data(template_bold)
-    if tmpl_bg.ndim == 4:
-        tmpl_bg = tmpl_bg[..., :MAX_BG_VOLUMES].mean(axis=-1)
+    tmpl_ref = nib.nifti1.load(func_template)
+    tmpl_bg = _load_data(func_template)
     tmpl_mask_data = _load_data(template_brain_mask)
 
     mni_mask_img = nib.nifti1.load(mni_brain_mask)
@@ -542,23 +548,35 @@ def generate_qc_report(
         "</header>",
         '<section id="summary">',
         section_header("QC Summary"),
+        '<p class="caption">Run-level</p>',
         "<table>",
         "<thead>",
-        '<tr><th rowspan="2">Regressor</th>'
-        '<th colspan="3">Denoising</th>'
+        '<tr><th colspan="2">Motion</th>'
         '<th colspan="4">Coregistration</th>'
         '<th colspan="4">Normalization</th></tr>',
         "<tr><th>Mean FD (mm)</th><th>Vols censored</th>"
-        "<th>Mean DVARS (final)</th>"
-        "<th>Dice</th><th>Jaccard</th><th>X-corr</th><th>Coverage</th>"
-        "<th>Dice</th><th>Jaccard</th><th>X-corr</th><th>Coverage</th></tr>",
+        "<th>Dice</th><th>Jaccard</th><th>Cross Corr</th><th>Coverage</th>"
+        "<th>Dice</th><th>Jaccard</th><th>Cross Corr</th><th>Coverage</th></tr>",
         "</thead>",
         "<tbody>",
     ]
-
+    run_cells = "".join(f"<td>{esc(v)}</td>" for v in metric_rows(sections[0].metrics))
+    parts += [
+        f"<tr>{run_cells}</tr>",
+        "</tbody>",
+        "</table>",
+        '<p class="caption">Per regressor</p>',
+        "<table>",
+        "<thead>",
+        "<tr><th>Regressor</th><th>Final mean DVARS</th></tr>",
+        "</thead>",
+        "<tbody>",
+    ]
     for section in sections:
-        cells = "".join(f"<td>{esc(v)}</td>" for v in metric_rows(section.metrics))
-        parts.append(f"<tr><td>{esc(section.regressor)}</td>{cells}</tr>")
+        final_dvars = f"{section.metrics.meanDVFinal:.4f}"
+        parts.append(
+            f"<tr><td>{esc(section.regressor)}</td><td>{final_dvars}</td></tr>"
+        )
     parts += ["</tbody>", "</table>", "</section>"]
 
     # -- Coregistration: BOLD mask warped into T1w space --
@@ -584,8 +602,8 @@ def generate_qc_report(
         "</section>",
     ]
 
-    # -- Normalization: template brain mask vs. MNI standard --
-    fig = plt.figure(figsize=(16, 5))
+    # -- Normalization: subject brain mask warped into template space --
+    fig = plt.figure(figsize=(14, 5))
     fig.set_facecolor(BG_COLOR)
     render_lightbox(
         fig.add_subplot(1, 1, 1),
@@ -594,7 +612,7 @@ def generate_qc_report(
             (tmpl_mask_data, TEMPLATE_MASK_COLOR, 0.5),
             (mni_mask_data, BOLD_MASK_COLOR, 0.9),
         ],
-        title="Template brain mask on template BOLD",
+        title="Subject brain mask in template space",
     )
     norm_png = figure_to_png(fig)
     parts += [
@@ -602,8 +620,8 @@ def generate_qc_report(
         section_header("Normalization: template registration"),
         "<figure>",
         f'<img alt="Normalization overlay" src="{norm_png}">',
-        "<figcaption>Brain mask warped to template space (blue) and the "
-        "MNI152 standard brain mask (orange outline) on template BOLD.</figcaption>",
+        "<figcaption>Subject brain mask warped to template space (blue) and "
+        "the template brain mask (orange) on the template brain.</figcaption>",
         "</figure>",
         "</section>",
     ]
