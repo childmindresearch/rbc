@@ -6,12 +6,12 @@ coregistration and template-normalization overlays, motion traces
 (FD, DVARS, RMS over time), and carpet plots of the cleaned BOLD.
 
 All figures are rendered with the matplotlib Agg backend and
-base64-embedded as PNG data URIs, so the result is a single
+base64-embedded as SVG data URIs, so the result is a single
 self-contained HTML document that opens offline from ``file://``.
 
 The rendering helpers (:func:`render_lightbox`,
 :func:`render_motion_parameters`, :func:`render_displacement_traces`,
-:func:`render_carpet`, :func:`figure_to_png`, :func:`section_header`,
+:func:`render_carpet`, :func:`figure_to_svg`, :func:`section_header`,
 :func:`metric_rows`) are intentionally public so that future report
 types (e.g. longitudinal QC) can reuse the same layout primitives.
 """
@@ -215,21 +215,20 @@ def _id_label(label: str) -> str:
     return "".join(ch if ch.isalnum() else "-" for ch in label)
 
 
-def figure_to_png(fig: plt.Figure, *, dpi: int = 100) -> str:
-    """Render a matplotlib figure to a base64 PNG data URI.
+def figure_to_svg(fig: plt.Figure) -> str:
+    """Render a matplotlib figure to a base64 SVG data URI.
 
     Args:
         fig: Figure to render (closed after rendering).
-        dpi: Output resolution.
 
     Returns:
-        A ``data:image/png;base64,...`` URI suitable for inline HTML.
+        A ``data:image/svg+xml;base64,...`` URI suitable for inline HTML.
     """
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, facecolor=fig.get_facecolor())
+    fig.savefig(buf, format="svg", facecolor=fig.get_facecolor())
     plt.close(fig)
     encoded = base64.b64encode(buf.getvalue()).decode("ascii")
-    return f"data:image/png;base64,{encoded}"
+    return f"data:image/svg+xml;base64,{encoded}"
 
 
 def section_header(title: str) -> str:
@@ -595,12 +594,12 @@ def generate_qc_report(
         overlays=[(warped_bold_mask, BOLD_MASK_COLOR, 0.9)],
         title="BOLD brain mask (warped to T1w) on anatomical brain mask",
     )
-    coreg_png = figure_to_png(fig)
+    coreg_svg = figure_to_svg(fig)
     parts += [
         '<section id="coreg">',
         section_header("Coregistration: BOLD to T1w"),
         "<figure>",
-        f'<img alt="Coregistration overlay" src="{coreg_png}">',
+        f'<img alt="Coregistration overlay" src="{coreg_svg}">',
         "<figcaption>BOLD brain mask warped into T1w space (orange) "
         "on the anatomical brain mask.</figcaption>",
         "</figure>",
@@ -619,12 +618,12 @@ def generate_qc_report(
         ],
         title="Subject brain mask in template space",
     )
-    norm_png = figure_to_png(fig)
+    norm_svg = figure_to_svg(fig)
     parts += [
         '<section id="norm">',
         section_header("Normalization: template registration"),
         "<figure>",
-        f'<img alt="Normalization overlay" src="{norm_png}">',
+        f'<img alt="Normalization overlay" src="{norm_svg}">',
         "<figcaption>Subject brain mask warped to template space (blue) and "
         "the template brain mask (orange) on the template brain.</figcaption>",
         "</figure>",
@@ -644,12 +643,12 @@ def generate_qc_report(
     render_displacement_traces(
         fig.add_subplot(1, 2, 2), fd=fd, rms=rms, dvars_curves=dvars_curves
     )
-    motion_png = figure_to_png(fig)
+    motion_svg = figure_to_svg(fig)
     parts += [
         '<section id="motion">',
         section_header("Motion traces"),
         "<figure>",
-        f'<img alt="Motion traces" src="{motion_png}">',
+        f'<img alt="Motion traces" src="{motion_svg}">',
         "<figcaption>Motion parameters versus first volume, and framewise "
         "displacement, relative RMS, and per-regressor DVARS over time.</figcaption>",
         "</figure>",
@@ -662,14 +661,14 @@ def generate_qc_report(
         fig = plt.figure(figsize=(14, 7))
         fig.set_facecolor(BG_COLOR)
         render_carpet(fig, data, tmpl_mask_data)
-        carpet_png = figure_to_png(fig)
+        carpet_svg = figure_to_svg(fig)
         del data
         label = section.regressor
         parts += [
             f'<section id="reg-{_id_label(label)}">',
             section_header(f"reg-{label} — cleaned BOLD"),
             "<figure>",
-            f'<img alt="{esc(label)} carpet plot" src="{carpet_png}">',
+            f'<img alt="{esc(label)} carpet plot" src="{carpet_svg}">',
             f"<figcaption>Carpet plot of the cleaned BOLD for {esc(label)}: "
             "a seeded sample of in-mask voxels (2,000) ordered by tSNR, "
             "z-scored (&plusmn;2).</figcaption>",

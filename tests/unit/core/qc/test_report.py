@@ -17,7 +17,7 @@ from rbc.core.qc.registration import RegistrationQCMetrics
 from rbc.core.qc.report import (
     ReportSection,
     _warp_mask,
-    figure_to_png,
+    figure_to_svg,
     generate_qc_report,
     metric_rows,
     render_carpet,
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 _SHAPE3 = (16, 16, 16)
 _N_VOLS = 20
-_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_SVG_PREFIX = b"<?xml"
 
 
 def _write_nifti(
@@ -158,7 +158,7 @@ class TestGenerateQcReport:
     def test_report_written_and_complete(
         self, qc_dataset: dict[str, Path], tmp_path: Path
     ) -> None:
-        """HTML exists with all sections, thresholds, and valid PNGs."""
+        """HTML exists with all sections, thresholds, and valid SVGs."""
         out = _generate(qc_dataset, tmp_path)
         assert out.exists()
         html = out.read_text(encoding="utf-8")
@@ -179,10 +179,10 @@ class TestGenerateQcReport:
             "QC FAILED",
         ):
             assert needle in html, needle
-        pngs = re.findall(r"data:image/png;base64,([A-Za-z0-9+/=]+)", html)
+        svgs = re.findall(r"data:image/svg\+xml;base64,([A-Za-z0-9+/=]+)", html)
         # 3 shared panels + one carpet per regressor
-        assert len(pngs) == 5
-        assert base64.b64decode(pngs[0])[:8] == _PNG_MAGIC
+        assert len(svgs) == 5
+        assert base64.b64decode(svgs[0])[:5] == _SVG_PREFIX
         assert "http://" not in html
         assert "https://" not in html
         # Only the report file is written to the output directory.
@@ -193,7 +193,7 @@ class TestGenerateQcReport:
     ) -> None:
         """A single-regressor report has exactly one carpet section."""
         html = _generate(qc_dataset, tmp_path, n_sections=1).read_text(encoding="utf-8")
-        assert len(re.findall(r"data:image/png;base64,", html)) == 4
+        assert len(re.findall(r"data:image/svg\+xml;base64,", html)) == 4
         assert html.count('<section id="reg-') == 1
 
     def test_passed_banner(self, qc_dataset: dict[str, Path], tmp_path: Path) -> None:
@@ -223,13 +223,13 @@ class TestGenerateQcReport:
 class TestSharedUtilities:
     """Direct checks on the public rendering primitives."""
 
-    def test_figure_to_png(self) -> None:
-        """figure_to_png returns a decodable base64 PNG data URI."""
+    def test_figure_to_svg(self) -> None:
+        """figure_to_svg returns a decodable base64 SVG data URI."""
         fig = plt.figure()
         fig.add_subplot(1, 1, 1).plot([1, 2], [3, 4])
-        uri = figure_to_png(fig)
-        assert uri.startswith("data:image/png;base64,")
-        assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
+        uri = figure_to_svg(fig)
+        assert uri.startswith("data:image/svg+xml;base64,")
+        assert base64.b64decode(uri.split(",", 1)[1])[:5] == _SVG_PREFIX
 
     def test_metric_rows(self) -> None:
         """metric_rows returns the ten numeric run-level cells."""
@@ -247,8 +247,8 @@ class TestSharedUtilities:
             overlays=[(data, "#ffb74d", 0.9)],
             title="overlay",
         )
-        uri = figure_to_png(fig)
-        assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
+        uri = figure_to_svg(fig)
+        assert base64.b64decode(uri.split(",", 1)[1])[:5] == _SVG_PREFIX
 
     def test_warp_mask_fsl_internal_units(self, tmp_path: Path) -> None:
         """A FSL .mat (internal voxel units) lands the blob in T1w space.
@@ -294,5 +294,5 @@ class TestSharedUtilities:
         data4d = rng.random((*_SHAPE3, _N_VOLS)).astype(np.float32)
         fig = plt.figure()
         render_carpet(fig, data4d, _sphere())
-        uri = figure_to_png(fig)
-        assert base64.b64decode(uri.split(",", 1)[1])[:8] == _PNG_MAGIC
+        uri = figure_to_svg(fig)
+        assert base64.b64decode(uri.split(",", 1)[1])[:5] == _SVG_PREFIX
