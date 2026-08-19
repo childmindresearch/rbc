@@ -52,7 +52,6 @@ if TYPE_CHECKING:
 # -- Dark theme --
 BG_COLOR = "#1a1a2e"
 TEXT_COLOR = "#e0e0e0"
-ACCENT_COLOR = "#4fc3f7"
 GRID_COLOR = "#444444"
 SPINE_COLOR = "#666666"
 
@@ -122,7 +121,7 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
 def _robust_vmax(data: np.ndarray) -> float:
     """Return the 98th percentile of non-zero voxels (or 1.0 if empty)."""
     values = data[data > 0]
-    return float(np.percentile(values, 98)) if values.size else 1.0
+    return np.percentile(values, 98) if values.size else 1.0
 
 
 def _axial_slices(data: np.ndarray, n: int) -> list[int]:
@@ -136,7 +135,7 @@ def _axial_slices(data: np.ndarray, n: int) -> list[int]:
     margin = max(1, int((hi - lo) * 0.05))
     lo = min(lo + margin, hi)
     hi = max(hi - margin, lo)
-    return list(np.linspace(lo, hi, n, dtype=int))
+    return np.linspace(lo, hi, n, dtype=int).tolist()
 
 
 def _resample_mosaic(mosaic: np.ndarray, target_w: int = MOSAIC_WIDTH) -> np.ndarray:
@@ -165,12 +164,6 @@ def _mask_contour(binary: np.ndarray) -> np.ndarray:
     dx = np.diff(binary, axis=1, prepend=0)
     dy = np.diff(binary, axis=0, prepend=0)
     return (np.abs(dx) + np.abs(dy) > 0).astype(np.float32)
-
-
-def _load_data(path: Path) -> np.ndarray:
-    """Load a NIfTI file as a float32 array (memory-mapped if possible)."""
-    img = nib.nifti1.load(path)
-    return np.asarray(img.dataobj, dtype=np.float32)
 
 
 def _warp_mask(mask_path: Path, reference_path: Path, xfm_path: Path) -> np.ndarray:
@@ -213,6 +206,17 @@ def _style_axes(ax: Axes) -> None:
 def _id_label(label: str) -> str:
     """Return an HTML-id-safe rendering of a regressor label."""
     return "".join(ch if ch.isalnum() else "-" for ch in label)
+
+
+def _legend(ax: Axes) -> None:
+    """Apply the shared dark-theme legend to an axis."""
+    ax.legend(
+        fontsize=7,
+        loc="upper right",
+        facecolor="#333333",
+        edgecolor=SPINE_COLOR,
+        labelcolor=TEXT_COLOR,
+    )
 
 
 def figure_to_svg(fig: plt.Figure) -> str:
@@ -354,13 +358,7 @@ def render_motion_parameters(ax: Axes, motion_params: np.ndarray) -> None:
     ax.set_ylabel("Rotation (deg) / translation (mm)", fontsize=8)
     ax.set_title("Motion parameters", fontsize=10, fontweight="bold")
     _style_axes(ax)
-    ax.legend(
-        fontsize=7,
-        loc="upper right",
-        facecolor="#333333",
-        edgecolor=SPINE_COLOR,
-        labelcolor=TEXT_COLOR,
-    )
+    _legend(ax)
 
 
 def render_displacement_traces(
@@ -410,13 +408,7 @@ def render_displacement_traces(
         fontweight="bold",
     )
     _style_axes(ax)
-    ax.legend(
-        fontsize=7,
-        loc="upper right",
-        facecolor="#333333",
-        edgecolor=SPINE_COLOR,
-        labelcolor=TEXT_COLOR,
-    )
+    _legend(ax)
 
 
 def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> None:
@@ -511,8 +503,8 @@ def generate_qc_report(
     mparams = np.loadtxt(motion_params)
 
     tmpl_ref = nib.nifti1.load(func_template)
-    tmpl_bg = _load_data(func_template)
-    tmpl_mask_data = _load_data(template_brain_mask)
+    tmpl_bg = tmpl_ref.get_fdata()
+    tmpl_mask_data = nib.nifti1.load(template_brain_mask).get_fdata().astype(int)
 
     mni_mask_img = nib.nifti1.load(mni_brain_mask)
     if mni_mask_img.shape[:3] != tmpl_ref.shape[:3]:
@@ -585,7 +577,7 @@ def generate_qc_report(
 
     # -- Coregistration: BOLD mask warped into T1w space --
     warped_bold_mask = _warp_mask(bold_mask, brain_mask, bold_to_anat_matrix)
-    brain_mask_data = _load_data(brain_mask)
+    brain_mask_data = nib.nifti1.load(brain_mask).get_fdata().astype(int)
     fig = plt.figure(figsize=(14, 5))
     fig.set_facecolor(BG_COLOR)
     render_lightbox(
@@ -630,13 +622,19 @@ def generate_qc_report(
         "</section>",
     ]
 
-    # -- Motion: 6-parameter traces + FD / RMS / DVARS --
+    # -- Per-regressor products: one 4-D read for DVARS and the carpet --
     dvars_curves: dict[str, np.ndarray] = {}
+    carpets: list[tuple[ReportSection, str]] = []
     for section in sections:
-        data = _load_data(section.cleaned_bold)
+        data = nib.nifti1.load(section.cleaned_bold).get_fdata()
         dvars_curves[section.regressor] = dvars(data, tmpl_mask_data)
+        fig_carpet = plt.figure(figsize=(14, 7))
+        fig_carpet.set_facecolor(BG_COLOR)
+        render_carpet(fig_carpet, data, tmpl_mask_data)
+        carpets.append((section, figure_to_svg(fig_carpet)))
         del data
 
+    # -- Motion: 6-parameter traces + FD / RMS / DVARS --
     fig = plt.figure(figsize=(14, 7))
     fig.set_facecolor(BG_COLOR)
     render_motion_parameters(fig.add_subplot(1, 2, 1), mparams)
@@ -656,13 +654,7 @@ def generate_qc_report(
     ]
 
     # -- One carpet section per regressor --
-    for section in sections:
-        data = _load_data(section.cleaned_bold)
-        fig = plt.figure(figsize=(14, 7))
-        fig.set_facecolor(BG_COLOR)
-        render_carpet(fig, data, tmpl_mask_data)
-        carpet_svg = figure_to_svg(fig)
-        del data
+    for section, carpet_svg in carpets:
         label = section.regressor
         parts += [
             f'<section id="reg-{_id_label(label)}">',
