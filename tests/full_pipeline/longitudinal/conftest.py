@@ -75,6 +75,9 @@ def ds000114_dataset() -> Path:
     uv = shutil.which("uv")
     if uv is None:
         pytest.skip("uv not found on PATH; cannot run download script")
+    # Explicit narrowing: pre-commit's mypy can't see pytest.skip as NoReturn
+    # (pytest is unresolvable there), so it wouldn't narrow `uv` on its own.
+    assert uv is not None
 
     result = subprocess.run(  # noqa: S603
         [uv, "run", str(_DOWNLOAD_SCRIPT), str(_DATASET_DIR)],
