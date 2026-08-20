@@ -23,7 +23,7 @@ from rbc.bids.longitudinal.qc import (
 from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
 from rbc.core.longitudinal.resampling import resample_img_to_bold_grid
 from rbc.core.niwrap import generate_exec_folder
-from rbc.core.qc.registration import registration_qc_metrics
+from rbc.core.qc.registration import DICE_THRESHOLD, registration_qc_metrics
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 
@@ -36,9 +36,6 @@ if TYPE_CHECKING:
 __all__ = ["process_qc", "run"]
 
 _logger = logging.getLogger(__name__)
-
-# Dice threshold for pass/fail on longitudinal registration QC.
-DICE_THRESHOLD = 0.85
 
 
 def process_qc(
