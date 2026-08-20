@@ -569,15 +569,21 @@ class TestResolveReportInputs:
 class TestGenerateSubjectReport:
     """Tests for per-subject report assembly and BIDS save."""
 
-    def test_saved_as_sessionless_bids_html(
+    def test_saved_under_ses_longitudinal(
         self,
         tmp_path: Path,
     ) -> None:
-        """The report is generated and saved as sub-XX_space-longitudinal_QC."""
+        """The report is saved under sub-XX/ses-longitudinal/func."""
         section = _report_section()
         src = tmp_path / "quality_report.html"
         src.write_text("<html></html>", encoding="utf-8")
-        expected = tmp_path / "sub-01" / "func" / "sub-01_space-longitudinal_QC.html"
+        expected = (
+            tmp_path
+            / "sub-01"
+            / "ses-longitudinal"
+            / "func"
+            / "sub-01_ses-longitudinal_space-longitudinal_QC.html"
+        )
         with (
             patch(
                 "rbc.orchestration.longitudinal.qc.generate_qc_report",
@@ -587,9 +593,9 @@ class TestGenerateSubjectReport:
         ):
             saved = generate_subject_report("01", tmp_path, sections=[section])
 
-        # suffix=QC, extension=.html, no desc, and no session entity.
+        # suffix=QC, extension=.html, no desc, under the longitudinal session.
         assert saved == expected
-        assert "ses-" not in saved.name
+        assert saved.name == "sub-01_ses-longitudinal_space-longitudinal_QC.html"
         gen_kwargs = mock_gen.call_args.kwargs
         assert gen_kwargs["sub"] == "01"
         assert gen_kwargs["sessions"] == [section]

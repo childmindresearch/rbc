@@ -170,8 +170,9 @@ def generate_subject_report(
     """Render and save the per-subject longitudinal QC HTML report.
 
     Writes the self-contained report to a work directory and exports it to
-    the derivatives as a session-less BIDS file
-    (``sub-<sub>/func/sub-<sub>_space-longitudinal_QC.html``).
+    the derivatives under the longitudinal session directory
+    (``sub-<sub>/ses-longitudinal/func/
+    sub-<sub>_ses-longitudinal_space-longitudinal_QC.html``).
 
     Args:
         sub: Subject ID (without ``sub-``).
@@ -188,7 +189,7 @@ def generate_subject_report(
         sessions=sections,
         out_path=generate_exec_folder("longitudinal_qc") / "quality_report.html",
     )
-    pipe_ctx = RunContext(sub=sub, ses=None, output_dir=output_dir)
+    pipe_ctx = RunContext(sub=sub, ses="longitudinal", output_dir=output_dir)
     builder = pipe_ctx.bids(datatype=Datatype.FUNC).derive(space="longitudinal")
     saved = builder.save(html_path, suffix="QC", extension=".html")
     pipe_ctx.ensure_dataset_description()

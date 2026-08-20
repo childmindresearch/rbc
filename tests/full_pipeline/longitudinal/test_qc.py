@@ -82,8 +82,8 @@ def test_longitudinal_qc_tsv_has_expected_columns(
 
 def _report_path(root: Path) -> Path:
     """Return the per-subject QC HTML report, asserting it exists."""
-    func = root / f"sub-{_SUB}" / "func"
-    reports = list(func.glob(f"sub-{_SUB}_space-longitudinal_QC.html"))
+    func = root / f"sub-{_SUB}" / "ses-longitudinal" / "func"
+    reports = list(func.glob(f"sub-{_SUB}_ses-longitudinal_space-longitudinal_QC.html"))
     assert reports, (
         f"No per-subject QC HTML report found\n--- file tree ---\n{_file_tree(root)}"
     )
