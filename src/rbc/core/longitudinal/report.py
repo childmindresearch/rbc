@@ -50,8 +50,8 @@ if TYPE_CHECKING:
 
     from rbc.core.qc.registration import RegistrationQCMetrics
 
-# One distinct color per session for the coverage panel (BOLD orange first).
-SESSION_COLORS = ("#ffb74d", "#fdd835", "#66bb6a", "#ce93d8", "#4fc3f7")
+# One high-contrast color per session (coverage panel and motion curves).
+SESSION_COLORS = ("#4fc3f7", "#ffa726", "#66bb6a", "#ce93d8", "#ef5350")
 
 
 @dataclass(frozen=True)
