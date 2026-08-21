@@ -75,6 +75,9 @@ def ds000114_dataset() -> Path:
     uv = shutil.which("uv")
     if uv is None:
         pytest.skip("uv not found on PATH; cannot run download script")
+    # Explicit narrowing: pre-commit's mypy can't see pytest.skip as NoReturn
+    # (pytest is unresolvable there), so it wouldn't narrow `uv` on its own.
+    assert uv is not None
 
     result = subprocess.run(  # noqa: S603
         [uv, "run", str(_DOWNLOAD_SCRIPT), str(_DATASET_DIR)],
@@ -112,8 +115,9 @@ def longitudinal_pipeline_data(
     longitudinal anatomical -> longitudinal functional ->
     longitudinal metrics -> longitudinal qc.
 
-    Session-scoped so the cost is paid once across all tests.
-    Returns the derivatives directory.
+    Both sessions (ses-test and ses-retest) are processed so the QC report
+    summarizes the subject across sessions. Session-scoped so the cost is
+    paid once across all tests. Returns the derivatives directory.
     """
     out = tmp_path_factory.mktemp("long_pipeline") / "derivatives"
     out.mkdir()
@@ -130,7 +134,7 @@ def longitudinal_pipeline_data(
     # Cross-sectional anatomical
     _run_rbc(["anatomical", raw, "-o", deriv, *common])
 
-    # Cross-sectional functional (ses-test only)
+    # Cross-sectional functional (all sessions)
     _run_rbc(
         [
             "functional",
@@ -139,8 +143,6 @@ def longitudinal_pipeline_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
             "--task",
             _TASK,
         ]
@@ -167,8 +169,6 @@ def longitudinal_pipeline_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
         ]
     )
 
@@ -181,8 +181,6 @@ def longitudinal_pipeline_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
             "--task",
             _TASK,
         ]
@@ -197,8 +195,6 @@ def longitudinal_pipeline_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
             "--task",
             _TASK,
         ]
@@ -213,8 +209,6 @@ def longitudinal_pipeline_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
         ]
     )
 
@@ -247,7 +241,7 @@ def longitudinal_all_data(
     # Cross-sectional anatomical
     _run_rbc(["anatomical", raw, "-o", deriv, *common])
 
-    # Cross-sectional functional (ses-test only)
+    # Cross-sectional functional (all sessions)
     _run_rbc(
         [
             "functional",
@@ -256,14 +250,12 @@ def longitudinal_all_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
             "--task",
             _TASK,
         ]
     )
 
-    # Full longitudinal pipeline (ses-test only, matching sequential run)
+    # Full longitudinal pipeline (all sessions, matching sequential run)
     _run_rbc(
         [
             "longitudinal",
@@ -272,8 +264,6 @@ def longitudinal_all_data(
             "-o",
             deriv,
             *common,
-            "--session-label",
-            "test",
             "--task",
             _TASK,
         ]

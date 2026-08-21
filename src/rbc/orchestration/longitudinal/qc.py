@@ -1,8 +1,9 @@
 """Orchestration for the longitudinal QC workflow.
 
-Minimal scope: Dice/Jaccard overlap between the anatomical brain mask
-and BOLD brain mask in longitudinal template space.  No visualizations;
-see #303/#304 for future viz pipelines.
+Computes Dice/Jaccard overlap between the anatomical brain mask and BOLD
+brain mask in longitudinal template space (per run), then assembles one
+self-contained HTML QC report per subject summarizing every session's
+alignment (see ``rbc.core.longitudinal.report``).
 """
 
 from __future__ import annotations
@@ -13,7 +14,14 @@ from typing import TYPE_CHECKING
 import nibabel as nib
 import polars as pl
 
-from rbc.bids import FUNC_GROUP_ENTITIES, Datatype, Suffix, extract_entities, load_table
+from rbc.bids import (
+    FUNC_GROUP_ENTITIES,
+    Datatype,
+    Suffix,
+    bids_safe_label,
+    extract_entities,
+    load_table,
+)
 from rbc.bids.longitudinal.qc import (
     LongitudinalQCOutputs,
     export_longitudinal_qc,
@@ -21,9 +29,15 @@ from rbc.bids.longitudinal.qc import (
     write_longitudinal_qc_tsv,
 )
 from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
+from rbc.context import RunContext
+from rbc.core.longitudinal.report import ReportSection, generate_qc_report
 from rbc.core.longitudinal.resampling import resample_img_to_bold_grid
 from rbc.core.niwrap import generate_exec_folder
-from rbc.core.qc.registration import registration_qc_metrics
+from rbc.core.qc.registration import (
+    DICE_THRESHOLD,
+    RegistrationQCMetrics,
+    registration_qc_metrics,
+)
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 
@@ -33,12 +47,9 @@ if TYPE_CHECKING:
 
     from rbc.bids import Bids
 
-__all__ = ["process_qc", "run"]
+__all__ = ["generate_subject_report", "process_qc", "run"]
 
 _logger = logging.getLogger(__name__)
-
-# Dice threshold for pass/fail on longitudinal registration QC.
-DICE_THRESHOLD = 0.85
 
 
 def process_qc(
@@ -115,6 +126,77 @@ def process_qc(
     return outputs
 
 
+def _resolve_report_inputs(
+    pipe_ctx: RunContext,
+    func_q: Bids,
+    func_df: pl.DataFrame,
+    tpl_df: pl.DataFrame,
+    task: str,
+) -> tuple[Path, Path]:
+    """Resolve the (template, rms_rel) paths the report needs for one run.
+
+    The template is the per-task longitudinal T1w (BOLD grid) when present,
+    falling back to the plain longitudinal T1w. The relative-RMS motion
+    trace comes from the native cross-sectional functional derivatives.
+
+    Args:
+        pipe_ctx: RunContext bound to this subject/session.
+        func_q: Bids builder for this BOLD run (func datatype).
+        func_df: Functional derivative rows for this run.
+        tpl_df: Longitudinal template rows for this subject.
+        task: Task label (selects the matching template grid).
+
+    Returns:
+        Tuple of ``(template, rms_rel)`` paths.
+    """
+    anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
+    tpl_q = anat_q.derive(ses="longitudinal")
+    try:
+        template = tpl_q.expect(tpl_df, suffix="T1w", res=bids_safe_label(task))
+    except (FileNotFoundError, ValueError):
+        template = tpl_q.expect(tpl_df, suffix="T1w")
+    rms_rel = func_q.expect(
+        func_df, suffix=Suffix.MOTION, desc="relsDisplacement", extension=".rms"
+    )
+    return template, rms_rel
+
+
+def generate_subject_report(
+    sub: str,
+    output_dir: Path,
+    *,
+    sections: Sequence[ReportSection],
+) -> Path:
+    """Render and save the per-subject longitudinal QC HTML report.
+
+    Writes the self-contained report to a work directory and exports it to
+    the derivatives under the longitudinal session directory
+    (``sub-<sub>/ses-longitudinal/func/
+    sub-<sub>_ses-longitudinal_space-longitudinal_QC.html``).
+
+    Args:
+        sub: Subject ID (without ``sub-``).
+        output_dir: Output directory for derivatives.
+        sections: One :class:`ReportSection` per processed (session, run).
+
+    Returns:
+        The path to the saved HTML report.
+    """
+    if not sections:
+        raise ValueError(f"No QC sections available for sub-{sub}")
+    html_path = generate_qc_report(
+        sub=sub,
+        sessions=sections,
+        out_path=generate_exec_folder("longitudinal_qc") / "quality_report.html",
+    )
+    pipe_ctx = RunContext(sub=sub, ses="longitudinal", output_dir=output_dir)
+    builder = pipe_ctx.bids(datatype=Datatype.FUNC).derive(space="longitudinal")
+    saved = builder.save(html_path, suffix="QC", extension=".html")
+    pipe_ctx.ensure_dataset_description()
+    _logger.info("Longitudinal QC report for sub-%s saved to %s", sub, saved)
+    return saved
+
+
 def run(
     input_dirs: Sequence[Path],
     output_dir: Path,
@@ -122,10 +204,11 @@ def run(
     filters: Filters,
     runner_config: RunnerConfig | None = None,
 ) -> None:
-    """Run registration QC for longitudinal derivatives.
+    """Run registration QC and generate the per-subject report.
 
     For each BOLD run, computes Dice/Jaccard overlap between the
-    anatomical brain mask and BOLD brain mask in longitudinal space.
+    anatomical brain mask and BOLD brain mask in longitudinal space, then
+    assembles one HTML report per subject across all of its sessions.
 
     Args:
         input_dirs: BIDS dataset directories (must include longitudinal
@@ -143,7 +226,8 @@ def run(
         dataset_dirs=input_dirs, index_fpath=None, max_workers=0, verbose=verbose
     )
 
-    for pipe_ctx, session, _tpl_df in iter_sessions_with_template(
+    sections_by_sub: dict[str, list[ReportSection]] = {}
+    for pipe_ctx, session, tpl_df in iter_sessions_with_template(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
         anat_q = pipe_ctx.bids(datatype=Datatype.ANAT)
@@ -169,16 +253,42 @@ def run(
                 anat_long_q, func_long_q, anat_long_df, func_long_df
             )
 
-            process_qc(
+            task = ents.get("task", "")
+            run = ents.get("run", 0)
+            outputs = process_qc(
                 func_long_q,
                 anat_brain_mask=resolved["anat_brain_mask"],
                 bold_mask=resolved["bold_mask"],
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses or "",
-                task=ents.get("task", ""),
-                run=ents.get("run", 0),
+                task=task,
+                run=run,
+            )
+
+            template, rms_rel = _resolve_report_inputs(
+                pipe_ctx, func_q, func_df, tpl_df, task
+            )
+            sections_by_sub.setdefault(pipe_ctx.sub, []).append(
+                ReportSection(
+                    ses=pipe_ctx.ses or "",
+                    run=run,
+                    metrics=RegistrationQCMetrics(
+                        dice=outputs.dice,
+                        jaccard=outputs.jaccard,
+                        cross_corr=outputs.cross_corr,
+                        coverage=outputs.coverage,
+                    ),
+                    passed=outputs.passed,
+                    anat_mask=resolved["anat_brain_mask"],
+                    bold_mask=resolved["bold_mask"],
+                    template=template,
+                    rms_rel=rms_rel,
+                )
             )
 
         pipe_ctx.ensure_dataset_description()
+
+    for sub, sections in sections_by_sub.items():
+        generate_subject_report(sub, output_dir, sections=sections)
 
     _logger.info("RBC longitudinal QC workflow complete")

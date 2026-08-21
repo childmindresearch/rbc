@@ -12,8 +12,10 @@ self-contained HTML document that opens offline from ``file://``.
 The rendering helpers (:func:`render_lightbox`,
 :func:`render_motion_parameters`, :func:`render_displacement_traces`,
 :func:`render_carpet`, :func:`figure_to_svg`, :func:`section_header`,
-:func:`metric_rows`) are intentionally public so that future report
-types (e.g. longitudinal QC) can reuse the same layout primitives.
+:func:`metric_rows`, :func:`style_axes`, :func:`style_legend`) are
+intentionally public: the longitudinal QC report
+(``rbc.core.longitudinal.report``) reuses them as shared layout
+primitives.
 """
 
 from __future__ import annotations
@@ -192,7 +194,7 @@ def _warp_mask(mask_path: Path, reference_path: Path, xfm_path: Path) -> np.ndar
     return warped.get_fdata()
 
 
-def _style_axes(ax: Axes) -> None:
+def style_axes(ax: Axes) -> None:
     """Apply the shared dark theme to a line-plot axis."""
     ax.tick_params(colors=TEXT_COLOR, labelsize=7)
     ax.xaxis.label.set_color(TEXT_COLOR)
@@ -208,7 +210,7 @@ def _id_label(label: str) -> str:
     return "".join(ch if ch.isalnum() else "-" for ch in label)
 
 
-def _legend(ax: Axes) -> None:
+def style_legend(ax: Axes) -> None:
     """Apply the shared dark-theme legend to an axis."""
     ax.legend(
         fontsize=7,
@@ -357,8 +359,8 @@ def render_motion_parameters(ax: Axes, motion_params: np.ndarray) -> None:
     ax.set_xlabel("Volume", fontsize=8)
     ax.set_ylabel("Rotation (deg) / translation (mm)", fontsize=8)
     ax.set_title("Motion parameters", fontsize=10, fontweight="bold")
-    _style_axes(ax)
-    _legend(ax)
+    style_axes(ax)
+    style_legend(ax)
 
 
 def render_displacement_traces(
@@ -407,8 +409,8 @@ def render_displacement_traces(
         fontsize=10,
         fontweight="bold",
     )
-    _style_axes(ax)
-    _legend(ax)
+    style_axes(ax)
+    style_legend(ax)
 
 
 def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> None:
@@ -447,7 +449,7 @@ def render_carpet(fig: plt.Figure, data4d: np.ndarray, mask3d: np.ndarray) -> No
     ax_carpet.set_yticks([])
     ax_carpet.set_xticks(np.arange(0, t, max(1, t // 10)))
     ax_carpet.set_xlabel("Volume", fontsize=8)
-    _style_axes(ax_carpet)
+    style_axes(ax_carpet)
 
 
 def generate_qc_report(

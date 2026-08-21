@@ -14,9 +14,16 @@ if TYPE_CHECKING:
 import polars as pl
 import pytest
 
+from rbc.bids import Datatype
 from rbc.context import RunContext
+from rbc.core.longitudinal.report import ReportSection
+from rbc.core.qc.registration import RegistrationQCMetrics
 from rbc.orchestration import Filters
 from rbc.orchestration.longitudinal import process_anat, process_func
+from rbc.orchestration.longitudinal.qc import (
+    _resolve_report_inputs,
+    generate_subject_report,
+)
 from rbc.workflows.longitudinal.anatomical import AnatomicalLongOutputs
 
 _SCHEMA = [
@@ -487,3 +494,113 @@ class TestLongitudinalFunctionalRun:
                 filters=Filters(),
             )
             assert any("experimental" in msg.lower() for msg in caplog.messages)
+
+
+def _report_section() -> ReportSection:
+    """Build a minimal passing ReportSection for wiring tests."""
+    fake = Path("fake_workdir")
+    return ReportSection(
+        ses="baseline",
+        run=0,
+        metrics=RegistrationQCMetrics(
+            dice=0.9, jaccard=0.8, cross_corr=0.88, coverage=0.95
+        ),
+        passed=True,
+        anat_mask=fake / "anat_mask.nii.gz",
+        bold_mask=fake / "bold_mask.nii.gz",
+        template=fake / "template.nii.gz",
+        rms_rel=fake / "rel.rms",
+    )
+
+
+class TestResolveReportInputs:
+    """Tests for the (template, rms_rel) resolution used by the report."""
+
+    def test_template_prefers_task_grid(
+        self,
+        func_df: pl.DataFrame,
+        tpl_df: pl.DataFrame,
+        tmp_path: Path,
+    ) -> None:
+        """When a per-task template exists it is selected via ``res``."""
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
+        func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities={"task": "rest"})
+        tpl = Path("fake_workdir/template.nii.gz")
+        rms = Path("fake_workdir/rel.rms")
+
+        def _side_effect(*_args: object, **kwargs: object) -> Path:
+            return rms if kwargs.get("suffix") == "motion" else tpl
+
+        with patch("rbc.bids.query.find_file", side_effect=_side_effect) as mock_find:
+            template, rms_rel = _resolve_report_inputs(
+                pipe_ctx, func_q, func_df, tpl_df, "rest"
+            )
+        assert template == tpl
+        assert rms_rel == rms
+        entities = mock_find.call_args_list[0].kwargs.get("entities") or {}
+        assert entities.get("res") == "rest"
+
+    def test_template_falls_back_to_plain_t1w(
+        self,
+        func_df: pl.DataFrame,
+        tpl_df: pl.DataFrame,
+        tmp_path: Path,
+    ) -> None:
+        """When no per-task template matches, the plain T1w is used."""
+        pipe_ctx = RunContext(sub="01", ses="baseline", output_dir=tmp_path)
+        func_q = pipe_ctx.bids(datatype=Datatype.FUNC, entities={"task": "rest"})
+
+        def _side_effect(*_args: object, **kwargs: object) -> Path | None:
+            merged = {**kwargs, **(kwargs.get("entities") or {})}  # type: ignore[dict-item]
+            if "res" in merged:
+                return None
+            if kwargs.get("suffix") == "motion":
+                return Path("fake_workdir/rel.rms")
+            return Path("fake_workdir/template.nii.gz")
+
+        with patch("rbc.bids.query.find_file", side_effect=_side_effect):
+            template, rms = _resolve_report_inputs(
+                pipe_ctx, func_q, func_df, tpl_df, "rest"
+            )
+        assert template == Path("fake_workdir/template.nii.gz")
+        assert rms == Path("fake_workdir/rel.rms")
+
+
+class TestGenerateSubjectReport:
+    """Tests for per-subject report assembly and BIDS save."""
+
+    def test_saved_under_ses_longitudinal(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """The report is saved under sub-XX/ses-longitudinal/func."""
+        section = _report_section()
+        src = tmp_path / "quality_report.html"
+        src.write_text("<html></html>", encoding="utf-8")
+        expected = (
+            tmp_path
+            / "sub-01"
+            / "ses-longitudinal"
+            / "func"
+            / "sub-01_ses-longitudinal_space-longitudinal_QC.html"
+        )
+        with (
+            patch(
+                "rbc.orchestration.longitudinal.qc.generate_qc_report",
+                return_value=src,
+            ) as mock_gen,
+            patch("rbc.bids.builder.shutil.copy2"),
+        ):
+            saved = generate_subject_report("01", tmp_path, sections=[section])
+
+        # suffix=QC, extension=.html, no desc, under the longitudinal session.
+        assert saved == expected
+        assert saved.name == "sub-01_ses-longitudinal_space-longitudinal_QC.html"
+        gen_kwargs = mock_gen.call_args.kwargs
+        assert gen_kwargs["sub"] == "01"
+        assert gen_kwargs["sessions"] == [section]
+
+    def test_empty_sections_raises(self, tmp_path: Path) -> None:
+        """A subject with no QC runs cannot produce a report."""
+        with pytest.raises(ValueError, match="No QC sections"):
+            generate_subject_report("01", tmp_path, sections=[])

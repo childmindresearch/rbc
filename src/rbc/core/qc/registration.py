@@ -12,6 +12,9 @@ from typing import NamedTuple
 
 import numpy as np
 
+# Pass/fail threshold for longitudinal registration QC (Dice coefficient).
+DICE_THRESHOLD = 0.85
+
 
 class RegistrationQCMetrics(NamedTuple):
     """Spatial overlap metrics between two binary masks.

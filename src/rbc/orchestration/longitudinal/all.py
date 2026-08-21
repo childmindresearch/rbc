@@ -20,12 +20,18 @@ from rbc.bids.longitudinal.template import discover_template_inputs
 from rbc.bids.metrics import export_metrics
 from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
 from rbc.context import RunContext
+from rbc.core.longitudinal.report import ReportSection
+from rbc.core.qc.registration import RegistrationQCMetrics
 from rbc.orchestration import Filters, RunnerConfig, init_runner
 from rbc.orchestration.longitudinal._iter import iter_sessions_with_template
 from rbc.orchestration.longitudinal.anatomical import process_anat
 from rbc.orchestration.longitudinal.functional import process_func
 from rbc.orchestration.longitudinal.metrics import _read_derivative_tr
-from rbc.orchestration.longitudinal.qc import process_qc
+from rbc.orchestration.longitudinal.qc import (
+    _resolve_report_inputs,
+    generate_subject_report,
+    process_qc,
+)
 from rbc.orchestration.longitudinal.template import (
     process_subject,
     setup_freesurfer_auth,
@@ -105,6 +111,7 @@ def run(
     _logger.info("Template generation complete; proceeding to per-session stages")
 
     # --- Step 2: Per-session anat -> func -> metrics -> qc ---
+    sections_by_sub: dict[str, list[ReportSection]] = {}
     for pipe_ctx, session, tpl_df in iter_sessions_with_template(
         input_dirs, output_dir, filters=filters, verbose=verbose
     ):
@@ -163,17 +170,42 @@ def run(
                 )
                 continue
 
+            task = ents.get("task", "")
+            run = ents.get("run", 0)
             _logger.info("Longitudinal QC: sub-%s ses-%s", pipe_ctx.sub, pipe_ctx.ses)
-            process_qc(
+            outputs = process_qc(
                 func_long,
                 anat_brain_mask=anat_outputs.brain_mask,
                 bold_mask=func_outputs.bold_mask,
                 sub=pipe_ctx.sub,
                 ses=pipe_ctx.ses or "",
-                task=ents.get("task", ""),
-                run=ents.get("run", 0),
+                task=task,
+                run=run,
+            )
+            template, rms_rel = _resolve_report_inputs(
+                pipe_ctx, func_q, func_df, tpl_df, task
+            )
+            sections_by_sub.setdefault(pipe_ctx.sub, []).append(
+                ReportSection(
+                    ses=pipe_ctx.ses or "",
+                    run=run,
+                    metrics=RegistrationQCMetrics(
+                        dice=outputs.dice,
+                        jaccard=outputs.jaccard,
+                        cross_corr=outputs.cross_corr,
+                        coverage=outputs.coverage,
+                    ),
+                    passed=outputs.passed,
+                    anat_mask=anat_outputs.brain_mask,
+                    bold_mask=func_outputs.bold_mask,
+                    template=template,
+                    rms_rel=rms_rel,
+                )
             )
 
         pipe_ctx.ensure_dataset_description()
+
+    for sub, sections in sections_by_sub.items():
+        generate_subject_report(sub, output_dir, sections=sections)
 
     _logger.info("RBC full longitudinal pipeline complete")
