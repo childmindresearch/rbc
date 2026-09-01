@@ -10,9 +10,9 @@ dependencies = [
   "bids2table==2.1.2",
   "nibabel>=5.3.3",
   "niwrap>=0.9.3,<1.0",
-  "numpy>=2.5.1",
-  "polars>=1.42.1",
-  "scipy>=1.18.0",
+  "numpy>=2.5.2",
+  "polars>=1.44.1",
+  "scipy>=1.18.1",
   "styxcache>=0.2.0,<0.3",
   "styxpodman>=0.1.1",
   "tqdm>=4.70.0"
