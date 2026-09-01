@@ -14,7 +14,7 @@ from rbc.core.longitudinal.freesurfer import (
     fs_to_itk_xfm,
     generate_robust_template,
 )
-from rbc.core.longitudinal.resampling import resample_img_to_bold_grid
+from rbc.core.longitudinal.resampling import resample_img_to_bold_res
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -75,7 +75,7 @@ def generate_subject_template(
 
     _logger.info("Creating reference volumes for each functional task")
     bold_templates = {
-        btask: resample_img_to_bold_grid(bfile, robust.template)
+        btask: resample_img_to_bold_res(bfile, robust.template)
         for btask, bfile in bold_files.items()
     }
 

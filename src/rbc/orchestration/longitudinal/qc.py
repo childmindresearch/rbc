@@ -21,7 +21,7 @@ from rbc.bids.longitudinal.qc import (
     write_longitudinal_qc_tsv,
 )
 from rbc.bids.session import _FUNC_ENTITY_KEYS, iter_session_files
-from rbc.core.longitudinal.resampling import resample_img_to_bold_grid
+from rbc.core.longitudinal.resampling import resample_img_to_bold_res
 from rbc.core.niwrap import generate_exec_folder
 from rbc.core.qc.registration import registration_qc_metrics
 from rbc.orchestration import Filters, RunnerConfig, init_runner
@@ -71,7 +71,7 @@ def process_qc(
     # Resample longitudinal anatomical mask to bold grid for QC purposes.
     # Longitudinal processed data are registered to the longitudinal template with
     # respective modality's native resolution
-    anat_brain_mask = resample_img_to_bold_grid(bold_mask, anat_brain_mask, order=0)
+    anat_brain_mask = resample_img_to_bold_res(bold_mask, anat_brain_mask, order=0)
     anat_mask_arr = nib.nifti1.load(anat_brain_mask).get_fdata()
     bold_mask_arr = nib.nifti1.load(bold_mask).get_fdata()
     reg_metrics = registration_qc_metrics(anat_mask_arr, bold_mask_arr)
