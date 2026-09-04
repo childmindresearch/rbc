@@ -64,8 +64,8 @@ def compose_transform(ref: Path, bold_to_anat_itk: Path, anat_to_tpl_xfm: Path) 
     return ants.ants_apply_transforms(
         reference_image=ref,
         transform=[
-            ants.ants_apply_transforms_transform_file_name(bold_to_anat_itk),
             ants.ants_apply_transforms_transform_file_name(anat_to_tpl_xfm),
+            ants.ants_apply_transforms_transform_file_name(bold_to_anat_itk),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
             composite_displacement_field="bold_to_tpl_xfm.nii.gz",
