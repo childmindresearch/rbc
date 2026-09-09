@@ -152,10 +152,10 @@ def ants_registration(
         reference_image=registration_template,
         transform=[
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{_PREFIX}_0GenericAffine.mat"
+                registration.root / f"{_PREFIX}_1Warp.nii.gz"
             ),
             ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{_PREFIX}_1Warp.nii.gz"
+                registration.root / f"{_PREFIX}_0GenericAffine.mat"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
@@ -166,11 +166,11 @@ def ants_registration(
     template_to_anat = ants.ants_apply_transforms(
         reference_image=in_file,
         transform=[
-            ants.ants_apply_transforms_transform_file_name(
-                registration.root / f"{_PREFIX}_1InverseWarp.nii.gz"
-            ),
             ants.ants_apply_transforms_use_inverse(
                 registration.root / f"{_PREFIX}_0GenericAffine.mat"
+            ),
+            ants.ants_apply_transforms_transform_file_name(
+                registration.root / f"{_PREFIX}_1InverseWarp.nii.gz"
             ),
         ],
         output=ants.ants_apply_transforms_composite_displacement_field_output(
