@@ -1,8 +1,9 @@
-"""Processing steps shared across anatomical and functional streams.
+"""Processing steps shared across anatomical, functional, and metrics streams.
 
 Currently provides:
 - Deobliquing and RPI reorientation (initial preprocessing for T1w and BOLD).
 - 4D NIfTI splitting and merging utilities.
+- Spatially smooth a 3D map or 4D timeseries to a target FWHM.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ from rbc.core.fileops import file_tmp_copy
 from rbc.core.nifti import strip_afni_volatile_metadata
 from rbc.core.niwrap import generate_exec_folder
 
-__all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "split_4d"]
+__all__ = ["deoblique_and_reorient", "merge_3d_to_4d", "smooth", "split_4d"]
 
 
 def deoblique_and_reorient(
@@ -92,3 +93,33 @@ def merge_3d_to_4d(volumes: Sequence[Path], output: Path) -> Path:
     merged = nib.funcs.concat_images(imgs, axis=None)
     nib.save(merged, output)
     return output
+
+
+def smooth(
+    in_file: Path,
+    mask_file: Path,
+    fwhm: float = 6.0,
+) -> Path:
+    """Spatially smooth a 3D map or 4D timeseries to a target FWHM.
+
+    Uses AFNI ``3dBlurToFWHM`` to iteratively blur the input until the
+    estimated smoothness reaches the requested FWHM within the brain mask.
+    Supports both 3D derivative maps (ALFF, fALFF, ReHo) and 4D BOLD
+    timeseries.
+
+    Args:
+        in_file: NIfTI image to smooth (3-D map or 4-D timeseries).
+        mask_file: Binary brain mask; voxels outside are set to zero.
+        fwhm: Target full-width at half-maximum in mm.
+
+    Returns:
+        Path to the smoothed image.
+    """
+    result = afni.v_3d_blur_to_fwhm(
+        in_file=in_file,
+        mask=mask_file,
+        fwhm=fwhm,
+        prefix="smoothed.nii.gz",
+    )
+    assert result.out_file is not None  # noqa: S101
+    return result.out_file

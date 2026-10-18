@@ -23,7 +23,7 @@ class MetricsLongArgs(LongitudinalBaseArgs):
     """Arguments for ``rbc longitudinal metrics``."""
 
     atlas_files: dict[str, Path]
-    fwhm: float
+    smooth: float | None
     tr: float | None
     task: str | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
@@ -32,12 +32,13 @@ class MetricsLongArgs(LongitudinalBaseArgs):
     def validate_namespace(cls, ns: argparse.Namespace) -> MetricsLongArgs:
         """Validate namespace for the longitudinal metrics subcommand."""
         _validate_task(ns.task)
-        _validate_positive(ns.fwhm, "FWHM")
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         _validate_positive(ns.tr, "TR")
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
             atlas_files=_resolve_atlas_args(ns.atlas),
-            fwhm=ns.fwhm,
+            smooth=ns.smooth,
             tr=ns.tr,
             task=ns.task,
             regressor=ns.regressor,
@@ -56,7 +57,7 @@ def main(args: MetricsLongArgs) -> int:
         ),
         regressors=args.regressor,
         atlas_files=args.atlas_files,
-        fwhm=args.fwhm,
+        smooth=args.smooth,
         tr=args.tr,
         runner_config=RunnerConfig(
             runner=args.runner,
@@ -105,10 +106,12 @@ def register_command(
         ),
     )
     parser.add_argument(
-        "--fwhm",
+        "--smooth",
         type=float,
-        default=6.0,
-        help="Smoothing kernel FWHM in mm.",
+        default=None,
+        metavar="FWHM",
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
+        "If omitted, no smoothing is applied.",
     )
     parser.add_argument(
         "--tr",

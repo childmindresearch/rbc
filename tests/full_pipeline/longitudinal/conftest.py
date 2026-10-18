@@ -201,6 +201,8 @@ def longitudinal_pipeline_data(
             "test",
             "--task",
             _TASK,
+            "--smooth",
+            "6",
         ]
     )
 
@@ -276,6 +278,8 @@ def longitudinal_all_data(
             "test",
             "--task",
             _TASK,
+            "--smooth",
+            "6",
         ]
     )
 

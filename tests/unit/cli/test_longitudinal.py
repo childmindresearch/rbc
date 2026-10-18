@@ -31,6 +31,7 @@ def base_ns(tmp_path: Path) -> argparse.Namespace:
         output_dir=tmp_path / "output",
         participant_label=[],
         session_label=[],
+        smooth=None,
         tmp_dir=None,
         ants_threads=1,
         fs_license=None,
@@ -103,26 +104,26 @@ class TestMetricsLongArgs:
     """Tests for the metrics longitudinal subcommand validator."""
 
     def test_defaults(self, base_ns: argparse.Namespace) -> None:
-        """FWHM defaults to 6 mm and atlas resolves from the registry."""
+        """Smooth defaults to None and atlas resolves from the registry."""
         base_ns.atlas = ["schaefer_200"]
-        base_ns.fwhm = 6.0
+        base_ns.smooth = None
         base_ns.tr = None
         base_ns.task = None
         base_ns.regressor = ["36-parameter"]
         args = MetricsLongArgs.validate_namespace(base_ns)
-        assert args.fwhm == 6.0
+        assert args.smooth is None
         assert args.tr is None
         assert "schaefer_200" in args.atlas_files
         assert args.regressor == ["36-parameter"]
 
     def test_nonpositive_fwhm_rejected(self, base_ns: argparse.Namespace) -> None:
-        """FWHM must be strictly positive."""
+        """Smooth must be strictly positive."""
         base_ns.atlas = ["schaefer_200"]
-        base_ns.fwhm = 0.0
+        base_ns.smooth = 0.0
         base_ns.tr = None
         base_ns.task = None
         base_ns.regressor = ["36-parameter"]
-        with pytest.raises(ValueError, match="FWHM"):
+        with pytest.raises(ValueError, match="smooth"):
             MetricsLongArgs.validate_namespace(base_ns)
 
 
@@ -133,11 +134,11 @@ class TestAllLongArgs:
         """Defaults resolve to atlas registry + bundled 1 mm template."""
         base_ns.anat_template = None
         base_ns.atlas = ["schaefer_200"]
-        base_ns.fwhm = 6.0
+        base_ns.smooth = None
         base_ns.regressor = ["36-parameter"]
         base_ns.task = None
         args = AllLongArgs.validate_namespace(base_ns)
-        assert args.fwhm == 6.0
+        assert args.smooth is None
         assert "schaefer_200" in args.atlas_files
         assert args.registration_template.name.endswith(".nii.gz")
         assert args.regressor == ["36-parameter"]

@@ -366,21 +366,21 @@ def _export_metrics(
     stem_with_space = _run_stem(run, with_space=True)
     stem_no_space = _run_stem(run)
 
-    scalar_sources: dict[str, dict[str, Path]] = {
+    scalar_sources: dict[str, dict[str, Path | None]] = {
         "alff": {
             "raw": metrics.alff,
             "sm6": metrics.alff_smooth,
-            "smZstd": metrics.alff_zscored,
+            "smZstd": metrics.alff_smooth_zscored,
         },
         "falff": {
             "raw": metrics.falff,
             "sm6": metrics.falff_smooth,
-            "smZstd": metrics.falff_zscored,
+            "smZstd": metrics.falff_smooth_zscored,
         },
         "reho": {
             "raw": metrics.reho,
             "sm6": metrics.reho_smooth,
-            "smZstd": metrics.reho_zscored,
+            "smZstd": metrics.reho_smooth_zscored,
         },
     }
     for metric, srcs in scalar_sources.items():
@@ -394,6 +394,9 @@ def _export_metrics(
         zstd_dst = (
             out_func_dir / f"{stem_with_space}_reg-{reg_set}_desc-zstd_{metric}.nii.gz"
         )
+        assert srcs["raw"] is not None  # noqa: S101
+        assert srcs["sm6"] is not None  # noqa: S101
+        assert srcs["smZstd"] is not None  # noqa: S101
         shutil.copyfile(srcs["sm6"], sm6_dst)
         shutil.copyfile(srcs["smZstd"], smzstd_dst)
         # ``zstd`` = z-scored raw (no smoothing); not in MetricsOutputs.
@@ -502,7 +505,7 @@ def _process_run(
             template_brain_mask=staged_mask,
             tr=tr,
             atlas_files=atlases,
-            fwhm=fwhm,
+            smooth=fwhm,
         )
         _export_metrics(metrics, out_func_dir, run, reg_set, staged_mask, atlases)
         LOG.info(

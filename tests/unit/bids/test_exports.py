@@ -13,7 +13,7 @@ import pytest
 
 from rbc.bids.anatomical import export_anatomical
 from rbc.bids.functional import export_functional
-from rbc.bids.metrics import export_metrics
+from rbc.bids.metrics import _smooth_label, export_metrics
 from rbc.bids.qc import export_qc
 from rbc.context import RunContext
 from rbc.workflows.anatomical import AnatomicalOutputs
@@ -73,6 +73,7 @@ def _make_func_outputs(w: Path, regressors: list[str]) -> FunctionalOutputs:
         template_bold=_dummy(w, "template_bold.nii.gz"),
         regressed_bold={r: _dummy(w, f"regressed_{r}.nii.gz") for r in regressors},
         cleaned_bold={r: _dummy(w, f"cleaned_{r}.nii.gz") for r in regressors},
+        cleaned_bold_smooth=None,
         regressor_file={r: _dummy(w, f"regressors_{r}.1D") for r in regressors},
         bpf_regressor_file={r: _dummy(w, f"regressors_bpf_{r}.1D") for r in regressors},
         template_brain_mask=_dummy(w, "template_mask.nii.gz"),
@@ -83,13 +84,16 @@ def _make_metrics_outputs(w: Path, atlases: list[str]) -> MetricsOutputs:
     return MetricsOutputs(
         alff=_dummy(w, "alff.nii.gz"),
         falff=_dummy(w, "falff.nii.gz"),
-        alff_smooth=_dummy(w, "alff_smooth.nii.gz"),
-        falff_smooth=_dummy(w, "falff_smooth.nii.gz"),
-        alff_zscored=_dummy(w, "alff_z.nii.gz"),
-        falff_zscored=_dummy(w, "falff_z.nii.gz"),
         reho=_dummy(w, "reho.nii.gz"),
-        reho_smooth=_dummy(w, "reho_smooth.nii.gz"),
-        reho_zscored=_dummy(w, "reho_z.nii.gz"),
+        alff_zscored=_dummy(w, "alff_zstd.nii.gz"),
+        falff_zscored=_dummy(w, "falff_zstd.nii.gz"),
+        reho_zscored=_dummy(w, "reho_zstd.nii.gz"),
+        alff_smooth=None,
+        falff_smooth=None,
+        reho_smooth=None,
+        alff_smooth_zscored=None,
+        falff_smooth_zscored=None,
+        reho_smooth_zscored=None,
         timeseries={a: _dummy(w, f"ts_{a}.tsv") for a in atlases},
         correlation_matrix={a: _dummy(w, f"corr_{a}.tsv") for a in atlases},
     )
@@ -218,6 +222,31 @@ class TestExportFunctional:
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
         assert len(saved) == 18
 
+    def test_bold_smooth_not_exported_if_none(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """No smoothed BOLD files are exported when cleaned_bold_smooth is None."""
+        outputs = _make_func_outputs(workdir, ["36-parameter"])
+        export_functional(func_bids, outputs, regressors=["36-parameter"])
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        assert not any("desc-sm" in name for name in saved)
+
+    def test_cleaned_bold_smooth_exported_with_correct_desc(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """Smoothed BOLD is exported with correct fwhm label."""
+        smooth_outputs = _make_func_outputs(workdir, ["36-parameter"])._replace(
+            cleaned_bold_smooth={
+                "36-parameter": _dummy(workdir, "cleaned_smooth.nii.gz")
+            }
+        )
+        export_functional(
+            func_bids, smooth_outputs, regressors=["36-parameter"], smooth=8.0
+        )
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        sm_files = [n for n in saved if "desc-sm8preproc" in n]
+        assert len(sm_files) == 1
+
 
 # ---------------------------------------------------------------------------
 # Metrics exports
@@ -233,7 +262,13 @@ class TestExportMetrics:
         """Atlas names with underscores are sanitized in filenames."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
-        export_metrics(mni, outputs, regressor="36-parameter", atlases=["schaefer_200"])
+        export_metrics(
+            mni,
+            outputs,
+            regressor="36-parameter",
+            atlases=["schaefer_200"],
+            smooth=None,
+        )
         atlas_files = [
             p.name for p in pipe_ctx.output_dir.rglob("*.*") if "atlas-" in p.name
         ]
@@ -248,7 +283,9 @@ class TestExportMetrics:
         """Regressor names with hyphens are sanitized in filenames."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["aal"])
-        export_metrics(mni, outputs, regressor="36-parameter", atlases=["aal"])
+        export_metrics(
+            mni, outputs, regressor="36-parameter", atlases=["aal"], smooth=None
+        )
         all_names = [p.name for p in pipe_ctx.output_dir.rglob("*.*")]
         reg_files = [n for n in all_names if "reg-" in n]
         assert len(reg_files) > 0
@@ -258,23 +295,78 @@ class TestExportMetrics:
     def test_file_count_single_atlas(
         self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
-        """9 scalar maps + 2 atlas files = 11."""
+        """3 raw + 3 zscored + 2 atlas files = 8."""
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, ["schaefer_200"])
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=["schaefer_200"])
+        export_metrics(
+            mni, outputs, regressor="aCompCor", atlases=["schaefer_200"], smooth=None
+        )
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 11
+        assert len(saved) == 8
 
     def test_file_count_multiple_atlases(
         self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
     ) -> None:
-        """9 scalar maps + 2 * 2 atlas files = 13."""
+        """3 raw + 3 zscored + 4 atlas files = 10."""
         atlases = ["schaefer_200", "aal"]
         mni = func_bids.derive(space="MNI152NLin6Asym")
         outputs = _make_metrics_outputs(workdir, atlases)
-        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases)
+        export_metrics(mni, outputs, regressor="aCompCor", atlases=atlases, smooth=None)
         saved = list(pipe_ctx.output_dir.rglob("*.*"))
-        assert len(saved) == 13
+        assert len(saved) == 10
+
+    def test_file_count_single_atlas_with_smooth(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """3 raw + 3 zscored + 3 smooth + 3 smooth zscored + 2 atlas files = 14."""
+        mni = func_bids.derive(space="MNI152NLin6Asym")
+        smooth_outputs = _make_metrics_outputs(workdir, ["schaefer_200"])._replace(
+            alff_smooth=_dummy(workdir, "alff_sm.nii.gz"),
+            falff_smooth=_dummy(workdir, "falff_sm.nii.gz"),
+            reho_smooth=_dummy(workdir, "reho_sm.nii.gz"),
+            alff_smooth_zscored=_dummy(workdir, "alff_sm_z.nii.gz"),
+            falff_smooth_zscored=_dummy(workdir, "falff_sm_z.nii.gz"),
+            reho_smooth_zscored=_dummy(workdir, "reho_sm_z.nii.gz"),
+        )
+        export_metrics(
+            mni,
+            smooth_outputs,
+            regressor="aCompCor",
+            atlases=["schaefer_200"],
+            smooth=6.0,
+        )
+        saved = list(pipe_ctx.output_dir.rglob("*.*"))
+        assert len(saved) == 14
+
+    def test_smooth_maps_have_correct_desc(
+        self, func_bids: Bids, workdir: Path, pipe_ctx: RunContext
+    ) -> None:
+        """Smoothed maps are exported with correct fwhm labels."""
+        mni = func_bids.derive(space="MNI152NLin6Asym")
+        smooth_outputs = _make_metrics_outputs(workdir, ["schaefer_200"])._replace(
+            alff_smooth=_dummy(workdir, "alff_sm.nii.gz"),
+            falff_smooth=_dummy(workdir, "falff_sm.nii.gz"),
+            reho_smooth=_dummy(workdir, "reho_sm.nii.gz"),
+            alff_smooth_zscored=_dummy(workdir, "alff_sm_z.nii.gz"),
+            falff_smooth_zscored=_dummy(workdir, "falff_sm_z.nii.gz"),
+            reho_smooth_zscored=_dummy(workdir, "reho_sm_z.nii.gz"),
+        )
+        export_metrics(
+            mni,
+            smooth_outputs,
+            regressor="aCompCor",
+            atlases=["schaefer_200"],
+            smooth=8.0,
+        )
+        saved = [p.name for p in pipe_ctx.output_dir.rglob("*.nii.gz")]
+        sm_only = [n for n in saved if "desc-sm8" in n and "Zstd" not in n]
+        sm_zstd = [n for n in saved if "desc-sm8Zstd" in n]
+        assert len(sm_only) == 3
+        assert len(sm_zstd) == 3
+
+    def test_smooth_label_non_integer(self) -> None:
+        """Non-integer FWHM values are formatted with 'p' instead of '.'."""
+        assert _smooth_label(0.1) == "sm0p1"
 
 
 # ---------------------------------------------------------------------------

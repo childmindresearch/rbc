@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from rbc.workflows.functional import FunctionalOutputs
 
 
+def _smooth_label(fwhm: float, precision: int | None = None) -> str:
+    """Format FWHM as a BIDS-safe label (e.g. 6.0 -> 'sm6', 0.1 -> 'sm0p1')."""
+    s = f"{fwhm:.{precision}f}" if precision is not None else str(fwhm)
+    return "sm" + s.rstrip("0").rstrip(".").replace(".", "p")
+
+
 class FunctionalRun(NamedTuple):
     """A single functional run discovered from a BIDS session.
 
@@ -104,6 +110,7 @@ def export_functional(
     outputs: FunctionalOutputs,
     *,
     regressors: Sequence[str],
+    smooth: float | None = None,
 ) -> Bids:
     """Export functional workflow outputs to BIDS-named derivatives.
 
@@ -111,6 +118,8 @@ def export_functional(
         func: Bids builder with ``datatype=FUNC`` and identity entities.
         outputs: Results from the functional preprocessing workflow.
         regressors: Regressor names (e.g. ``["36-parameter"]``).
+        smooth: Smoothing kernel FWHM in mm, or ``None`` if smoothing
+            was not requested.
 
     Returns:
         The MNI-space Bids builder, for use by downstream exports
@@ -179,6 +188,13 @@ def export_functional(
             desc="preproc",
             extra={"reg": bids_safe_label(reg)},
         )
+        if outputs.cleaned_bold_smooth is not None and smooth is not None:
+            mni.save(
+                outputs.cleaned_bold_smooth[reg],
+                suffix=Suffix.BOLD,
+                desc=f"{_smooth_label(smooth)}preproc",
+                extra={"reg": bids_safe_label(reg)},
+            )
     mni.save(outputs.template_bold, suffix=Suffix.BOLD, desc="preproc")
     mni.save(outputs.template_brain_mask, suffix=Suffix.MASK, desc="bold")
 

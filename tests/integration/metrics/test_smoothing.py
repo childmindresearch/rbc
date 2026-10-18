@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 import nibabel as nib
 import pytest
 
-from rbc.core.common import deoblique_and_reorient
-from rbc.core.metrics.smoothing import smooth
+from rbc.core.common import deoblique_and_reorient, smooth
 
 if TYPE_CHECKING:
     from conftest import TestSubjectData

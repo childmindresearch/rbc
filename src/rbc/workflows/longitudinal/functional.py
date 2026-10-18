@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
+from rbc.core.common import smooth as apply_smooth
 from rbc.core.functional import apply_regression, apply_regression_bandpass
 from rbc.core.longitudinal.transform import (
     compose_transform,
@@ -36,6 +37,8 @@ class FunctionalLongOutputs(NamedTuple):
             in longitudinal template space, keyed by strategy name.
         cleaned_bold: Per-regressor nuisance-regressed + bandpass-filtered
             BOLD in longitudinal template space, keyed by strategy name.
+        cleaned_bold_smooth: Per-regressor spatially smoothed nuisance-regressed
+            + bandpass-filtered in longitudinal template space, or *None*.
     """
 
     bold_to_long_xfm: Path
@@ -44,12 +47,14 @@ class FunctionalLongOutputs(NamedTuple):
     bold_mask: Path
     regressed_bold: dict[str, Path]
     cleaned_bold: dict[str, Path]
+    cleaned_bold_smooth: dict[str, Path] | None
 
 
 def longitudinal_process(
     template: Path,
     anat_to_template_xfm: Path,
     *,
+    smooth: float | None = None,
     bold_to_anat_itk: Path,
     sbref: Path,
     bold: Path,
@@ -70,6 +75,9 @@ def longitudinal_process(
     Args:
         template: Longitudinal template image.
         anat_to_template_xfm: T1w-to-longitudinal-template composite warp.
+        smooth: Smoothing kernel FWHM in mm, or ``None`` to skip smoothing.
+            Applied to cleaned BOLD after regression and bandpass filtering,
+            export-only.
         bold_to_anat_itk: BOLD-to-T1w affine in ITK format.
         sbref: Motion reference (single-band reference) volume.
         bold: Preprocessed bold image.
@@ -113,6 +121,20 @@ def longitudinal_process(
             regressor_file=reg_file,
         ).regressed_bold
 
+    # Optionally smooth cleaned BOLD (export-only)
+    cleaned_bold_smooth: dict[str, Path] | None = None
+    if smooth is not None:
+        cleaned_bold_smooth = {}
+        for reg in regressor_files:
+            _logger.info(
+                "Longitudinal %s smoothing cleaned BOLD (FWHM=%.1f mm)", reg, smooth
+            )
+            cleaned_bold_smooth[reg] = apply_smooth(
+                cleaned[reg],
+                long_mask,
+                fwhm=smooth,
+            )
+
     return FunctionalLongOutputs(
         bold_to_long_xfm=bold_to_tpl_xfm,
         sbref=long_sbref,
@@ -120,4 +142,5 @@ def longitudinal_process(
         bold_mask=long_mask,
         regressed_bold=regressed,
         cleaned_bold=cleaned,
+        cleaned_bold_smooth=cleaned_bold_smooth,
     )

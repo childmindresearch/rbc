@@ -34,15 +34,21 @@ def test_longitudinal_metrics_produces_expected_files(
     tree = _file_tree(longitudinal_pipeline_data)
 
     expected_fragments = [
+        # raw maps — always produced
         f"{_STEM}_space-longitudinal_reg-36parameter_alff.nii.gz",
         f"{_STEM}_space-longitudinal_reg-36parameter_falff.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smooth_alff.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smooth_falff.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smoothZstd_alff.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smoothZstd_falff.nii.gz",
         f"{_STEM}_space-longitudinal_reg-36parameter_reho.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smooth_reho.nii.gz",
-        f"{_STEM}_space-longitudinal_reg-36parameter_desc-smoothZstd_reho.nii.gz",
+        # z-scored raw maps - always produced
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-zstd_alff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-zstd_falff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-zstd_reho.nii.gz",
+        # smoothed + z-scored smoothed — produced with --smooth 6
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6_alff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6_falff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6_reho.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6Zstd_alff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6Zstd_falff.nii.gz",
+        f"{_STEM}_space-longitudinal_reg-36parameter_desc-sm6Zstd_reho.nii.gz",
     ]
     for name in expected_fragments:
         assert (func / name).is_file(), (

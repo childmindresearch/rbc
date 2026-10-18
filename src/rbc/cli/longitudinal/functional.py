@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from rbc.cli.base import _validate_task
+from rbc.cli.base import _validate_positive, _validate_task
 from rbc.cli.longitudinal._base import LongitudinalBaseArgs, add_fs_license_argument
 from rbc.orchestration import Filters, RunnerConfig
 from rbc.orchestration.longitudinal.functional import run
@@ -21,15 +21,19 @@ class FunctionalLongArgs(LongitudinalBaseArgs):
 
     task: str | None
     regressor: Sequence[Literal["36-parameter", "aCompCor"]]
+    smooth: float | None
 
     @classmethod
     def validate_namespace(cls, ns: argparse.Namespace) -> FunctionalLongArgs:
         """Validate namespace for the longitudinal functional subcommand."""
         _validate_task(ns.task)
+        if ns.smooth is not None:
+            _validate_positive(ns.smooth, "smooth")
         return cls(
             **LongitudinalBaseArgs.validate_namespace(ns).__dict__,
             task=ns.task,
             regressor=ns.regressor,
+            smooth=ns.smooth,
         )
 
 
@@ -44,6 +48,7 @@ def main(args: FunctionalLongArgs) -> int:
             task=args.task,
         ),
         regressors=args.regressor,
+        smooth=args.smooth,
         runner_config=RunnerConfig(
             runner=args.runner,
             verbose=bool(args.verbose),
@@ -77,6 +82,14 @@ def register_command(
         "--task",
         default=None,
         help="Task label to filter BOLD runs (without 'task-' prefix).",
+    )
+    parser.add_argument(
+        "--smooth",
+        type=float,
+        default=None,
+        metavar="FWHM",
+        help="Smoothing with the kernel of specified FWHM in mm (e.g. --smooth 6.0). "
+        "If omitted, no smoothing is applied.",
     )
     parser.add_argument(
         "--regressor",

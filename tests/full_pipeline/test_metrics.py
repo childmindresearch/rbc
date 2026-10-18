@@ -41,6 +41,8 @@ def test_single_session_metrics(
     for output in result:
         paths = output.values() if isinstance(output, dict) else [output]
         for path in paths:
+            if path is None:
+                continue
             assert Path(path).exists()
 
     manifest["metrics"] = _to_dict(result)
