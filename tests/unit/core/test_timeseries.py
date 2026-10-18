@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+import polars as pl
 import pytest
 
 from rbc.core.metrics.timeseries import (
@@ -247,7 +248,7 @@ class TestComputeTimeseries:
         img.to_filename(str(path))
 
     def test_round_trip(self, tmp_path: Path) -> None:
-        """Should produce TSV files that can be loaded back."""
+        """Should produce Parquet files that can be loaded back."""
         rng = np.random.default_rng(20)
         data = rng.standard_normal((4, 4, 4, 10))
         atlas = np.zeros((4, 4, 4), dtype=np.int16)
@@ -262,13 +263,13 @@ class TestComputeTimeseries:
         result = compute_timeseries(in_file, atlas_file)
 
         assert result.timeseries.exists()
-        assert result.correlation_matrix.exists()
+        assert result.connectome.exists()
         assert len(result.labels) == 2
 
-        ts_loaded = np.loadtxt(result.timeseries, delimiter="\t")
+        ts_loaded = pl.read_parquet(result.timeseries)
         assert ts_loaded.shape == (2, 10)
 
-        corr_loaded = np.loadtxt(result.correlation_matrix, delimiter="\t")
+        corr_loaded = pl.read_parquet(result.connectome)
         assert corr_loaded.shape == (2, 2)
 
     def test_output_naming(self, tmp_path: Path) -> None:
@@ -285,8 +286,8 @@ class TestComputeTimeseries:
 
         result = compute_timeseries(in_file, atlas_file)
 
-        assert result.timeseries.name == "sub-01_bold_timeseries.tsv"
-        assert result.correlation_matrix.name == "sub-01_bold_correlation_matrix.tsv"
+        assert result.timeseries.name == "sub-01_bold_timeseries.parquet"
+        assert result.connectome.name == "sub-01_bold_connectome.parquet"
 
     def test_custom_out_dir(self, tmp_path: Path) -> None:
         """Should write to a custom output directory."""
@@ -304,7 +305,7 @@ class TestComputeTimeseries:
         result = compute_timeseries(in_file, atlas_file, out_dir=out_dir)
 
         assert result.timeseries.parent == out_dir
-        assert result.correlation_matrix.parent == out_dir
+        assert result.connectome.parent == out_dir
 
     def test_labels_in_output(self, tmp_path: Path) -> None:
         """Output labels should match the atlas ROI labels."""

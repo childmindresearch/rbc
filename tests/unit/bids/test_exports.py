@@ -90,8 +90,8 @@ def _make_metrics_outputs(w: Path, atlases: list[str]) -> MetricsOutputs:
         reho=_dummy(w, "reho.nii.gz"),
         reho_smooth=_dummy(w, "reho_smooth.nii.gz"),
         reho_zscored=_dummy(w, "reho_z.nii.gz"),
-        timeseries={a: _dummy(w, f"ts_{a}.tsv") for a in atlases},
-        correlation_matrix={a: _dummy(w, f"corr_{a}.tsv") for a in atlases},
+        timeseries={a: _dummy(w, f"ts_{a}.parquet") for a in atlases},
+        connectome={a: _dummy(w, f"connectome_{a}.parquet") for a in atlases},
     )
 
 

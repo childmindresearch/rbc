@@ -62,7 +62,7 @@ def test_longitudinal_all_produces_derivatives(
     assert list(func.glob(f"{_STEM}_space-longitudinal_*_alff.nii.gz")), (
         f"Missing ALFF\n--- file tree ---\n{tree}"
     )
-    assert list(func.glob(f"{_STEM}_space-longitudinal_*_timeseries.tsv")), (
+    assert list(func.glob(f"{_STEM}_space-longitudinal_*_timeseries.parquet")), (
         f"Missing timeseries\n--- file tree ---\n{tree}"
     )
 

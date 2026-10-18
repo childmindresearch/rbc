@@ -58,8 +58,8 @@ def test_longitudinal_metrics_timeseries_exist(
     func = longitudinal_pipeline_data / f"sub-{_SUB}" / f"ses-{_SES}" / "func"
     tree = _file_tree(longitudinal_pipeline_data)
 
-    timeseries = list(func.glob(f"{_STEM}_space-longitudinal_*_timeseries.tsv"))
-    assert timeseries, f"No timeseries TSV found\n--- file tree ---\n{tree}"
+    timeseries = list(func.glob(f"{_STEM}_space-longitudinal_*_timeseries.parquet"))
+    assert timeseries, f"No timeseries Parquet found\n--- file tree ---\n{tree}"
 
-    correlations = list(func.glob(f"{_STEM}_space-longitudinal_*_correlations.tsv"))
-    assert correlations, f"No correlation TSV found\n--- file tree ---\n{tree}"
+    correlations = list(func.glob(f"{_STEM}_space-longitudinal_*_connectome.parquet"))
+    assert correlations, f"No connectome Parquet found\n--- file tree ---\n{tree}"
