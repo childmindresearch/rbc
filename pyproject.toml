@@ -8,6 +8,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "bids2table==2.1.2",
+  "matplotlib>=3.9.0",
   "nibabel>=5.3.3",
   "niwrap>=0.9.3,<1.0",
   "numpy>=2.5.1",

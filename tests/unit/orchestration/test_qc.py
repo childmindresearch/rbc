@@ -62,8 +62,12 @@ def _patch_qc_run(
     df: pl.DataFrame,
     *,
     qc_passed: bool = True,
-) -> Generator[Mock, None, None]:
-    """Patch external calls made by orchestration.qc.run()."""
+) -> Generator[tuple[Mock, Mock], None, None]:
+    """Patch external calls made by orchestration.qc.run().
+
+    Yields:
+        Tuple of the ``generate_qc_report`` and ``RunContext`` mocks.
+    """
     with (
         patch("rbc.orchestration.qc.init_runner"),
         patch(
@@ -77,11 +81,15 @@ def _patch_qc_run(
         patch(
             "rbc.orchestration.qc.single_session_qc",
             return_value=_mock_qc_outputs(passed=qc_passed),
-        ) as mock_qc,
+        ),
         patch("rbc.orchestration.qc.RunContext") as mock_ctx_cls,
+        patch(
+            "rbc.orchestration.qc.generate_qc_report",
+            return_value=Path("fake_workdir/quality_report.html"),
+        ) as mock_report,
     ):
         mock_ctx_cls.return_value = Mock(sub="01", ses="baseline")
-        yield mock_qc
+        yield mock_report, mock_ctx_cls
 
 
 class TestQCLogging:
@@ -136,3 +144,38 @@ class TestQCLogging:
                 start_tr=2,
             )
             assert any("FAILED" in msg for msg in caplog.messages)
+
+
+class TestQcReportWiring:
+    """Tests for HTML report generation in orchestration.qc.run()."""
+
+    def test_report_generated_and_saved_as_bids_html(
+        self,
+        sample_dataframe: pl.DataFrame,
+        tmp_path: Path,
+    ) -> None:
+        """generate_qc_report runs once and the HTML is saved with suffix QC."""
+        from rbc.orchestration.qc import run
+
+        with _patch_qc_run(sample_dataframe) as (mock_report, mock_ctx):
+            run(
+                output_dir=tmp_path,
+                filters=Filters(
+                    participant_label=["01"],
+                    session_label=["baseline"],
+                    task="rest",
+                ),
+                regressors=["36-parameter"],
+                start_tr=2,
+            )
+            mock_report.assert_called_once()
+            func_mni = mock_ctx.return_value.bids.return_value.derive.return_value
+            html_saves = [
+                call
+                for call in func_mni.save.call_args_list
+                if call.kwargs.get("suffix") == "QC"
+            ]
+            assert len(html_saves) == 1
+            assert html_saves[0].args[0] == Path("fake_workdir/quality_report.html")
+            assert html_saves[0].kwargs["extension"] == ".html"
+            assert "desc" not in html_saves[0].kwargs
